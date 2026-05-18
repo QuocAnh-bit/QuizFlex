@@ -2,10 +2,14 @@ import { createRouter, createWebHistory } from 'vue-router'
 
 const routes = [
   { path: '/', name: 'home', component: () => import('@/views/user/Home.vue'), meta: { layout: 'user', title: 'Trang chủ' } },
-  { path: '/quiz/:id', name: 'quiz-play', component: () => import('@/views/user/Quiz.vue'), meta: { layout: 'user', title: 'Làm quiz' } },
+  { path: '/quizzes', name: 'quiz-list', component: () => import('@/views/user/QuizList.vue'), meta: { layout: 'user', title: 'Danh sách quiz' } },
+  { path: '/quizzes/:id', name: 'quiz-detail', component: () => import('@/views/user/QuizDetail.vue'), meta: { layout: 'user', title: 'Chi tiết quiz' } },
+  { path: '/quizzes/:id/play', name: 'quiz-play', component: () => import('@/views/user/Quiz.vue'), meta: { layout: 'user', title: 'Làm quiz' } },
+  { path: '/quiz/:id', redirect: (to) => `/quizzes/${to.params.id}` },
   { path: '/join-room', name: 'join-room', component: () => import('@/views/user/JoinRoom.vue'), meta: { layout: 'user', title: 'Join room' } },
   { path: '/upgrade', name: 'upgrade', component: () => import('@/views/user/Upgrade.vue'), meta: { layout: 'user', title: 'Nâng cấp VIP' } },
   { path: '/results', name: 'results', component: () => import('@/views/user/Results.vue'), meta: { layout: 'user', title: 'Kết quả của tôi' } },
+  { path: '/results/:id', name: 'attempt-result', component: () => import('@/views/user/AttemptResult.vue'), meta: { layout: 'user', title: 'Kết quả bài làm' } },
   { path: '/profile', name: 'profile', component: () => import('@/views/user/Profile.vue'), meta: { layout: 'user', title: 'Hồ sơ cá nhân' } },
 
   { path: '/login', name: 'login', component: () => import('@/views/auth/Login.vue'), meta: { layout: 'auth', title: 'Đăng nhập' } },
@@ -38,6 +42,6 @@ const router = createRouter({
 
 router.afterEach((to) => {
   document.title = to.meta.title ? `${to.meta.title} | QuizFlex` : 'QuizFlex'
- })
+})
 
 export default router

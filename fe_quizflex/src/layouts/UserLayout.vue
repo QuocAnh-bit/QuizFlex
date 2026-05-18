@@ -141,7 +141,7 @@ const mainNav = [
   },
   {
     label: 'Làm quiz',
-    to: '/quiz/demo',
+    to: '/quizzes',
   },
   {
     label: 'Join room',

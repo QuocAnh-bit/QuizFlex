@@ -2,42 +2,13 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Validator;
-use thiagoalessio\TesseractOCR\TesseractOCR;
-
-
-
-
-
-Route::post('/ocr/scan', function (Request $request) {
-    if (!$request->hasFile('image')) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Vui lòng upload file với key là image'
-        ], 400);
-    }
-
-    $image = $request->file('image');
-
-    try {
-        $text = (new TesseractOCR($image->getRealPath()))
-            ->executable('C:\\Program Files\\Tesseract-OCR\\tesseract.exe')
-            ->lang('vie')
-            ->run();
-
-        return response()->json([
-            'success' => true,
-            'text' => trim($text)
-        ]);
-    } catch (\Throwable $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'OCR failed',
-            'error' => $e->getMessage()
-        ], 500);
-    }
-});
-// routes/api.php
+use App\Http\Controllers\AnswerController;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\OcrController;
+use App\Http\Controllers\QuestionController;
+use App\Http\Controllers\QuizAttemptController;
+use App\Http\Controllers\QuizController;
+use App\Http\Controllers\UserController;
 
 Route::get('/test', function () {
     return response()->json([
@@ -45,12 +16,38 @@ Route::get('/test', function () {
         'message' => 'API test success',
         'data' => [
             'name' => 'QuizFlex',
-            'version' => '1.0.0',
-            'author' => 'Quoc Anh'
-        ]
+            'version' => '1.1.0',
+            'author' => 'QuizFlex Team',
+        ],
     ]);
 });
 
+Route::post('/ocr/scan', [OcrController::class, 'scan']);
+
+Route::post('/auth/login', [AuthController::class, 'login']);
+Route::post('/auth/register', [AuthController::class, 'register']);
+
+Route::apiResource('users', UserController::class);
+
+Route::apiResource('quizzes', QuizController::class);
+
+Route::get('/quizzes/{quiz}/questions', [QuestionController::class, 'index']);
+Route::post('/quizzes/{quiz}/questions', [QuestionController::class, 'store']);
+Route::get('/questions/{question}', [QuestionController::class, 'show']);
+Route::put('/questions/{question}', [QuestionController::class, 'update']);
+Route::patch('/questions/{question}', [QuestionController::class, 'update']);
+Route::delete('/questions/{question}', [QuestionController::class, 'destroy']);
+
+Route::post('/questions/{question}/answers', [AnswerController::class, 'store']);
+Route::put('/answers/{answer}', [AnswerController::class, 'update']);
+Route::patch('/answers/{answer}', [AnswerController::class, 'update']);
+Route::delete('/answers/{answer}', [AnswerController::class, 'destroy']);
+
+Route::get('/quiz-attempts', [QuizAttemptController::class, 'index']);
+Route::get('/quiz-attempts/{quizAttempt}', [QuizAttemptController::class, 'show']);
+Route::post('/quizzes/{quiz}/attempts/start', [QuizAttemptController::class, 'start']);
+Route::post('/quizzes/{quiz}/attempts/submit', [QuizAttemptController::class, 'submit']);
+Route::post('/quizzes/{quiz}/attempts', [QuizAttemptController::class, 'submit']);
 
 Route::get('/user', function (Request $request) {
     return $request->user();

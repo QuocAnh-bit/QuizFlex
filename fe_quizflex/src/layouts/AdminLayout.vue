@@ -10,9 +10,9 @@
           <div class="rounded-[1.75rem] border border-[var(--border)] bg-[var(--surface)] p-4 shadow-[var(--shadow-card)]">
             <BrandLogo to="/admin" />
             <div class="mt-5 rounded-3xl border border-[var(--border-strong)] bg-[var(--chip-active)] p-4">
-              <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Mock role</p>
-              <h3 class="mt-1 text-2xl font-black tracking-[-0.05em] text-[var(--text)]">{{ roleLabels[currentRole] }} Console</h3>
-              <p class="mt-2 text-xs font-bold leading-5 text-[var(--muted)]">FE đang dùng dữ liệu giả để mô phỏng Admin/VIP/User.</p>
+              <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Admin console</p>
+              <h3 class="mt-1 text-2xl font-black tracking-[-0.05em] text-[var(--text)]">QuizFlex Management</h3>
+              <p class="mt-2 text-xs font-bold leading-5 text-[var(--muted)]">Quản lý quiz, câu hỏi, lượt làm bài và người dùng từ dữ liệu backend.</p>
             </div>
           </div>
 
@@ -54,7 +54,6 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import BrandLogo from '@/components/common/BrandLogo.vue'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
-import { currentRole, roleLabels } from '@/data/demoData'
 
 const route = useRoute()
 
