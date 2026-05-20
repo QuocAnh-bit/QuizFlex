@@ -142,8 +142,9 @@ class QuizAttemptController extends Controller
                 ];
             }
 
-            $timeSpent = $data['time_spent_seconds'] ?? null;
-            if ($timeSpent === null && $attempt->started_at) {
+            // Calculate time spent strictly on server time to prevent client-side time cheating
+            $timeSpent = 0;
+            if ($attempt->started_at) {
                 $timeSpent = max(0, $attempt->started_at->diffInSeconds(now()));
             }
 

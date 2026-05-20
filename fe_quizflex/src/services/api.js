@@ -7,9 +7,68 @@ const api = axios.create({
   },
 })
 
+api.interceptors.request.use((config) => {
+  const token = tokenStorage.get()
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+})
+
+let isRefreshing = false
+let failedQueue = []
+
+const processQueue = (error, token = null) => {
+  failedQueue.forEach(prom => {
+    if (error) prom.reject(error)
+    else prom.resolve(token)
+  })
+  failedQueue = []
+}
+
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
+    const originalRequest = error.config
+
+    if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url?.includes('/auth/login') && !originalRequest.url?.includes('/auth/refresh')) {
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject })
+        }).then(token => {
+          originalRequest.headers.Authorization = `Bearer ${token}`
+          return api(originalRequest)
+        }).catch(err => Promise.reject(err))
+      }
+
+      originalRequest._retry = true
+      isRefreshing = true
+
+      try {
+        const token = tokenStorage.get()
+        if (!token) throw new Error('No token')
+
+        const baseURL = import.meta.env.VITE_API_BASE_URL || '/api'
+        const { data } = await axios.post(`${baseURL}/auth/refresh`, {}, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+
+        const newToken = data.token
+        tokenStorage.set(newToken)
+        originalRequest.headers.Authorization = `Bearer ${newToken}`
+        
+        processQueue(null, newToken)
+        return api(originalRequest)
+      } catch (err) {
+        processQueue(err, null)
+        authApi.logout()
+        window.location.href = '/login'
+        return Promise.reject(err)
+      } finally {
+        isRefreshing = false
+      }
+    }
+
     const message = error.response?.data?.message || error.message || 'API request failed'
     return Promise.reject(new Error(message))
   },
@@ -21,6 +80,18 @@ const unwrapCollection = (payload) => {
   if (Array.isArray(body)) return body
   if (Array.isArray(body?.data)) return body.data
   return []
+}
+
+export const tokenStorage = {
+  get() {
+    return localStorage.getItem('quizflex_access_token')
+  },
+  set(token) {
+    localStorage.setItem('quizflex_access_token', token)
+  },
+  clear() {
+    localStorage.removeItem('quizflex_access_token')
+  },
 }
 
 
@@ -45,6 +116,7 @@ export const authApi = {
   async login(payload) {
     const { data } = await api.post('/auth/login', payload)
     const user = unwrap(data)
+    if (data.token) tokenStorage.set(data.token)
     currentUserStorage.set(user)
     return user
   },
@@ -52,9 +124,14 @@ export const authApi = {
   async register(payload) {
     const { data } = await api.post('/auth/register', payload)
     const user = unwrap(data)
-    currentUserStorage.set(user)
+    // Do NOT automatically log in on registration to allow a manual login flow
     return user
   },
+
+  logout() {
+    tokenStorage.clear()
+    currentUserStorage.clear()
+  }
 }
 
 export const usersApi = {

@@ -11,24 +11,25 @@ class AuthController extends Controller
 {
     public function login(Request $request)
     {
-        $data = $request->validate([
+        $credentials = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required', 'string'],
         ]);
 
-        $user = User::where('email', $data['email'])->first();
-
-        if (!$user || !Hash::check($data['password'], $user->password)) {
+        if (! $token = auth('api')->attempt($credentials)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Email hoặc mật khẩu không đúng',
             ], 422);
         }
 
+        $user = auth('api')->user();
+
         return response()->json([
             'success' => true,
             'message' => 'Đăng nhập thành công',
             'data' => $this->formatUser($user),
+            'token' => $token,
         ]);
     }
 
@@ -38,22 +39,58 @@ class AuthController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:6', 'max:255'],
-            'role' => ['nullable', Rule::in(['USER', 'VIP', 'user', 'vip'])],
         ]);
 
         $user = User::create([
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
-            'role' => strtoupper($data['role'] ?? 'USER'),
-            'ai_quota_remaining' => strtoupper($data['role'] ?? 'USER') === 'VIP' ? 500 : 5,
+            'role' => 'USER',
+            'ai_quota_remaining' => 5,
         ]);
+
+        $token = auth('api')->login($user);
 
         return response()->json([
             'success' => true,
             'message' => 'Tạo tài khoản thành công',
             'data' => $this->formatUser($user),
+            'token' => $token,
         ], 201);
+    }
+
+    public function refresh()
+    {
+        try {
+            return response()->json([
+                'success' => true,
+                'message' => 'Làm mới token thành công',
+                'token' => auth('api')->refresh(),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Token không hợp lệ hoặc đã bị vô hiệu hóa',
+            ], 401);
+        }
+    }
+
+    public function me()
+    {
+        return response()->json([
+            'success' => true,
+            'data' => $this->formatUser(auth('api')->user()),
+        ]);
+    }
+
+    public function logout()
+    {
+        auth('api')->logout();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Đăng xuất thành công',
+        ]);
     }
 
     private function formatUser(User $user): array

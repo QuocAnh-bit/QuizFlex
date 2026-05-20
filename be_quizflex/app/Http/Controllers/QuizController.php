@@ -8,12 +8,24 @@ use App\Models\Quiz;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 
 class QuizController extends Controller
 {
     public function index(Request $request)
     {
+        $user = null;
+        if (auth('api')->parser()->hasToken()) {
+            try {
+                $user = auth('api')->parseToken()->authenticate();
+            } catch (\PHPOpenSourceSaver\JWTAuth\Exceptions\TokenExpiredException $e) {
+                return response()->json(['message' => 'Unauthenticated.'], 401);
+            } catch (\Exception $e) {
+                $user = null;
+            }
+        }
+
         $query = Quiz::query()
             ->with('user:id,name')
             ->withCount(['questions', 'attempts'])
@@ -43,15 +55,31 @@ class QuizController extends Controller
             $query->where('status', $request->query('status'));
         }
 
+        $isAdminOrVip = $user && in_array(strtolower($user->role ?? ''), ['admin', 'vip']);
+
         if ($request->filled('visibility')) {
             $visibility = $request->query('visibility');
             if ($visibility === 'public') {
                 $query->where('is_public', true)->where('status', 'published');
             } elseif ($visibility === 'private') {
                 $query->where('is_public', false)->whereNull('room_code');
+                if (!$isAdminOrVip) {
+                    $query->where('user_id', $user?->id ?? -1);
+                }
             } elseif ($visibility === 'group') {
                 $query->whereNotNull('room_code');
             }
+        } else {
+            $query->where(function ($q) use ($user, $isAdminOrVip) {
+                $q->where('is_public', true)->where('status', 'published');
+                if ($user) {
+                    if ($isAdminOrVip) {
+                        $q->orWhereNotNull('id');
+                    } else {
+                        $q->orWhere('user_id', $user->id);
+                    }
+                }
+            });
         }
 
         $perPage = min(max((int) $request->query('per_page', 50), 1), 100);
@@ -85,6 +113,19 @@ class QuizController extends Controller
 
     public function show(Quiz $quiz)
     {
+        $user = null;
+        if (auth('api')->parser()->hasToken()) {
+            try {
+                $user = auth('api')->parseToken()->authenticate();
+            } catch (\PHPOpenSourceSaver\JWTAuth\Exceptions\TokenExpiredException $e) {
+                return response()->json(['message' => 'Unauthenticated.'], 401);
+            } catch (\Exception $e) {
+                $user = null;
+            }
+        }
+
+        Gate::forUser($user)->authorize('view', $quiz);
+
         $quiz->load(['user:id,name', 'questions.answers'])
             ->loadCount(['questions', 'attempts'])
             ->loadAvg(['attempts as avg_score' => fn ($q) => $q->where('status', 'completed')], 'score');
@@ -98,6 +139,8 @@ class QuizController extends Controller
 
     public function update(Request $request, Quiz $quiz)
     {
+        Gate::forUser(auth('api')->user())->authorize('update', $quiz);
+
         $data = $this->validateQuizPayload($request, true);
 
         $quiz = DB::transaction(function () use ($quiz, $data) {
@@ -119,6 +162,8 @@ class QuizController extends Controller
 
     public function destroy(Quiz $quiz)
     {
+        Gate::forUser(auth('api')->user())->authorize('delete', $quiz);
+
         $quiz->delete();
 
         return response()->json([

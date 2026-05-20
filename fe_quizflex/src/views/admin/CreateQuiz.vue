@@ -91,8 +91,8 @@ const form = reactive({
   durationMinutes: 12,
   difficulty: 'medium',
   category: 'Khoa học',
-  visibility: 'public',
-  roomCode: '',
+  visibility: route.query.visibility === 'group' ? 'group' : 'public',
+  roomCode: route.query.visibility === 'group' ? `GR${Math.floor(1000 + Math.random() * 9000)}` : '',
 })
 
 const makeBlankQuestion = () => ({
