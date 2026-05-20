@@ -10,10 +10,15 @@
         "laravel/framework": "^13.8",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^3.0",
+        "openai-php/client": "^0.19.2",
+        "php-open-source-saver/jwt-auth": "2.9",
+        "smalot/pdfparser": "^2.12",
+        "spatie/pdf-to-image": "^1.2",
         "thiagoalessio/tesseract_ocr": "^2.13"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
+        "kitloong/laravel-migrations-generator": "^7.4",
         "laravel/pail": "^1.2.5",
         "laravel/pao": "^1.0.6",
         "laravel/pint": "^1.27",

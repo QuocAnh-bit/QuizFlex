@@ -7,6 +7,29 @@ use Illuminate\Database\Eloquent\Model;
 
 class Question extends Model
 {
-    /** @use HasFactory<\Database\Factories\QuestionFactory> */
     use HasFactory;
+
+    protected $fillable = [
+        'quiz_id',
+        'content',
+        'image_url',
+        'type',
+        'order',
+        'points',
+    ];
+
+    protected $casts = [
+        'order' => 'integer',
+        'points' => 'integer',
+    ];
+
+    public function quiz()
+    {
+        return $this->belongsTo(Quiz::class);
+    }
+
+    public function answers()
+    {
+        return $this->hasMany(Answer::class)->orderBy('order');
+    }
 }
