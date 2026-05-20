@@ -4,7 +4,7 @@
       <div class="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[var(--accent)]/15 blur-3xl"></div>
       <div class="relative z-10 flex flex-col justify-between gap-5 xl:flex-row xl:items-end">
         <div><p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Room Management</p><h1 class="mt-2 text-4xl font-black tracking-[-0.06em] text-[var(--text)]">Room quiz</h1><p class="mt-3 max-w-2xl text-sm leading-7 text-[var(--muted)]">Danh sách room lấy từ các quiz có room_code trong backend.</p></div>
-        <router-link class="btn-primary" to="/admin/questions/create">Tạo group quiz</router-link>
+        <router-link class="btn-primary" to="/admin/questions/create?visibility=group">Tạo group quiz</router-link>
       </div>
     </div>
 

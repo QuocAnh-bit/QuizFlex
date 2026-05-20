@@ -8,12 +8,25 @@ use App\Models\Quiz;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 class QuizController extends Controller
 {
     public function index(Request $request)
     {
+        $user = null;
+        if (auth('api')->parser()->hasToken()) {
+            try {
+                $user = auth('api')->parseToken()->authenticate();
+            } catch (\PHPOpenSourceSaver\JWTAuth\Exceptions\TokenExpiredException $e) {
+                return response()->json(['message' => 'Unauthenticated.'], 401);
+            } catch (\Exception $e) {
+                $user = null;
+            }
+        }
+
         $query = Quiz::query()
             ->with('user:id,name')
             ->withCount(['questions', 'attempts'])
@@ -43,15 +56,31 @@ class QuizController extends Controller
             $query->where('status', $request->query('status'));
         }
 
+        $isAdminOrVip = $user && in_array(strtolower($user->role ?? ''), ['admin', 'vip']);
+
         if ($request->filled('visibility')) {
             $visibility = $request->query('visibility');
             if ($visibility === 'public') {
                 $query->where('is_public', true)->where('status', 'published');
             } elseif ($visibility === 'private') {
                 $query->where('is_public', false)->whereNull('room_code');
+                if (!$isAdminOrVip) {
+                    $query->where('user_id', $user?->id ?? -1);
+                }
             } elseif ($visibility === 'group') {
                 $query->whereNotNull('room_code');
             }
+        } else {
+            $query->where(function ($q) use ($user, $isAdminOrVip) {
+                $q->where('is_public', true)->where('status', 'published');
+                if ($user) {
+                    if ($isAdminOrVip) {
+                        $q->orWhereNotNull('id');
+                    } else {
+                        $q->orWhere('user_id', $user->id);
+                    }
+                }
+            });
         }
 
         $perPage = min(max((int) $request->query('per_page', 50), 1), 100);
@@ -66,7 +95,7 @@ class QuizController extends Controller
 
     public function store(Request $request)
     {
-        $data = $this->validateQuizPayload($request);
+        $data = $this->prepareQuizData($request, $this->validateQuizPayload($request));
         $user = $this->resolveUser($request);
 
         $quiz = DB::transaction(function () use ($data, $user) {
@@ -85,6 +114,19 @@ class QuizController extends Controller
 
     public function show(Quiz $quiz)
     {
+        $user = null;
+        if (auth('api')->parser()->hasToken()) {
+            try {
+                $user = auth('api')->parseToken()->authenticate();
+            } catch (\PHPOpenSourceSaver\JWTAuth\Exceptions\TokenExpiredException $e) {
+                return response()->json(['message' => 'Unauthenticated.'], 401);
+            } catch (\Exception $e) {
+                $user = null;
+            }
+        }
+
+        Gate::forUser($user)->authorize('view', $quiz);
+
         $quiz->load(['user:id,name', 'questions.answers'])
             ->loadCount(['questions', 'attempts'])
             ->loadAvg(['attempts as avg_score' => fn ($q) => $q->where('status', 'completed')], 'score');
@@ -98,10 +140,12 @@ class QuizController extends Controller
 
     public function update(Request $request, Quiz $quiz)
     {
-        $data = $this->validateQuizPayload($request, true);
+        Gate::forUser(auth('api')->user())->authorize('update', $quiz);
+
+        $data = $this->prepareQuizData($request, $this->validateQuizPayload($request, true), $quiz);
 
         $quiz = DB::transaction(function () use ($quiz, $data) {
-            $quiz->update($this->quizAttributes($data, $quiz->user_id));
+            $quiz->update($this->quizAttributes($data, $quiz->user_id, $quiz));
 
             if (array_key_exists('questions', $data)) {
                 $this->syncQuestions($quiz, $data['questions']);
@@ -119,6 +163,8 @@ class QuizController extends Controller
 
     public function destroy(Quiz $quiz)
     {
+        Gate::forUser(auth('api')->user())->authorize('delete', $quiz);
+
         $quiz->delete();
 
         return response()->json([
@@ -143,7 +189,9 @@ class QuizController extends Controller
             'time_limit_seconds' => ['nullable', 'integer', 'min:30', 'max:86400'],
             'duration_minutes' => ['nullable', 'integer', 'min:1', 'max:1440'],
             'duration' => ['nullable', 'string', 'max:50'],
-            'cover' => ['nullable', 'string', 'max:255'],
+            'cover' => ['nullable', 'string', 'max:2048'],
+            'cover_file' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:4096'],
+            'remove_cover' => ['nullable', 'boolean'],
             'icon' => ['nullable', 'string', 'max:32'],
             'badge' => ['nullable', 'string', 'max:32'],
             'user_id' => ['nullable', 'integer', 'exists:users,id'],
@@ -165,11 +213,65 @@ class QuizController extends Controller
         ]);
     }
 
-    private function quizAttributes(array $data, int $userId): array
+    private function prepareQuizData(Request $request, array $data, ?Quiz $quiz = null): array
+    {
+        if ($request->hasFile('cover_file')) {
+            $this->deleteStoredCover($quiz?->cover);
+            $path = $request->file('cover_file')->store('quiz-covers', 'public');
+            $data['cover'] = $this->storedCoverPublicUrl($path);
+        } elseif ($request->boolean('remove_cover')) {
+            $this->deleteStoredCover($quiz?->cover);
+            $data['cover'] = null;
+        }
+
+        return $data;
+    }
+
+    private function storedCoverPublicUrl(string $path): string
+    {
+        return url(Storage::url($path));
+    }
+
+    private function resolveCoverForResponse(?string $cover): ?string
+    {
+        if (!$cover) {
+            return null;
+        }
+
+        if (str_starts_with($cover, '/storage/')) {
+            return url($cover);
+        }
+
+        return $cover;
+    }
+
+    private function deleteStoredCover(?string $cover): void
+    {
+        if (!$cover) {
+            return;
+        }
+
+        $path = parse_url($cover, PHP_URL_PATH) ?: $cover;
+
+        if (!str_starts_with($path, '/storage/quiz-covers/')) {
+            return;
+        }
+
+        Storage::disk('public')->delete(str_replace('/storage/', '', $path));
+    }
+
+    private function quizAttributes(array $data, int $userId, ?Quiz $currentQuiz = null): array
     {
         $visibility = $data['visibility'] ?? null;
-        $roomCode = $data['room_code'] ?? $data['roomCode'] ?? null;
-        $isPublic = array_key_exists('is_public', $data) ? (bool) $data['is_public'] : ($visibility === 'public');
+        $roomCode = $data['room_code'] ?? $data['roomCode'] ?? $currentQuiz?->room_code;
+        $isPublic = array_key_exists('is_public', $data)
+            ? (bool) $data['is_public']
+            : ($visibility === null && $currentQuiz ? (bool) $currentQuiz->is_public : $visibility === 'public');
+
+        if ($visibility === 'public') {
+            $isPublic = true;
+            $roomCode = null;
+        }
 
         if ($visibility === 'private') {
             $isPublic = false;
@@ -180,20 +282,22 @@ class QuizController extends Controller
             $isPublic = false;
         }
 
+        $category = $data['category'] ?? $currentQuiz?->category ?? 'General';
+
         return [
             'user_id' => $userId,
-            'title' => $data['title'] ?? 'Untitled quiz',
-            'description' => $data['description'] ?? null,
-            'category' => $data['category'] ?? 'General',
-            'tag' => $data['tag'] ?? null,
-            'difficulty' => $this->normalizeDifficulty($data['difficulty'] ?? 'medium'),
-            'status' => $data['status'] ?? ($isPublic ? 'published' : 'draft'),
+            'title' => $data['title'] ?? $currentQuiz?->title ?? 'Untitled quiz',
+            'description' => array_key_exists('description', $data) ? $data['description'] : $currentQuiz?->description,
+            'category' => $category,
+            'tag' => array_key_exists('tag', $data) ? $data['tag'] : $currentQuiz?->tag,
+            'difficulty' => $this->normalizeDifficulty($data['difficulty'] ?? $currentQuiz?->difficulty ?? 'medium'),
+            'status' => $data['status'] ?? $currentQuiz?->status ?? ($isPublic ? 'published' : 'draft'),
             'is_public' => $isPublic,
             'room_code' => $roomCode,
-            'time_limit_seconds' => $this->resolveTimeLimitSeconds($data),
-            'cover' => $data['cover'] ?? null,
-            'icon' => $data['icon'] ?? null,
-            'badge' => $data['badge'] ?? null,
+            'time_limit_seconds' => $this->resolveTimeLimitSeconds($data, $currentQuiz),
+            'cover' => array_key_exists('cover', $data) ? ($data['cover'] ?: null) : $currentQuiz?->cover,
+            'icon' => array_key_exists('icon', $data) ? ($data['icon'] ?: null) : $currentQuiz?->icon,
+            'badge' => array_key_exists('badge', $data) ? ($data['badge'] ?: strtoupper(substr($category, 0, 4))) : $currentQuiz?->badge,
         ];
     }
 
@@ -290,7 +394,7 @@ class QuizController extends Controller
         );
     }
 
-    private function resolveTimeLimitSeconds(array $data): ?int
+    private function resolveTimeLimitSeconds(array $data, ?Quiz $currentQuiz = null): ?int
     {
         if (isset($data['time_limit_seconds'])) {
             return (int) $data['time_limit_seconds'];
@@ -304,7 +408,7 @@ class QuizController extends Controller
             return (int) $matches[0] * 60;
         }
 
-        return 600;
+        return $currentQuiz?->time_limit_seconds ?? 600;
     }
 
     private function normalizeDifficulty(?string $difficulty): string
@@ -340,7 +444,7 @@ class QuizController extends Controller
             'attempts_count' => $quiz->attempts_count ?? $quiz->attempts()->count(),
             'avg_score' => round((float) ($quiz->avg_score ?? 0), 2),
             'author' => $quiz->user?->name ?? 'QuizFlex',
-            'cover' => $quiz->cover ?? 'linear-gradient(135deg, #0f172a, #7c3aed)',
+            'cover' => $this->resolveCoverForResponse($quiz->cover) ?? 'linear-gradient(135deg, #0f172a, #7c3aed)',
             'icon' => $quiz->icon ?? 'QZ',
             'badge' => $quiz->badge ?? strtoupper(substr($quiz->category ?? 'Quiz', 0, 4)),
             'created_at' => $quiz->created_at,

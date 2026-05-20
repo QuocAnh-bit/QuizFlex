@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -29,16 +30,30 @@ return new class extends Migration
                 $table->string('badge', 32)->nullable()->after('icon');
             }
         });
+
+        $this->makeCoverColumnText();
     }
 
     public function down(): void
     {
-        Schema::table('quizzes', function (Blueprint $table) {
-            foreach (['badge', 'icon', 'cover', 'room_code', 'tag'] as $column) {
-                if (Schema::hasColumn('quizzes', $column)) {
-                    $table->dropColumn($column);
-                }
-            }
-        });
+        // Không drop cột ở đây để tránh mất dữ liệu ảnh bìa khi rollback nhầm.
+    }
+
+    private function makeCoverColumnText(): void
+    {
+        if (!Schema::hasColumn('quizzes', 'cover')) {
+            return;
+        }
+
+        $driver = DB::getDriverName();
+
+        if (in_array($driver, ['mysql', 'mariadb'], true)) {
+            DB::statement('ALTER TABLE quizzes MODIFY cover TEXT NULL');
+            return;
+        }
+
+        if ($driver === 'pgsql') {
+            DB::statement('ALTER TABLE quizzes ALTER COLUMN cover TYPE TEXT');
+        }
     }
 };

@@ -10,9 +10,9 @@
           <div class="rounded-[1.75rem] border border-[var(--border)] bg-[var(--surface)] p-4 shadow-[var(--shadow-card)]">
             <BrandLogo to="/admin" />
             <div class="mt-5 rounded-3xl border border-[var(--border-strong)] bg-[var(--chip-active)] p-4">
-              <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Admin console</p>
-              <h3 class="mt-1 text-2xl font-black tracking-[-0.05em] text-[var(--text)]">QuizFlex Management</h3>
-              <p class="mt-2 text-xs font-bold leading-5 text-[var(--muted)]">Quản lý quiz, câu hỏi, lượt làm bài và người dùng từ dữ liệu backend.</p>
+              <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">{{ isAdmin ? 'Admin Console' : 'Creator Workspace' }}</p>
+              <h3 class="mt-1 text-2xl font-black tracking-[-0.05em] text-[var(--text)]">QuizFlex Console</h3>
+              <p class="mt-2 text-xs font-bold leading-5 text-[var(--muted)]">Quản lý không gian sáng tạo quiz và các tính năng nâng cao của bạn.</p>
             </div>
           </div>
 
@@ -55,20 +55,33 @@ import { useRoute } from 'vue-router'
 import BrandLogo from '@/components/common/BrandLogo.vue'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
 
-const route = useRoute()
+import { currentUserStorage } from '@/services/api'
 
-const menu = [
-  { label: 'Tổng quan', to: '/admin', icon: 'DB' },
-  { label: 'Kho quiz', to: '/admin/questions', icon: 'QZ' },
-  { label: 'Tạo quiz', to: '/admin/questions/create', icon: '+' },
-  { label: 'AI Generator', to: '/admin/questions/ai', icon: 'AI' },
-  { label: 'OCR Upload', to: '/admin/questions/ocr', icon: 'OC' },
-  { label: 'Room', to: '/admin/rooms', icon: 'RT' },
-  { label: 'Report', to: '/admin/reports', icon: 'RP' },
-  { label: 'Payment', to: '/admin/payments', icon: '$' },
-  { label: 'Users', to: '/admin/users', icon: 'US' },
-  { label: 'Settings', to: '/admin/settings', icon: 'ST' },
-]
+const route = useRoute()
+const currentUser = computed(() => currentUserStorage.get())
+const isAdmin = computed(() => String(currentUser.value?.role || '').toLowerCase() === 'admin')
+
+const menu = computed(() => {
+  const base = [
+    { label: 'Kho quiz', to: '/admin/questions', icon: 'QZ' },
+    { label: 'Tạo quiz', to: '/admin/questions/create', icon: '+' },
+    { label: 'AI Generator', to: '/admin/questions/ai', icon: 'AI' },
+    { label: 'OCR Upload', to: '/admin/questions/ocr', icon: 'OC' },
+    { label: 'Room', to: '/admin/rooms', icon: 'RT' },
+  ]
+  
+  if (isAdmin.value) {
+    base.unshift({ label: 'Tổng quan', to: '/admin', icon: 'DB' })
+    base.push(
+      { label: 'Report', to: '/admin/reports', icon: 'RP' },
+      { label: 'Payment', to: '/admin/payments', icon: '$' },
+      { label: 'Users', to: '/admin/users', icon: 'US' },
+      { label: 'Settings', to: '/admin/settings', icon: 'ST' },
+    )
+  }
+  
+  return base
+})
 
 const pageTitle = computed(() => route.meta.title || 'Dashboard')
 

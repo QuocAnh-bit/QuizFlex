@@ -50,45 +50,65 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import VisibilityBadge from '@/components/common/VisibilityBadge.vue'
-import { attemptsApi, normalizeQuizCard, quizzesApi, usersApi } from '@/services/api'
+import { attemptsApi, currentUserStorage, normalizeQuizCard, quizzesApi, usersApi } from '@/services/api'
 
 const quizzes = ref([])
 const attempts = ref([])
 const users = ref([])
+const currentUser = computed(() => currentUserStorage.get())
+const isAdmin = computed(() => String(currentUser.value?.role || '').toLowerCase() === 'admin')
 const isLoading = ref(false)
 const errorMessage = ref('')
 
 const completedAttempts = computed(() => attempts.value.filter((item) => item.status === 'completed'))
 const averageScore = computed(() => completedAttempts.value.length ? Math.round(completedAttempts.value.reduce((sum, item) => sum + Number(item.score_percent || 0), 0) / completedAttempts.value.length) : 0)
 
-const stats = computed(() => [
-  { label: 'Tổng quiz', value: quizzes.value.length, hint: 'Từ bảng quizzes' },
-  { label: 'Lượt làm', value: attempts.value.length, hint: 'Từ bảng quiz_attempts' },
-  { label: 'Điểm TB', value: `${averageScore.value}%`, hint: 'Các lượt completed' },
-  { label: 'Người dùng', value: users.value.length, hint: 'Từ bảng users' },
-])
+const stats = computed(() => {
+  const items = [
+    { label: 'Tổng quiz', value: quizzes.value.length, hint: 'Từ bảng quizzes' },
+    { label: 'Lượt làm', value: attempts.value.length, hint: 'Từ bảng quiz_attempts' },
+    { label: 'Điểm TB', value: `${averageScore.value}%`, hint: 'Các lượt completed' },
+  ]
+
+  if (isAdmin.value) {
+    items.push({ label: 'Người dùng', value: users.value.length, hint: 'Từ bảng users' })
+  }
+
+  return items
+})
 
 const reportRows = computed(() => quizzes.value.slice(0, 5))
 
-const quickLinks = [
-  { title: 'Tạo quiz thủ công', desc: 'Tạo quiz kèm câu hỏi và đáp án, lưu trực tiếp vào backend.', to: '/admin/questions/create' },
-  { title: 'Kho quiz', desc: 'Tìm kiếm, lọc, sửa và xóa mềm quiz.', to: '/admin/questions' },
-  { title: 'Kết quả làm bài', desc: 'Xem lượt làm bài đã lưu trong quiz_attempts.', to: '/results' },
-  { title: 'Người dùng', desc: 'Tạo, sửa role và quản lý danh sách user.', to: '/admin/users' },
-]
+const quickLinks = computed(() => {
+  const links = [
+    { title: 'Tạo quiz thủ công', desc: 'Tạo quiz kèm câu hỏi và đáp án, lưu trực tiếp vào backend.', to: '/admin/questions/create' },
+    { title: 'Kho quiz', desc: 'Tìm kiếm, lọc, sửa và xóa mềm quiz.', to: '/admin/questions' },
+    { title: 'Kết quả làm bài', desc: 'Xem lượt làm bài đã lưu trong quiz_attempts.', to: '/results' },
+  ]
+
+  if (isAdmin.value) {
+    links.push({ title: 'Người dùng', desc: 'Tạo, sửa role và quản lý danh sách user.', to: '/admin/users' })
+  }
+
+  return links
+})
 
 const loadDashboard = async () => {
   isLoading.value = true
   errorMessage.value = ''
   try {
-    const [quizData, attemptData, userData] = await Promise.all([
+    const [quizData, attemptData] = await Promise.all([
       quizzesApi.list({ per_page: 100 }),
       attemptsApi.list({ per_page: 100 }),
-      usersApi.list({ per_page: 100 }),
     ])
     quizzes.value = quizData.map(normalizeQuizCard)
     attempts.value = attemptData
-    users.value = userData
+
+    if (isAdmin.value) {
+      users.value = await usersApi.list({ per_page: 100 })
+    } else {
+      users.value = []
+    }
   } catch (error) {
     errorMessage.value = `Không tải được dashboard: ${error.message}`
   } finally {
