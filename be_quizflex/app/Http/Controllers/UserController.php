@@ -130,7 +130,7 @@ class UserController extends Controller
                 'GUEST' => 'Guest',
                 default => 'Thường',
             },
-            'avatar' => $user->avatar,
+            'avatar' => $this->resolveAvatarForResponse($user->avatar),
             'ai_quota_remaining' => $user->ai_quota_remaining,
             'vip_expires_at' => $user->vip_expires_at,
             'quizzes_count' => $user->quizzes_count ?? $user->quizzes()->count(),
@@ -141,4 +141,18 @@ class UserController extends Controller
             'updated_at' => $user->updated_at,
         ];
     }
+
+    private function resolveAvatarForResponse(?string $avatar): ?string
+    {
+        if (!$avatar) {
+            return null;
+        }
+
+        if (str_starts_with($avatar, '/storage/')) {
+            return url($avatar);
+        }
+
+        return $avatar;
+    }
+
 }

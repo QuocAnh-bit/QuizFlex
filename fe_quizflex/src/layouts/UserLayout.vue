@@ -64,7 +64,7 @@
             </template>
             <template v-else>
               <div class="flex items-center gap-3 rounded-full border border-[var(--border)] bg-[var(--surface-soft)] pl-1.5 pr-4 py-1.5">
-                 <div class="h-8 w-8 rounded-full bg-[var(--primary)] text-white grid place-items-center font-bold text-xs">{{ currentUser.name.charAt(0).toUpperCase() }}</div>
+                 <UserAvatar :user="currentUser" size-class="h-8 w-8" text-class="text-xs" ring-class="ring-2 ring-white/10" />
                  <div class="grid leading-tight"><span class="text-xs font-black text-[var(--text)]">{{ currentUser.name }}</span><span class="text-[10px] font-bold text-[var(--primary)] uppercase">{{ currentUser.role }}</span></div>
                  <button @click="handleLogout" class="ml-2 text-xs font-black text-rose-500 hover:text-rose-400">Đăng xuất</button>
               </div>
@@ -133,6 +133,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 import BrandLogo from '@/components/common/BrandLogo.vue'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
+import UserAvatar from '@/components/common/UserAvatar.vue'
 import { currentUserStorage, authApi } from '@/services/api'
 
 const route = useRoute()
@@ -141,6 +142,10 @@ const router = useRouter()
 const isMenuOpen = ref(false)
 const isScrolled = ref(false)
 const currentUser = ref(currentUserStorage.get())
+
+const syncCurrentUser = (event) => {
+  currentUser.value = event?.detail ?? currentUserStorage.get()
+}
 
 const handleLogout = () => {
   const email = currentUser.value?.email || ''
@@ -287,10 +292,15 @@ const getMobileNavLinkClass = (item) => {
 
 onMounted(() => {
   handleScroll()
+  currentUser.value = currentUserStorage.get()
   window.addEventListener('scroll', handleScroll, { passive: true })
+  window.addEventListener('quizflex-user-updated', syncCurrentUser)
+  window.addEventListener('storage', syncCurrentUser)
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('scroll', handleScroll)
+  window.removeEventListener('quizflex-user-updated', syncCurrentUser)
+  window.removeEventListener('storage', syncCurrentUser)
 })
 </script>

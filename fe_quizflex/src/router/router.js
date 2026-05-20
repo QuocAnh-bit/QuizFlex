@@ -17,7 +17,7 @@ const routes = [
   { path: '/register', name: 'register', component: () => import('@/views/auth/Register.vue'), meta: { layout: 'auth', title: 'Đăng ký' } },
   { path: '/forgot-password', name: 'forgot-password', component: () => import('@/views/auth/ForgotPassword.vue'), meta: { layout: 'auth', title: 'Quên mật khẩu' } },
 
-  { path: '/admin', name: 'admin-dashboard', component: () => import('@/views/admin/Dashboard.vue'), meta: { layout: 'admin', title: 'Dashboard', requiresAdmin: true } },
+  { path: '/admin', name: 'admin-dashboard', component: () => import('@/views/admin/Dashboard.vue'), meta: { layout: 'admin', title: 'Dashboard' } },
   { path: '/admin/questions', name: 'admin-questions', component: () => import('@/views/admin/Question.vue'), meta: { layout: 'admin', title: 'Kho quiz' } },
   { path: '/admin/questions/create', name: 'admin-question-create', component: () => import('@/views/admin/CreateQuiz.vue'), meta: { layout: 'admin', title: 'Tạo quiz' } },
   { path: '/admin/questions/edit/:id', name: 'admin-question-edit', component: () => import('@/views/admin/CreateQuiz.vue'), meta: { layout: 'admin', title: 'Sửa quiz' } },
@@ -48,7 +48,7 @@ router.beforeEach((to, from, next) => {
 
   // Chặn user đã login quay lại trang login/register
   if (user && isAuthLayout) {
-    return next(user.role === 'admin' ? '/admin' : '/')
+    return next('/admin')
   }
 
   // Yêu cầu login nếu truy cập trang admin

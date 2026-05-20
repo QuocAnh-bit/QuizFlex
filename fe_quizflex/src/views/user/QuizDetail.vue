@@ -3,6 +3,14 @@
     <article class="relative overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-soft)] backdrop-blur-2xl sm:p-8">
       <div class="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[var(--primary)]/15 blur-3xl"></div>
       <div v-if="quiz" class="relative z-10">
+        <div class="mb-7 overflow-hidden rounded-[1.8rem] border border-[var(--border)] shadow-[var(--shadow-card)]">
+          <div class="relative min-h-[260px]" :style="{ background: quiz.cover }">
+            <div class="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-white/10"></div>
+            <div class="absolute left-5 top-5 rounded-full bg-black/55 px-3 py-1 text-[10px] font-black uppercase text-white backdrop-blur">{{ quiz.badge }}</div>
+            <div class="absolute bottom-5 right-5 grid h-16 w-16 place-items-center rounded-3xl bg-white/90 text-base font-black text-slate-950 shadow-xl">{{ quiz.icon }}</div>
+          </div>
+        </div>
+
         <div class="mb-5 flex flex-wrap items-center gap-2">
           <VisibilityBadge :value="quiz.visibility" />
           <span class="rounded-full border border-[var(--border)] bg-[var(--surface-soft)] px-3 py-1 text-xs font-black text-[var(--muted)]">{{ quiz.difficulty }}</span>

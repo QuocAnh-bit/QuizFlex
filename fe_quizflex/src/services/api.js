@@ -105,10 +105,26 @@ export const currentUserStorage = {
     }
   },
   set(user) {
-    localStorage.setItem('quizflex_current_user', JSON.stringify(user))
+    const previous = this.get() || {}
+    const merged = {
+      ...previous,
+      ...(user || {}),
+    }
+
+    if (!merged.name) merged.name = merged.email ? merged.email.split('@')[0] : 'Guest'
+    if (!merged.role) merged.role = 'guest'
+    if (!merged.role_label) merged.role_label = merged.role
+
+    localStorage.setItem('quizflex_current_user', JSON.stringify(merged))
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('quizflex-user-updated', { detail: merged }))
+    }
   },
   clear() {
     localStorage.removeItem('quizflex_current_user')
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('quizflex-user-updated', { detail: null }))
+    }
   },
 }
 
@@ -125,6 +141,28 @@ export const authApi = {
     const { data } = await api.post('/auth/register', payload)
     const user = unwrap(data)
     // Do NOT automatically log in on registration to allow a manual login flow
+    return user
+  },
+
+  async me() {
+    const { data } = await api.get('/auth/me')
+    const user = unwrap(data)
+    currentUserStorage.set(user)
+    return user
+  },
+
+  async updateProfile(payload = {}) {
+    const formData = new FormData()
+    Object.entries(payload).forEach(([key, value]) => {
+      if (value === undefined || value === null || value === '') return
+      formData.append(key, typeof value === 'boolean' ? (value ? '1' : '0') : value)
+    })
+
+    const { data } = await api.post('/auth/profile', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    const user = unwrap(data)
+    currentUserStorage.set(user)
     return user
   },
 
@@ -161,6 +199,44 @@ export const usersApi = {
   },
 }
 
+const isBrowserFile = (value) => typeof File !== 'undefined' && value instanceof File
+
+const payloadHasFile = (value) => {
+  if (isBrowserFile(value)) return true
+  if (Array.isArray(value)) return value.some(payloadHasFile)
+  if (value && typeof value === 'object') return Object.values(value).some(payloadHasFile)
+  return false
+}
+
+const appendFormData = (formData, key, value) => {
+  if (value === undefined || value === null) return
+
+  if (isBrowserFile(value)) {
+    formData.append(key, value)
+    return
+  }
+
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => appendFormData(formData, `${key}[${index}]`, item))
+    return
+  }
+
+  if (typeof value === 'object') {
+    Object.entries(value).forEach(([childKey, childValue]) => appendFormData(formData, `${key}[${childKey}]`, childValue))
+    return
+  }
+
+  formData.append(key, typeof value === 'boolean' ? (value ? '1' : '0') : value)
+}
+
+const toFormData = (payload) => {
+  const formData = new FormData()
+  Object.entries(payload || {}).forEach(([key, value]) => appendFormData(formData, key, value))
+  return formData
+}
+
+const prepareQuizPayload = (payload) => payloadHasFile(payload) ? toFormData(payload) : payload
+
 export const quizzesApi = {
   async list(params = {}) {
     const { data } = await api.get('/quizzes', { params })
@@ -173,12 +249,21 @@ export const quizzesApi = {
   },
 
   async create(payload) {
-    const { data } = await api.post('/quizzes', payload)
+    const body = prepareQuizPayload(payload)
+    const { data } = await api.post('/quizzes', body)
     return unwrap(data)
   },
 
   async update(id, payload) {
-    const { data } = await api.put(`/quizzes/${id}`, payload)
+    const body = prepareQuizPayload(payload)
+
+    if (body instanceof FormData) {
+      body.append('_method', 'PUT')
+      const { data } = await api.post(`/quizzes/${id}`, body)
+      return unwrap(data)
+    }
+
+    const { data } = await api.put(`/quizzes/${id}`, body)
     return unwrap(data)
   },
 
@@ -241,6 +326,20 @@ export const difficultyValue = (value) => ({
   hard: 'hard',
 }[value] || 'medium')
 
+export const defaultQuizCover = 'linear-gradient(135deg, #0f172a, #7c3aed)'
+
+export const coverToBackground = (cover) => {
+  const value = String(cover || '').trim()
+  if (!value) return defaultQuizCover
+  if (/gradient\(/i.test(value)) return value
+
+  const isImageSource = /^(https?:\/\/|\/|data:image\/|blob:)/i.test(value)
+  if (!isImageSource) return value
+
+  const escaped = value.replace(/"/g, '\\"')
+  return `linear-gradient(135deg, rgba(15,23,42,.2), rgba(124,58,237,.24)), url("${escaped}") center / cover no-repeat`
+}
+
 export const normalizeQuizCard = (quiz) => ({
   ...quiz,
   roomCode: quiz.room_code || '',
@@ -249,7 +348,8 @@ export const normalizeQuizCard = (quiz) => ({
   attempts: quiz.attempts_count ?? 0,
   avgScore: Math.round(Number(quiz.avg_score ?? quiz.score_percent ?? 0)),
   rating: quiz.rating || '4.8',
-  cover: quiz.cover || 'linear-gradient(135deg, #0f172a, #7c3aed)',
+  coverSource: quiz.cover || '',
+  cover: coverToBackground(quiz.cover),
   icon: quiz.icon || 'QZ',
   badge: quiz.badge || 'QUIZ',
   author: quiz.author || quiz.user?.name || 'QuizFlex',

@@ -59,7 +59,7 @@ import { currentUserStorage } from '@/services/api'
 
 const route = useRoute()
 const currentUser = computed(() => currentUserStorage.get())
-const isAdmin = computed(() => currentUser.value?.role === 'admin')
+const isAdmin = computed(() => String(currentUser.value?.role || '').toLowerCase() === 'admin')
 
 const menu = computed(() => {
   const base = [

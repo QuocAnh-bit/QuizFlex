@@ -18,7 +18,7 @@ return new class extends Migration
             }
 
             if (!Schema::hasColumn('quizzes', 'cover')) {
-                $table->string('cover', 255)->nullable()->after('time_limit_seconds');
+                $table->text('cover')->nullable()->after('time_limit_seconds');
             }
 
             if (!Schema::hasColumn('quizzes', 'icon')) {
