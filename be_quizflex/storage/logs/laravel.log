@@ -268,3 +268,4 @@
 [2026-05-20 14:43:54] local.INFO: QuizPolicy@view check {"quiz_id":7,"quiz_is_public":true,"room_code":null,"user_id":"null","user_role":"null","quiz_user_id":3} 
 [2026-05-20 15:24:04] local.INFO: QuizPolicy@view check {"quiz_id":5,"quiz_is_public":true,"room_code":null,"user_id":"null","user_role":"null","quiz_user_id":2} 
 [2026-05-20 15:36:10] local.INFO: QuizPolicy@view check {"quiz_id":7,"quiz_is_public":true,"room_code":null,"user_id":"null","user_role":"null","quiz_user_id":3} 
+[2026-05-20 15:43:56] local.INFO: QuizPolicy@view check {"quiz_id":7,"quiz_is_public":true,"room_code":null,"user_id":"null","user_role":"null","quiz_user_id":3} 
