@@ -3,7 +3,7 @@
     <BrandLogo to="/" size="lg" />
     <div class="mt-8 inline-flex rounded-full border border-[var(--border-strong)] bg-[var(--chip-active)] px-4 py-2 text-sm font-black text-[var(--primary)]">Khôi phục tài khoản</div>
     <h1 class="mt-4 text-4xl font-black tracking-[-0.06em] text-[var(--text)]">Quên mật khẩu?</h1>
-    <p class="mt-3 leading-7 text-[var(--muted)]">Nhập email để nhận liên kết đặt lại mật khẩu. Hiện tại là mock FE, chưa gửi mail thật, vì phép màu SMTP chưa được cài.</p>
+    <p class="mt-3 leading-7 text-[var(--muted)]">Nhập email để chuẩn bị luồng khôi phục mật khẩu khi backend mail được cấu hình.</p>
     <form class="mt-8 grid gap-4" @submit.prevent>
       <input class="field" type="email" placeholder="you@example.com" />
       <button class="btn-primary w-full" type="submit">Gửi link khôi phục</button>

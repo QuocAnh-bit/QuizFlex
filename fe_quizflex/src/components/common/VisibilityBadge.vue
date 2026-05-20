@@ -10,7 +10,12 @@
 
 <script setup>
 import { computed } from 'vue'
-import { visibilityLabels } from '@/data/demoData'
+
+const visibilityLabels = {
+  public: { text: 'Public', icon: '🌐', className: 'border-emerald-500/25 bg-emerald-500/10 text-emerald-400' },
+  private: { text: 'Private', icon: '🔒', className: 'border-slate-500/25 bg-slate-500/10 text-slate-300' },
+  group: { text: 'Group', icon: '👥', className: 'border-amber-500/25 bg-amber-500/10 text-amber-400' },
+}
 
 const props = defineProps({
   value: {
