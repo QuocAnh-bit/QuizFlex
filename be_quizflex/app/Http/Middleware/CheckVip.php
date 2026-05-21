@@ -24,12 +24,16 @@ class CheckVip
 
         $userRole = strtolower($user->role ?? 'user');
         
-        if ($userRole === 'admin' || $userRole === 'vip') {
+        if ($userRole === 'admin') {
             return $next($request);
         }
-        
+
+        if ($userRole === 'vip' && (!$user->vip_expires_at || Carbon::parse($user->vip_expires_at)->isFuture())) {
+            return $next($request);
+        }
+
         if ($user->vip_expires_at && Carbon::parse($user->vip_expires_at)->isFuture()) {
-             return $next($request);
+            return $next($request);
         }
 
         return response()->json([

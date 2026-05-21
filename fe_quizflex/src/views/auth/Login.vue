@@ -15,7 +15,7 @@
 <script setup>
 import { reactive, ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { authApi } from '@/services/api'
+import { authApi, getDefaultRouteForRole } from '@/services/api'
 import BrandLogo from '@/components/common/BrandLogo.vue'
 
 const route = useRoute()
@@ -33,9 +33,6 @@ onMounted(() => {
   if (state && state.email) {
     form.email = state.email
   }
-  if (state && state.password) {
-    form.password = state.password
-  }
 })
 
 const validate = () => { errors.email = !form.email ? 'Email không được để trống.' : !/^\S+@\S+\.\S+$/.test(form.email) ? 'Email chưa đúng định dạng.' : ''; errors.password = !form.password ? 'Mật khẩu không được để trống.' : form.password.length < 6 ? 'Mật khẩu tối thiểu 6 ký tự.' : ''; return !errors.email && !errors.password }
@@ -44,11 +41,15 @@ const handleLogin = async () => {
   successMessage.value = ''
   if (!validate()) return
   try {
-    await authApi.login({ email: form.email, password: form.password })
+    const user = await authApi.login({ email: form.email, password: form.password })
+    const redirect = typeof route.query.redirect === 'string' && route.query.redirect.startsWith('/') && !route.query.redirect.startsWith('//')
+      ? route.query.redirect
+      : getDefaultRouteForRole(user.role)
+
     successMessage.value = 'Đăng nhập thành công.'
     setTimeout(() => {
-      router.push('/admin')
-    }, 1000)
+      router.replace(redirect)
+    }, 500)
   } catch (error) {
     successMessage.value = ''
     errors.password = error.message
@@ -56,6 +57,6 @@ const handleLogin = async () => {
 }
 
 const goToRegister = () => {
-  router.push({ path: '/register', state: { email: form.email, password: form.password } })
+  router.push({ path: '/register', query: form.email ? { email: form.email } : {} })
 }
 </script>

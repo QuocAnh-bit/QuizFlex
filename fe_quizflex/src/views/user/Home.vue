@@ -9,7 +9,7 @@
       <div class="mt-8 flex flex-wrap gap-3">
         <router-link class="btn-primary" :to="firstQuizLink">Làm thử quiz</router-link>
         <router-link class="btn-ghost" to="/join-room">Join room</router-link>
-        <router-link class="btn-ghost" to="/admin">Vào dashboard</router-link>
+        <router-link class="btn-ghost" :to="dashboardLink">Vào dashboard</router-link>
       </div>
       <div class="mt-10 grid max-w-2xl gap-4 sm:grid-cols-3">
         <div v-for="item in heroStats" :key="item.label" class="rounded-3xl border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow-card)] backdrop-blur-xl">
@@ -55,7 +55,7 @@
     </div>
     <div class="relative z-10 grid gap-10">
       <section v-for="section in filteredQuizSections" :key="section.id" class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-4 shadow-xl backdrop-blur-xl transition hover:-translate-y-1 hover:border-[var(--border-strong)] sm:p-5">
-        <div class="mb-5 flex items-center justify-between gap-4"><div><h3 class="text-xl font-black text-[var(--text)]">{{ section.title }}</h3><p class="mt-1 text-sm text-[var(--muted)]">{{ section.description }}</p></div><router-link class="rounded-full border border-[var(--border)] bg-[var(--surface-soft)] px-4 py-2 text-xs font-black text-[var(--primary)] transition hover:border-[var(--border-strong)] hover:bg-[var(--chip-active)]" :to="`/admin/questions?category=${section.id}`">Xem tất cả</router-link></div>
+        <div class="mb-5 flex items-center justify-between gap-4"><div><h3 class="text-xl font-black text-[var(--text)]">{{ section.title }}</h3><p class="mt-1 text-sm text-[var(--muted)]">{{ section.description }}</p></div><router-link class="rounded-full border border-[var(--border)] bg-[var(--surface-soft)] px-4 py-2 text-xs font-black text-[var(--primary)] transition hover:border-[var(--border-strong)] hover:bg-[var(--chip-active)]" :to="`${questionBase}?category=${section.id}`">Xem tất cả</router-link></div>
         <div class="scrollbar-soft flex gap-4 overflow-x-auto pb-2">
           <article v-for="quiz in section.quizzes" :key="quiz.id" class="group/card w-[198px] shrink-0 overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--surface-soft)] shadow-[var(--shadow-card)] transition duration-300 hover:-translate-y-2 hover:border-[var(--border-strong)] hover:bg-[var(--surface)]">
             <router-link :to="`/quizzes/${quiz.id}`" class="block"><div class="relative h-[124px] overflow-hidden" :style="{ background: quiz.cover }"><div class="absolute inset-0 bg-gradient-to-t from-black/35 via-black/5 to-white/10"></div><div class="absolute left-3 top-3 rounded-full bg-black/55 px-3 py-1 text-[10px] font-black uppercase text-white backdrop-blur">{{ quiz.badge }}</div><div class="absolute bottom-3 right-3 grid h-10 w-10 place-items-center rounded-full bg-white/90 text-lg shadow-lg transition group-hover/card:scale-110">{{ quiz.icon }}</div></div><div class="p-4"><h4 class="line-clamp-2 min-h-[44px] text-sm font-black leading-5 text-[var(--text)] transition group-hover/card:text-[var(--primary)]">{{ quiz.title }}</h4><div class="mt-3 flex items-center gap-1 text-xs"><span class="font-black text-[var(--accent)]">{{ quiz.rating }}</span><span class="text-[var(--accent)]">★</span><span class="text-[var(--muted)]">by {{ quiz.author }}</span></div><div class="mt-3 flex flex-wrap items-center gap-2"><VisibilityBadge :value="quiz.visibility" /><span class="rounded-full px-3 py-1 text-[11px] font-black" :class="difficultyClass(quiz.difficulty)">{{ quiz.difficulty }}</span><span class="text-xs font-bold text-[var(--muted)]">{{ quiz.questions }} câu</span></div></div></router-link>
@@ -67,14 +67,17 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import LandingQuickActions from '@/components/Home/LandingQuickActions.vue'
 import VisibilityBadge from '@/components/common/VisibilityBadge.vue'
-import { normalizeQuizCard, quizzesApi } from '@/services/api'
+import { currentUserStorage, getDashboardRouteForRole, getQuizWorkspaceBaseForRole, normalizeQuizCard, quizzesApi } from '@/services/api'
 
+const currentUser = ref(currentUserStorage.get())
 const searchKeyword = ref('')
 const activeCategory = ref('Tất cả')
 const quizSections = ref([])
+const dashboardLink = computed(() => getDashboardRouteForRole(currentUser.value?.role))
+const questionBase = computed(() => getQuizWorkspaceBaseForRole(currentUser.value?.role))
 const allQuizzes = computed(() => quizSections.value.flatMap((section) => section.quizzes))
 const featuredQuiz = computed(() => allQuizzes.value[0] || null)
 const previewQuizzes = computed(() => allQuizzes.value.slice(0, 3))
@@ -92,7 +95,7 @@ const previewCards = computed(() => [
 
 const firstQuizLink = computed(() => {
   const firstQuiz = allQuizzes.value[0]
-  return firstQuiz ? `/quizzes/${firstQuiz.id}` : '/admin/questions'
+  return firstQuiz ? `/quizzes/${firstQuiz.id}` : questionBase.value
 })
 
 const categoryTabs = computed(() => ['Tất cả', ...new Set(quizSections.value.map((section) => section.category))])
@@ -131,7 +134,20 @@ const loadQuizzes = async () => {
   }
 }
 
+const syncCurrentUser = (event) => {
+  currentUser.value = event?.detail ?? currentUserStorage.get()
+}
+
 const difficultyClass = (difficulty) => ({ Dễ: 'bg-emerald-500/15 text-emerald-400', Vừa: 'bg-amber-500/15 text-amber-400', Khó: 'bg-rose-500/15 text-rose-400' }[difficulty] || 'bg-[var(--chip-active)] text-[var(--primary)]')
 
-onMounted(loadQuizzes)
+onMounted(() => {
+  loadQuizzes()
+  window.addEventListener('quizflex-user-updated', syncCurrentUser)
+  window.addEventListener('storage', syncCurrentUser)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('quizflex-user-updated', syncCurrentUser)
+  window.removeEventListener('storage', syncCurrentUser)
+})
 </script>

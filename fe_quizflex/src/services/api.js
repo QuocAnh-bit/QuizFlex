@@ -1,11 +1,117 @@
 import axios from 'axios'
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
+const AUTH_ROLES = ['admin', 'vip', 'user']
+const USER_ROLES = ['vip', 'user']
+const ADMIN_ROLES = ['admin']
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
+  baseURL: API_BASE_URL,
   headers: {
     Accept: 'application/json',
   },
 })
+
+export const normalizeRole = (role) => {
+  const value = String(role || 'guest').trim().toLowerCase()
+  return ['admin', 'vip', 'user', 'guest'].includes(value) ? value : 'guest'
+}
+
+export const roleLabel = (role) => ({
+  admin: 'Admin',
+  vip: 'VIP',
+  user: 'Thường',
+  guest: 'Guest',
+}[normalizeRole(role)])
+
+export const getDefaultRouteForRole = (role) => {
+  const normalizedRole = normalizeRole(role)
+  if (normalizedRole === 'admin') return '/admin'
+  if (USER_ROLES.includes(normalizedRole)) return '/'
+  return '/'
+}
+
+export const getDashboardRouteForRole = (role) => {
+  const normalizedRole = normalizeRole(role)
+  if (normalizedRole === 'admin') return '/admin'
+  if (USER_ROLES.includes(normalizedRole)) return '/dashboard'
+  return '/'
+}
+
+export const getQuizWorkspaceBaseForRole = (role) => {
+  const normalizedRole = normalizeRole(role)
+  return normalizedRole === 'admin' ? '/admin/questions' : '/dashboard/questions'
+}
+
+export const hasAnyRole = (user, roles = []) => {
+  if (!user || !Array.isArray(roles) || roles.length === 0) return true
+  const normalizedRole = normalizeRole(user.role)
+  return roles.map(normalizeRole).includes(normalizedRole)
+}
+
+export const canUseWorkspace = (user) => hasAnyRole(user, AUTH_ROLES)
+export const canUseUserDashboard = (user) => hasAnyRole(user, USER_ROLES)
+export const canUseAdminConsole = (user) => hasAnyRole(user, ADMIN_ROLES)
+
+const normalizeUserForStorage = (user = {}) => {
+  if (!user || typeof user !== 'object') return null
+
+  const normalizedRole = normalizeRole(user.role)
+  const normalized = {
+    ...user,
+    role: normalizedRole,
+    role_label: user.role_label || user.roleLabel || roleLabel(normalizedRole),
+  }
+
+  if (!normalized.name) normalized.name = normalized.email ? normalized.email.split('@')[0] : 'Guest'
+  if (!normalized.email) normalized.email = ''
+
+  return normalized
+}
+
+export const tokenStorage = {
+  get() {
+    return localStorage.getItem('quizflex_access_token')
+  },
+  set(token) {
+    if (!token) return
+    localStorage.setItem('quizflex_access_token', token)
+  },
+  clear() {
+    localStorage.removeItem('quizflex_access_token')
+  },
+}
+
+export const currentUserStorage = {
+  get() {
+    if (!tokenStorage.get()) return null
+
+    try {
+      const raw = localStorage.getItem('quizflex_current_user')
+      return raw ? normalizeUserForStorage(JSON.parse(raw)) : null
+    } catch {
+      return null
+    }
+  },
+  set(user) {
+    const normalized = normalizeUserForStorage(user)
+    if (!normalized) {
+      this.clear()
+      return
+    }
+
+    localStorage.setItem('quizflex_current_user', JSON.stringify(normalized))
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('quizflex-user-updated', { detail: normalized }))
+    }
+  },
+  clear() {
+    localStorage.removeItem('quizflex_current_user')
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('quizflex-user-updated', { detail: null }))
+    }
+  },
+}
 
 api.interceptors.request.use((config) => {
   const token = tokenStorage.get()
@@ -19,7 +125,7 @@ let isRefreshing = false
 let failedQueue = []
 
 const processQueue = (error, token = null) => {
-  failedQueue.forEach(prom => {
+  failedQueue.forEach((prom) => {
     if (error) prom.reject(error)
     else prom.resolve(token)
   })
@@ -29,16 +135,17 @@ const processQueue = (error, token = null) => {
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    const originalRequest = error.config
+    const originalRequest = error.config || {}
+    const isAuthEndpoint = ['/auth/login', '/auth/refresh', '/auth/logout'].some((path) => originalRequest.url?.includes(path))
 
-    if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url?.includes('/auth/login') && !originalRequest.url?.includes('/auth/refresh')) {
+    if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject })
-        }).then(token => {
+        }).then((token) => {
           originalRequest.headers.Authorization = `Bearer ${token}`
           return api(originalRequest)
-        }).catch(err => Promise.reject(err))
+        }).catch((err) => Promise.reject(err))
       }
 
       originalRequest._retry = true
@@ -48,20 +155,19 @@ api.interceptors.response.use(
         const token = tokenStorage.get()
         if (!token) throw new Error('No token')
 
-        const baseURL = import.meta.env.VITE_API_BASE_URL || '/api'
-        const { data } = await axios.post(`${baseURL}/auth/refresh`, {}, {
-          headers: { Authorization: `Bearer ${token}` }
+        const { data } = await axios.post(`${API_BASE_URL}/auth/refresh`, {}, {
+          headers: { Authorization: `Bearer ${token}` },
         })
 
         const newToken = data.token
         tokenStorage.set(newToken)
         originalRequest.headers.Authorization = `Bearer ${newToken}`
-        
+
         processQueue(null, newToken)
         return api(originalRequest)
       } catch (err) {
         processQueue(err, null)
-        authApi.logout()
+        authApi.clearSession()
         window.location.href = '/login'
         return Promise.reject(err)
       } finally {
@@ -82,73 +188,25 @@ const unwrapCollection = (payload) => {
   return []
 }
 
-export const tokenStorage = {
-  get() {
-    return localStorage.getItem('quizflex_access_token')
-  },
-  set(token) {
-    localStorage.setItem('quizflex_access_token', token)
-  },
-  clear() {
-    localStorage.removeItem('quizflex_access_token')
-  },
-}
-
-
-export const currentUserStorage = {
-  get() {
-    try {
-      const raw = localStorage.getItem('quizflex_current_user')
-      return raw ? JSON.parse(raw) : null
-    } catch {
-      return null
-    }
-  },
-  set(user) {
-    const previous = this.get() || {}
-    const merged = {
-      ...previous,
-      ...(user || {}),
-    }
-
-    if (!merged.name) merged.name = merged.email ? merged.email.split('@')[0] : 'Guest'
-    if (!merged.role) merged.role = 'guest'
-    if (!merged.role_label) merged.role_label = merged.role
-
-    localStorage.setItem('quizflex_current_user', JSON.stringify(merged))
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('quizflex-user-updated', { detail: merged }))
-    }
-  },
-  clear() {
-    localStorage.removeItem('quizflex_current_user')
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('quizflex-user-updated', { detail: null }))
-    }
-  },
-}
-
 export const authApi = {
   async login(payload) {
     const { data } = await api.post('/auth/login', payload)
     const user = unwrap(data)
     if (data.token) tokenStorage.set(data.token)
     currentUserStorage.set(user)
-    return user
+    return currentUserStorage.get() || user
   },
 
   async register(payload) {
     const { data } = await api.post('/auth/register', payload)
-    const user = unwrap(data)
-    // Do NOT automatically log in on registration to allow a manual login flow
-    return user
+    return unwrap(data)
   },
 
   async me() {
     const { data } = await api.get('/auth/me')
     const user = unwrap(data)
     currentUserStorage.set(user)
-    return user
+    return currentUserStorage.get() || user
   },
 
   async updateProfile(payload = {}) {
@@ -163,13 +221,29 @@ export const authApi = {
     })
     const user = unwrap(data)
     currentUserStorage.set(user)
-    return user
+    return currentUserStorage.get() || user
   },
 
-  logout() {
+  clearSession() {
     tokenStorage.clear()
     currentUserStorage.clear()
-  }
+  },
+
+  async logout() {
+    const token = tokenStorage.get()
+
+    if (token) {
+      try {
+        await axios.post(`${API_BASE_URL}/auth/logout`, {}, {
+          headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+        })
+      } catch {
+        // Local logout must still succeed even when the token is expired or already blacklisted.
+      }
+    }
+
+    this.clearSession()
+  },
 }
 
 export const usersApi = {

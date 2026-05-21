@@ -27,7 +27,7 @@
 
         <div class="mt-8 flex flex-wrap gap-3">
           <router-link class="btn-primary" :to="`/quizzes/${quiz.id}/play`">Bắt đầu làm bài</router-link>
-          <router-link class="btn-ghost" :to="`/admin/questions/edit/${quiz.id}`">Sửa trong Admin</router-link>
+          <router-link class="btn-ghost" :to="`/dashboard/questions/edit/${quiz.id}`">Sửa quiz</router-link>
           <router-link class="btn-ghost" to="/quizzes">Quay lại danh sách</router-link>
         </div>
       </div>
