@@ -15,11 +15,12 @@
 </template>
 <script setup>
 import { reactive, ref, defineComponent, h, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { authApi } from '@/services/api'
 import BrandLogo from '@/components/common/BrandLogo.vue'
 
 const router = useRouter()
+const route = useRoute()
 const FieldInput = defineComponent({ props: { modelValue: String, label: String, error: String, placeholder: String, prefix: String, type: { type: String, default: 'text' }, autocomplete: String }, emits: ['update:modelValue'], setup(props, { emit }) { return () => h('label', { class: 'grid gap-2 text-sm font-black text-[var(--text)]' }, [props.label, h('div', { class: ['flex items-center gap-3 rounded-2xl border bg-[var(--input-bg)] px-4 py-3 transition focus-within:border-[var(--border-strong)]', props.error ? 'border-rose-500/50' : 'border-[var(--border)]'] }, [h('span', { class: 'text-sm font-black text-[var(--primary)]' }, props.prefix), h('input', { class: 'w-full bg-transparent text-sm font-semibold text-[var(--text)] outline-none placeholder:text-[var(--muted)]', value: props.modelValue, type: props.type, placeholder: props.placeholder, autocomplete: props.autocomplete, onInput: (event) => emit('update:modelValue', event.target.value) })]), props.error ? h('span', { class: 'text-xs font-bold text-rose-400' }, props.error) : null]) } })
 const selectedRole = ref('Tài khoản thường')
 const isPasswordVisible = ref(false)
@@ -36,6 +37,9 @@ onMounted(() => {
   if (state && state.password) {
     form.password = state.password
   }
+  if (route.query.plan) {
+    selectedRole.value = 'Tài khoản VIP'
+  }
 })
 
 const validate = () => { errors.fullName = form.fullName.trim() ? '' : 'Vui lòng nhập họ tên.'; errors.username = form.username.trim().length >= 3 ? '' : 'Username tối thiểu 3 ký tự.'; errors.email = !form.email ? 'Email không được để trống.' : !/^\S+@\S+\.\S+$/.test(form.email) ? 'Email chưa đúng định dạng.' : ''; errors.password = form.password.length >= 8 ? '' : 'Mật khẩu tối thiểu 8 ký tự.'; errors.acceptTerms = form.acceptTerms ? '' : 'Bạn cần đồng ý điều khoản.'; return Object.values(errors).every((error) => !error) }
@@ -51,7 +55,11 @@ const handleRegister = async () => {
     })
     successMessage.value = 'Tạo tài khoản thành công. Đang chuyển hướng...'
     setTimeout(() => {
-      router.push({ path: '/login', state: { email: form.email, password: form.password } })
+      const query = {}
+      if (route.query.plan) {
+        query.plan = route.query.plan
+      }
+      router.push({ path: '/login', query, state: { email: form.email, password: form.password } })
     }, 1500)
   } catch (error) {
     successMessage.value = ''

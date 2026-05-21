@@ -44,10 +44,19 @@ const handleLogin = async () => {
   successMessage.value = ''
   if (!validate()) return
   try {
-    await authApi.login({ email: form.email, password: form.password })
+    const user = await authApi.login({ email: form.email, password: form.password })
     successMessage.value = 'Đăng nhập thành công.'
+    
+    // Nếu có query plan, chuyển hướng thẳng sang trang nâng cấp VIP kèm plan
+    let targetPath = '/'
+    const query = {}
+    if (route.query.plan) {
+      targetPath = '/upgrade'
+      query.plan = route.query.plan
+    }
+
     setTimeout(() => {
-      router.push('/admin')
+      router.push({ path: targetPath, query })
     }, 1000)
   } catch (error) {
     successMessage.value = ''
@@ -56,6 +65,10 @@ const handleLogin = async () => {
 }
 
 const goToRegister = () => {
-  router.push({ path: '/register', state: { email: form.email, password: form.password } })
+  const query = {}
+  if (route.query.plan) {
+    query.plan = route.query.plan
+  }
+  router.push({ path: '/register', query, state: { email: form.email, password: form.password } })
 }
 </script>

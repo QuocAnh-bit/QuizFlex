@@ -9,6 +9,7 @@ const routes = [
   { path: '/quiz/:id', redirect: (to) => `/quizzes/${to.params.id}` },
   { path: '/join-room', name: 'join-room', component: () => import('@/views/user/JoinRoom.vue'), meta: { layout: 'user', title: 'Join room' } },
   { path: '/upgrade', name: 'upgrade', component: () => import('@/views/user/Upgrade.vue'), meta: { layout: 'user', title: 'Nâng cấp VIP' } },
+  { path: '/payment-result', name: 'payment-result', component: () => import('@/views/user/PaymentResult.vue'), meta: { layout: 'user', title: 'Kết quả thanh toán' } },
   { path: '/results', name: 'results', component: () => import('@/views/user/Results.vue'), meta: { layout: 'user', title: 'Kết quả của tôi' } },
   { path: '/results/:id', name: 'attempt-result', component: () => import('@/views/user/AttemptResult.vue'), meta: { layout: 'user', title: 'Kết quả bài làm' } },
   { path: '/profile', name: 'profile', component: () => import('@/views/user/Profile.vue'), meta: { layout: 'user', title: 'Hồ sơ cá nhân' } },
@@ -48,7 +49,7 @@ router.beforeEach((to, from, next) => {
 
   // Chặn user đã login quay lại trang login/register
   if (user && isAuthLayout) {
-    return next('/admin')
+    return next('/')
   }
 
   // Yêu cầu login nếu truy cập trang admin
@@ -56,9 +57,21 @@ router.beforeEach((to, from, next) => {
     return next('/login')
   }
 
-  // Kiểm tra quyền Admin (Chỉ block các trang requiresAdmin)
-  if (user && to.meta.requiresAdmin && String(user.role).toLowerCase() !== 'admin') {
-    return next('/')
+  // Phân quyền chi tiết cho layout admin (VIP & USER thường)
+  if (user && isAdminLayout) {
+    const role = String(user.role).toLowerCase()
+
+    if (role !== 'admin') {
+      // 1. Chuyển hướng USER thường và VIP khi truy cập trang Dashboard tổng quan (/admin) sang Kho quiz (/admin/questions)
+      if (to.path === '/admin') {
+        return next('/admin/questions')
+      }
+
+      // 2. Chặn USER thường và VIP khỏi các trang quản trị hệ thống của ADMIN (requiresAdmin)
+      if (to.meta.requiresAdmin) {
+        return next('/')
+      }
+    }
   }
 
   // Yêu cầu login cho các trang cá nhân

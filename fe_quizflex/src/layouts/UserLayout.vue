@@ -63,6 +63,12 @@
               </router-link>
             </template>
             <template v-else>
+              <router-link
+                to="/admin/questions"
+                class="mr-2 inline-flex h-11 shrink-0 items-center justify-center whitespace-nowrap rounded-full border border-[var(--border-strong)] bg-[var(--chip-active)] px-5 text-sm font-black text-[var(--primary)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_14px_35px_rgba(155,44,255,0.16)] active:scale-95"
+              >
+                {{ String(currentUser.role).toLowerCase() === 'admin' ? 'Admin Console' : 'Creator Space' }}
+              </router-link>
               <div class="flex items-center gap-3 rounded-full border border-[var(--border)] bg-[var(--surface-soft)] pl-1.5 pr-4 py-1.5">
                  <UserAvatar :user="currentUser" size-class="h-8 w-8" text-class="text-xs" ring-class="ring-2 ring-white/10" />
                  <div class="grid leading-tight"><span class="text-xs font-black text-[var(--text)]">{{ currentUser.name }}</span><span class="text-[10px] font-bold text-[var(--primary)] uppercase">{{ currentUser.role }}</span></div>

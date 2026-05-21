@@ -17,14 +17,12 @@ class QuizController extends Controller
     public function index(Request $request)
     {
         $user = null;
-        if (auth('api')->parser()->hasToken()) {
-            try {
-                $user = auth('api')->parseToken()->authenticate();
-            } catch (\PHPOpenSourceSaver\JWTAuth\Exceptions\TokenExpiredException $e) {
-                return response()->json(['message' => 'Unauthenticated.'], 401);
-            } catch (\Exception $e) {
-                $user = null;
-            }
+        try {
+            $user = auth('api')->user();
+        } catch (\PHPOpenSourceSaver\JWTAuth\Exceptions\TokenExpiredException $e) {
+            return response()->json(['message' => 'Unauthenticated.'], 401);
+        } catch (\Exception $e) {
+            $user = null;
         }
 
         $query = Quiz::query()
@@ -56,31 +54,38 @@ class QuizController extends Controller
             $query->where('status', $request->query('status'));
         }
 
-        $isAdminOrVip = $user && in_array(strtolower($user->role ?? ''), ['admin', 'vip']);
+        $isAdmin = $user && strtolower($user->role ?? '') === 'admin';
+        $visibility = $request->query('visibility');
 
-        if ($request->filled('visibility')) {
-            $visibility = $request->query('visibility');
-            if ($visibility === 'public') {
-                $query->where('is_public', true)->where('status', 'published');
-            } elseif ($visibility === 'private') {
-                $query->where('is_public', false)->whereNull('room_code');
-                if (!$isAdminOrVip) {
-                    $query->where('user_id', $user?->id ?? -1);
-                }
-            } elseif ($visibility === 'group') {
-                $query->whereNotNull('room_code');
+        if ($visibility === 'public') {
+            $query->where('is_public', true)->where('status', 'published');
+        } elseif ($visibility === 'private') {
+            $query->where('is_public', false)->whereNull('room_code');
+            if (!$isAdmin) {
+                $query->where('user_id', $user?->id ?? -1);
+            }
+        } elseif ($visibility === 'group') {
+            $query->whereNotNull('room_code');
+            if (!$isAdmin) {
+                $query->where(function ($q) use ($user) {
+                    $q->where('is_public', true)
+                      ->orWhere('user_id', $user?->id ?? -1);
+                });
             }
         } else {
-            $query->where(function ($q) use ($user, $isAdminOrVip) {
-                $q->where('is_public', true)->where('status', 'published');
-                if ($user) {
-                    if ($isAdminOrVip) {
-                        $q->orWhereNotNull('id');
-                    } else {
+            // Default or visibility = 'all':
+            // - ADMIN: sees all quizzes.
+            // - USER/VIP/GUEST: sees public published quizzes OR their own quizzes.
+            if (!$isAdmin) {
+                $query->where(function ($q) use ($user) {
+                    $q->where(function ($sub) {
+                        $sub->where('is_public', true)->where('status', 'published');
+                    });
+                    if ($user) {
                         $q->orWhere('user_id', $user->id);
                     }
-                }
-            });
+                });
+            }
         }
 
         $perPage = min(max((int) $request->query('per_page', 50), 1), 100);
@@ -115,14 +120,12 @@ class QuizController extends Controller
     public function show(Quiz $quiz)
     {
         $user = null;
-        if (auth('api')->parser()->hasToken()) {
-            try {
-                $user = auth('api')->parseToken()->authenticate();
-            } catch (\PHPOpenSourceSaver\JWTAuth\Exceptions\TokenExpiredException $e) {
-                return response()->json(['message' => 'Unauthenticated.'], 401);
-            } catch (\Exception $e) {
-                $user = null;
-            }
+        try {
+            $user = auth('api')->user();
+        } catch (\PHPOpenSourceSaver\JWTAuth\Exceptions\TokenExpiredException $e) {
+            return response()->json(['message' => 'Unauthenticated.'], 401);
+        } catch (\Exception $e) {
+            $user = null;
         }
 
         Gate::forUser($user)->authorize('view', $quiz);

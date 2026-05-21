@@ -77,7 +77,7 @@ const errorMessage = ref('')
 
 const filters = reactive({
   search: '',
-  visibility: 'public',
+  visibility: 'all',
   difficulty: '',
 })
 

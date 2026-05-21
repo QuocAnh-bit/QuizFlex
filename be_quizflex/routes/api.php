@@ -9,6 +9,7 @@ use App\Http\Controllers\QuestionController;
 use App\Http\Controllers\QuizAttemptController;
 use App\Http\Controllers\QuizController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\PaymentController;
 use App\Services\AI\AIService;
 use App\AI\Prompts\QuizPrompt;
 
@@ -358,7 +359,15 @@ Route::middleware('auth:api')->group(function () {
     Route::get('/quiz-attempts/{quizAttempt}', [QuizAttemptController::class, 'show']);
     Route::post('/quizzes/{quiz}/attempts/start', [QuizAttemptController::class, 'start']);
     Route::post('/quizzes/{quiz}/attempts/submit', [QuizAttemptController::class, 'submit']);
+
+    // Protected Payment Routes
+    Route::post('/payments/create', [PaymentController::class, 'create']);
+    Route::get('/payments/history', [PaymentController::class, 'history']);
 });
+
+// Public Webhooks & Callbacks for Payments
+Route::post('/payments/webhook/momo', [PaymentController::class, 'webhookMomo']);
+Route::get('/payments/callback', [PaymentController::class, 'callback']);
 
 // Public Quiz Routes
 Route::get('/quizzes', [QuizController::class, 'index']);
