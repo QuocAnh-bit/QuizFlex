@@ -87,7 +87,7 @@ class PaymentService
                 'orderId' => $orderCode,
                 'requestId' => $requestId,
                 'amount' => $amount,
-                'orderInfo' => "Nang cap VIP QuizFlex - " . $plan['name'],
+                'orderInfo' => "Nang cap VIP QuizFlex - " . $planId,
                 'orderType' => 'momo_wallet',
                 'transId' => 'mock_trans_' . time(),
                 'resultCode' => 0,
@@ -123,9 +123,9 @@ class PaymentService
         }
 
         $requestId = $orderCode . '_' . time();
-        $orderInfo = "Nang cap VIP QuizFlex - " . $plan['name'];
+        $orderInfo = "Nang cap VIP QuizFlex - " . $planId;
         $extraData = base64_encode(json_encode(['plan_id' => $planId, 'user_id' => $user->id]));
-        $requestType = "captureWallet";
+        $requestType = "payWithATM";
 
         // 2. Tạo chuỗi chữ ký raw theo đúng thứ tự bảng chữ cái của khóa (Alphabetical order of keys)
         $rawHash = "accessKey=" . $this->accessKey .
@@ -227,12 +227,13 @@ class PaymentService
             "&message=" . $message .
             "&orderId=" . $orderId .
             "&orderInfo=" . $orderInfo .
+            "&orderType=" . $orderType .
             "&partnerCode=" . $partnerCode .
+            "&payType=" . $payType .
             "&requestId=" . $requestId .
             "&responseTime=" . $responseTime .
             "&resultCode=" . $resultCode .
-            "&transId=" . $transId .
-            "&payType=" . $payType;
+            "&transId=" . $transId;
 
         $computedSignature = hash_hmac("sha256", $rawHash, $this->secretKey);
 
