@@ -19,7 +19,6 @@ class Quiz extends Model
         'difficulty',
         'status',
         'is_public',
-        'room_code',
         'time_limit_seconds',
         'cover',
         'icon',
@@ -46,4 +45,19 @@ class Quiz extends Model
     {
         return $this->hasMany(QuizAttempt::class);
     }
+
+    public function rooms()
+{
+    return $this->hasMany(Room::class);
+}
+
+public function roomAssignments()
+{
+    return $this->hasMany(RoomAssignment::class);
+}
+
+public function liveSessions()
+{
+    return $this->hasMany(LiveSession::class);
+}
 }

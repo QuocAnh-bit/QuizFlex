@@ -15,7 +15,7 @@ class QuizAttemptController extends Controller
     public function index(Request $request)
     {
         $query = QuizAttempt::query()
-            ->with(['quiz:id,title,category,is_public,room_code,time_limit_seconds', 'user:id,name'])
+            ->with(['quiz:id,title,category,is_public,time_limit_seconds', 'user:id,name'])
             ->latest('started_at');
 
         if ($request->filled('quiz_id')) {
@@ -253,7 +253,7 @@ class QuizAttemptController extends Controller
                 'id' => $quiz->id,
                 'title' => $quiz->title,
                 'category' => $quiz->category,
-                'visibility' => $quiz->room_code ? 'group' : ($quiz->is_public ? 'public' : 'private'),
+                'visibility' => $quiz->is_public ? 'public' : 'private',
             ] : null,
             'user_name' => $attempt->user?->name,
             'score' => $attempt->score,

@@ -26,8 +26,7 @@ class QuizController extends Controller
                 $q->where('title', 'like', "%{$keyword}%")
                     ->orWhere('description', 'like', "%{$keyword}%")
                     ->orWhere('category', 'like', "%{$keyword}%")
-                    ->orWhere('tag', 'like', "%{$keyword}%")
-                    ->orWhere('room_code', 'like', "%{$keyword}%");
+                    ->orWhere('tag', 'like', "%{$keyword}%");
             });
         }
 
@@ -48,9 +47,7 @@ class QuizController extends Controller
             if ($visibility === 'public') {
                 $query->where('is_public', true)->where('status', 'published');
             } elseif ($visibility === 'private') {
-                $query->where('is_public', false)->whereNull('room_code');
-            } elseif ($visibility === 'group') {
-                $query->whereNotNull('room_code');
+                $query->where('is_public', false);
             }
         }
 
@@ -136,10 +133,8 @@ class QuizController extends Controller
             'tag' => ['nullable', 'string', 'max:100'],
             'difficulty' => ['nullable', 'string', Rule::in(['easy', 'medium', 'hard', 'Dễ', 'Vừa', 'Khó'])],
             'status' => ['nullable', Rule::in(['draft', 'published', 'archived'])],
-            'visibility' => ['nullable', Rule::in(['public', 'private', 'group'])],
+            'visibility' => ['nullable', Rule::in(['public', 'private'])],
             'is_public' => ['nullable', 'boolean'],
-            'room_code' => ['nullable', 'string', 'max:32'],
-            'roomCode' => ['nullable', 'string', 'max:32'],
             'time_limit_seconds' => ['nullable', 'integer', 'min:30', 'max:86400'],
             'duration_minutes' => ['nullable', 'integer', 'min:1', 'max:1440'],
             'duration' => ['nullable', 'string', 'max:50'],
@@ -168,15 +163,9 @@ class QuizController extends Controller
     private function quizAttributes(array $data, int $userId): array
     {
         $visibility = $data['visibility'] ?? null;
-        $roomCode = $data['room_code'] ?? $data['roomCode'] ?? null;
         $isPublic = array_key_exists('is_public', $data) ? (bool) $data['is_public'] : ($visibility === 'public');
 
         if ($visibility === 'private') {
-            $isPublic = false;
-            $roomCode = null;
-        }
-
-        if ($visibility === 'group') {
             $isPublic = false;
         }
 
@@ -189,7 +178,6 @@ class QuizController extends Controller
             'difficulty' => $this->normalizeDifficulty($data['difficulty'] ?? 'medium'),
             'status' => $data['status'] ?? ($isPublic ? 'published' : 'draft'),
             'is_public' => $isPublic,
-            'room_code' => $roomCode,
             'time_limit_seconds' => $this->resolveTimeLimitSeconds($data),
             'cover' => $data['cover'] ?? null,
             'icon' => $data['icon'] ?? null,
@@ -319,7 +307,7 @@ class QuizController extends Controller
     public function formatQuiz(Quiz $quiz, bool $includeQuestions = false): array
     {
         $timeLimit = $quiz->time_limit_seconds ?? 600;
-        $visibility = $quiz->room_code ? 'group' : ($quiz->is_public ? 'public' : 'private');
+        $visibility = $quiz->is_public ? 'public' : 'private';
 
         $data = [
             'id' => $quiz->id,
@@ -333,7 +321,6 @@ class QuizController extends Controller
             'status' => $quiz->status,
             'is_public' => (bool) $quiz->is_public,
             'visibility' => $visibility,
-            'room_code' => $quiz->room_code,
             'time_limit_seconds' => $timeLimit,
             'duration_minutes' => (int) ceil($timeLimit / 60),
             'questions_count' => $quiz->questions_count ?? $quiz->questions()->count(),

@@ -25,4 +25,14 @@ class Answer extends Model
     {
         return $this->belongsTo(Question::class);
     }
+
+    public function roomAssignmentAnswers()
+{
+    return $this->hasMany(RoomAssignmentAnswer::class);
+}
+
+public function liveAnswers()
+{
+    return $this->hasMany(LiveAnswer::class);
+}
 }

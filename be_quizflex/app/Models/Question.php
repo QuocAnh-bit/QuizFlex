@@ -32,4 +32,14 @@ class Question extends Model
     {
         return $this->hasMany(Answer::class)->orderBy('order');
     }
+
+    public function roomAssignmentAnswers()
+{
+    return $this->hasMany(RoomAssignmentAnswer::class);
+}
+
+public function liveAnswers()
+{
+    return $this->hasMany(LiveAnswer::class);
+}
 }

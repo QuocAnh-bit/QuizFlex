@@ -4,12 +4,26 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
+/*
+|--------------------------------------------------------------------------
+| Bổ sung cột cho rooms — KHÔNG xoá cột cũ
+|--------------------------------------------------------------------------
+| Chỉ thêm: name, description, type, visibility
+| Mở rộng code cũ từ 6 → 12 ký tự
+|
+| KHÔNG thêm: starts_at, ends_at, duration_minutes (→ live_sessions)
+|             max_attempts, show_result_mode      (→ room_assignments)
+|             current_question_id/index           (→ live_sessions)
+|             join_code                           (dùng code cũ là đủ)
+*/
+
 return new class extends Migration
 {
-    
     public function up(): void
     {
         Schema::table('rooms', function (Blueprint $table) {
+
+            // ── Thêm cột mới ──────────────────────────────────
             if (!Schema::hasColumn('rooms', 'name')) {
                 $table->string('name')->nullable()->after('id');
             }
@@ -18,110 +32,42 @@ return new class extends Migration
                 $table->text('description')->nullable()->after('name');
             }
 
+            // live = thi trực tiếp, homework = giao bài
             if (!Schema::hasColumn('rooms', 'type')) {
                 $table->enum('type', ['live', 'homework'])->default('live')->after('description');
             }
 
-            if (!Schema::hasColumn('rooms', 'visibility')) {
-                $table->enum('visibility', ['private', 'public', 'invite'])->default('private')->after('type');
+            if (!Schema::hasColumn('rooms', 'is_active')) {
+                $table->boolean('is_active')->default(true)->after('type');
             }
 
-            if (!Schema::hasColumn('rooms', 'join_code')) {
-                $table->string('join_code', 20)->nullable()->unique()->after('visibility');
+            // ── Mở rộng code cũ từ 6 → 12 ký tự ────────────
+            // rooms.code hiện là varchar(6) — đổi thành varchar(12)
+            // để đủ chỗ cho các mã phòng mới (VD: MATH10A2025)
+            if (Schema::hasColumn('rooms', 'code')) {
+                $table->string('code', 12)->change();
             }
 
-            if (!Schema::hasColumn('rooms', 'starts_at')) {
-                $table->timestamp('starts_at')->nullable()->after('join_code');
-            }
-
-            if (!Schema::hasColumn('rooms', 'ends_at')) {
-                $table->timestamp('ends_at')->nullable()->after('starts_at');
-            }
-
-            if (!Schema::hasColumn('rooms', 'duration_minutes')) {
-                $table->integer('duration_minutes')->nullable()->after('ends_at');
-            }
-
-            if (!Schema::hasColumn('rooms', 'max_attempts')) {
-                $table->integer('max_attempts')->default(1)->after('duration_minutes');
-            }
-
-            if (!Schema::hasColumn('rooms', 'show_result_mode')) {
-                $table->enum('show_result_mode', [
-                    'immediately',
-                    'after_submit',
-                    'after_deadline',
-                    'manual'
-                ])->default('after_submit')->after('max_attempts');
-            }
-
-            if (!Schema::hasColumn('rooms', 'shuffle_questions')) {
-                $table->boolean('shuffle_questions')->default(false)->after('show_result_mode');
-            }
-
-            if (!Schema::hasColumn('rooms', 'shuffle_answers')) {
-                $table->boolean('shuffle_answers')->default(false)->after('shuffle_questions');
-            }
-
-            if (!Schema::hasColumn('rooms', 'allow_late_join')) {
-                $table->boolean('allow_late_join')->default(true)->after('shuffle_answers');
-            }
-
-            if (!Schema::hasColumn('rooms', 'current_question_id')) {
-                $table->unsignedBigInteger('current_question_id')->nullable()->after('allow_late_join');
-            }
-
-            if (!Schema::hasColumn('rooms', 'current_question_index')) {
-                $table->integer('current_question_index')->nullable()->after('current_question_id');
+            // ── Cho phép quiz_id nullable ─────────────────────
+            // Homework room không cần quiz_id cố định
+            // (quiz được giao qua room_assignments)
+            if (Schema::hasColumn('rooms', 'quiz_id')) {
+                $table->unsignedBigInteger('quiz_id')->nullable()->change();
             }
         });
-
-        /**
-         * Quan trọng:
-         * Trước đây rooms.quiz_id thường là bắt buộc.
-         * Nhưng với Homework Room kiểu "lớp lâu dài", rooms.quiz_id phải nullable.
-         *
-         * Nếu lệnh change() lỗi trên MySQL, chạy:
-         * composer require doctrine/dbal
-         */
-        if (Schema::hasColumn('rooms', 'quiz_id')) {
-            Schema::table('rooms', function (Blueprint $table) {
-                $table->unsignedBigInteger('quiz_id')->nullable()->change();
-            });
-        }
-
-        /**
-         * Nếu bảng rooms đã có status dạng string/enum cũ thì giữ nguyên.
-         * Controller sẽ dùng các trạng thái:
-         * waiting, playing, active, ended, cancelled, expired.
-         */
     }
 
     public function down(): void
     {
         Schema::table('rooms', function (Blueprint $table) {
-            $columns = [
-                'name',
-                'description',
-                'type',
-                'visibility',
-                'join_code',
-                'starts_at',
-                'ends_at',
-                'duration_minutes',
-                'max_attempts',
-                'show_result_mode',
-                'shuffle_questions',
-                'shuffle_answers',
-                'allow_late_join',
-                'current_question_id',
-                'current_question_index',
-            ];
-
-            foreach ($columns as $column) {
-                if (Schema::hasColumn('rooms', $column)) {
-                    $table->dropColumn($column);
+            foreach (['name', 'description', 'type', 'is_active'] as $col) {
+                if (Schema::hasColumn('rooms', $col)) {
+                    $table->dropColumn($col);
                 }
+            }
+
+            if (Schema::hasColumn('rooms', 'code')) {
+                $table->string('code', 6)->change();
             }
         });
     }

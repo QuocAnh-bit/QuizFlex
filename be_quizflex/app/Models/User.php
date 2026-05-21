@@ -40,4 +40,39 @@ class User extends Authenticatable
             'vip_expires_at' => 'datetime',
         ];
     }
+
+    public function rooms()
+{
+    return $this->hasMany(Room::class, 'host_id');
+}
+
+public function roomMemberships()
+{
+    return $this->hasMany(RoomMember::class);
+}
+
+public function assignedRoomAssignments()
+{
+    return $this->hasMany(RoomAssignment::class, 'assigned_by');
+}
+
+public function roomAssignmentSubmissions()
+{
+    return $this->hasMany(RoomAssignmentSubmission::class);
+}
+
+public function liveSessions()
+{
+    return $this->hasMany(LiveSession::class, 'host_id');
+}
+
+public function liveParticipants()
+{
+    return $this->hasMany(LiveParticipant::class);
+}
+
+public function liveAnswers()
+{
+    return $this->hasMany(LiveAnswer::class);
+}
 }
