@@ -21,14 +21,14 @@ class CheckRole
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
         }
 
-        $userRole = strtolower($user->role ?? 'user');
-        
-        // Admin automatically bypasses all role checks
+        $userRole = strtolower(trim((string) ($user->role ?? 'user')));
+
+        // Admin automatically bypasses all role checks.
         if ($userRole === 'admin') {
             return $next($request);
         }
-        
-        $allowedRoles = array_map('strtolower', $roles);
+
+        $allowedRoles = array_map(fn ($role) => strtolower(trim((string) $role)), $roles);
         
         if (!in_array($userRole, $allowedRoles)) {
             return response()->json(['success' => false, 'message' => 'Bạn không có quyền truy cập khu vực này'], 403);

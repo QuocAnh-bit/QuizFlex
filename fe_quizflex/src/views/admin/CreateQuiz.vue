@@ -195,6 +195,7 @@ import { coverToBackground, currentUserStorage, difficultyLabel, normalizeQuesti
 
 const route = useRoute()
 const router = useRouter()
+const questionBase = computed(() => route.path.startsWith('/dashboard') ? '/dashboard/questions' : '/admin/questions')
 
 const visibilityOptions = [
   { value: 'public', short: 'PUB', title: 'Public', description: 'Ai cũng có thể xem và làm bài.' },
@@ -358,7 +359,7 @@ const saveQuiz = async () => {
     const payload = makePayload()
     const saved = isEditMode.value ? await quizzesApi.update(route.params.id, payload) : await quizzesApi.create(payload)
     successMessage.value = isEditMode.value ? 'Đã cập nhật quiz.' : 'Đã tạo quiz mới.'
-    router.push(`/admin/questions/edit/${saved.id}`)
+    router.push(`${questionBase.value}/edit/${saved.id}`)
   } catch (error) {
     errorMessage.value = `Lưu thất bại: ${error.message}`
   } finally {

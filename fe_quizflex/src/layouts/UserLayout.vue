@@ -63,6 +63,12 @@
               </router-link>
             </template>
             <template v-else>
+              <router-link
+                :to="getDashboardRouteForRole(currentUser.role)"
+                class="inline-flex h-11 shrink-0 items-center justify-center whitespace-nowrap rounded-full border border-[var(--border)] bg-[var(--surface-soft)] px-5 text-sm font-black text-[var(--text)] transition duration-300 hover:-translate-y-0.5 hover:border-[var(--border-strong)] hover:bg-[var(--chip-active)] active:scale-95"
+              >
+                {{ currentUser.role === 'admin' ? 'Admin dashboard' : 'Dashboard của tôi' }}
+              </router-link>
               <div class="flex items-center gap-3 rounded-full border border-[var(--border)] bg-[var(--surface-soft)] pl-1.5 pr-4 py-1.5">
                  <UserAvatar :user="currentUser" size-class="h-8 w-8" text-class="text-xs" ring-class="ring-2 ring-white/10" />
                  <div class="grid leading-tight"><span class="text-xs font-black text-[var(--text)]">{{ currentUser.name }}</span><span class="text-[10px] font-bold text-[var(--primary)] uppercase">{{ currentUser.role }}</span></div>
@@ -128,13 +134,13 @@
 </template>
 
 <script setup>
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import BrandLogo from '@/components/common/BrandLogo.vue'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
-import { currentUserStorage, authApi } from '@/services/api'
+import { authApi, currentUserStorage, getDashboardRouteForRole } from '@/services/api'
 
 const route = useRoute()
 const router = useRouter()
@@ -147,11 +153,11 @@ const syncCurrentUser = (event) => {
   currentUser.value = event?.detail ?? currentUserStorage.get()
 }
 
-const handleLogout = () => {
+const handleLogout = async () => {
   const email = currentUser.value?.email || ''
-  authApi.logout()
+  await authApi.logout()
   currentUser.value = null
-  router.push({ path: '/login', state: { email } })
+  router.push({ path: '/login', query: email ? { email } : {} })
 }
 
 const mainNav = [
@@ -185,17 +191,29 @@ const mainNav = [
   },
 ]
 
-const mobileNav = [
-  ...mainNav,
-  {
-    label: 'Đăng nhập',
-    to: '/login',
-  },
-  {
-    label: 'Đăng ký',
-    to: '/register',
-  },
-]
+const mobileNav = computed(() => {
+  if (currentUser.value) {
+    return [
+      ...mainNav,
+      {
+        label: currentUser.value.role === 'admin' ? 'Admin dashboard' : 'Dashboard của tôi',
+        to: getDashboardRouteForRole(currentUser.value.role),
+      },
+    ]
+  }
+
+  return [
+    ...mainNav,
+    {
+      label: 'Đăng nhập',
+      to: '/login',
+    },
+    {
+      label: 'Đăng ký',
+      to: '/register',
+    },
+  ]
+})
 
 const handleScroll = () => {
   isScrolled.value = window.scrollY > 12

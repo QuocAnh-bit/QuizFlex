@@ -33,8 +33,9 @@ onMounted(() => {
   if (state && state.email) {
     form.email = state.email
   }
-  if (state && state.password) {
-    form.password = state.password
+  const params = new URLSearchParams(window.location.search)
+  if (params.get('email')) {
+    form.email = params.get('email')
   }
 })
 
@@ -45,14 +46,15 @@ const handleRegister = async () => {
   try {
     await authApi.register({
       name: form.fullName,
+      username: form.username,
       email: form.email,
       password: form.password,
       role: selectedRole.value === 'Tài khoản VIP' ? 'VIP' : 'USER',
     })
     successMessage.value = 'Tạo tài khoản thành công. Đang chuyển hướng...'
     setTimeout(() => {
-      router.push({ path: '/login', state: { email: form.email, password: form.password } })
-    }, 1500)
+      router.push({ path: '/login', query: { email: form.email } })
+    }, 800)
   } catch (error) {
     successMessage.value = ''
     errors.email = error.message

@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 
 class AuthController extends Controller
 {
@@ -37,25 +39,46 @@ class AuthController extends Controller
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
+            'username' => ['nullable', 'string', 'min:3', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:6', 'max:255'],
+            'role' => ['nullable', Rule::in(['USER', 'VIP', 'user', 'vip'])],
         ]);
 
-        $user = User::create([
+        if (Schema::hasColumn('users', 'username')) {
+            $request->validate([
+                'username' => ['nullable', 'string', 'min:3', 'max:255', Rule::unique('users', 'username')],
+            ]);
+        }
+
+        $role = strtoupper($data['role'] ?? 'USER');
+        $storedRole = $this->roleValueForDatabase($role);
+
+        $payload = [
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
-            'role' => 'USER',
-            'ai_quota_remaining' => 5,
-        ]);
+            'role' => $storedRole,
+        ];
 
-        $token = auth('api')->login($user);
+        if (Schema::hasColumn('users', 'username')) {
+            $payload['username'] = $data['username'] ?? $data['email'];
+        }
+
+        if (Schema::hasColumn('users', 'ai_quota_remaining')) {
+            $payload['ai_quota_remaining'] = $this->defaultAiQuotaForRole($role);
+        }
+
+        if (Schema::hasColumn('users', 'vip_expires_at')) {
+            $payload['vip_expires_at'] = $role === 'VIP' ? now()->addMonth() : null;
+        }
+
+        $user = User::create($payload);
 
         return response()->json([
             'success' => true,
-            'message' => 'Tạo tài khoản thành công',
+            'message' => 'Tạo tài khoản thành công. Vui lòng đăng nhập để tiếp tục.',
             'data' => $this->formatUser($user),
-            'token' => $token,
         ], 201);
     }
 
@@ -127,6 +150,43 @@ class AuthController extends Controller
             'success' => true,
             'message' => 'Đăng xuất thành công',
         ]);
+    }
+
+
+    private function roleValueForDatabase(string $role): string
+    {
+        $role = strtoupper($role);
+
+        if (!Schema::hasColumn('users', 'role')) {
+            return $role;
+        }
+
+        try {
+            $column = Schema::getColumns('users');
+            $roleColumn = collect($column)->firstWhere('name', 'role');
+            $type = strtolower((string) ($roleColumn['type_name'] ?? $roleColumn['type'] ?? ''));
+
+            if (str_contains($type, 'enum') || str_contains($type, 'varchar') || str_contains($type, 'string')) {
+                $allowed = (string) ($roleColumn['type'] ?? '');
+                if (str_contains($allowed, strtolower($role))) {
+                    return strtolower($role);
+                }
+            }
+        } catch (\Throwable) {
+            // Fall back to the migration-defined uppercase enum values.
+        }
+
+        return $role;
+    }
+
+    private function defaultAiQuotaForRole(string $role): int
+    {
+        return match (strtoupper($role)) {
+            'ADMIN' => 9999,
+            'VIP' => 500,
+            'GUEST' => 0,
+            default => 5,
+        };
     }
 
     private function formatUser(User $user): array
