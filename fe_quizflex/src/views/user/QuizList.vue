@@ -13,7 +13,7 @@
     </div>
 
     <article class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow-card)] backdrop-blur-2xl">
-      <div class="grid gap-4 xl:grid-cols-[1fr_auto_auto_auto] xl:items-center">
+      <div class="grid gap-4 xl:grid-cols-[1fr_auto_auto_auto_auto] xl:items-center">
         <input v-model="filters.search" class="field" placeholder="Tìm quiz, category, tag..." @keyup.enter="loadQuizzes" />
         <select v-model="filters.visibility" class="field xl:w-48" @change="loadQuizzes">
           <option value="all">Tất cả visibility</option>
@@ -27,6 +27,11 @@
           <option value="medium">Vừa</option>
           <option value="hard">Khó</option>
         </select>
+        <select v-model="filters.tag" class="field xl:w-44">
+          <option value="all">Tất cả tag</option>
+          <option value="AI">AI</option>
+          <option v-for="tag in tags" :key="tag" :value="tag">{{ tag }}</option>
+        </select>
         <button class="btn-ghost" type="button" @click="loadQuizzes">Tìm kiếm</button>
       </div>
     </article>
@@ -35,7 +40,7 @@
     <div v-if="errorMessage" class="rounded-[2rem] border border-rose-500/30 bg-rose-500/10 p-5 text-sm font-bold text-rose-300">{{ errorMessage }}</div>
 
     <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-      <article v-for="quiz in quizzes" :key="quiz.id" class="group overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-card)] transition duration-300 hover:-translate-y-2 hover:border-[var(--border-strong)]">
+      <article v-for="quiz in filteredQuizzes" :key="quiz.id" class="group overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-card)] transition duration-300 hover:-translate-y-2 hover:border-[var(--border-strong)]">
         <router-link :to="`/quizzes/${quiz.id}`" class="block">
           <div class="relative h-36" :style="{ background: quiz.cover }">
             <div class="absolute inset-0 bg-gradient-to-t from-black/45 via-black/5 to-white/10"></div>
@@ -59,7 +64,7 @@
       </article>
     </div>
 
-    <div v-if="!isLoading && quizzes.length === 0" class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-10 text-center shadow-[var(--shadow-card)]">
+    <div v-if="!isLoading && filteredQuizzes.length === 0" class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-10 text-center shadow-[var(--shadow-card)]">
       <h3 class="text-2xl font-black text-[var(--text)]">Không tìm thấy quiz</h3>
       <p class="mt-2 text-sm text-[var(--muted)]">Đổi bộ lọc hoặc tạo quiz mới trong Admin.</p>
     </div>
@@ -67,19 +72,35 @@
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import VisibilityBadge from '@/components/common/VisibilityBadge.vue'
-import { normalizeQuizCard, quizzesApi } from '@/services/api'
+import { currentUserStorage, normalizeQuizCard, quizzesApi } from '@/services/api'
+
+const route = useRoute()
 
 const quizzes = ref([])
 const isLoading = ref(false)
 const errorMessage = ref('')
+const tags = ref([])
 
 const filters = reactive({
   search: '',
-  visibility: 'all',
+  visibility: currentUserStorage.get() ? 'all' : 'public',
   difficulty: '',
+  tag: 'all',
 })
+
+const applyRouteFilters = () => {
+  filters.search = typeof route.query.search === 'string' ? route.query.search : ''
+  filters.difficulty = typeof route.query.difficulty === 'string' ? route.query.difficulty : ''
+  filters.tag = typeof route.query.tag === 'string' ? route.query.tag : 'all'
+
+  const visibility = typeof route.query.visibility === 'string' ? route.query.visibility : ''
+  filters.visibility = ['all', 'public', 'private', 'group'].includes(visibility)
+    ? visibility
+    : (currentUserStorage.get() ? 'all' : 'public')
+}
 
 const loadQuizzes = async () => {
   isLoading.value = true
@@ -93,6 +114,7 @@ const loadQuizzes = async () => {
     }
     const data = await quizzesApi.list(params)
     quizzes.value = data.map(normalizeQuizCard)
+    tags.value = [...new Set(quizzes.value.map((quiz) => quiz.tag).filter(Boolean).filter((tag) => tag !== 'AI'))]
   } catch (error) {
     errorMessage.value = `Không tải được quiz: ${error.message}`
   } finally {
@@ -100,5 +122,10 @@ const loadQuizzes = async () => {
   }
 }
 
-onMounted(loadQuizzes)
+const filteredQuizzes = computed(() => quizzes.value.filter((quiz) => filters.tag === 'all' || quiz.tag === filters.tag))
+
+onMounted(async () => {
+  applyRouteFilters()
+  await loadQuizzes()
+})
 </script>

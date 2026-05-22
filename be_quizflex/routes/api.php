@@ -12,7 +12,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\PaymentController;
 use App\Services\AI\AIService;
 use App\AI\Prompts\QuizPrompt;
-
+use App\Http\Controllers\AIController;
 
 
 Route::get('/test', function () {
@@ -32,7 +32,7 @@ Route::get('/test', function () {
 Route::get('/ai-test', function () {
     try {
         $service = app(AIService::class);
-        $promt = QuizPrompt::textToQuizJson("
+        $prompt = QuizPrompt::textToQuizJson("
             Câu hỏi trắc nghiệm về mắt Thầy Hiểu NKC
 
 CÂU HỎI TRẮC NGHIỆM VỀ MẮT
@@ -311,7 +311,7 @@ C. 0,067mm
 
 D. 0,041mm.
         ");
-        return $service->parseQuiz($promt);
+        return $service->generateQuiz($prompt);
     } catch (\Throwable $e) {
         return response()->json([
             'message' => 'AI test failed',
@@ -320,6 +320,18 @@ D. 0,041mm.
             'line' => $e->getLine(),
         ], 500);
     }
+});
+
+Route::get('/ai-direct', function () {
+
+    $service = app(\App\Services\AI\AIService::class);
+
+    return response()->json(
+        $service->generateQuiz(
+            'Toán lớp 10',
+            5
+        )
+    );
 });
 
 Route::post('/ocr/scan', [OcrController::class, 'scan']);
@@ -332,6 +344,12 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/auth/me', [AuthController::class, 'me']);
     Route::post('/auth/profile', [AuthController::class, 'updateProfile']);
+    Route::post('/ai/generate', [AIController::class, 'generate']);
+    Route::post('/ai/generate-quiz', [AIController::class, 'generate']);
+    Route::get('/ai/jobs/{jobId}', [AIController::class, 'status'])->whereUuid('jobId');
+    Route::get('/ai/quiz-status/{jobId}', [AIController::class, 'status'])->whereUuid('jobId');
+    Route::get('/ai/logs/{id}', [AIController::class, 'show']);
+
 
     // Admin Only
     Route::middleware('role:admin')->group(function () {
@@ -344,6 +362,7 @@ Route::middleware('auth:api')->group(function () {
 
         // Protected Quiz Routes
         Route::post('/quizzes', [QuizController::class, 'store']);
+        Route::get('/quizzes/{quiz}/edit-data', [QuizController::class, 'editData']);
         Route::put('/quizzes/{quiz}', [QuizController::class, 'update']);
         Route::patch('/quizzes/{quiz}', [QuizController::class, 'update']);
         Route::delete('/quizzes/{quiz}', [QuizController::class, 'destroy']);

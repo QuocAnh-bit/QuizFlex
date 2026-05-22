@@ -29,6 +29,7 @@
 
       <div class="mt-5 flex flex-wrap gap-2">
         <button v-for="item in visibilityChips" :key="item.value" type="button" class="rounded-full border px-4 py-2 text-xs font-black transition hover:-translate-y-0.5 active:scale-95" :class="visibilityFilter === item.value ? 'border-[var(--border-strong)] bg-[var(--chip-active)] text-[var(--primary)]' : 'border-[var(--border)] bg-[var(--surface-soft)] text-[var(--muted)] hover:text-[var(--text)]'" @click="setVisibility(item.value)">{{ item.label }}</button>
+        <button type="button" class="rounded-full border px-4 py-2 text-xs font-black transition hover:-translate-y-0.5 active:scale-95" :class="tagFilter === 'AI' ? 'border-[var(--border-strong)] bg-[var(--chip-active)] text-[var(--primary)]' : 'border-[var(--border)] bg-[var(--surface-soft)] text-[var(--muted)] hover:text-[var(--text)]'" @click="tagFilter = tagFilter === 'AI' ? 'all' : 'AI'">🤖 AI</button>
       </div>
     </article>
 
@@ -77,14 +78,13 @@ import { useRoute } from 'vue-router'
 import VisibilityBadge from '@/components/common/VisibilityBadge.vue'
 import { normalizeQuizCard, quizzesApi } from '@/services/api'
 
+const route = useRoute()
+const questionBase = computed(() => route.path.startsWith('/dashboard') ? '/dashboard/questions' : '/admin/questions')
 const search = ref('')
 const difficultyFilter = ref('')
 const tagFilter = ref('all')
 const visibilityFilter = ref('all')
-const route = useRoute()
 const isUserWorkspace = computed(() => route.path.startsWith('/dashboard'))
-const questionBase = computed(() => isUserWorkspace.value ? '/dashboard/questions' : '/admin/questions')
-
 const quizzes = ref([])
 const isLoading = ref(false)
 const errorMessage = ref('')
@@ -97,6 +97,15 @@ const visibilityChips = [
 ]
 
 const tags = computed(() => [...new Set(quizzes.value.map((quiz) => quiz.tag).filter(Boolean))])
+
+const applyRouteFilters = () => {
+  search.value = typeof route.query.search === 'string' ? route.query.search : ''
+  difficultyFilter.value = typeof route.query.difficulty === 'string' ? route.query.difficulty : ''
+  tagFilter.value = typeof route.query.tag === 'string' ? route.query.tag : 'all'
+
+  const visibility = typeof route.query.visibility === 'string' ? route.query.visibility : 'all'
+  visibilityFilter.value = ['all', 'public', 'private', 'group'].includes(visibility) ? visibility : 'all'
+}
 
 const setVisibility = async (value) => {
   visibilityFilter.value = value
@@ -139,5 +148,8 @@ const filteredQuizzes = computed(() => {
   return quizzes.value.filter((quiz) => tagFilter.value === 'all' || quiz.tag === tagFilter.value)
 })
 
-onMounted(loadQuizzes)
+onMounted(async () => {
+  applyRouteFilters()
+  await loadQuizzes()
+})
 </script>

@@ -175,7 +175,7 @@ api.interceptors.response.use(
       }
     }
 
-    const message = error.response?.data?.message || error.message || 'API request failed'
+    const message = error.response?.data?.data?.error_message || error.response?.data?.error_message || error.response?.data?.message || error.message || 'API request failed'
     return Promise.reject(new Error(message))
   },
 )
@@ -322,6 +322,11 @@ export const quizzesApi = {
     return unwrap(data)
   },
 
+  async getForEdit(id) {
+    const { data } = await api.get(`/quizzes/${id}/edit-data`)
+    return unwrap(data)
+  },
+
   async create(payload) {
     const body = prepareQuizPayload(payload)
     const { data } = await api.post('/quizzes', body)
@@ -379,6 +384,18 @@ export const ocrApi = {
     })
 
     return data
+  },
+}
+
+export const aiApi = {
+  async generate(payload) {
+    const { data } = await api.post('/ai/generate', payload)
+    return unwrap(data)
+  },
+
+  async getJob(jobId) {
+    const { data } = await api.get(`/ai/jobs/${jobId}`)
+    return unwrap(data)
   },
 }
 
@@ -458,6 +475,31 @@ export const normalizeQuestion = (question) => ({
     text: answer.text || answer.content,
     isCorrect: Boolean(answer.is_correct),
   })),
+})
+
+export const buildEditorDraftFromQuiz = (quiz = {}) => ({
+  title: quiz.title || '',
+  tag: quiz.tag || '',
+  description: quiz.description || '',
+  category: quiz.category || 'AI',
+  difficulty: difficultyValue(quiz.difficulty),
+  visibility: quiz.visibility || (quiz.is_public ? 'public' : (quiz.room_code ? 'group' : 'private')),
+  roomCode: quiz.room_code || '',
+  durationMinutes: quiz.duration_minutes || Math.ceil((quiz.time_limit_seconds || 600) / 60),
+  questions: (quiz.questions || []).map((question) => {
+    const normalized = normalizeQuestion(question)
+    return {
+      id: normalized.id,
+      text: normalized.question,
+      correct: normalized.correct || 'A',
+      points: normalized.points || 1,
+      answers: normalized.answers.map((answer) => ({
+        id: answer.id,
+        key: answer.key,
+        text: answer.text,
+      })),
+    }
+  }),
 })
 
 export const formatSeconds = (seconds = 0) => {
