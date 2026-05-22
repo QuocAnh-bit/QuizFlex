@@ -35,10 +35,10 @@ class RoomAssignment extends Model
         return $this->belongsTo(Quiz::class);
     }
 
-    public function teacher()
-    {
-        return $this->belongsTo(User::class, 'assigned_by');
-    }
+    public function assigner()
+{
+    return $this->belongsTo(User::class, 'assigned_by');
+}
 
     public function submissions()
     {

@@ -11,18 +11,25 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('rooms', function (Blueprint $table) {
-            $table->bigIncrements('id');
-            $table->unsignedBigInteger('host_id')->index();
-            $table->unsignedBigInteger('quiz_id')->index();
-            $table->string('code', 6)->unique()->comment('Mã 6 số tham gia phòng');
-            $table->enum('status', ['waiting', 'in_progress', 'finished'])->default('waiting')->index();
-            $table->integer('max_players')->default(20);
-            $table->timestamp('started_at')->nullable();
-            $table->timestamp('ended_at')->nullable();
-            $table->timestamp('created_at')->useCurrent();
-            $table->timestamp('updated_at')->useCurrentOnUpdate()->useCurrent();
-        });
+       Schema::create('rooms', function (Blueprint $table) {
+    $table->bigIncrements('id');
+    $table->unsignedBigInteger('host_id')->index();
+    // Room không còn gắn cố định 1 quiz nữa
+    // Quiz sẽ được giao qua room_assignments
+    $table->unsignedBigInteger('quiz_id')->nullable()->index();
+    $table->string('code', 6)->unique()->comment('Mã 6 ký tự tham gia phòng');
+    $table->enum('status', ['waiting', 'in_progress', 'finished'])->default('waiting')->index();
+    $table->integer('max_players')->default(20);
+
+    // Các cột phục vụ homework room
+    $table->string('name')->nullable();
+    $table->text('description')->nullable();
+    $table->enum('type', ['homework', 'live'])->default('homework');
+    $table->boolean('is_active')->default(true);
+    $table->timestamp('started_at')->nullable();
+    $table->timestamp('ended_at')->nullable();
+    $table->timestamps();
+});
     }
 
     /**

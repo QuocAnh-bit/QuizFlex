@@ -8,6 +8,8 @@ use App\Http\Controllers\OcrController;
 use App\Http\Controllers\QuestionController;
 use App\Http\Controllers\QuizAttemptController;
 use App\Http\Controllers\QuizController;
+use App\Http\Controllers\RoomAssignmentController;
+use App\Http\Controllers\RoomController;
 use App\Http\Controllers\UserController;
 
 Route::get('/test', function () {
@@ -42,7 +44,18 @@ Route::middleware('auth_or_mock')->group(function () {
     Route::get('/quiz-attempts/{quizAttempt}', [QuizAttemptController::class, 'show']);
     Route::post('/quizzes/{quiz}/attempts/start', [QuizAttemptController::class, 'start']);
     Route::post('/quizzes/{quiz}/attempts/submit', [QuizAttemptController::class, 'submit']);
-   
+
+
+    Route::get('/rooms', [RoomController::class, 'index']);
+    Route::post('/rooms', [RoomController::class, 'store']);
+    Route::get('/rooms/{room}', [RoomController::class, 'show']);
+    Route::post('/rooms/join', [RoomController::class, 'join']);
+    Route::get('/rooms/{room}/members', [RoomController::class, 'members']);
+
+    // Room assignments
+    Route::get('/rooms/{room}/assignments', [RoomAssignmentController::class, 'index']);
+    Route::post('/rooms/{room}/assignments', [RoomAssignmentController::class, 'store']);
+    Route::get('/rooms/{room}/assignments/{assignment}', [RoomAssignmentController::class, 'show']);
 });
 
 

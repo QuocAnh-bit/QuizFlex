@@ -21,7 +21,7 @@ return new class extends Migration
                     ->constrained('users')
                     ->cascadeOnDelete();
 
-                $table->enum('role', ['owner', 'teacher', 'student'])->default('student');
+                $table->enum('role', ['owner', 'member'])->default('member');
                 $table->enum('status', ['active', 'removed'])->default('active');
 
                 $table->timestamp('joined_at')->nullable();
