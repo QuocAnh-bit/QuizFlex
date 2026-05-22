@@ -14,6 +14,85 @@ use Illuminate\Support\Facades\DB;
 
 class RoomAssignmentSubmissionController extends Controller
 {
+    public function indexForAssignment(Request $request, Room $room, RoomAssignment $assignment)
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthenticated.',
+            ], 401);
+        }
+
+        if ((int) $assignment->room_id !== (int) $room->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'BÃ i táº­p khÃ´ng thuá»™c room nÃ y.',
+            ], 404);
+        }
+
+        if (!$this->canManageRoomSubmissions($room, $user)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Báº¡n khÃ´ng cÃ³ quyá»n xem bÃ i ná»™p cá»§a assignment nÃ y.',
+            ], 403);
+        }
+
+        $submissions = RoomAssignmentSubmission::query()
+            ->where('assignment_id', $assignment->id)
+            ->with('user:id,name,email,role')
+            ->withCount('answers')
+            ->latest('submitted_at')
+            ->latest('started_at')
+            ->get()
+            ->map(fn (RoomAssignmentSubmission $submission) => $this->formatManagedSubmissionSummary($submission));
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Danh sÃ¡ch bÃ i ná»™p cá»§a assignment',
+            'data' => $submissions,
+        ]);
+    }
+
+    public function showForAssignment(Request $request, Room $room, RoomAssignment $assignment, RoomAssignmentSubmission $submission)
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthenticated.',
+            ], 401);
+        }
+
+        if ((int) $assignment->room_id !== (int) $room->id || (int) $submission->assignment_id !== (int) $assignment->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'KhÃ´ng tÃ¬m tháº¥y bÃ i ná»™p trong assignment nÃ y.',
+            ], 404);
+        }
+
+        if (!$this->canManageRoomSubmissions($room, $user)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Báº¡n khÃ´ng cÃ³ quyá»n xem káº¿t quáº£ bÃ i ná»™p nÃ y.',
+            ], 403);
+        }
+
+        $submission->load([
+            'user:id,name,email,role',
+            'answers.answer',
+            'answers.question.answers',
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Chi tiáº¿t bÃ i ná»™p cá»§a thÃ nh viÃªn',
+            'data' => $this->formatManagedSubmissionResult($submission),
+        ]);
+    }
+
     public function start(Request $request, Room $room, RoomAssignment $assignment)
     {
         $user = $request->user();
@@ -377,6 +456,27 @@ class RoomAssignmentSubmissionController extends Controller
             ->exists();
     }
 
+    private function canManageRoomSubmissions(Room $room, $user): bool
+    {
+        if (!$user) {
+            return false;
+        }
+
+        if (strtolower((string) $user->role) === 'admin') {
+            return true;
+        }
+
+        if ((int) $room->host_id === (int) $user->id) {
+            return true;
+        }
+
+        return RoomMember::where('room_id', $room->id)
+            ->where('user_id', $user->id)
+            ->where('status', 'active')
+            ->whereIn('role', ['owner', 'teacher'])
+            ->exists();
+    }
+
     private function normalizeSelectedAnswerIds(array $data): array
     {
         if (isset($data['selected_answer_ids']) && is_array($data['selected_answer_ids'])) {
@@ -465,6 +565,62 @@ class RoomAssignmentSubmissionController extends Controller
                 'answer_id' => $answer->answer_id,
                 'answer' => $answer->answer?->content,
                 'selected_answer_ids' => $answer->selected_answer_ids,
+                'is_correct' => $answer->is_correct,
+                'score' => $answer->score,
+                'answered_at' => optional($answer->answered_at)->toISOString(),
+            ])->values(),
+        ];
+    }
+
+    private function formatManagedSubmissionSummary(RoomAssignmentSubmission $submission): array
+    {
+        $totalQuestions = (int) ($submission->total_questions ?: 0);
+        $scorePercent = $totalQuestions > 0
+            ? round(((int) $submission->correct_count / $totalQuestions) * 100)
+            : null;
+
+        return [
+            ...$this->formatSubmission($submission),
+            'score_percent' => $scorePercent,
+            'answers_count' => $submission->answers_count ?? null,
+            'user' => [
+                'id' => $submission->user?->id,
+                'name' => $submission->user?->name,
+                'email' => $submission->user?->email,
+                'role' => $submission->user?->role,
+            ],
+        ];
+    }
+
+    private function formatManagedSubmissionResult(RoomAssignmentSubmission $submission): array
+    {
+        return [
+            ...$this->formatManagedSubmissionSummary($submission),
+            'answers' => $submission->answers->map(fn (RoomAssignmentAnswer $answer) => [
+                'id' => $answer->id,
+                'question_id' => $answer->question_id,
+                'question' => $answer->question?->content,
+                'answer_id' => $answer->answer_id,
+                'answer' => $answer->answer?->content,
+                'selected_answer_ids' => $answer->selected_answer_ids,
+                'selected_answers' => $answer->question?->answers
+                    ? $answer->question->answers
+                        ->whereIn('id', $answer->selected_answer_ids ?? [])
+                        ->map(fn (Answer $selectedAnswer) => [
+                            'id' => $selectedAnswer->id,
+                            'content' => $selectedAnswer->content,
+                        ])
+                        ->values()
+                    : [],
+                'correct_answers' => $answer->question?->answers
+                    ? $answer->question->answers
+                        ->where('is_correct', true)
+                        ->map(fn (Answer $correctAnswer) => [
+                            'id' => $correctAnswer->id,
+                            'content' => $correctAnswer->content,
+                        ])
+                        ->values()
+                    : [],
                 'is_correct' => $answer->is_correct,
                 'score' => $answer->score,
                 'answered_at' => optional($answer->answered_at)->toISOString(),

@@ -59,9 +59,11 @@ Route::middleware('auth_or_mock')->group(function () {
     Route::get('/rooms/{room}/assignments/{assignment}', [RoomAssignmentController::class, 'show']);
 
     // Room assignment submissions
-Route::post('/rooms/{room}/assignments/{assignment}/start', [RoomAssignmentSubmissionController::class, 'start']);
-Route::post('/assignment-submissions/{submission}/answer', [RoomAssignmentSubmissionController::class, 'answer']);
-Route::post('/assignment-submissions/{submission}/submit', [RoomAssignmentSubmissionController::class, 'submit']);
+    Route::get('/rooms/{room}/assignments/{assignment}/submissions', [RoomAssignmentSubmissionController::class, 'indexForAssignment']);
+    Route::get('/rooms/{room}/assignments/{assignment}/submissions/{submission}', [RoomAssignmentSubmissionController::class, 'showForAssignment']);
+    Route::post('/rooms/{room}/assignments/{assignment}/start', [RoomAssignmentSubmissionController::class, 'start']);
+    Route::post('/assignment-submissions/{submission}/answer', [RoomAssignmentSubmissionController::class, 'answer']);
+    Route::post('/assignment-submissions/{submission}/submit', [RoomAssignmentSubmissionController::class, 'submit']);
 });
 
 
