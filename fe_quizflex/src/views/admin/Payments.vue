@@ -2,10 +2,10 @@
   <section class="grid gap-6">
     <div class="relative overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-soft)] backdrop-blur-2xl">
       <div class="relative z-10">
-        <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Payment</p>
-        <h1 class="mt-2 text-4xl font-black tracking-[-0.06em] text-[var(--text)]">Gói VIP & thanh toán</h1>
+        <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">{{ $t('admin_views.Payments.badge') }}</p>
+        <h1 class="mt-2 text-4xl font-black tracking-[-0.06em] text-[var(--text)]">{{ $t('admin_views.Payments.title') }}</h1>
         <p class="mt-3 max-w-2xl text-sm leading-7 text-[var(--muted)]">
-          Admin xem được toàn bộ giao dịch. Người dùng thường và VIP chỉ xem được giao dịch của chính họ ở trang nâng cấp.
+          {{ $t('admin_views.Payments.description') }}
         </p>
       </div>
     </div>
@@ -35,12 +35,12 @@
     <article class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-card)]">
       <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
-          <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Payment history</p>
-          <h2 class="mt-2 text-2xl font-black text-[var(--text)]">Tất cả giao dịch</h2>
-          <p class="mt-1 text-sm font-semibold text-[var(--muted)]">Danh sách này chỉ dành cho admin.</p>
+          <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">{{ $t('admin_views.Payments.history_badge') }}</p>
+          <h2 class="mt-2 text-2xl font-black text-[var(--text)]">{{ $t('admin_views.Payments.history_title') }}</h2>
+          <p class="mt-1 text-sm font-semibold text-[var(--muted)]">{{ $t('admin_views.Payments.history_description') }}</p>
         </div>
         <button class="btn-ghost" type="button" :disabled="isLoading" @click="loadPayments">
-          {{ isLoading ? 'Đang tải...' : 'Tải lại' }}
+          {{ isLoading ? $t('admin_views.Payments.loading_button') : $t('admin_views.Payments.reload_button') }}
         </button>
       </div>
 
@@ -52,18 +52,18 @@
         <table class="w-full border-collapse text-left text-sm font-semibold">
           <thead>
             <tr class="border-b border-[var(--border)] text-[var(--muted)]">
-              <th class="pb-3 pr-4 font-black">Người dùng</th>
-              <th class="pb-3 px-4 font-black">Mã giao dịch</th>
-              <th class="pb-3 px-4 font-black">Gói</th>
-              <th class="pb-3 px-4 font-black">Cổng</th>
-              <th class="pb-3 px-4 font-black">Số tiền</th>
-              <th class="pb-3 px-4 font-black">Trạng thái</th>
-              <th class="pb-3 pl-4 font-black">Ngày tạo</th>
+              <th class="pb-3 pr-4 font-black">{{ $t('admin_views.Payments.table.user') }}</th>
+              <th class="pb-3 px-4 font-black">{{ $t('admin_views.Payments.table.order_code') }}</th>
+              <th class="pb-3 px-4 font-black">{{ $t('admin_views.Payments.table.plan') }}</th>
+              <th class="pb-3 px-4 font-black">{{ $t('admin_views.Payments.table.provider') }}</th>
+              <th class="pb-3 px-4 font-black">{{ $t('admin_views.Payments.table.amount') }}</th>
+              <th class="pb-3 px-4 font-black">{{ $t('admin_views.Payments.table.status') }}</th>
+              <th class="pb-3 pl-4 font-black">{{ $t('admin_views.Payments.table.created_at') }}</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="isLoading">
-              <td colspan="7" class="py-10 text-center text-[var(--muted)] font-bold">Đang tải lịch sử giao dịch...</td>
+              <td colspan="7" class="py-10 text-center text-[var(--muted)] font-bold">{{ $t('admin_views.Payments.loading_history') }}</td>
             </tr>
             <tr
               v-for="item in paymentHistory"
@@ -72,8 +72,8 @@
               class="border-b border-[var(--border)]/50 hover:bg-[var(--surface-soft)]/20 transition"
             >
               <td class="py-4 pr-4">
-                <b class="block text-[var(--text)]">{{ item.user_name || 'Không rõ' }}</b>
-                <span class="block text-xs text-[var(--muted)]">{{ item.user_email || 'Chưa có email' }}</span>
+                <b class="block text-[var(--text)]">{{ item.user_name || $t('admin_views.Payments.unknown_user') }}</b>
+                <span class="block text-xs text-[var(--muted)]">{{ item.user_email || $t('admin_views.Payments.no_email') }}</span>
               </td>
               <td class="py-4 px-4 font-mono text-xs text-[var(--text)]">{{ item.order_code }}</td>
               <td class="py-4 px-4 text-[var(--text)]">{{ item.plan_name || getPlanNameByAmount(item.amount) }}</td>
@@ -91,7 +91,7 @@
             </tr>
             <tr v-if="!isLoading && paymentHistory.length === 0">
               <td colspan="7" class="py-10 text-center text-[var(--muted)] font-bold">
-                Chưa có giao dịch nào trên hệ thống.
+                {{ $t('admin_views.Payments.empty') }}
               </td>
             </tr>
           </tbody>
@@ -102,14 +102,17 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { paymentsApi } from '@/services/api'
 
-const paymentPlans = [
-  { id: 'vip_1m', name: 'VIP 1 Tháng', price: '50.000đ', period: '30 ngày', popular: false, features: ['+100 lượt AI', 'OCR PDF/Ảnh', 'Mở khóa Quiz Private'] },
-  { id: 'vip_3m', name: 'VIP 3 Tháng', price: '120.000đ', period: '90 ngày', popular: true, features: ['+350 lượt AI', 'OCR PDF/Ảnh', 'Tạo phòng Realtime lớn'] },
-  { id: 'vip_1y', name: 'VIP 1 Năm', price: '400.000đ', period: '365 ngày', popular: false, features: ['+1500 lượt AI', 'OCR PDF/Ảnh', 'Hỗ trợ xuất đề PDF/Excel'] },
-]
+const { t } = useI18n()
+
+const paymentPlans = computed(() => [
+  { id: 'vip_1m', name: t('admin_views.Payments.plans.vip_1m.name'), price: '50.000đ', period: t('admin_views.Payments.plans.vip_1m.period'), popular: false, features: [t('admin_views.Payments.features.ai_100'), t('admin_views.Payments.features.ocr'), t('admin_views.Payments.features.private_quiz')] },
+  { id: 'vip_3m', name: t('admin_views.Payments.plans.vip_3m.name'), price: '120.000đ', period: t('admin_views.Payments.plans.vip_3m.period'), popular: true, features: [t('admin_views.Payments.features.ai_350'), t('admin_views.Payments.features.ocr'), t('admin_views.Payments.features.realtime_large')] },
+  { id: 'vip_1y', name: t('admin_views.Payments.plans.vip_1y.name'), price: '400.000đ', period: t('admin_views.Payments.plans.vip_1y.period'), popular: false, features: [t('admin_views.Payments.features.ai_1500'), t('admin_views.Payments.features.ocr'), t('admin_views.Payments.features.export_pdf_excel')] },
+])
 
 const paymentHistory = ref([])
 const isLoading = ref(false)
@@ -127,7 +130,7 @@ const loadPayments = async () => {
     const res = await paymentsApi.history()
     paymentHistory.value = Array.isArray(res?.data) ? res.data : []
   } catch (error) {
-    errorMessage.value = error.message || 'Không tải được lịch sử thanh toán.'
+    errorMessage.value = error.message || t('admin_views.Payments.errors.load_failed')
     paymentHistory.value = []
   } finally {
     isLoading.value = false
@@ -136,10 +139,10 @@ const loadPayments = async () => {
 
 const getPlanNameByAmount = (amount) => {
   const parsed = Number(amount)
-  if (parsed === 50000) return 'VIP 1 Tháng'
-  if (parsed === 120000) return 'VIP 3 Tháng'
-  if (parsed === 400000) return 'VIP 1 Năm'
-  return 'Gói VIP tùy chỉnh'
+  if (parsed === 50000) return t('admin_views.Payments.plans.vip_1m.name')
+  if (parsed === 120000) return t('admin_views.Payments.plans.vip_3m.name')
+  if (parsed === 400000) return t('admin_views.Payments.plans.vip_1y.name')
+  return t('admin_views.Payments.custom_plan')
 }
 
 const formatPrice = (value) => new Intl.NumberFormat('vi-VN', {
@@ -159,10 +162,10 @@ const formatDate = (dateString) => {
 }
 
 const getStatusText = (status) => ({
-  pending: 'Đang xử lý',
-  success: 'Thành công',
-  failed: 'Thất bại',
-  refunded: 'Đã hoàn tiền',
+  pending: t('admin_views.Payments.status.pending'),
+  success: t('admin_views.Payments.status.success'),
+  failed: t('admin_views.Payments.status.failed'),
+  refunded: t('admin_views.Payments.status.refunded'),
 }[status] || status)
 
 const getStatusBadgeClass = (status) => ({

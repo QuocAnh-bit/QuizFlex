@@ -17,32 +17,32 @@
           <span class="rounded-full border border-[var(--border)] bg-[var(--surface-soft)] px-3 py-1 text-xs font-black text-[var(--muted)]">{{ quiz.category }}</span>
         </div>
         <h1 class="text-4xl font-black leading-tight tracking-[-0.06em] text-[var(--text)] sm:text-5xl">{{ quiz.title }}</h1>
-        <p class="mt-5 max-w-3xl text-base font-medium leading-8 text-[var(--muted)]">{{ quiz.description || 'Quiz này chưa có mô tả.' }}</p>
+        <p class="mt-5 max-w-3xl text-base font-medium leading-8 text-[var(--muted)]">{{ quiz.description || $t('user_views.QuizDetail.no_description') }}</p>
 
         <div class="mt-8 grid gap-3 sm:grid-cols-3">
-          <div class="rounded-3xl border border-[var(--border)] bg-[var(--surface-soft)] p-5"><p class="text-sm font-bold text-[var(--muted)]">Số câu</p><b class="mt-2 block text-3xl font-black text-[var(--text)]">{{ quiz.questions }}</b></div>
-          <div class="rounded-3xl border border-[var(--border)] bg-[var(--surface-soft)] p-5"><p class="text-sm font-bold text-[var(--muted)]">Thời gian</p><b class="mt-2 block text-3xl font-black text-[var(--text)]">{{ quiz.duration }}</b></div>
-          <div class="rounded-3xl border border-[var(--border)] bg-[var(--surface-soft)] p-5"><p class="text-sm font-bold text-[var(--muted)]">Lượt làm</p><b class="mt-2 block text-3xl font-black text-[var(--text)]">{{ quiz.attempts }}</b></div>
+          <div class="rounded-3xl border border-[var(--border)] bg-[var(--surface-soft)] p-5"><p class="text-sm font-bold text-[var(--muted)]">{{ $t('user_views.QuizDetail.question_count_label') }}</p><b class="mt-2 block text-3xl font-black text-[var(--text)]">{{ quiz.questions }}</b></div>
+          <div class="rounded-3xl border border-[var(--border)] bg-[var(--surface-soft)] p-5"><p class="text-sm font-bold text-[var(--muted)]">{{ $t('user_views.QuizDetail.duration_label') }}</p><b class="mt-2 block text-3xl font-black text-[var(--text)]">{{ quiz.duration }}</b></div>
+          <div class="rounded-3xl border border-[var(--border)] bg-[var(--surface-soft)] p-5"><p class="text-sm font-bold text-[var(--muted)]">{{ $t('user_views.QuizDetail.attempts_label') }}</p><b class="mt-2 block text-3xl font-black text-[var(--text)]">{{ quiz.attempts }}</b></div>
         </div>
 
         <div class="mt-8 flex flex-wrap gap-3">
-          <router-link class="btn-primary" :to="`/quizzes/${quiz.id}/play`">Bắt đầu làm bài</router-link>
-          <router-link class="btn-ghost" :to="`/dashboard/questions/edit/${quiz.id}`">Sửa quiz</router-link>
-          <router-link class="btn-ghost" to="/quizzes">Quay lại danh sách</router-link>
+          <router-link class="btn-primary" :to="`/quizzes/${quiz.id}/play`">{{ $t('user_views.QuizDetail.start_button') }}</router-link>
+          <router-link class="btn-ghost" :to="`/dashboard/questions/edit/${quiz.id}`">{{ $t('user_views.QuizDetail.edit_button') }}</router-link>
+          <router-link class="btn-ghost" to="/quizzes">{{ $t('user_views.QuizDetail.back_button') }}</router-link>
         </div>
       </div>
 
-      <div v-if="isLoading" class="relative z-10 text-sm font-bold text-[var(--muted)]">Đang tải chi tiết quiz...</div>
+      <div v-if="isLoading" class="relative z-10 text-sm font-bold text-[var(--muted)]">{{ $t('user_views.QuizDetail.loading') }}</div>
       <div v-if="errorMessage" class="relative z-10 rounded-2xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm font-bold text-rose-300">{{ errorMessage }}</div>
     </article>
 
     <aside class="grid content-start gap-5">
       <article class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-card)] backdrop-blur-2xl">
-        <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Question preview</p>
-        <h2 class="mt-2 text-2xl font-black text-[var(--text)]">Danh sách câu hỏi</h2>
+        <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">{{ $t('user_views.QuizDetail.question_preview_badge') }}</p>
+        <h2 class="mt-2 text-2xl font-black text-[var(--text)]">{{ $t('user_views.QuizDetail.question_list_title') }}</h2>
         <div class="mt-5 grid gap-3">
           <div v-for="(question, index) in questions" :key="question.id" class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-4">
-            <p class="text-xs font-black text-[var(--primary)]">Câu {{ index + 1 }} • {{ question.points }} điểm</p>
+            <p class="text-xs font-black text-[var(--primary)]">{{ $t('user_views.QuizDetail.question_points', { index: index + 1, points: question.points }) }}</p>
             <p class="mt-2 text-sm font-bold leading-6 text-[var(--text)]">{{ question.question }}</p>
           </div>
         </div>
@@ -54,10 +54,12 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import VisibilityBadge from '@/components/common/VisibilityBadge.vue'
 import { normalizeQuestion, normalizeQuizCard, quizzesApi } from '@/services/api'
 
 const route = useRoute()
+const { t } = useI18n()
 const quiz = ref(null)
 const isLoading = ref(false)
 const errorMessage = ref('')
@@ -72,7 +74,7 @@ const loadQuiz = async () => {
     const data = await quizzesApi.get(route.params.id)
     quiz.value = { ...normalizeQuizCard(data), rawQuestions: data.questions || [] }
   } catch (error) {
-    errorMessage.value = `Không tải được chi tiết quiz: ${error.message}`
+    errorMessage.value = t('user_views.QuizDetail.errors.load_failed', { message: error.message })
   } finally {
     isLoading.value = false
   }

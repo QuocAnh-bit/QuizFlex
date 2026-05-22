@@ -4,13 +4,13 @@
       <div class="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-[var(--primary)]/15 blur-3xl"></div>
       <div class="relative z-10 flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
         <div>
-          <p class="text-sm font-black uppercase tracking-[0.2em] text-[var(--primary)]">Dashboard người dùng</p>
-          <h1 class="mt-3 text-4xl font-black tracking-[-0.06em] text-[var(--text)] sm:text-5xl">Không gian học và tạo quiz của bạn</h1>
-          <p class="mt-4 max-w-2xl text-sm font-medium leading-7 text-[var(--muted)]">Trang này tách khỏi dashboard admin. User và VIP dùng khu vực này để tạo quiz, quản lý kho quiz, OCR, AI và room.</p>
+          <p class="text-sm font-black uppercase tracking-[0.2em] text-[var(--primary)]">{{ $t('user_views.Dashboard.badge') }}</p>
+          <h1 class="mt-3 text-4xl font-black tracking-[-0.06em] text-[var(--text)] sm:text-5xl">{{ $t('user_views.Dashboard.title') }}</h1>
+          <p class="mt-4 max-w-2xl text-sm font-medium leading-7 text-[var(--muted)]">{{ $t('user_views.Dashboard.description') }}</p>
         </div>
         <div class="flex flex-wrap gap-3">
-          <router-link class="btn-primary" to="/dashboard/questions/create">Tạo quiz</router-link>
-          <router-link class="btn-ghost" to="/dashboard/questions">Kho quiz</router-link>
+          <router-link class="btn-primary" to="/dashboard/questions/create">{{ $t('user_views.Dashboard.create_quiz_button') }}</router-link>
+          <router-link class="btn-ghost" to="/dashboard/questions">{{ $t('user_views.Dashboard.quiz_bank_button') }}</router-link>
         </div>
       </div>
     </div>
@@ -31,12 +31,17 @@
 </template>
 
 <script setup>
-const quickActions = [
-  { title: 'Kho quiz của tôi', desc: 'Xem, lọc, sửa và xóa quiz bạn đã tạo.', to: '/dashboard/questions', icon: 'QZ' },
-  { title: 'Tạo quiz thủ công', desc: 'Tạo quiz mới với câu hỏi, đáp án, thời gian và ảnh bìa.', to: '/dashboard/questions/create', icon: '+' },
-  { title: 'AI Generator', desc: 'Sinh bản nháp quiz bằng AI rồi chỉnh lại trước khi lưu.', to: '/dashboard/questions/ai', icon: 'AI' },
-  { title: 'OCR Upload', desc: 'Upload ảnh hoặc tài liệu để trích xuất câu hỏi bằng OCR.', to: '/dashboard/questions/ocr', icon: 'OC' },
-  { title: 'Room', desc: 'Tạo và quản lý room quiz realtime cho nhóm học.', to: '/dashboard/rooms', icon: 'RT' },
-  { title: 'Kết quả của tôi', desc: 'Xem lịch sử làm bài và điểm số đã lưu.', to: '/results', icon: 'RS' },
-]
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
+
+const quickActions = computed(() => [
+  { title: t('user_views.Dashboard.quick_actions.my_quizzes.title'), desc: t('user_views.Dashboard.quick_actions.my_quizzes.desc'), to: '/dashboard/questions', icon: 'QZ' },
+  { title: t('user_views.Dashboard.quick_actions.create_manual.title'), desc: t('user_views.Dashboard.quick_actions.create_manual.desc'), to: '/dashboard/questions/create', icon: '+' },
+  { title: t('user_views.Dashboard.quick_actions.ai_generator.title'), desc: t('user_views.Dashboard.quick_actions.ai_generator.desc'), to: '/dashboard/questions/ai', icon: 'AI' },
+  { title: t('user_views.Dashboard.quick_actions.ocr_upload.title'), desc: t('user_views.Dashboard.quick_actions.ocr_upload.desc'), to: '/dashboard/questions/ocr', icon: 'OC' },
+  { title: t('user_views.Dashboard.quick_actions.room.title'), desc: t('user_views.Dashboard.quick_actions.room.desc'), to: '/dashboard/rooms', icon: 'RT' },
+  { title: t('user_views.Dashboard.quick_actions.results.title'), desc: t('user_views.Dashboard.quick_actions.results.desc'), to: '/results', icon: 'RS' },
+])
 </script>

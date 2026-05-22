@@ -5,25 +5,25 @@
       <div class="pointer-events-none absolute -left-24 top-1/2 h-64 w-64 rounded-full bg-[var(--accent)]/10 blur-3xl"></div>
 
       <div class="relative z-10">
-        <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Manual editor</p>
-        <h1 class="mt-2 text-4xl font-black tracking-[-0.06em] text-[var(--text)]">{{ isEditMode ? 'Sửa quiz' : 'Tạo quiz thủ công' }}</h1>
-        <p class="mt-3 max-w-2xl text-sm leading-7 text-[var(--muted)]">Lưu quiz, câu hỏi, đáp án và ảnh bìa trực tiếp vào backend. Form này giờ đã có mặt mũi hơn một bảng nhập liệu hành chính.</p>
+        <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">{{ $t('admin_views.CreateQuiz.badge') }}</p>
+        <h1 class="mt-2 text-4xl font-black tracking-[-0.06em] text-[var(--text)]">{{ isEditMode ? $t('admin_views.CreateQuiz.edit_title') : $t('admin_views.CreateQuiz.create_title') }}</h1>
+        <p class="mt-3 max-w-2xl text-sm leading-7 text-[var(--muted)]">{{ $t('admin_views.CreateQuiz.description') }}</p>
 
         <div class="mt-8 grid gap-5">
           <div class="grid gap-4 md:grid-cols-[1fr_220px]">
             <label class="grid gap-2 text-sm font-black text-[var(--text)]">
-              Tiêu đề quiz
-              <input v-model="form.title" class="field" placeholder="Ví dụ: Ôn tập Sinh học lớp 10" />
+              {{ $t('admin_views.CreateQuiz.quiz_title_label') }}
+              <input v-model="form.title" class="field" :placeholder="$t('admin_views.CreateQuiz.quiz_title_placeholder')" />
             </label>
             <label class="grid gap-2 text-sm font-black text-[var(--text)]">
-              Tag
-              <input v-model="form.tag" class="field" placeholder="Sinh học" />
+              {{ $t('admin_views.CreateQuiz.tag_label') }}
+              <input v-model="form.tag" class="field" :placeholder="$t('admin_views.CreateQuiz.tag_placeholder')" />
             </label>
           </div>
 
           <label class="grid gap-2 text-sm font-black text-[var(--text)]">
-            Mô tả
-            <textarea v-model="form.description" class="field min-h-28" placeholder="Mô tả ngắn cho người làm quiz"></textarea>
+            {{ $t('admin_views.CreateQuiz.description_label') }}
+            <textarea v-model="form.description" class="field min-h-28" :placeholder="$t('admin_views.CreateQuiz.description_placeholder')"></textarea>
           </label>
 
           <section class="overflow-hidden rounded-[1.7rem] border border-[var(--border)] bg-[var(--surface-soft)] shadow-[var(--shadow-card)]">
@@ -31,36 +31,36 @@
               <div class="p-5">
                 <div class="flex flex-wrap items-start justify-between gap-4">
                   <div>
-                    <p class="text-xs font-black uppercase tracking-[0.18em] text-[var(--primary)]">Ảnh bìa</p>
-                    <h2 class="mt-2 text-2xl font-black tracking-[-0.05em] text-[var(--text)]">Cover của quiz</h2>
-                    <p class="mt-2 text-sm leading-6 text-[var(--muted)]">Chỉ upload file ảnh từ máy. Nếu chưa chọn ảnh, hệ thống dùng gradient dự phòng cho đỡ trống trải.</p>
+                    <p class="text-xs font-black uppercase tracking-[0.18em] text-[var(--primary)]">{{ $t('admin_views.CreateQuiz.cover_badge') }}</p>
+                    <h2 class="mt-2 text-2xl font-black tracking-[-0.05em] text-[var(--text)]">{{ $t('admin_views.CreateQuiz.cover_title') }}</h2>
+                    <p class="mt-2 text-sm leading-6 text-[var(--muted)]">{{ $t('admin_views.CreateQuiz.cover_description') }}</p>
                   </div>
-                  <button class="btn-ghost !px-4 !py-2 text-xs" type="button" @click="openCoverPicker">Chọn ảnh</button>
+                  <button class="btn-ghost !px-4 !py-2 text-xs" type="button" @click="openCoverPicker">{{ $t('admin_views.CreateQuiz.choose_image_button') }}</button>
                 </div>
 
                 <input ref="coverInput" class="hidden" type="file" accept="image/png,image/jpeg,image/jpg,image/webp,image/gif" @change="handleCoverFileChange" />
 
                 <div class="mt-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_240px]">
                   <div class="rounded-[1.35rem] border border-[var(--border)] bg-[var(--surface)] p-4">
-                    <p class="text-sm font-black text-[var(--text)]">File ảnh bìa</p>
+                    <p class="text-sm font-black text-[var(--text)]">{{ $t('admin_views.CreateQuiz.cover_file_label') }}</p>
                     <p class="mt-1 text-xs font-bold leading-5 text-[var(--muted)]">{{ selectedCoverLabel }}</p>
-                    <button class="btn-ghost mt-4 !px-4 !py-2 text-xs" type="button" @click="openCoverPicker">Upload ảnh</button>
+                    <button class="btn-ghost mt-4 !px-4 !py-2 text-xs" type="button" @click="openCoverPicker">{{ $t('admin_views.CreateQuiz.upload_image_button') }}</button>
                   </div>
 
                   <div class="grid gap-2 text-sm font-black text-[var(--text)]">
-                    Avatar người tạo
+                    {{ $t('admin_views.CreateQuiz.creator_avatar_label') }}
                     <div class="flex min-h-[72px] items-center gap-3 rounded-[1.35rem] border border-[var(--border)] bg-[var(--surface)] px-4 py-3">
                       <UserAvatar :user="creatorProfile" size-class="h-12 w-12" text-class="text-sm" ring-class="ring-2 ring-white/10" />
                       <div class="min-w-0">
-                        <p class="truncate text-sm font-black text-[var(--text)]">{{ creatorProfile.name || 'Người tạo hiện tại' }}</p>
-                        <p class="truncate text-[11px] font-bold text-[var(--muted)]">Avatar lấy từ hồ sơ.</p>
+                        <p class="truncate text-sm font-black text-[var(--text)]">{{ creatorProfile.name || $t('admin_views.CreateQuiz.current_creator') }}</p>
+                        <p class="truncate text-[11px] font-bold text-[var(--muted)]">{{ $t('admin_views.CreateQuiz.avatar_from_profile') }}</p>
                       </div>
                     </div>
                   </div>
                 </div>
 
                 <div class="mt-4 flex flex-wrap gap-2">
-                  <button v-if="form.cover || form.coverFile" type="button" class="rounded-full border border-rose-500/30 bg-rose-500/10 px-4 py-2 text-xs font-black text-rose-300 transition hover:-translate-y-0.5" @click="removeCover">Xóa bìa</button>
+                  <button v-if="form.cover || form.coverFile" type="button" class="rounded-full border border-rose-500/30 bg-rose-500/10 px-4 py-2 text-xs font-black text-rose-300 transition hover:-translate-y-0.5" @click="removeCover">{{ $t('admin_views.CreateQuiz.remove_cover_button') }}</button>
                 </div>
               </div>
 
@@ -68,8 +68,8 @@
                 <div class="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-white/10"></div>
                 <div class="absolute bottom-4 left-4 right-4">
                   <div class="mb-3"><UserAvatar :user="creatorProfile" size-class="h-12 w-12" rounded-class="rounded-2xl" text-class="text-sm" ring-class="ring-2 ring-white/10" shadow-class="shadow-xl" /></div>
-                  <p class="line-clamp-2 text-lg font-black leading-6 text-white drop-shadow">{{ form.title || 'Quiz chưa đặt tên' }}</p>
-                  <p class="mt-1 text-xs font-bold text-white/75">{{ form.category || 'Danh mục' }} • {{ difficultyText }}</p>
+                  <p class="line-clamp-2 text-lg font-black leading-6 text-white drop-shadow">{{ form.title || $t('admin_views.CreateQuiz.untitled_quiz') }}</p>
+                  <p class="mt-1 text-xs font-bold text-white/75">{{ form.category || $t('admin_views.CreateQuiz.default_category_label') }} • {{ difficultyText }}</p>
                 </div>
               </div>
             </div>
@@ -77,27 +77,27 @@
 
           <div class="grid gap-4 md:grid-cols-3">
             <label class="grid gap-2 text-sm font-black text-[var(--text)]">
-              Thời gian phút
+              {{ $t('admin_views.CreateQuiz.duration_label') }}
               <input v-model.number="form.durationMinutes" class="field" type="number" min="1" max="1440" />
             </label>
             <label class="grid gap-2 text-sm font-black text-[var(--text)]">
-              Độ khó
+              {{ $t('admin_views.CreateQuiz.difficulty_label') }}
               <select v-model="form.difficulty" class="field">
-                <option value="easy">Dễ</option>
-                <option value="medium">Vừa</option>
-                <option value="hard">Khó</option>
+                <option value="easy">{{ $t('admin_views.CreateQuiz.difficulty_easy') }}</option>
+                <option value="medium">{{ $t('admin_views.CreateQuiz.difficulty_medium') }}</option>
+                <option value="hard">{{ $t('admin_views.CreateQuiz.difficulty_hard') }}</option>
               </select>
             </label>
             <label class="grid gap-2 text-sm font-black text-[var(--text)]">
-              Danh mục
-              <input v-model="form.category" class="field" placeholder="Khoa học" />
+              {{ $t('admin_views.CreateQuiz.category_label') }}
+              <input v-model="form.category" class="field" :placeholder="$t('admin_views.CreateQuiz.category_placeholder')" />
             </label>
           </div>
         </div>
 
         <div class="mt-8">
           <div class="mb-4 flex items-center justify-between gap-4">
-            <h2 class="text-2xl font-black tracking-[-0.05em] text-[var(--text)]">Visibility</h2>
+            <h2 class="text-2xl font-black tracking-[-0.05em] text-[var(--text)]">{{ $t('admin_views.CreateQuiz.visibility_title') }}</h2>
             <VisibilityBadge :value="form.visibility" />
           </div>
           <div class="grid gap-3 md:grid-cols-3">
@@ -111,34 +111,34 @@
             </button>
           </div>
           <label v-if="form.visibility === 'group'" class="mt-4 grid gap-2 text-sm font-black text-[var(--text)]">
-            Room gắn với quiz
-            <input v-model="form.roomCode" class="field" placeholder="VD: QZ24" />
+            {{ $t('admin_views.CreateQuiz.room_code_label') }}
+            <input v-model="form.roomCode" class="field" :placeholder="$t('admin_views.CreateQuiz.room_code_placeholder')" />
           </label>
         </div>
 
         <div class="mt-8 grid gap-4">
           <div class="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p class="text-xs font-black uppercase tracking-[0.18em] text-[var(--primary)]">Question builder</p>
-              <h2 class="mt-1 text-2xl font-black tracking-[-0.05em] text-[var(--text)]">Câu hỏi và đáp án</h2>
+              <p class="text-xs font-black uppercase tracking-[0.18em] text-[var(--primary)]">{{ $t('admin_views.CreateQuiz.question_builder_badge') }}</p>
+              <h2 class="mt-1 text-2xl font-black tracking-[-0.05em] text-[var(--text)]">{{ $t('admin_views.CreateQuiz.question_builder_title') }}</h2>
             </div>
-            <button class="btn-ghost !px-4 !py-2 text-xs" type="button" @click="addQuestion">Thêm câu hỏi</button>
+            <button class="btn-ghost !px-4 !py-2 text-xs" type="button" @click="addQuestion">{{ $t('admin_views.CreateQuiz.add_question_button') }}</button>
           </div>
 
           <div v-for="(question, index) in questions" :key="question.localId" class="rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface-soft)] p-4 transition hover:border-[var(--border-strong)]">
             <div class="mb-3 flex items-center justify-between gap-3">
-              <b class="text-[var(--text)]">Câu {{ index + 1 }}</b>
-              <button type="button" class="text-sm font-black text-[var(--danger)]" @click="removeQuestion(index)">Xóa</button>
+              <b class="text-[var(--text)]">{{ $t('admin_views.CreateQuiz.question_number', { index: index + 1 }) }}</b>
+              <button type="button" class="text-sm font-black text-[var(--danger)]" @click="removeQuestion(index)">{{ $t('admin_views.CreateQuiz.delete_button') }}</button>
             </div>
             <div class="grid gap-3 md:grid-cols-[1fr_120px]">
-              <input v-model="question.text" class="field" placeholder="Nội dung câu hỏi" />
+              <input v-model="question.text" class="field" :placeholder="$t('admin_views.CreateQuiz.question_placeholder')" />
               <input v-model.number="question.points" class="field" type="number" min="1" max="1000" />
             </div>
             <div class="mt-3 grid gap-3 md:grid-cols-2">
-              <input v-for="answer in question.answers" :key="answer.key" v-model="answer.text" class="field" :placeholder="`Đáp án ${answer.key}`" />
+              <input v-for="answer in question.answers" :key="answer.key" v-model="answer.text" class="field" :placeholder="$t('admin_views.CreateQuiz.answer_placeholder', { key: answer.key })" />
             </div>
             <label class="mt-3 grid gap-2 text-sm font-black text-[var(--text)]">
-              Đáp án đúng
+              {{ $t('admin_views.CreateQuiz.correct_answer_label') }}
               <select v-model="question.correct" class="field">
                 <option>A</option>
                 <option>B</option>
@@ -152,8 +152,8 @@
         <div v-if="errorMessage" class="mt-5 rounded-2xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm font-bold text-rose-300">{{ errorMessage }}</div>
         <div v-if="successMessage" class="mt-5 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm font-bold text-emerald-300">{{ successMessage }}</div>
         <div class="mt-6 flex flex-wrap gap-3">
-          <button class="btn-ghost" type="button" @click="addQuestion">Thêm câu hỏi</button>
-          <button class="btn-primary" type="submit" :disabled="isSaving">{{ isSaving ? 'Đang lưu...' : 'Lưu quiz' }}</button>
+          <button class="btn-ghost" type="button" @click="addQuestion">{{ $t('admin_views.CreateQuiz.add_question_button') }}</button>
+          <button class="btn-primary" type="submit" :disabled="isSaving">{{ isSaving ? $t('admin_views.CreateQuiz.saving_button') : $t('admin_views.CreateQuiz.save_button') }}</button>
         </div>
       </div>
     </form>
@@ -165,19 +165,19 @@
           <div class="absolute bottom-5 right-5"><UserAvatar :user="creatorProfile" size-class="h-14 w-14" rounded-class="rounded-2xl" text-class="text-sm" ring-class="ring-2 ring-white/10" shadow-class="shadow-xl" /></div>
         </div>
         <div class="p-6">
-          <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Live preview</p>
-          <h3 class="mt-2 text-2xl font-black text-[var(--text)]">{{ form.title || 'Quiz chưa đặt tên' }}</h3>
-          <p class="mt-2 text-sm leading-6 text-[var(--muted)]">{{ form.description || 'Mô tả sẽ hiển thị ở đây.' }}</p>
+          <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">{{ $t('admin_views.CreateQuiz.live_preview_badge') }}</p>
+          <h3 class="mt-2 text-2xl font-black text-[var(--text)]">{{ form.title || $t('admin_views.CreateQuiz.untitled_quiz') }}</h3>
+          <p class="mt-2 text-sm leading-6 text-[var(--muted)]">{{ form.description || $t('admin_views.CreateQuiz.preview_description') }}</p>
           <div class="mt-4 flex flex-wrap gap-2">
             <VisibilityBadge :value="form.visibility" />
             <span class="rounded-full border border-[var(--border)] bg-[var(--surface-soft)] px-3 py-1 text-xs font-black text-[var(--muted)]">{{ difficultyText }}</span>
-            <span class="rounded-full border border-[var(--border)] bg-[var(--surface-soft)] px-3 py-1 text-xs font-black text-[var(--muted)]">{{ questions.length }} câu</span>
+            <span class="rounded-full border border-[var(--border)] bg-[var(--surface-soft)] px-3 py-1 text-xs font-black text-[var(--muted)]">{{ $t('admin_views.CreateQuiz.question_count', { count: questions.length }) }}</span>
           </div>
         </div>
       </article>
 
       <article class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-card)] backdrop-blur-2xl">
-        <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Kiểm tra nhanh</p>
+        <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">{{ $t('admin_views.CreateQuiz.checklist_badge') }}</p>
         <div class="mt-5 grid gap-3">
           <div v-for="item in checklist" :key="item" class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-4 text-sm font-bold text-[var(--muted)]">{{ item }}</div>
         </div>
@@ -189,19 +189,21 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import VisibilityBadge from '@/components/common/VisibilityBadge.vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import { coverToBackground, currentUserStorage, difficultyLabel, normalizeQuestion, quizzesApi } from '@/services/api'
 
 const route = useRoute()
 const router = useRouter()
+const { t } = useI18n()
 const questionBase = computed(() => route.path.startsWith('/dashboard') ? '/dashboard/questions' : '/admin/questions')
 
-const visibilityOptions = [
-  { value: 'public', short: 'PUB', title: 'Public', description: 'Ai cũng có thể xem và làm bài.' },
-  { value: 'private', short: 'PRI', title: 'Private', description: 'Chỉ hiển thị trong khu quản trị.' },
-  { value: 'group', short: 'GRP', title: 'Group', description: 'Gắn quiz với room code.' },
-]
+const visibilityOptions = computed(() => [
+  { value: 'public', short: 'PUB', title: 'Public', description: t('admin_views.CreateQuiz.visibility.public_description') },
+  { value: 'private', short: 'PRI', title: 'Private', description: t('admin_views.CreateQuiz.visibility.private_description') },
+  { value: 'group', short: 'GRP', title: 'Group', description: t('admin_views.CreateQuiz.visibility.group_description') },
+])
 
 const isEditMode = computed(() => Boolean(route.params.id))
 const isSaving = ref(false)
@@ -219,7 +221,7 @@ const form = reactive({
   removeCover: false,
   durationMinutes: 12,
   difficulty: 'medium',
-  category: 'Khoa học',
+  category: t('admin_views.CreateQuiz.default_category'),
   visibility: route.query.visibility === 'group' ? 'group' : 'public',
   roomCode: route.query.visibility === 'group' ? `GR${Math.floor(1000 + Math.random() * 9000)}` : '',
 })
@@ -234,20 +236,27 @@ const makeBlankQuestion = () => ({
 })
 
 const questions = ref([makeBlankQuestion()])
-const checklist = ['Có tiêu đề rõ ràng', 'Có ảnh bìa hoặc gradient dự phòng', 'Ít nhất 1 câu hỏi', 'Mỗi câu có 4 đáp án', 'Mỗi câu có đáp án đúng', 'Group quiz cần có room code']
+const checklist = computed(() => [
+  t('admin_views.CreateQuiz.checklist.has_title'),
+  t('admin_views.CreateQuiz.checklist.has_cover'),
+  t('admin_views.CreateQuiz.checklist.has_question'),
+  t('admin_views.CreateQuiz.checklist.four_answers'),
+  t('admin_views.CreateQuiz.checklist.correct_answer'),
+  t('admin_views.CreateQuiz.checklist.group_room'),
+])
 const difficultyText = computed(() => difficultyLabel(form.difficulty))
-const creatorProfile = ref(currentUserStorage.get() || { name: 'Guest', email: '', avatar: '' })
+const creatorProfile = ref(currentUserStorage.get() || { name: t('admin_views.CreateQuiz.guest_name'), email: '', avatar: '' })
 const coverBackground = computed(() => coverToBackground(coverPreview.value || form.cover))
 const selectedCoverLabel = computed(() => {
-  if (form.coverFile) return `Đã chọn: ${form.coverFile.name}`
-  if (form.cover) return 'Đang dùng ảnh bìa đã lưu.'
-  return 'Chưa có ảnh bìa. Hệ thống sẽ dùng gradient dự phòng.'
+  if (form.coverFile) return t('admin_views.CreateQuiz.selected_cover', { name: form.coverFile.name })
+  if (form.cover) return t('admin_views.CreateQuiz.saved_cover')
+  return t('admin_views.CreateQuiz.no_cover')
 })
 
 const addQuestion = () => questions.value.push(makeBlankQuestion())
 const removeQuestion = (index) => {
   if (questions.value.length === 1) {
-    errorMessage.value = 'Quiz cần ít nhất 1 câu hỏi, xóa hết thì backend cũng chỉ biết thở dài.'
+    errorMessage.value = t('admin_views.CreateQuiz.errors.need_one_question')
     return
   }
   questions.value.splice(index, 1)
@@ -271,13 +280,13 @@ const handleCoverFileChange = (event) => {
   if (!file) return
 
   if (!file.type.startsWith('image/')) {
-    errorMessage.value = 'File bìa phải là ảnh.'
+    errorMessage.value = t('admin_views.CreateQuiz.errors.cover_image_only')
     event.target.value = ''
     return
   }
 
   if (file.size > 4 * 1024 * 1024) {
-    errorMessage.value = 'Ảnh bìa tối đa 4MB. Đừng bắt server nuốt cả album cưới.'
+    errorMessage.value = t('admin_views.CreateQuiz.errors.cover_max_size')
     event.target.value = ''
     return
   }
@@ -333,15 +342,15 @@ const makePayload = () => {
 }
 
 const validateBeforeSave = () => {
-  if (!form.title.trim()) return 'Bạn chưa nhập tiêu đề quiz.'
-  if (form.visibility === 'group' && !form.roomCode.trim()) return 'Quiz dạng group cần có room code.'
-  if (questions.value.length === 0) return 'Quiz cần ít nhất 1 câu hỏi.'
+  if (!form.title.trim()) return t('admin_views.CreateQuiz.errors.title_required')
+  if (form.visibility === 'group' && !form.roomCode.trim()) return t('admin_views.CreateQuiz.errors.room_required')
+  if (questions.value.length === 0) return t('admin_views.CreateQuiz.errors.need_one_question')
 
   for (const [index, question] of questions.value.entries()) {
-    if (!question.text.trim()) return `Câu ${index + 1} chưa có nội dung.`
-    if (question.answers.length < 2) return `Câu ${index + 1} cần ít nhất 2 đáp án.`
-    if (question.answers.some((answer) => !answer.text.trim())) return `Câu ${index + 1} còn đáp án trống.`
-    if (!question.answers.some((answer) => answer.key === question.correct)) return `Câu ${index + 1} chưa chọn đáp án đúng.`
+    if (!question.text.trim()) return t('admin_views.CreateQuiz.errors.question_empty', { index: index + 1 })
+    if (question.answers.length < 2) return t('admin_views.CreateQuiz.errors.answer_min', { index: index + 1 })
+    if (question.answers.some((answer) => !answer.text.trim())) return t('admin_views.CreateQuiz.errors.answer_empty', { index: index + 1 })
+    if (!question.answers.some((answer) => answer.key === question.correct)) return t('admin_views.CreateQuiz.errors.correct_missing', { index: index + 1 })
   }
 
   return ''
@@ -358,10 +367,10 @@ const saveQuiz = async () => {
   try {
     const payload = makePayload()
     const saved = isEditMode.value ? await quizzesApi.update(route.params.id, payload) : await quizzesApi.create(payload)
-    successMessage.value = isEditMode.value ? 'Đã cập nhật quiz.' : 'Đã tạo quiz mới.'
+    successMessage.value = isEditMode.value ? t('admin_views.CreateQuiz.success.updated') : t('admin_views.CreateQuiz.success.created')
     router.push(`${questionBase.value}/edit/${saved.id}`)
   } catch (error) {
-    errorMessage.value = `Lưu thất bại: ${error.message}`
+    errorMessage.value = t('admin_views.CreateQuiz.errors.save_failed', { message: error.message })
   } finally {
     isSaving.value = false
   }
@@ -381,7 +390,7 @@ const loadQuizForEdit = async () => {
     coverPreview.value = ''
     form.durationMinutes = quiz.duration_minutes || Math.ceil((quiz.time_limit_seconds || 720) / 60)
     form.difficulty = quiz.difficulty || 'medium'
-    form.category = quiz.category || 'Khoa học'
+    form.category = quiz.category || t('admin_views.CreateQuiz.default_category')
     form.visibility = quiz.visibility || 'public'
     form.roomCode = quiz.room_code || ''
 
@@ -399,7 +408,7 @@ const loadQuizForEdit = async () => {
 
     if (questions.value.length === 0) questions.value = [makeBlankQuestion()]
   } catch (error) {
-    errorMessage.value = `Không tải được quiz để sửa: ${error.message}`
+    errorMessage.value = t('admin_views.CreateQuiz.errors.load_edit_failed', { message: error.message })
   }
 }
 
@@ -414,7 +423,7 @@ const loadOcrDraft = () => {
 }
 
 const syncCreatorProfile = (event) => {
-  creatorProfile.value = event?.detail ?? currentUserStorage.get() ?? { name: 'Guest', email: '', avatar: '' }
+  creatorProfile.value = event?.detail ?? currentUserStorage.get() ?? { name: t('admin_views.CreateQuiz.guest_name'), email: '', avatar: '' }
 }
 
 onMounted(async () => {

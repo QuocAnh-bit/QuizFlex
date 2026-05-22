@@ -42,6 +42,7 @@
           </nav>
 
           <div class="hidden shrink-0 items-center gap-3 xl:flex">
+            <LanguageSwitcher />
             <ThemeToggle />
 
             <template v-if="!currentUser">
@@ -49,7 +50,7 @@
                 to="/login"
                 class="inline-flex h-11 shrink-0 items-center justify-center whitespace-nowrap rounded-full border border-[var(--border)] bg-[var(--surface-soft)] px-5 text-sm font-black text-[var(--text)] transition duration-300 hover:-translate-y-0.5 hover:border-[var(--border-strong)] hover:bg-[var(--chip-active)] hover:shadow-[0_14px_35px_rgba(155,44,255,0.16)] active:scale-95"
               >
-                Đăng nhập
+                {{ $t('user_layout.login_button') }}
               </router-link>
 
               <router-link
@@ -58,7 +59,7 @@
               >
                 <span class="absolute inset-0 translate-x-[-120%] bg-gradient-to-r from-transparent via-white/30 to-transparent transition duration-700 group-hover:translate-x-[120%]"></span>
                 <span class="relative z-10">
-                  Bắt đầu
+                  {{ $t('user_layout.start_button') }}
                 </span>
               </router-link>
             </template>
@@ -66,7 +67,7 @@
               <div class="flex items-center gap-3 rounded-full border border-[var(--border)] bg-[var(--surface-soft)] pl-1.5 pr-4 py-1.5">
                  <UserAvatar :user="currentUser" size-class="h-8 w-8" text-class="text-xs" ring-class="ring-2 ring-white/10" />
                  <div class="grid leading-tight"><span class="text-xs font-black text-[var(--text)]">{{ currentUser.name }}</span><span class="text-[10px] font-bold text-[var(--primary)] uppercase">{{ currentUser.role }}</span></div>
-                 <button @click="handleLogout" class="ml-2 text-xs font-black text-rose-500 hover:text-rose-400">Đăng xuất</button>
+                 <button @click="handleLogout" class="ml-2 text-xs font-black text-rose-500 hover:text-rose-400">{{ $t('user_layout.logout_button') }}</button>
               </div>
             </template>
           </div>
@@ -79,7 +80,7 @@
               class="inline-flex h-11 items-center justify-center whitespace-nowrap rounded-full border border-[var(--border)] bg-[var(--surface-soft)] px-4 text-sm font-black text-[var(--text)] shadow-[var(--shadow-card)] transition duration-300 hover:border-[var(--border-strong)] active:scale-95"
               @click="isMenuOpen = !isMenuOpen"
             >
-              {{ isMenuOpen ? 'Đóng' : 'Menu' }}
+              {{ isMenuOpen ? $t('user_layout.close_menu') : $t('user_layout.open_menu') }}
             </button>
           </div>
         </div>
@@ -128,8 +129,10 @@
 </template>
 
 <script setup>
+import LanguageSwitcher from '@/components/LanguageSwitcher.vue';
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 
 import BrandLogo from '@/components/common/BrandLogo.vue'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
@@ -138,6 +141,7 @@ import { authApi, currentUserStorage, getDashboardRouteForRole } from '@/service
 
 const route = useRoute()
 const router = useRouter()
+const { t } = useI18n()
 
 const isMenuOpen = ref(false)
 const isScrolled = ref(false)
@@ -154,56 +158,56 @@ const handleLogout = async () => {
   router.push({ path: '/login', query: email ? { email } : {} })
 }
 
-const mainNav = [
+const mainNav = computed(() => [
   {
-    label: 'Trang chủ',
+    label: t('user_nav.home'),
     to: '/',
   },
   {
-    label: 'Chủ đề',
+    label: t('user_nav.topics'),
     to: '/#quiz-topics',
   },
   {
-    label: 'Làm quiz',
+    label: t('user_nav.quizzes'),
     to: '/quizzes',
   },
   {
-    label: 'Join room',
+    label: t('user_nav.join_room'),
     to: '/join-room',
   },
   {
-    label: 'Kết quả',
+    label: t('user_nav.results'),
     to: '/results',
   },
   {
-    label: 'Hồ sơ',
+    label: t('user_nav.profile'),
     to: '/profile',
   },
   {
-    label: 'Nâng cấp',
+    label: t('user_nav.upgrade'),
     to: '/upgrade',
   },
-]
+])
 
 const mobileNav = computed(() => {
   if (currentUser.value) {
     return [
-      ...mainNav,
+      ...mainNav.value,
       {
-        label: currentUser.value.role === 'admin' ? 'Admin dashboard' : 'Dashboard của tôi',
+        label: currentUser.value.role === 'admin' ? t('user_nav.admin_dashboard') : t('user_nav.my_dashboard'),
         to: getDashboardRouteForRole(currentUser.value.role),
       },
     ]
   }
 
   return [
-    ...mainNav,
+    ...mainNav.value,
     {
-      label: 'Đăng nhập',
+      label: t('user_nav.login'),
       to: '/login',
     },
     {
-      label: 'Đăng ký',
+      label: t('user_nav.register'),
       to: '/register',
     },
   ]

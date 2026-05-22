@@ -6,7 +6,7 @@ const USER_ROLES = ['vip', 'user']
 const ADMIN_ROLES = ['admin']
 
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: "http://127.0.0.1:8000/api",
   headers: {
     Accept: 'application/json',
   },

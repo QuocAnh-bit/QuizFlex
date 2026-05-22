@@ -1,0 +1,905 @@
+{
+  "common": {
+    "welcome": "Chào mừng đến với QuizFlex",
+    "save": "Lưu",
+    "cancel": "Hủy"
+  },
+  "auth": {
+    "login": "Đăng nhập",
+    "register": "Đăng ký",
+    "email": "Email",
+    "password": "Mật khẩu",
+    "login_page": {
+      "workspace_badge": "QuizFlex Workspace",
+      "hero_title": "Chào mừng trở lại.",
+      "hero_description": "Đăng nhập để tiếp tục quản lý quiz, room realtime và lượt tạo câu hỏi bằng AI.",
+      "quiz_stat_label": "Quiz",
+      "ai_usage_stat_label": "AI usage",
+      "form_badge": "Đăng nhập tài khoản",
+      "form_title": "Tiếp tục với QuizFlex",
+      "form_description": "Đăng nhập bằng tài khoản đã có trong bảng users.",
+      "email_placeholder": "you@example.com",
+      "password_placeholder": "••••••••",
+      "show_password": "Hiện",
+      "hide_password": "Ẩn",
+      "remember_me": "Ghi nhớ",
+      "forgot_password": "Quên mật khẩu?",
+      "success_message": "Đăng nhập thành công.",
+      "no_account": "Chưa có tài khoản?",
+      "register_now": "Đăng ký ngay"
+    },
+    "register_page": {
+      "account_badge": "QuizFlex Account",
+      "hero_title": "Tạo quiz thông minh hơn.",
+      "hero_description": "Tạo đề bằng tay, AI hoặc OCR. Chơi cá nhân hoặc realtime theo phòng.",
+      "sample_quiz_stat_label": "Quiz mẫu",
+      "mode_stat_label": "Chế độ",
+      "form_badge": "Tạo tài khoản mới",
+      "form_title": "Bắt đầu với QuizFlex",
+      "form_description": "Đăng ký tài khoản và bắt đầu xây dựng kho quiz của bạn.",
+      "user_account_title": "Tài khoản người dùng",
+      "user_account_description": "Sau khi đăng ký, bạn có thể nâng cấp VIP trong phần thanh toán.",
+      "full_name_label": "Họ và tên",
+      "full_name_placeholder": "Nguyễn Văn A",
+      "username_label": "Tên người dùng",
+      "username_placeholder": "quizmaster",
+      "email_placeholder": "you@example.com",
+      "password_placeholder": "Ít nhất 8 ký tự",
+      "show_password": "Hiện",
+      "hide_password": "Ẩn",
+      "accept_terms": "Tôi đồng ý với điều khoản sử dụng và chính sách bảo mật.",
+      "create_account": "Tạo tài khoản",
+      "success_message": "Tạo tài khoản thành công. Đang chuyển hướng...",
+      "has_account": "Đã có tài khoản?"
+    },
+    "forgot_password_page": {
+      "badge": "Khôi phục tài khoản",
+      "title": "Quên mật khẩu?",
+      "description": "Nhập email để chuẩn bị luồng khôi phục mật khẩu khi backend mail được cấu hình.",
+      "email_placeholder": "you@example.com",
+      "submit_button": "Gửi link khôi phục",
+      "back_to_login": "Quay lại đăng nhập"
+    },
+    "validation": {
+      "full_name_required": "Vui lòng nhập họ tên.",
+      "username_min_3": "Username tối thiểu 3 ký tự.",
+      "email_required": "Email không được để trống.",
+      "email_invalid": "Email chưa đúng định dạng.",
+      "password_required": "Mật khẩu không được để trống.",
+      "password_min_6": "Mật khẩu tối thiểu 6 ký tự.",
+      "password_min_8": "Mật khẩu tối thiểu 8 ký tự.",
+      "accept_terms_required": "Bạn cần đồng ý điều khoản."
+    }
+  },
+  "admin_nav": {
+    "overview": "Tổng quan",
+    "quiz_bank": "Kho quiz",
+    "create_quiz": "Tạo quiz",
+    "ai_generator": "AI Generator",
+    "ocr_upload": "OCR Upload",
+    "room": "Room",
+    "report": "Report",
+    "payment": "Payment",
+    "users": "Users",
+    "settings": "Settings"
+  },
+  "admin_layout": {
+    "console_label": "Admin Console",
+    "dashboard_title": "Admin Dashboard",
+    "console_description": "Quản lý hệ thống, quiz, người dùng, báo cáo và thanh toán.",
+    "header_label": "QuizFlex admin",
+    "home_button": "Trang chủ",
+    "create_quiz_button": "Tạo quiz"
+  },
+  "user_nav": {
+    "home": "Trang chủ",
+    "topics": "Chủ đề",
+    "quizzes": "Làm quiz",
+    "join_room": "Join room",
+    "results": "Kết quả",
+    "profile": "Hồ sơ",
+    "upgrade": "Nâng cấp",
+    "admin_dashboard": "Admin dashboard",
+    "my_dashboard": "Dashboard của tôi",
+    "login": "Đăng nhập",
+    "register": "Đăng ký"
+  },
+  "user_layout": {
+    "login_button": "Đăng nhập",
+    "start_button": "Bắt đầu",
+    "logout_button": "Đăng xuất",
+    "open_menu": "Menu",
+    "close_menu": "Đóng"
+  },
+  "user_views": {
+    "User": {
+      "title": "User page"
+    },
+    "Dashboard": {
+      "badge": "Dashboard người dùng",
+      "title": "Không gian học và tạo quiz của bạn",
+      "description": "Trang này tách khỏi dashboard admin. User và VIP dùng khu vực này để tạo quiz, quản lý kho quiz, OCR, AI và room.",
+      "create_quiz_button": "Tạo quiz",
+      "quiz_bank_button": "Kho quiz",
+      "quick_actions": {
+        "my_quizzes": {
+          "title": "Kho quiz của tôi",
+          "desc": "Xem, lọc, sửa và xóa quiz bạn đã tạo."
+        },
+        "create_manual": {
+          "title": "Tạo quiz thủ công",
+          "desc": "Tạo quiz mới với câu hỏi, đáp án, thời gian và ảnh bìa."
+        },
+        "ai_generator": {
+          "title": "AI Generator",
+          "desc": "Sinh bản nháp quiz bằng AI rồi chỉnh lại trước khi lưu."
+        },
+        "ocr_upload": {
+          "title": "OCR Upload",
+          "desc": "Upload ảnh hoặc tài liệu để trích xuất câu hỏi bằng OCR."
+        },
+        "room": {
+          "title": "Room",
+          "desc": "Tạo và quản lý room quiz realtime cho nhóm học."
+        },
+        "results": {
+          "title": "Kết quả của tôi",
+          "desc": "Xem lịch sử làm bài và điểm số đã lưu."
+        }
+      }
+    },
+    "Home": {
+      "hero_badge": "QuizFlex MVP • API Connected",
+      "hero_title_prefix": "Tạo quiz nhanh hơn.",
+      "hero_title_highlight": "Chơi quiz cuốn hơn.",
+      "hero_description": "Landing, catalog quiz, join room, dashboard VIP/Admin, tạo quiz thủ công, OCR và report. Phần quiz chính đã nối backend, cuối cùng dữ liệu cũng bớt sống đời giả lập.",
+      "try_quiz_button": "Làm thử quiz",
+      "join_room_button": "Join room",
+      "dashboard_button": "Vào dashboard",
+      "live_preview": "Live preview",
+      "current_quiz_label": "Quiz đang làm",
+      "no_quiz_title": "Chưa có quiz",
+      "featured_quiz_meta": "{questions} câu hỏi • {duration} • {difficulty}",
+      "no_quiz_description": "Tạo quiz mới để hiển thị tại đây.",
+      "no_public_quiz": "Chưa có quiz public trong backend.",
+      "available_quiz_label": "Quiz có sẵn",
+      "topics_title": "Khám phá các chủ đề nổi bật",
+      "topics_description": "Chọn nhanh quiz theo chủ đề, làm thử hoặc dùng làm mẫu để tạo bộ câu hỏi riêng.",
+      "search_placeholder": "Tìm quiz, chủ đề, môn học...",
+      "all_category": "Tất cả",
+      "random_category": "Ngẫu nhiên",
+      "category_description": "Các quiz thuộc nhóm {category}.",
+      "view_all": "Xem tất cả",
+      "by_author": "by {author}",
+      "question_count": "{count} câu",
+      "stats": {
+        "public_quizzes": "Quiz public",
+        "categories": "Danh mục",
+        "attempts": "Lượt làm"
+      },
+      "preview": {
+        "public_quizzes": "Quiz public",
+        "total_questions": "Tổng câu hỏi",
+        "attempts": "Lượt làm bài",
+        "average_score": "Điểm trung bình"
+      }
+    },
+    "JoinRoom": {
+      "badge": "Join Room",
+      "title": "Tham gia phòng bằng mã",
+      "description": "Nhập room code của giáo viên cung cấp để tìm group quiz và bắt đầu làm bài.",
+      "room_code_placeholder": "MÃ PHÒNG",
+      "submit_button": "Tham gia ngay",
+      "errors": {
+        "required": "Bạn chưa nhập room code.",
+        "not_found": "Không tìm thấy room code này.",
+        "load_failed": "Không tìm được room: {message}"
+      }
+    },
+    "QuizList": {
+      "badge": "Quiz catalog",
+      "title": "Danh sách quiz",
+      "description": "Lọc Public, Private hoặc Group, tìm kiếm theo tên, category và độ khó. Dữ liệu lấy trực tiếp từ Laravel API.",
+      "create_quiz_button": "Tạo quiz mới",
+      "search_placeholder": "Tìm quiz, category, tag...",
+      "visibility_all": "Tất cả visibility",
+      "visibility_public": "Public",
+      "visibility_private": "Private",
+      "visibility_group": "Group",
+      "difficulty_all": "Tất cả độ khó",
+      "difficulty_easy": "Dễ",
+      "difficulty_medium": "Vừa",
+      "difficulty_hard": "Khó",
+      "search_button": "Tìm kiếm",
+      "loading": "Đang tải danh sách quiz...",
+      "no_description": "Chưa có mô tả.",
+      "question_label": "Câu",
+      "duration_label": "Thời gian",
+      "average_label": "TB",
+      "empty_title": "Không tìm thấy quiz",
+      "empty_description": "Đổi bộ lọc hoặc tạo quiz mới trong Admin.",
+      "errors": {
+        "load_failed": "Không tải được quiz: {message}"
+      }
+    },
+    "QuizDetail": {
+      "no_description": "Quiz này chưa có mô tả.",
+      "question_count_label": "Số câu",
+      "duration_label": "Thời gian",
+      "attempts_label": "Lượt làm",
+      "start_button": "Bắt đầu làm bài",
+      "edit_button": "Sửa quiz",
+      "back_button": "Quay lại danh sách",
+      "loading": "Đang tải chi tiết quiz...",
+      "question_preview_badge": "Question preview",
+      "question_list_title": "Danh sách câu hỏi",
+      "question_points": "Câu {index} • {points} điểm",
+      "errors": {
+        "load_failed": "Không tải được chi tiết quiz: {message}"
+      }
+    },
+    "Quiz": {
+      "loading": "Đang chuẩn bị bài thi...",
+      "question_progress": "Câu {current} / {total}",
+      "default_category": "Quiz",
+      "default_difficulty": "Vừa",
+      "instruction": "Chọn đáp án rồi chuyển câu. Khi hết thời gian, hệ thống tự nộp bài.",
+      "progress_label": "Tiến độ",
+      "previous_button": "Câu trước",
+      "selected_label": "Đã chọn:",
+      "not_selected": "Chưa chọn",
+      "submitting": "Đang nộp...",
+      "submit_button": "Nộp bài",
+      "next_button": "Câu tiếp theo",
+      "timer_badge": "Timer",
+      "timer_title": "Đếm ngược",
+      "time_left_label": "Còn lại",
+      "exam_label": "Bài thi",
+      "question_map_label": "Question map",
+      "guest_name": "Guest",
+      "errors": {
+        "auto_submit_missing_result": "Đã hết giờ nhưng không nhận được mã kết quả.",
+        "submit_missing_result": "Nộp bài xong nhưng không nhận được mã kết quả.",
+        "submit_failed": "Không nộp được bài: {message}",
+        "load_failed": "Không tải được bài thi: {message}"
+      }
+    },
+    "QuizPlayView": {
+      "badge": "Quiz player",
+      "title": "Trang làm bài đã chuyển sang luồng API",
+      "description": "Dùng đường dẫn /quizzes/:id/play để bắt đầu attempt, đếm ngược thời gian, nộp bài và lưu kết quả.",
+      "choose_quiz_button": "Chọn quiz"
+    },
+    "Profile": {
+      "badge": "Profile",
+      "title": "Hồ sơ cá nhân",
+      "description": "Avatar và thông tin tài khoản được lưu vào database.",
+      "default_name": "Người dùng QuizFlex",
+      "not_logged_in": "Chưa đăng nhập",
+      "email_label": "Email",
+      "role_label": "Role",
+      "guest_role": "Guest",
+      "display_info_title": "Thông tin hiển thị",
+      "avatar_title": "Avatar người dùng",
+      "avatar_description": "Chỉ upload file ảnh. Ảnh được lưu vào backend và đường dẫn lưu trong bảng users.",
+      "upload_avatar_button": "Upload ảnh",
+      "remove_avatar_button": "Xóa ảnh",
+      "selected_file": "Đã chọn: {name}",
+      "avatar_note": "Lưu avatar ở DB giúp đổi trình duyệt vẫn còn ảnh. Một phát minh vĩ đại gọi là “dữ liệu nên nằm ở server”, nhân loại mất hơi lâu để đồng thuận chuyện này.",
+      "full_name_label": "Họ tên",
+      "saving_button": "Đang lưu...",
+      "save_button": "Lưu vào database",
+      "success_saved": "Đã lưu hồ sơ và avatar vào database.",
+      "errors": {
+        "avatar_image_only": "Avatar phải là file ảnh.",
+        "avatar_max_size": "Avatar tối đa 2MB.",
+        "load_failed": "Không tải được hồ sơ: {message}",
+        "login_required": "Bạn cần đăng nhập trước khi lưu hồ sơ.",
+        "save_failed": "Lưu thất bại: {message}"
+      }
+    },
+    "PaymentResult": {
+      "loading_title": "Đang Xác Minh Giao Dịch",
+      "loading_description": "Vui lòng chờ trong giây lát, hệ thống đang kiểm tra chữ ký và cập nhật tài khoản của bạn...",
+      "success_badge": "Giao dịch thành công",
+      "success_title": "Chào Mừng Bạn Đến Với VIP!",
+      "success_description": "Hệ thống đã ghi nhận thanh toán và nâng cấp tài khoản của bạn thành công. Quyền lợi VIP đã được kích hoạt ngay lập tức!",
+      "order_code_label": "Mã giao dịch:",
+      "amount_label": "Số tiền thanh toán:",
+      "account_type_label": "Loại tài khoản mới:",
+      "ai_quota_label": "AI Quota hiện tại:",
+      "ai_quota_value": "{quota} lượt sử dụng",
+      "vip_expiry_label": "Hạn định VIP:",
+      "home_button": "Về Trang Chủ",
+      "try_ai_button": "Trải Nghiệm AI Ngay",
+      "failure_badge": "Giao dịch thất bại",
+      "failure_title": "Thanh Toán Chưa Hoàn Tất",
+      "failure_description": "Hệ thống không thể xác minh thanh toán này. Có thể bạn đã hủy giao dịch hoặc có lỗi xảy ra từ phía ngân hàng.",
+      "error_detail": "⚠ Chi tiết lỗi: {message}",
+      "default_error": "Giao dịch bị hủy bỏ bởi người dùng hoặc chữ ký xác minh không hợp lệ.",
+      "back_home_button": "Quay Về Trang Chủ",
+      "retry_payment_button": "Thử Lại Thanh Toán",
+      "errors": {
+        "missing_verification": "Không tìm thấy thông tin xác minh giao dịch (Thiếu orderId hoặc chữ ký).",
+        "status_finished": "Giao dịch đã kết thúc với trạng thái: {status}",
+        "signature_failed": "Xác minh chữ ký thanh toán thất bại tại hệ thống."
+      }
+    },
+    "Results": {
+      "badge": "My results",
+      "title": "Lịch sử bài làm",
+      "description": "Xem lại điểm, thời gian làm và trạng thái của các lượt thi đã lưu trong bảng quiz_attempts.",
+      "loading": "Đang tải lịch sử...",
+      "score_summary": "{score}/{total} điểm, {percent}%",
+      "empty_title": "Chưa có lượt làm bài",
+      "empty_description": "Làm thử một quiz để hệ thống ghi kết quả vào quiz_attempts.",
+      "no_time": "Chưa có thời gian",
+      "stats": {
+        "completed_quizzes": "Bài đã làm",
+        "average_score": "Điểm TB",
+        "best_score": "Tốt nhất",
+        "completed": "Hoàn thành"
+      },
+      "errors": {
+        "load_failed": "Không tải được lịch sử: {message}"
+      }
+    },
+    "AttemptResult": {
+      "badge": "Result",
+      "title": "Kết quả bài làm",
+      "score_label": "Điểm",
+      "percent_label": "Tỷ lệ",
+      "time_label": "Thời gian",
+      "status_label": "Trạng thái",
+      "question_number": "Câu {index}",
+      "points_summary": "{earned}/{points} điểm",
+      "selected_answer": "Bạn chọn: {answer}",
+      "correct_answer": "Đáp án đúng: {answer}",
+      "not_selected": "Chưa chọn",
+      "loading": "Đang tải kết quả...",
+      "actions_badge": "Actions",
+      "retry_button": "Làm lại",
+      "history_button": "Xem lịch sử",
+      "quiz_list_button": "Danh sách quiz",
+      "errors": {
+        "load_failed": "Không tải được kết quả: {message}"
+      }
+    },
+    "Upgrade": {
+      "hero_badge": "✦ Premium Access",
+      "hero_title_prefix": "Mở Khóa Toàn Bộ",
+      "hero_title_highlight": "Đặc Quyền VIP",
+      "hero_description": "Nâng cao khả năng học tập và giảng dạy với sức mạnh của AI sinh đề, scan tài liệu không giới hạn và tạo phòng thi đấu trực tuyến thời gian thực.",
+      "popular_badge": "Bán Chạy Nhất",
+      "per_plan": "/gói",
+      "history_title": "Lịch Sử Giao Dịch",
+      "history_description": "Theo dõi và quản lý các hóa đơn thanh toán VIP của bạn.",
+      "no_transactions": "Bạn chưa có giao dịch nào trên hệ thống.",
+      "modal_title": "Xác Nhận Nâng Cấp",
+      "modal_description": "Vui lòng chọn phương thức thanh toán.",
+      "provider_momo": "pink MoMo",
+      "provider_vnpay": "blue VNPay",
+      "error_prefix": "⚠ {message}",
+      "momo_title": "Ví Điện Tử MoMo",
+      "momo_description": "Thanh toán tức thì qua ứng dụng MoMo (Sandbox)",
+      "choose_button": "Chọn ➔",
+      "vnpay_title": "Cổng thanh toán VNPay",
+      "vnpay_description": "Hỗ trợ ATM nội địa & thẻ quốc tế (Sắp ra mắt)",
+      "coming_soon": "Sắp có",
+      "processing_title": "Đang kết nối cổng thanh toán...",
+      "processing_description": "Vui lòng không đóng cửa sổ này",
+      "table": {
+        "order_code": "Mã giao dịch",
+        "plan": "Gói",
+        "provider": "Cổng thanh toán",
+        "amount": "Số tiền",
+        "status": "Trạng thái",
+        "created_at": "Ngày tạo"
+      },
+      "summary": {
+        "plan_label": "Gói cước:",
+        "period_label": "Hạn định:",
+        "quota_label": "AI Quota cộng thêm:",
+        "quota_value": "+{quota} lượt dùng",
+        "total_label": "Tổng tiền:"
+      },
+      "plans": {
+        "vip_1m": {
+          "name": "VIP 1 Tháng",
+          "period": "Thời hạn 30 ngày",
+          "desc": "Thử nghiệm dịch vụ với chi phí cực thấp.",
+          "button": "Nâng cấp ngay"
+        },
+        "vip_3m": {
+          "name": "VIP 3 Tháng",
+          "period": "Thời hạn 90 ngày",
+          "desc": "Lựa chọn tiết kiệm 20%, đầy đủ quyền lợi.",
+          "button": "Mua gói ưu chuộng"
+        },
+        "vip_1y": {
+          "name": "VIP 1 Năm",
+          "period": "Thời hạn 365 ngày",
+          "desc": "Lựa chọn tối ưu tiết kiệm 33% cho Creator.",
+          "button": "Sở hữu VIP trọn năm"
+        }
+      },
+      "features": {
+        "ai_100": "Dùng AI sinh đề (+100 lượt)",
+        "ai_350": "Dùng AI sinh đề (+350 lượt)",
+        "ai_1500": "Dùng AI sinh đề (+1500 lượt)",
+        "ocr": "Tải tài liệu PDF/Ảnh OCR",
+        "private_quiz": "Mở khóa Quiz Private",
+        "realtime_group": "Tạo phòng Realtime nhóm",
+        "realtime_large": "Tạo phòng Realtime lớn",
+        "realtime_max": "Tạo phòng Realtime cực đại",
+        "export_pdf_excel": "Hỗ trợ xuất đề PDF/Excel",
+        "vip_badge": "Badge VIP lấp lánh cạnh tên"
+      },
+      "plan_names": {
+        "vip_1m": "Gói VIP 1 Tháng",
+        "vip_3m": "Gói VIP 3 Tháng",
+        "vip_1y": "Gói VIP 1 Năm",
+        "custom": "Gói VIP Tùy Chọn"
+      },
+      "status": {
+        "pending": "Đang xử lý",
+        "success": "Thành công",
+        "failed": "Thất bại",
+        "refunded": "Đã hoàn tiền"
+      },
+      "errors": {
+        "payment_url_failed": "Không khởi tạo được URL thanh toán."
+      }
+    }
+  },
+  "admin_views": {
+    "Admin": {
+      "title": "Admin"
+    },
+    "Dashboard": {
+      "badge": "Admin Dashboard",
+      "title": "Tổng quan hệ thống",
+      "description": "Số liệu lấy từ API quiz, lượt làm bài và user. Không còn diễn dữ liệu cho vui nữa.",
+      "quiz_bank_button": "Kho quiz",
+      "create_quiz_button": "Tạo quiz",
+      "analytics_badge": "Analytics",
+      "analytics_title": "Hiệu suất quiz",
+      "report_button": "Report",
+      "row_meta": "Owner: {author} • {attempts} lượt làm",
+      "average_score": "Điểm TB {score}%",
+      "question_count": "{count} câu",
+      "no_report_data": "Chưa có quiz để thống kê.",
+      "quick_actions_badge": "Quick actions",
+      "quick_actions_title": "Luồng chính",
+      "stats": {
+        "total_quizzes": { "label": "Tổng quiz", "hint": "Từ bảng quizzes" },
+        "attempts": { "label": "Lượt làm", "hint": "Từ bảng quiz_attempts" },
+        "average_score": { "label": "Điểm TB", "hint": "Các lượt completed" },
+        "users": { "label": "Người dùng", "hint": "Từ bảng users" }
+      },
+      "quick_links": {
+        "create_manual": { "title": "Tạo quiz thủ công", "desc": "Tạo quiz kèm câu hỏi và đáp án, lưu trực tiếp vào backend." },
+        "quiz_bank": { "title": "Kho quiz", "desc": "Tìm kiếm, lọc, sửa và xóa mềm quiz." },
+        "results": { "title": "Kết quả làm bài", "desc": "Xem lượt làm bài đã lưu trong quiz_attempts." },
+        "users": { "title": "Người dùng", "desc": "Tạo, sửa role và quản lý danh sách user." }
+      },
+      "errors": {
+        "load_failed": "Không tải được dashboard: {message}"
+      }
+    },
+    "Settings": {
+      "badge": "Settings",
+      "title": "Cài đặt hệ thống",
+      "description": "Cấu hình giới hạn theo role và visibility mặc định cho quiz mới.",
+      "ai_limits_badge": "AI limits",
+      "visibility_defaults_badge": "Visibility defaults",
+      "save_button": "Lưu cài đặt",
+      "unlimited": "Unlimited",
+      "ai_500": "500 lượt/tháng",
+      "ocr_120": "120 lượt/tháng",
+      "ai_10": "10 lượt/tháng",
+      "ocr_3": "3 lượt/tháng",
+      "roles": {
+        "admin": "Admin",
+        "user": "Thường"
+      }
+    },
+    "Reports": {
+      "badge": "Reports",
+      "title": "Báo cáo & analytics",
+      "description": "Tổng hợp hiệu suất quiz từ API quizzes và quiz_attempts.",
+      "export_button": "Export CSV",
+      "row_meta": "{author} • {attempts} lượt làm • {questions} câu",
+      "empty": "Chưa có dữ liệu báo cáo.",
+      "errors": {
+        "load_failed": "Không tải được báo cáo: {message}"
+      }
+    },
+    "AiQuiz": {
+      "badge": "AI Generator",
+      "title": "Tạo dàn ý quiz bằng AI",
+      "description": "Nhập yêu cầu, kiểm tra cấu hình rồi chuyển sang editor để lưu quiz vào backend.",
+      "prompt_placeholder": "Ví dụ: Tạo 10 câu quiz về quang hợp lớp 10, mức trung bình, có 4 đáp án mỗi câu...",
+      "count_10": "10 câu",
+      "count_15": "15 câu",
+      "count_20": "20 câu",
+      "difficulty_easy": "Dễ",
+      "difficulty_medium": "Vừa",
+      "difficulty_hard": "Khó",
+      "language_vi": "Tiếng Việt",
+      "language_en": "English",
+      "visibility_private": "Private",
+      "visibility_public": "Public",
+      "visibility_group": "Group",
+      "ocr_link_title": "Upload PDF / Image OCR",
+      "ocr_link_description": "Đi tới giao diện kéo thả file và preview OCR.",
+      "prepare_button": "Chuẩn bị bản nháp",
+      "preview_badge": "Preview",
+      "preview_title": "Bản nháp",
+      "empty_preview": "Chưa có nội dung. Nhập prompt rồi chuẩn bị bản nháp.",
+      "request_label": "Yêu cầu",
+      "edit_button": "Chỉnh trong editor",
+      "guest": "Guest",
+      "quota": {
+        "role": "Role",
+        "ai_remaining": "AI còn lại",
+        "ocr_remaining": "OCR còn lại"
+      }
+    },
+    "Rooms": {
+      "badge": "Room Management",
+      "title": "Room quiz",
+      "description": "Danh sách room lấy từ các quiz có room_code trong backend.",
+      "create_group_button": "Tạo group quiz",
+      "loading": "Đang tải room...",
+      "room_meta": "{questions} câu • {attempts} lượt làm • {duration}",
+      "empty": "Chưa có group quiz nào.",
+      "errors": {
+        "load_failed": "Không tải được room: {message}"
+      }
+    },
+    "Question": {
+      "badge": "Quiz Library",
+      "user_badge": "My Quiz Library",
+      "title": "Kho quiz",
+      "user_title": "Kho quiz của tôi",
+      "description": "Tìm kiếm, lọc theo tag, độ khó và visibility từ dữ liệu Laravel API.",
+      "user_description": "Chỉ hiển thị các quiz do tài khoản của bạn tạo để quản lý và chỉnh sửa.",
+      "upload_ocr_button": "Upload OCR",
+      "ai_generator_button": "AI Generator",
+      "create_quiz_button": "Tạo quiz",
+      "search_placeholder": "Tìm theo tên quiz, tác giả, tag...",
+      "difficulty_all": "Tất cả độ khó",
+      "difficulty_easy": "Dễ",
+      "difficulty_medium": "Vừa",
+      "difficulty_hard": "Khó",
+      "tag_all": "Tất cả tag",
+      "visibility_all": "Tất cả visibility",
+      "visibility_public": "Public",
+      "visibility_private": "Private",
+      "visibility_group": "Group",
+      "visibility_chip_all": "Tất cả",
+      "loading": "Đang tải quiz từ backend...",
+      "quiz_meta": "{category} • {tag} • by {author}",
+      "question_label": "Câu",
+      "attempt_label": "Lượt",
+      "score_label": "Điểm",
+      "view_button": "Xem",
+      "edit_button": "Sửa",
+      "delete_button": "Xóa",
+      "empty_title": "Không tìm thấy quiz",
+      "empty_description": "Đổi bộ lọc hoặc tạo quiz mới.",
+      "confirm_delete": "Xóa mềm quiz này?",
+      "errors": {
+        "load_failed": "Không gọi được backend: {message}",
+        "delete_failed": "Xóa thất bại: {message}"
+      }
+    },
+    "Payments": {
+      "badge": "Payment",
+      "title": "Gói VIP & thanh toán",
+      "description": "Admin xem được toàn bộ giao dịch. Người dùng thường và VIP chỉ xem được giao dịch của chính họ ở trang nâng cấp.",
+      "history_badge": "Payment history",
+      "history_title": "Tất cả giao dịch",
+      "history_description": "Danh sách này chỉ dành cho admin.",
+      "loading_button": "Đang tải...",
+      "reload_button": "Tải lại",
+      "loading_history": "Đang tải lịch sử giao dịch...",
+      "unknown_user": "Không rõ",
+      "no_email": "Chưa có email",
+      "empty": "Chưa có giao dịch nào trên hệ thống.",
+      "custom_plan": "Gói VIP tùy chỉnh",
+      "table": {
+        "user": "Người dùng",
+        "order_code": "Mã giao dịch",
+        "plan": "Gói",
+        "provider": "Cổng",
+        "amount": "Số tiền",
+        "status": "Trạng thái",
+        "created_at": "Ngày tạo"
+      },
+      "plans": {
+        "vip_1m": { "name": "VIP 1 Tháng", "period": "30 ngày" },
+        "vip_3m": { "name": "VIP 3 Tháng", "period": "90 ngày" },
+        "vip_1y": { "name": "VIP 1 Năm", "period": "365 ngày" }
+      },
+      "features": {
+        "ai_100": "+100 lượt AI",
+        "ai_350": "+350 lượt AI",
+        "ai_1500": "+1500 lượt AI",
+        "ocr": "OCR PDF/Ảnh",
+        "private_quiz": "Mở khóa Quiz Private",
+        "realtime_large": "Tạo phòng Realtime lớn",
+        "export_pdf_excel": "Hỗ trợ xuất đề PDF/Excel"
+      },
+      "status": {
+        "pending": "Đang xử lý",
+        "success": "Thành công",
+        "failed": "Thất bại",
+        "refunded": "Đã hoàn tiền"
+      },
+      "errors": {
+        "load_failed": "Không tải được lịch sử thanh toán."
+      }
+    },
+    "Users": {
+      "badge": "Admin UI",
+      "title": "Quản lý user",
+      "description": "Tạo, tìm kiếm, sửa role và xóa user bằng API backend.",
+      "name_placeholder": "Tên user",
+      "password_placeholder": "Mật khẩu",
+      "create_button": "Tạo user",
+      "search_placeholder": "Tìm user theo tên hoặc email",
+      "role_all": "Tất cả role",
+      "role_admin": "Admin",
+      "role_vip": "VIP",
+      "role_guest": "Guest",
+      "role_user_en": "User",
+      "role_user": "Thường",
+      "search_button": "Tìm kiếm",
+      "loading": "Đang tải user...",
+      "joined_meta": "{email} • joined {joinedAt}",
+      "delete_button": "Xóa",
+      "confirm_delete": "Xóa user này?",
+      "table": {
+        "user": "User",
+        "role": "Role",
+        "quiz": "Quiz",
+        "attempts": "Lượt làm",
+        "action": "Action"
+      },
+      "success": {
+        "created": "Đã tạo user.",
+        "role_updated": "Đã cập nhật role.",
+        "deleted": "Đã xóa user."
+      },
+      "errors": {
+        "load_failed": "Không tải được user: {message}",
+        "required": "Cần nhập đủ tên, email và mật khẩu.",
+        "create_failed": "Tạo user thất bại: {message}",
+        "role_update_failed": "Cập nhật role thất bại: {message}",
+        "delete_failed": "Xóa user thất bại: {message}"
+      }
+    },
+    "OcrUpload": {
+      "badge": "OCR Upload",
+      "title": "Upload Image OCR",
+      "description": "Upload ảnh, gọi backend OCR và preview nội dung trước khi chuyển thành quiz.",
+      "processing_file": "Đang xử lý file...",
+      "dropzone_title": "Thả file vào đây hoặc bấm để chọn",
+      "file_hint": "PNG, JPG, JPEG, WEBP, BMP, TIFF, PDF. Tối đa 20MB.",
+      "ocr_ready": "OCR đã sẵn sàng",
+      "rendered_questions": "✅ Đã render {count} câu hỏi",
+      "redirecting_editor": ". Đang chuyển sang editor...",
+      "remove_file_button": "Xóa file",
+      "processing_button": "Đang xử lý...",
+      "go_editor_button": "Chuyển sang editor",
+      "preview_badge": "OCR Preview",
+      "preview_title": "Kết quả trích xuất",
+      "suggestion_badge": "AI suggestion",
+      "editor_badge": "Question Editor",
+      "editor_title": "Chỉnh sửa câu hỏi",
+      "editor_description": "Kiểm tra lại câu hỏi OCR/AI trước khi lưu vào database.",
+      "total_questions": "Tổng số câu hỏi: {count}",
+      "back_to_ocr_button": "Quay lại OCR",
+      "question_number": "Câu {index}",
+      "delete_button": "Xóa",
+      "answer_label": "Đáp án {key}",
+      "correct_answer_label": "Đáp án đúng",
+      "not_selected": "Chưa chọn",
+      "add_question_button": "Thêm câu hỏi",
+      "save_questions_button": "Lưu câu hỏi",
+      "loading_upload": "Đang tải file...",
+      "loading_reading": "Đang đọc nội dung OCR...",
+      "loading_ai": "AI đang phân tích câu hỏi...",
+      "loading_normalizing": "Đang chuẩn hóa dữ liệu...",
+      "loading_finishing": "Sắp hoàn tất...",
+      "ocr_completed": "Hoàn tất OCR",
+      "empty_ocr": "Chưa có nội dung OCR. Upload ảnh để backend xử lý.",
+      "ocr_question_line": "Câu {index}: {question}",
+      "save_log": "Data gửi về BE để lưu DB:",
+      "suggestions": {
+        "medium_10": "Tạo 10 câu mức trung bình",
+        "concepts_first": "Ưu tiên câu hỏi khái niệm",
+        "add_application": "Thêm 2 câu vận dụng",
+        "keep_private": "Giữ visibility: Private trước khi duyệt"
+      },
+      "errors": {
+        "ocr_failed": "OCR thất bại: {message}"
+      }
+    },
+    "CreateQuiz": {
+      "badge": "Manual editor",
+      "edit_title": "Sửa quiz",
+      "create_title": "Tạo quiz thủ công",
+      "description": "Lưu quiz, câu hỏi, đáp án và ảnh bìa trực tiếp vào backend. Form này giờ đã có mặt mũi hơn một bảng nhập liệu hành chính.",
+      "quiz_title_label": "Tiêu đề quiz",
+      "quiz_title_placeholder": "Ví dụ: Ôn tập Sinh học lớp 10",
+      "tag_label": "Tag",
+      "tag_placeholder": "Sinh học",
+      "description_label": "Mô tả",
+      "description_placeholder": "Mô tả ngắn cho người làm quiz",
+      "cover_badge": "Ảnh bìa",
+      "cover_title": "Cover của quiz",
+      "cover_description": "Chỉ upload file ảnh từ máy. Nếu chưa chọn ảnh, hệ thống dùng gradient dự phòng cho đỡ trống trải.",
+      "choose_image_button": "Chọn ảnh",
+      "cover_file_label": "File ảnh bìa",
+      "upload_image_button": "Upload ảnh",
+      "creator_avatar_label": "Avatar người tạo",
+      "current_creator": "Người tạo hiện tại",
+      "avatar_from_profile": "Avatar lấy từ hồ sơ.",
+      "remove_cover_button": "Xóa bìa",
+      "untitled_quiz": "Quiz chưa đặt tên",
+      "default_category_label": "Danh mục",
+      "duration_label": "Thời gian phút",
+      "difficulty_label": "Độ khó",
+      "difficulty_easy": "Dễ",
+      "difficulty_medium": "Vừa",
+      "difficulty_hard": "Khó",
+      "category_label": "Danh mục",
+      "category_placeholder": "Khoa học",
+      "visibility_title": "Visibility",
+      "room_code_label": "Room gắn với quiz",
+      "room_code_placeholder": "VD: QZ24",
+      "question_builder_badge": "Question builder",
+      "question_builder_title": "Câu hỏi và đáp án",
+      "add_question_button": "Thêm câu hỏi",
+      "question_number": "Câu {index}",
+      "delete_button": "Xóa",
+      "question_placeholder": "Nội dung câu hỏi",
+      "answer_placeholder": "Đáp án {key}",
+      "correct_answer_label": "Đáp án đúng",
+      "saving_button": "Đang lưu...",
+      "save_button": "Lưu quiz",
+      "live_preview_badge": "Live preview",
+      "preview_description": "Mô tả sẽ hiển thị ở đây.",
+      "question_count": "{count} câu",
+      "checklist_badge": "Kiểm tra nhanh",
+      "default_category": "Khoa học",
+      "guest_name": "Guest",
+      "selected_cover": "Đã chọn: {name}",
+      "saved_cover": "Đang dùng ảnh bìa đã lưu.",
+      "no_cover": "Chưa có ảnh bìa. Hệ thống sẽ dùng gradient dự phòng.",
+      "visibility": {
+        "public_description": "Ai cũng có thể xem và làm bài.",
+        "private_description": "Chỉ hiển thị trong khu quản trị.",
+        "group_description": "Gắn quiz với room code."
+      },
+      "checklist": {
+        "has_title": "Có tiêu đề rõ ràng",
+        "has_cover": "Có ảnh bìa hoặc gradient dự phòng",
+        "has_question": "Ít nhất 1 câu hỏi",
+        "four_answers": "Mỗi câu có 4 đáp án",
+        "correct_answer": "Mỗi câu có đáp án đúng",
+        "group_room": "Group quiz cần có room code"
+      },
+      "success": {
+        "updated": "Đã cập nhật quiz.",
+        "created": "Đã tạo quiz mới."
+      },
+      "errors": {
+        "need_one_question": "Quiz cần ít nhất 1 câu hỏi, xóa hết thì backend cũng chỉ biết thở dài.",
+        "cover_image_only": "File bìa phải là ảnh.",
+        "cover_max_size": "Ảnh bìa tối đa 4MB. Đừng bắt server nuốt cả album cưới.",
+        "title_required": "Bạn chưa nhập tiêu đề quiz.",
+        "room_required": "Quiz dạng group cần có room code.",
+        "question_empty": "Câu {index} chưa có nội dung.",
+        "answer_min": "Câu {index} cần ít nhất 2 đáp án.",
+        "answer_empty": "Câu {index} còn đáp án trống.",
+        "correct_missing": "Câu {index} chưa chọn đáp án đúng.",
+        "save_failed": "Lưu thất bại: {message}",
+        "load_edit_failed": "Không tải được quiz để sửa: {message}"
+      }
+    }
+  },
+  "navbar": {
+    "home": "Trang chủ",
+    "quizzes": "Danh sách Quiz",
+    "profile": "Hồ sơ"
+  },
+  "quiz": {
+    "start": "Bắt đầu làm bài",
+    "next": "Câu tiếp theo",
+    "submit": "Nộp bài",
+    "score": "Điểm số"
+  },
+  "components": {
+    "LanguageSwitcher": {
+      "vi": "Tiếng Việt",
+      "en": "Tiếng Anh",
+      "ja": "Tiếng Nhật",
+      "zh": "Tiếng Trung"
+    },
+    "StatCard": {
+      "label": "Tiêu chí",
+      "value": "Giá trị",
+      "hint": "Ghi chú"
+    },
+    "AppLoading": {
+      "title": "Đang tải trải nghiệm",
+      "description": "Chuẩn bị giao diện, dữ liệu quiz và hiệu ứng tương tác."
+    },
+    "AppCursor": {
+      "cursor_enabled": "Con trỏ tùy chỉnh đã được kích hoạt"
+    },
+    "BrandLogo": {
+      "brand": "QuizFlex",
+      "alt": "QuizFlex Logo"
+    },
+    "SectionHeader": {
+      "eyebrow": "Nhãn nội dung",
+      "title": "Tiêu đề phần",
+      "description": "Mô tả phần nội dung"
+    },
+    "ThemeToggle": {
+      "dark_mode": "Giao diện tối",
+      "light_mode": "Giao diện sáng",
+      "dark_icon": "☾",
+      "light_icon": "☀"
+    },
+    "UserAvatar": {
+      "guest": "Guest",
+      "display_name": "Tên hiển thị",
+      "avatar_alt": "{name} avatar"
+    },
+    "VisibilityBadge": {
+      "public": "Public",
+      "private": "Private",
+      "group": "Group",
+      "public_icon": "🌐",
+      "private_icon": "🔒",
+      "group_icon": "👥"
+    },
+    "LandingQuickActions": {
+      "create_manual_badge": "Tạo thủ công",
+      "create_manual_title": "Tạo quiz mới",
+      "create_manual_highlight": "trong vài phút.",
+      "create_manual_description": "Tự nhập câu hỏi, đáp án, thời gian làm bài và chế độ hiển thị cho bộ quiz của bạn.",
+      "create_feature_1": "Thêm câu hỏi",
+      "create_feature_2": "Cài thời gian",
+      "create_feature_3": "Chọn quyền truy cập",
+      "create_button": "Mở Quiz Editor",
+      "create_button_note": "Không cần AI, không cần vòng vo.",
+      "ai_badge": "Tạo bằng AI",
+      "ai_title": "AI Quiz",
+      "ai_highlight": "Generator.",
+      "ai_description": "Sinh quiz từ chủ đề, văn bản hoặc tài liệu. Tạo bản nháp nhanh rồi chỉnh lại trước khi lưu.",
+      "ai_feature_1": "Nhập chủ đề",
+      "ai_feature_2": "Sinh câu hỏi",
+      "ai_feature_3": "Chỉnh và lưu",
+      "ai_button": "Tạo quiz bằng AI",
+      "ai_button_note": "Tạo nhanh, vẫn chỉnh được.",
+      "editor_label": "EDITOR",
+      "question_number": "Câu hỏi 01",
+      "question_text": "Đâu là thành phần chính của một câu hỏi trắc nghiệm?",
+      "answer_a": "Câu hỏi, đáp án và điểm số",
+      "answer_b": "Chỉ cần tiêu đề là đủ",
+      "stat_questions": "Câu hỏi",
+      "stat_time": "Thời gian",
+      "stat_level": "Mức độ",
+      "stat_value_1": "10",
+      "stat_value_2": "12m",
+      "stat_value_3": "3"
+    }
+  }
+}

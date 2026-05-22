@@ -10,9 +10,9 @@
           <div class="rounded-[1.75rem] border border-[var(--border)] bg-[var(--surface)] p-4 shadow-[var(--shadow-card)]">
             <BrandLogo to="/admin" />
             <div class="mt-5 rounded-3xl border border-[var(--border-strong)] bg-[var(--chip-active)] p-4">
-              <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Admin Console</p>
-              <h3 class="mt-1 text-2xl font-black tracking-[-0.05em] text-[var(--text)]">Admin Dashboard</h3>
-              <p class="mt-2 text-xs font-bold leading-5 text-[var(--muted)]">Quản lý hệ thống, quiz, người dùng, báo cáo và thanh toán.</p>
+              <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">{{ $t('admin_layout.console_label') }}</p>
+              <h3 class="mt-1 text-2xl font-black tracking-[-0.05em] text-[var(--text)]">{{ $t('admin_layout.dashboard_title') }}</h3>
+              <p class="mt-2 text-xs font-bold leading-5 text-[var(--muted)]">{{ $t('admin_layout.console_description') }}</p>
             </div>
           </div>
 
@@ -33,13 +33,14 @@
 
         <header class="mb-6 hidden items-center justify-between gap-4 lg:flex">
           <div>
-            <p class="text-sm font-black uppercase tracking-[0.2em] text-[var(--primary)]">QuizFlex admin</p>
+            <p class="text-sm font-black uppercase tracking-[0.2em] text-[var(--primary)]">{{ $t('admin_layout.header_label') }}</p>
             <h1 class="mt-1 text-4xl font-black tracking-[-0.06em] text-[var(--text)]">{{ pageTitle }}</h1>
           </div>
           <div class="flex items-center gap-3">
+            <LanguageSwitcher />
             <ThemeToggle />
-            <router-link class="btn-ghost" to="/">Trang chủ</router-link>
-            <router-link class="btn-primary" to="/admin/questions/create">Tạo quiz</router-link>
+            <router-link class="btn-ghost" to="/">{{ $t('admin_layout.home_button') }}</router-link>
+            <router-link class="btn-primary" to="/admin/questions/create">{{ $t('admin_layout.create_quiz_button') }}</router-link>
           </div>
         </header>
 
@@ -50,27 +51,30 @@
 </template>
 
 <script setup>
+import LanguageSwitcher from '@/components/LanguageSwitcher.vue';
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import BrandLogo from '@/components/common/BrandLogo.vue'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
 
 const route = useRoute()
+const { t } = useI18n()
 
 const menu = computed(() => [
-  { label: 'Tổng quan', to: '/admin', icon: 'DB' },
-  { label: 'Kho quiz', to: '/admin/questions', icon: 'QZ' },
-  { label: 'Tạo quiz', to: '/admin/questions/create', icon: '+' },
-  { label: 'AI Generator', to: '/admin/questions/ai', icon: 'AI' },
-  { label: 'OCR Upload', to: '/admin/questions/ocr', icon: 'OC' },
-  { label: 'Room', to: '/admin/rooms', icon: 'RT' },
-  { label: 'Report', to: '/admin/reports', icon: 'RP' },
-  { label: 'Payment', to: '/admin/payments', icon: '$' },
-  { label: 'Users', to: '/admin/users', icon: 'US' },
-  { label: 'Settings', to: '/admin/settings', icon: 'ST' },
+  { label: t('admin_nav.overview'), to: '/admin', icon: 'DB' },
+  { label: t('admin_nav.quiz_bank'), to: '/admin/questions', icon: 'QZ' },
+  { label: t('admin_nav.create_quiz'), to: '/admin/questions/create', icon: '+' },
+  { label: t('admin_nav.ai_generator'), to: '/admin/questions/ai', icon: 'AI' },
+  { label: t('admin_nav.ocr_upload'), to: '/admin/questions/ocr', icon: 'OC' },
+  { label: t('admin_nav.room'), to: '/admin/rooms', icon: 'RT' },
+  { label: t('admin_nav.report'), to: '/admin/reports', icon: 'RP' },
+  { label: t('admin_nav.payment'), to: '/admin/payments', icon: '$' },
+  { label: t('admin_nav.users'), to: '/admin/users', icon: 'US' },
+  { label: t('admin_nav.settings'), to: '/admin/settings', icon: 'ST' },
 ])
 
-const pageTitle = computed(() => route.meta.title || 'Dashboard')
+const pageTitle = computed(() => route.meta.title || t('admin_layout.dashboard_title'))
 
 const getLinkClass = (item) => {
   const active = route.path === item.to || (item.to === '/admin/questions' && route.path === '/admin/questions')

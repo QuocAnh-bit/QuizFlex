@@ -1,0 +1,938 @@
+{
+  "common": {
+    "welcome": "欢迎来到 QuizFlex",
+    "save": "保存",
+    "cancel": "取消"
+  },
+  "auth": {
+    "login": "登录",
+    "register": "注册",
+    "email": "电子邮件",
+    "password": "密码",
+    "login_page": {
+      "workspace_badge": "QuizFlex Workspace",
+      "hero_title": "欢迎回来。",
+      "hero_description": "登录后继续管理测验、实时房间和 AI 题目生成用量。",
+      "quiz_stat_label": "测验",
+      "ai_usage_stat_label": "AI 用量",
+      "form_badge": "账号登录",
+      "form_title": "继续使用 QuizFlex",
+      "form_description": "使用 users 表中已有的账号登录。",
+      "email_placeholder": "you@example.com",
+      "password_placeholder": "••••••••",
+      "show_password": "显示",
+      "hide_password": "隐藏",
+      "remember_me": "记住我",
+      "forgot_password": "忘记密码？",
+      "success_message": "登录成功。",
+      "no_account": "还没有账号？",
+      "register_now": "立即注册"
+    },
+    "register_page": {
+      "account_badge": "QuizFlex Account",
+      "hero_title": "创建更智能的测验。",
+      "hero_description": "可手动、通过 AI 或 OCR 创建题目。支持个人练习或房间实时对战。",
+      "sample_quiz_stat_label": "示例测验",
+      "mode_stat_label": "模式",
+      "form_badge": "创建新账号",
+      "form_title": "开始使用 QuizFlex",
+      "form_description": "注册账号并开始构建你的测验库。",
+      "user_account_title": "用户账号",
+      "user_account_description": "注册后，你可以在支付页面升级为 VIP。",
+      "full_name_label": "姓名",
+      "full_name_placeholder": "张三",
+      "username_label": "用户名",
+      "username_placeholder": "quizmaster",
+      "email_placeholder": "you@example.com",
+      "password_placeholder": "至少 8 个字符",
+      "show_password": "显示",
+      "hide_password": "隐藏",
+      "accept_terms": "我同意使用条款和隐私政策。",
+      "create_account": "创建账号",
+      "success_message": "账号创建成功。正在跳转...",
+      "has_account": "已有账号？"
+    },
+    "validation": {
+      "full_name_required": "请输入姓名。",
+      "username_min_3": "用户名至少需要 3 个字符。",
+      "email_required": "电子邮件不能为空。",
+      "email_invalid": "电子邮件格式不正确。",
+      "password_required": "密码不能为空。",
+      "password_min_6": "密码至少需要 6 个字符。",
+      "password_min_8": "密码至少需要 8 个字符。",
+      "accept_terms_required": "你需要同意条款。"
+    },
+    "forgot_password_page": {
+      "badge": "账户恢复",
+      "title": "忘记密码？",
+      "description": "请输入邮箱，以便在后端邮件配置完成后准备密码找回流程。",
+      "email_placeholder": "you@example.com",
+      "submit_button": "发送恢复链接",
+      "back_to_login": "返回登录"
+    }
+  },
+  "admin_nav": {
+    "overview": "概览",
+    "quiz_bank": "测验库",
+    "create_quiz": "创建测验",
+    "ai_generator": "AI Generator",
+    "ocr_upload": "OCR Upload",
+    "room": "房间",
+    "report": "报告",
+    "payment": "支付",
+    "users": "用户",
+    "settings": "设置"
+  },
+  "admin_layout": {
+    "console_label": "Admin Console",
+    "dashboard_title": "Admin Dashboard",
+    "console_description": "管理系统、测验、用户、报告和支付。",
+    "header_label": "QuizFlex admin",
+    "home_button": "首页",
+    "create_quiz_button": "创建测验"
+  },
+  "user_nav": {
+    "home": "首页",
+    "topics": "主题",
+    "quizzes": "做测验",
+    "join_room": "加入房间",
+    "results": "结果",
+    "profile": "个人资料",
+    "upgrade": "升级",
+    "admin_dashboard": "Admin dashboard",
+    "my_dashboard": "我的仪表盘",
+    "login": "登录",
+    "register": "注册"
+  },
+  "user_layout": {
+    "login_button": "登录",
+    "start_button": "开始",
+    "logout_button": "退出登录",
+    "open_menu": "菜单",
+    "close_menu": "关闭"
+  },
+  "navbar": {
+    "home": "首页",
+    "quizzes": "测验列表",
+    "profile": "个人资料"
+  },
+  "quiz": {
+    "start": "开始测验",
+    "next": "下一题",
+    "submit": "提交",
+    "score": "分数"
+  },
+  "user_views": {
+    "User": {
+      "title": "User page"
+    },
+    "Dashboard": {
+      "badge": "用户仪表盘",
+      "title": "你的学习与测验创建空间",
+      "description": "此区域独立于管理员仪表盘。用户和 VIP 可在这里创建测验并管理题库、OCR、AI 和房间。",
+      "create_quiz_button": "创建测验",
+      "quiz_bank_button": "测验库",
+      "quick_actions": {
+        "my_quizzes": {
+          "title": "我的测验库",
+          "desc": "查看、筛选、编辑和删除你创建的测验。"
+        },
+        "create_manual": {
+          "title": "手动创建测验",
+          "desc": "创建包含题目、答案、时间和封面的新测验。"
+        },
+        "ai_generator": {
+          "title": "AI Generator",
+          "desc": "使用 AI 生成测验草稿，并在保存前进行调整。"
+        },
+        "ocr_upload": {
+          "title": "OCR Upload",
+          "desc": "上传图片或文档，通过 OCR 提取题目。"
+        },
+        "room": {
+          "title": "Room",
+          "desc": "为学习小组创建和管理实时测验房间。"
+        },
+        "results": {
+          "title": "我的结果",
+          "desc": "查看已保存的作答历史和分数。"
+        }
+      }
+    },
+    "Home": {
+      "hero_badge": "QuizFlex MVP • API Connected",
+      "hero_title_prefix": "更快创建测验。",
+      "hero_title_highlight": "更投入地参与测验。",
+      "hero_description": "包含首页、测验目录、加入房间、VIP/Admin 仪表盘、手动创建、OCR 和报表。核心测验流程已连接后端，不再只是模拟数据。",
+      "try_quiz_button": "试做测验",
+      "join_room_button": "Join room",
+      "dashboard_button": "进入仪表盘",
+      "live_preview": "Live preview",
+      "current_quiz_label": "进行中的测验",
+      "no_quiz_title": "暂无测验",
+      "featured_quiz_meta": "{questions} 题 • {duration} • {difficulty}",
+      "no_quiz_description": "创建新测验后会显示在这里。",
+      "no_public_quiz": "后端暂无公开测验。",
+      "available_quiz_label": "可用测验",
+      "topics_title": "探索热门主题",
+      "topics_description": "按主题快速选择测验，试做或作为创建自定义题组的模板。",
+      "search_placeholder": "搜索测验、主题、科目...",
+      "all_category": "全部",
+      "random_category": "随机",
+      "category_description": "{category} 分类下的测验。",
+      "view_all": "查看全部",
+      "by_author": "by {author}",
+      "question_count": "{count} 题",
+      "stats": {
+        "public_quizzes": "Quiz public",
+        "categories": "分类",
+        "attempts": "作答次数"
+      },
+      "preview": {
+        "public_quizzes": "Quiz public",
+        "total_questions": "题目总数",
+        "attempts": "作答次数",
+        "average_score": "平均分"
+      }
+    },
+    "JoinRoom": {
+      "badge": "Join Room",
+      "title": "使用代码加入房间",
+      "description": "输入老师提供的房间代码，查找小组测验并开始作答。",
+      "room_code_placeholder": "房间代码",
+      "submit_button": "立即加入",
+      "errors": {
+        "required": "请输入房间代码。",
+        "not_found": "未找到该房间代码。",
+        "load_failed": "无法找到房间：{message}"
+      }
+    },
+    "QuizList": {
+      "badge": "Quiz catalog",
+      "title": "测验列表",
+      "description": "按 Public、Private 或 Group 筛选，并按名称、分类和难度搜索。数据直接来自 Laravel API。",
+      "create_quiz_button": "创建新测验",
+      "search_placeholder": "搜索测验、分类、标签...",
+      "visibility_all": "全部可见性",
+      "visibility_public": "Public",
+      "visibility_private": "Private",
+      "visibility_group": "Group",
+      "difficulty_all": "全部难度",
+      "difficulty_easy": "简单",
+      "difficulty_medium": "中等",
+      "difficulty_hard": "困难",
+      "search_button": "搜索",
+      "loading": "正在加载测验列表...",
+      "no_description": "暂无描述。",
+      "question_label": "题",
+      "duration_label": "时间",
+      "average_label": "TB",
+      "empty_title": "未找到测验",
+      "empty_description": "请更改筛选条件或在 Admin 中创建新测验。",
+      "errors": {
+        "load_failed": "无法加载测验：{message}"
+      }
+    },
+    "QuizDetail": {
+      "no_description": "该测验暂无描述。",
+      "question_count_label": "题数",
+      "duration_label": "时间",
+      "attempts_label": "作答次数",
+      "start_button": "开始作答",
+      "edit_button": "编辑测验",
+      "back_button": "返回列表",
+      "loading": "正在加载测验详情...",
+      "question_preview_badge": "Question preview",
+      "question_list_title": "题目列表",
+      "question_points": "第 {index} 题 • {points} 分",
+      "errors": {
+        "load_failed": "无法加载测验详情：{message}"
+      }
+    },
+    "Quiz": {
+      "loading": "正在准备测验...",
+      "question_progress": "第 {current} / {total} 题",
+      "default_category": "Quiz",
+      "default_difficulty": "中等",
+      "instruction": "选择答案后进入下一题。时间结束后系统会自动提交。",
+      "progress_label": "进度",
+      "previous_button": "上一题",
+      "selected_label": "已选择：",
+      "not_selected": "未选择",
+      "submitting": "正在提交...",
+      "submit_button": "提交",
+      "next_button": "下一题",
+      "timer_badge": "Timer",
+      "timer_title": "倒计时",
+      "time_left_label": "剩余",
+      "exam_label": "测验",
+      "question_map_label": "Question map",
+      "guest_name": "Guest",
+      "errors": {
+        "auto_submit_missing_result": "时间已到，但未收到结果编号。",
+        "submit_missing_result": "已提交，但未收到结果编号。",
+        "submit_failed": "无法提交测验：{message}",
+        "load_failed": "无法加载测验：{message}"
+      }
+    },
+    "QuizPlayView": {
+      "badge": "Quiz player",
+      "title": "作答页面已切换到 API 流程",
+      "description": "使用 /quizzes/:id/play 开始作答、计时、提交并保存结果。",
+      "choose_quiz_button": "选择测验"
+    },
+    "Profile": {
+      "badge": "Profile",
+      "title": "个人资料",
+      "description": "头像和账户信息会保存到数据库。",
+      "default_name": "QuizFlex 用户",
+      "not_logged_in": "未登录",
+      "email_label": "Email",
+      "role_label": "Role",
+      "guest_role": "Guest",
+      "display_info_title": "显示信息",
+      "avatar_title": "用户头像",
+      "avatar_description": "仅允许上传图片文件。图片保存在后端，路径保存在 users 表中。",
+      "upload_avatar_button": "上传图片",
+      "remove_avatar_button": "删除图片",
+      "selected_file": "已选择：{name}",
+      "avatar_note": "将头像保存在数据库中，即使更换浏览器也能保留图片。数据应以服务器端为准。",
+      "full_name_label": "姓名",
+      "saving_button": "正在保存...",
+      "save_button": "保存到数据库",
+      "success_saved": "资料和头像已保存到数据库。",
+      "errors": {
+        "avatar_image_only": "头像必须是图片文件。",
+        "avatar_max_size": "头像最大为 2MB。",
+        "load_failed": "无法加载资料：{message}",
+        "login_required": "保存资料前请先登录。",
+        "save_failed": "保存失败：{message}"
+      }
+    },
+    "PaymentResult": {
+      "loading_title": "正在验证交易",
+      "loading_description": "请稍候，系统正在验证签名并更新你的账户...",
+      "success_badge": "交易成功",
+      "success_title": "欢迎加入 VIP！",
+      "success_description": "系统已记录付款并成功升级你的账户。VIP 权益已立即启用！",
+      "order_code_label": "交易编号：",
+      "amount_label": "支付金额：",
+      "account_type_label": "新账户类型：",
+      "ai_quota_label": "当前 AI 配额：",
+      "ai_quota_value": "{quota} 次使用",
+      "vip_expiry_label": "VIP 到期时间：",
+      "home_button": "返回首页",
+      "try_ai_button": "立即体验 AI",
+      "failure_badge": "交易失败",
+      "failure_title": "支付未完成",
+      "failure_description": "系统无法验证该支付。你可能已取消交易，或银行侧发生错误。",
+      "error_detail": "⚠ 错误详情：{message}",
+      "default_error": "交易被用户取消，或验证签名无效。",
+      "back_home_button": "返回首页",
+      "retry_payment_button": "重新支付",
+      "errors": {
+        "missing_verification": "未找到交易验证信息（缺少 orderId 或签名）。",
+        "status_finished": "交易已结束，状态：{status}",
+        "signature_failed": "系统验证支付签名失败。"
+      }
+    },
+    "Results": {
+      "badge": "My results",
+      "title": "作答历史",
+      "description": "查看 quiz_attempts 中保存的分数、用时和状态。",
+      "loading": "正在加载历史...",
+      "score_summary": "{score}/{total} 分，{percent}%",
+      "empty_title": "暂无作答记录",
+      "empty_description": "试做一个测验，系统会将结果写入 quiz_attempts。",
+      "no_time": "暂无时间",
+      "stats": {
+        "completed_quizzes": "已完成测验",
+        "average_score": "平均分",
+        "best_score": "最佳",
+        "completed": "已完成"
+      },
+      "errors": {
+        "load_failed": "无法加载历史：{message}"
+      }
+    },
+    "AttemptResult": {
+      "badge": "Result",
+      "title": "作答结果",
+      "score_label": "分数",
+      "percent_label": "比例",
+      "time_label": "时间",
+      "status_label": "状态",
+      "question_number": "第 {index} 题",
+      "points_summary": "{earned}/{points} 分",
+      "selected_answer": "你的选择：{answer}",
+      "correct_answer": "正确答案：{answer}",
+      "not_selected": "未选择",
+      "loading": "正在加载结果...",
+      "actions_badge": "Actions",
+      "retry_button": "重做",
+      "history_button": "查看历史",
+      "quiz_list_button": "测验列表",
+      "errors": {
+        "load_failed": "无法加载结果：{message}"
+      }
+    },
+    "Upgrade": {
+      "hero_badge": "✦ Premium Access",
+      "hero_title_prefix": "解锁全部",
+      "hero_title_highlight": "VIP 权益",
+      "hero_description": "通过 AI 出题、文档扫描和实时竞赛房间提升学习与教学效率。",
+      "popular_badge": "最畅销",
+      "per_plan": "/套餐",
+      "history_title": "交易历史",
+      "history_description": "跟踪并管理你的 VIP 支付账单。",
+      "no_transactions": "系统中暂无交易。",
+      "modal_title": "确认升级",
+      "modal_description": "请选择支付方式。",
+      "provider_momo": "pink MoMo",
+      "provider_vnpay": "blue VNPay",
+      "error_prefix": "⚠ {message}",
+      "momo_title": "MoMo 电子钱包",
+      "momo_description": "通过 MoMo 应用即时支付（Sandbox）",
+      "choose_button": "选择 ➔",
+      "vnpay_title": "VNPay 支付网关",
+      "vnpay_description": "支持国内 ATM 和国际卡（即将推出）",
+      "coming_soon": "即将推出",
+      "processing_title": "正在连接支付网关...",
+      "processing_description": "请不要关闭此窗口",
+      "table": {
+        "order_code": "交易编号",
+        "plan": "套餐",
+        "provider": "支付网关",
+        "amount": "金额",
+        "status": "状态",
+        "created_at": "创建日期"
+      },
+      "summary": {
+        "plan_label": "套餐：",
+        "period_label": "期限：",
+        "quota_label": "额外 AI 配额：",
+        "quota_value": "+{quota} 次使用",
+        "total_label": "总计："
+      },
+      "plans": {
+        "vip_1m": {
+          "name": "VIP 1 个月",
+          "period": "30 天期限",
+          "desc": "以极低成本体验服务。",
+          "button": "立即升级"
+        },
+        "vip_3m": {
+          "name": "VIP 3 个月",
+          "period": "90 天期限",
+          "desc": "节省 20%，享受完整权益。",
+          "button": "购买热门套餐"
+        },
+        "vip_1y": {
+          "name": "VIP 1 年",
+          "period": "365 天期限",
+          "desc": "创作者的高性价比选择，节省 33%。",
+          "button": "获得全年 VIP"
+        }
+      },
+      "features": {
+        "ai_100": "AI 生成题目（+100 次）",
+        "ai_350": "AI 生成题目（+350 次）",
+        "ai_1500": "AI 生成题目（+1500 次）",
+        "ocr": "上传 PDF/图片 OCR",
+        "private_quiz": "解锁 Private 测验",
+        "realtime_group": "创建小组实时房间",
+        "realtime_large": "创建大型实时房间",
+        "realtime_max": "创建超大型实时房间",
+        "export_pdf_excel": "支持导出 PDF/Excel 题目",
+        "vip_badge": "名称旁显示 VIP 徽章"
+      },
+      "plan_names": {
+        "vip_1m": "VIP 1 个月套餐",
+        "vip_3m": "VIP 3 个月套餐",
+        "vip_1y": "VIP 1 年套餐",
+        "custom": "自定义 VIP 套餐"
+      },
+      "status": {
+        "pending": "处理中",
+        "success": "成功",
+        "failed": "失败",
+        "refunded": "已退款"
+      },
+      "errors": {
+        "payment_url_failed": "无法初始化支付 URL。"
+      }
+    }
+  },
+  "admin_views": {
+    "Admin": {
+      "title": "Admin"
+    },
+    "Dashboard": {
+      "badge": "Admin Dashboard",
+      "title": "系统概览",
+      "description": "数据来自测验、作答和用户 API，不再使用模拟数据。",
+      "quiz_bank_button": "测验库",
+      "create_quiz_button": "创建测验",
+      "analytics_badge": "Analytics",
+      "analytics_title": "测验表现",
+      "report_button": "Report",
+      "row_meta": "所有者：{author} • {attempts} 次作答",
+      "average_score": "平均分 {score}%",
+      "question_count": "{count} 题",
+      "no_report_data": "暂无可统计的测验。",
+      "quick_actions_badge": "Quick actions",
+      "quick_actions_title": "主要流程",
+      "stats": {
+        "total_quizzes": {
+          "label": "测验总数",
+          "hint": "来自 quizzes 表"
+        },
+        "attempts": {
+          "label": "作答次数",
+          "hint": "来自 quiz_attempts 表"
+        },
+        "average_score": {
+          "label": "平均分",
+          "hint": "已完成作答"
+        },
+        "users": {
+          "label": "用户",
+          "hint": "来自 users 表"
+        }
+      },
+      "quick_links": {
+        "create_manual": {
+          "title": "手动创建测验",
+          "desc": "创建包含题目和答案的测验，并直接保存到后端。"
+        },
+        "quiz_bank": {
+          "title": "测验库",
+          "desc": "搜索、筛选、编辑和软删除测验。"
+        },
+        "results": {
+          "title": "作答结果",
+          "desc": "查看 quiz_attempts 中保存的作答记录。"
+        },
+        "users": {
+          "title": "用户",
+          "desc": "创建用户、编辑角色并管理用户列表。"
+        }
+      },
+      "errors": {
+        "load_failed": "无法加载仪表盘：{message}"
+      }
+    },
+    "Settings": {
+      "badge": "Settings",
+      "title": "系统设置",
+      "description": "配置各角色限制和新测验默认可见性。",
+      "ai_limits_badge": "AI limits",
+      "visibility_defaults_badge": "Visibility defaults",
+      "save_button": "保存设置",
+      "unlimited": "Unlimited",
+      "ai_500": "500 次/月",
+      "ocr_120": "120 次/月",
+      "ai_10": "10 次/月",
+      "ocr_3": "3 次/月",
+      "roles": {
+        "admin": "Admin",
+        "user": "普通"
+      }
+    },
+    "Reports": {
+      "badge": "Reports",
+      "title": "报表与分析",
+      "description": "从 quizzes 和 quiz_attempts API 汇总测验表现。",
+      "export_button": "Export CSV",
+      "row_meta": "{author} • {attempts} 次作答 • {questions} 题",
+      "empty": "暂无报表数据。",
+      "errors": {
+        "load_failed": "无法加载报表：{message}"
+      }
+    },
+    "AiQuiz": {
+      "badge": "AI Generator",
+      "title": "使用 AI 创建测验大纲",
+      "description": "输入需求、检查配置，然后进入编辑器将测验保存到后端。",
+      "prompt_placeholder": "例如：创建 10 道关于高一光合作用的中等难度测验题，每题 4 个选项...",
+      "count_10": "10 题",
+      "count_15": "15 题",
+      "count_20": "20 题",
+      "difficulty_easy": "简单",
+      "difficulty_medium": "中等",
+      "difficulty_hard": "困难",
+      "language_vi": "越南语",
+      "language_en": "English",
+      "visibility_private": "Private",
+      "visibility_public": "Public",
+      "visibility_group": "Group",
+      "ocr_link_title": "Upload PDF / Image OCR",
+      "ocr_link_description": "前往拖放上传和 OCR 预览界面。",
+      "prepare_button": "准备草稿",
+      "preview_badge": "Preview",
+      "preview_title": "草稿",
+      "empty_preview": "暂无内容。请输入提示词并准备草稿。",
+      "request_label": "需求",
+      "edit_button": "在编辑器中修改",
+      "guest": "Guest",
+      "quota": {
+        "role": "Role",
+        "ai_remaining": "剩余 AI",
+        "ocr_remaining": "剩余 OCR"
+      }
+    },
+    "Rooms": {
+      "badge": "Room Management",
+      "title": "Room quiz",
+      "description": "房间列表来自后端中带有 room_code 的测验。",
+      "create_group_button": "创建小组测验",
+      "loading": "正在加载房间...",
+      "room_meta": "{questions} 题 • {attempts} 次作答 • {duration}",
+      "empty": "暂无小组测验。",
+      "errors": {
+        "load_failed": "无法加载房间：{message}"
+      }
+    },
+    "Question": {
+      "badge": "Quiz Library",
+      "user_badge": "My Quiz Library",
+      "title": "测验库",
+      "user_title": "我的测验库",
+      "description": "从 Laravel API 数据按标签、难度和可见性搜索筛选。",
+      "user_description": "仅显示你账号创建的测验，便于管理和编辑。",
+      "upload_ocr_button": "Upload OCR",
+      "ai_generator_button": "AI Generator",
+      "create_quiz_button": "创建测验",
+      "search_placeholder": "按测验名称、作者、标签搜索...",
+      "difficulty_all": "全部难度",
+      "difficulty_easy": "简单",
+      "difficulty_medium": "中等",
+      "difficulty_hard": "困难",
+      "tag_all": "全部标签",
+      "visibility_all": "全部可见性",
+      "visibility_public": "Public",
+      "visibility_private": "Private",
+      "visibility_group": "Group",
+      "visibility_chip_all": "全部",
+      "loading": "正在从后端加载测验...",
+      "quiz_meta": "{category} • {tag} • by {author}",
+      "question_label": "题",
+      "attempt_label": "次数",
+      "score_label": "分数",
+      "view_button": "Xem",
+      "edit_button": "编辑",
+      "delete_button": "删除",
+      "empty_title": "未找到测验",
+      "empty_description": "请更改筛选条件或创建新测验。",
+      "confirm_delete": "要软删除此测验吗？",
+      "errors": {
+        "load_failed": "无法调用后端：{message}",
+        "delete_failed": "删除失败：{message}"
+      }
+    },
+    "Payments": {
+      "badge": "Payment",
+      "title": "VIP 套餐与支付",
+      "description": "管理员可查看所有交易。普通用户和 VIP 只能在升级页面查看自己的交易。",
+      "history_badge": "Payment history",
+      "history_title": "全部交易",
+      "history_description": "此列表仅供管理员使用。",
+      "loading_button": "正在加载...",
+      "reload_button": "重新加载",
+      "loading_history": "正在加载交易历史...",
+      "unknown_user": "未知",
+      "no_email": "暂无邮箱",
+      "empty": "系统中暂无交易。",
+      "custom_plan": "自定义 VIP 套餐",
+      "table": {
+        "user": "用户",
+        "order_code": "交易编号",
+        "plan": "套餐",
+        "provider": "网关",
+        "amount": "金额",
+        "status": "状态",
+        "created_at": "创建日期"
+      },
+      "plans": {
+        "vip_1m": {
+          "name": "VIP 1 个月",
+          "period": "30 天"
+        },
+        "vip_3m": {
+          "name": "VIP 3 个月",
+          "period": "90 天"
+        },
+        "vip_1y": {
+          "name": "VIP 1 年",
+          "period": "365 天"
+        }
+      },
+      "features": {
+        "ai_100": "+100 次 AI",
+        "ai_350": "+350 次 AI",
+        "ai_1500": "+1500 次 AI",
+        "ocr": "PDF/图片 OCR",
+        "private_quiz": "解锁 Private 测验",
+        "realtime_large": "创建大型实时房间",
+        "export_pdf_excel": "支持导出 PDF/Excel 题目"
+      },
+      "status": {
+        "pending": "处理中",
+        "success": "成功",
+        "failed": "失败",
+        "refunded": "已退款"
+      },
+      "errors": {
+        "load_failed": "无法加载支付历史。"
+      }
+    },
+    "Users": {
+      "badge": "Admin UI",
+      "title": "用户管理",
+      "description": "通过后端 API 创建、搜索、修改角色和删除用户。",
+      "name_placeholder": "用户名称",
+      "password_placeholder": "密码",
+      "create_button": "创建用户",
+      "search_placeholder": "按姓名或邮箱搜索用户",
+      "role_all": "全部角色",
+      "role_admin": "Admin",
+      "role_vip": "VIP",
+      "role_guest": "Guest",
+      "role_user_en": "User",
+      "role_user": "普通",
+      "search_button": "搜索",
+      "loading": "正在加载用户...",
+      "joined_meta": "{email} • joined {joinedAt}",
+      "delete_button": "删除",
+      "confirm_delete": "要删除此用户吗？",
+      "table": {
+        "user": "User",
+        "role": "Role",
+        "quiz": "Quiz",
+        "attempts": "作答次数",
+        "action": "Action"
+      },
+      "success": {
+        "created": "用户已创建。",
+        "role_updated": "角色已更新。",
+        "deleted": "用户已删除。"
+      },
+      "errors": {
+        "load_failed": "无法加载用户：{message}",
+        "required": "请填写姓名、邮箱和密码。",
+        "create_failed": "创建用户失败：{message}",
+        "role_update_failed": "更新角色失败：{message}",
+        "delete_failed": "删除用户失败：{message}"
+      }
+    },
+    "OcrUpload": {
+      "badge": "OCR Upload",
+      "title": "Upload Image OCR",
+      "description": "上传图片，调用后端 OCR，并在转换为测验前预览内容。",
+      "processing_file": "正在处理文件...",
+      "dropzone_title": "将文件拖到此处或点击选择",
+      "file_hint": "PNG、JPG、JPEG、WEBP、BMP、TIFF、PDF，最大 20MB。",
+      "ocr_ready": "OCR 已就绪",
+      "rendered_questions": "✅ 已渲染 {count} 道题",
+      "redirecting_editor": "。正在跳转到编辑器...",
+      "remove_file_button": "删除文件",
+      "processing_button": "处理中...",
+      "go_editor_button": "进入编辑器",
+      "preview_badge": "OCR Preview",
+      "preview_title": "提取结果",
+      "suggestion_badge": "AI suggestion",
+      "editor_badge": "Question Editor",
+      "editor_title": "编辑题目",
+      "editor_description": "保存到数据库前请检查 OCR/AI 题目。",
+      "total_questions": "题目总数：{count}",
+      "back_to_ocr_button": "返回 OCR",
+      "question_number": "第 {index} 题",
+      "delete_button": "删除",
+      "answer_label": "答案 {key}",
+      "correct_answer_label": "正确答案",
+      "not_selected": "未选择",
+      "add_question_button": "添加题目",
+      "save_questions_button": "保存题目",
+      "loading_upload": "正在上传文件...",
+      "loading_reading": "正在读取 OCR 内容...",
+      "loading_ai": "AI 正在分析题目...",
+      "loading_normalizing": "正在标准化数据...",
+      "loading_finishing": "即将完成...",
+      "ocr_completed": "OCR 完成",
+      "empty_ocr": "暂无 OCR 内容。请上传图片让后端处理。",
+      "ocr_question_line": "第 {index} 题：{question}",
+      "save_log": "发送到后端用于保存的数据：",
+      "suggestions": {
+        "medium_10": "创建 10 道中等题",
+        "concepts_first": "优先概念题",
+        "add_application": "添加 2 道应用题",
+        "keep_private": "审核前保持可见性为 Private"
+      },
+      "errors": {
+        "ocr_failed": "OCR 失败：{message}"
+      }
+    },
+    "CreateQuiz": {
+      "badge": "Manual editor",
+      "edit_title": "编辑测验",
+      "create_title": "手动创建测验",
+      "description": "将测验、题目、答案和封面图片直接保存到后端。表单现在比普通录入表更易用。",
+      "quiz_title_label": "测验标题",
+      "quiz_title_placeholder": "例如：高一生物复习",
+      "tag_label": "Tag",
+      "tag_placeholder": "生物",
+      "description_label": "描述",
+      "description_placeholder": "给作答者的简短描述",
+      "cover_badge": "封面图片",
+      "cover_title": "测验封面",
+      "cover_description": "仅可从本机上传图片文件。未选择图片时，系统会使用备用渐变背景。",
+      "choose_image_button": "选择图片",
+      "cover_file_label": "封面图片文件",
+      "upload_image_button": "上传图片",
+      "creator_avatar_label": "创建者头像",
+      "current_creator": "当前创建者",
+      "avatar_from_profile": "使用资料中的头像。",
+      "remove_cover_button": "删除封面",
+      "untitled_quiz": "未命名测验",
+      "default_category_label": "分类",
+      "duration_label": "时长（分钟）",
+      "difficulty_label": "难度",
+      "difficulty_easy": "简单",
+      "difficulty_medium": "中等",
+      "difficulty_hard": "困难",
+      "category_label": "分类",
+      "category_placeholder": "科学",
+      "visibility_title": "Visibility",
+      "room_code_label": "与测验关联的房间",
+      "room_code_placeholder": "VD: QZ24",
+      "question_builder_badge": "Question builder",
+      "question_builder_title": "题目和答案",
+      "add_question_button": "添加题目",
+      "question_number": "第 {index} 题",
+      "delete_button": "删除",
+      "question_placeholder": "题目内容",
+      "answer_placeholder": "答案 {key}",
+      "correct_answer_label": "正确答案",
+      "saving_button": "正在保存...",
+      "save_button": "保存测验",
+      "live_preview_badge": "Live preview",
+      "preview_description": "描述会显示在这里。",
+      "question_count": "{count} 题",
+      "checklist_badge": "快速检查",
+      "default_category": "科学",
+      "guest_name": "Guest",
+      "selected_cover": "已选择：{name}",
+      "saved_cover": "正在使用已保存的封面图片。",
+      "no_cover": "未选择封面图片。系统将使用备用渐变背景。",
+      "visibility": {
+        "public_description": "所有人都可以查看并作答。",
+        "private_description": "仅在管理区域显示。",
+        "group_description": "将测验关联到房间代码。"
+      },
+      "checklist": {
+        "has_title": "已提供清晰标题",
+        "has_cover": "有封面图片或备用渐变背景",
+        "has_question": "至少 1 道题",
+        "four_answers": "每题有 4 个答案",
+        "correct_answer": "每题有正确答案",
+        "group_room": "小组测验需要房间代码"
+      },
+      "success": {
+        "updated": "测验已更新。",
+        "created": "已创建新测验。"
+      },
+      "errors": {
+        "need_one_question": "测验至少需要 1 道题。",
+        "cover_image_only": "封面文件必须是图片。",
+        "cover_max_size": "封面图片最大为 4MB。",
+        "title_required": "请输入测验标题。",
+        "room_required": "小组测验需要房间代码。",
+        "question_empty": "第 {index} 题没有内容。",
+        "answer_min": "第 {index} 题至少需要 2 个答案。",
+        "answer_empty": "第 {index} 题仍有空答案。",
+        "correct_missing": "第 {index} 题未选择正确答案。",
+        "save_failed": "保存失败：{message}",
+        "load_edit_failed": "无法加载要编辑的测验：{message}"
+      }
+    }
+  },
+  "components": {
+    "LanguageSwitcher": {
+      "vi": "越南语",
+      "en": "英语",
+      "ja": "日语",
+      "zh": "中文"
+    },
+    "StatCard": {
+      "label": "标签",
+      "value": "值",
+      "hint": "提示"
+    },
+    "AppLoading": {
+      "title": "正在加载体验",
+      "description": "正在准备界面、测验数据和交互效果。"
+    },
+    "AppCursor": {
+      "cursor_enabled": "自定义光标已启用"
+    },
+    "BrandLogo": {
+      "brand": "QuizFlex",
+      "alt": "QuizFlex Logo"
+    },
+    "SectionHeader": {
+      "eyebrow": "内容标签",
+      "title": "部分标题",
+      "description": "部分说明"
+    },
+    "ThemeToggle": {
+      "dark_mode": "深色模式",
+      "light_mode": "浅色模式",
+      "dark_icon": "☾",
+      "light_icon": "☀"
+    },
+    "UserAvatar": {
+      "guest": "访客",
+      "display_name": "显示名称",
+      "avatar_alt": "{name}头像"
+    },
+    "VisibilityBadge": {
+      "public": "公开",
+      "private": "私有",
+      "group": "小组",
+      "public_icon": "🌐",
+      "private_icon": "🔒",
+      "group_icon": "👥"
+    },
+    "LandingQuickActions": {
+      "create_manual_badge": "手动创建",
+      "create_manual_title": "创建新测验",
+      "create_manual_highlight": "只需几分钟。",
+      "create_manual_description": "手动输入问题、答案、时间限制和可见性设置来创建您的测验。",
+      "create_feature_1": "添加问题",
+      "create_feature_2": "设置时间限制",
+      "create_feature_3": "选择访问权限",
+      "create_button": "打开测验编辑器",
+      "create_button_note": "无需AI，无需复杂操作。",
+      "ai_badge": "使用AI创建",
+      "ai_title": "AI测验",
+      "ai_highlight": "生成器。",
+      "ai_description": "从主题、文本或文档生成测验。快速创建草稿，保存前进行调整。",
+      "ai_feature_1": "输入主题",
+      "ai_feature_2": "生成问题",
+      "ai_feature_3": "编辑并保存",
+      "ai_button": "使用AI创建测验",
+      "ai_button_note": "快速创建，随时调整。",
+      "editor_label": "编辑器",
+      "question_number": "问题01",
+      "question_text": "多选题的主要成分是什么？",
+      "answer_a": "问题、答案和分数",
+      "answer_b": "仅有标题就足够了",
+      "stat_questions": "问题",
+      "stat_time": "时间",
+      "stat_level": "难度",
+      "stat_value_1": "10",
+      "stat_value_2": "12m",
+      "stat_value_3": "3"
+    }
+  }
+}

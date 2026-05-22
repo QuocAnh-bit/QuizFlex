@@ -5,19 +5,19 @@
       <div class="pointer-events-none absolute -bottom-24 right-0 h-80 w-80 rounded-full bg-[var(--accent)]/10 blur-3xl"></div>
 
       <div class="relative z-10">
-        <div v-if="isLoading" class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-5 text-sm font-bold text-[var(--muted)]">Đang chuẩn bị bài thi...</div>
+        <div v-if="isLoading" class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-5 text-sm font-bold text-[var(--muted)]">{{ $t('user_views.Quiz.loading') }}</div>
         <div v-if="errorMessage" class="mb-6 rounded-2xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm font-bold text-rose-300">{{ errorMessage }}</div>
 
         <template v-if="currentQuestion.id">
           <div class="mb-7 flex flex-wrap items-center justify-between gap-4">
             <div>
               <div class="mb-4 flex flex-wrap items-center gap-2">
-                <span class="rounded-full border border-[var(--border-strong)] bg-[var(--chip-active)] px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-[var(--primary)]">Câu {{ currentIndex + 1 }} / {{ quizQuestions.length || 1 }}</span>
-                <span class="rounded-full border border-[var(--border)] bg-[var(--surface-soft)] px-4 py-2 text-xs font-black text-[var(--muted)]">{{ quizMeta.category || 'Quiz' }}</span>
-                <span class="rounded-full border border-[var(--border)] bg-[var(--surface-soft)] px-4 py-2 text-xs font-black text-[var(--muted)]">{{ quizMeta.difficulty || 'Vừa' }}</span>
+                <span class="rounded-full border border-[var(--border-strong)] bg-[var(--chip-active)] px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-[var(--primary)]">{{ $t('user_views.Quiz.question_progress', { current: currentIndex + 1, total: quizQuestions.length || 1 }) }}</span>
+                <span class="rounded-full border border-[var(--border)] bg-[var(--surface-soft)] px-4 py-2 text-xs font-black text-[var(--muted)]">{{ quizMeta.category || $t('user_views.Quiz.default_category') }}</span>
+                <span class="rounded-full border border-[var(--border)] bg-[var(--surface-soft)] px-4 py-2 text-xs font-black text-[var(--muted)]">{{ quizMeta.difficulty || $t('user_views.Quiz.default_difficulty') }}</span>
               </div>
               <h1 class="max-w-4xl text-3xl font-black leading-tight tracking-[-0.055em] text-[var(--text)] sm:text-5xl">{{ currentQuestion.question }}</h1>
-              <p class="mt-4 max-w-2xl text-sm font-medium leading-7 text-[var(--muted)]">Chọn đáp án rồi chuyển câu. Khi hết thời gian, hệ thống tự nộp bài.</p>
+              <p class="mt-4 max-w-2xl text-sm font-medium leading-7 text-[var(--muted)]">{{ $t('user_views.Quiz.instruction') }}</p>
             </div>
 
             <div class="grid gap-3 text-center">
@@ -27,7 +27,7 @@
                   <span class="text-lg font-black text-[var(--text)]">{{ progressPercent }}%</span>
                 </div>
               </div>
-              <div class="text-xs font-black text-[var(--muted)]">Tiến độ</div>
+              <div class="text-xs font-black text-[var(--muted)]">{{ $t('user_views.Quiz.progress_label') }}</div>
             </div>
           </div>
 
@@ -54,10 +54,10 @@
           </div>
 
           <div class="mt-8 flex flex-wrap items-center justify-between gap-3">
-            <button class="btn-ghost disabled:cursor-not-allowed disabled:opacity-50" type="button" :disabled="currentIndex === 0" @click="goPrevious">Câu trước</button>
+            <button class="btn-ghost disabled:cursor-not-allowed disabled:opacity-50" type="button" :disabled="currentIndex === 0" @click="goPrevious">{{ $t('user_views.Quiz.previous_button') }}</button>
             <div class="flex flex-wrap items-center gap-3">
-              <span class="text-sm font-bold text-[var(--muted)]">Đã chọn: <b class="text-[var(--primary)]">{{ selectedAnswer || 'Chưa chọn' }}</b></span>
-              <button class="btn-primary" type="button" :disabled="isSubmitting" @click="goNext">{{ isSubmitting ? 'Đang nộp...' : isLastQuestion ? 'Nộp bài' : 'Câu tiếp theo' }}</button>
+              <span class="text-sm font-bold text-[var(--muted)]">{{ $t('user_views.Quiz.selected_label') }} <b class="text-[var(--primary)]">{{ selectedAnswer || $t('user_views.Quiz.not_selected') }}</b></span>
+              <button class="btn-primary" type="button" :disabled="isSubmitting" @click="goNext">{{ isSubmitting ? $t('user_views.Quiz.submitting') : isLastQuestion ? $t('user_views.Quiz.submit_button') : $t('user_views.Quiz.next_button') }}</button>
             </div>
           </div>
         </template>
@@ -67,21 +67,21 @@
     <aside class="grid content-start gap-5">
       <article class="relative overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-card)] backdrop-blur-2xl">
         <div class="relative z-10">
-          <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Timer</p>
-          <h2 class="mt-2 text-2xl font-black tracking-[-0.05em] text-[var(--text)]">Đếm ngược</h2>
+          <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">{{ $t('user_views.Quiz.timer_badge') }}</p>
+          <h2 class="mt-2 text-2xl font-black tracking-[-0.05em] text-[var(--text)]">{{ $t('user_views.Quiz.timer_title') }}</h2>
           <div class="mt-5 rounded-[1.5rem] border border-[var(--border-strong)] bg-[var(--chip-active)] p-5 text-center">
-            <p class="text-xs font-black uppercase tracking-[0.22em] text-[var(--muted)]">Còn lại</p>
+            <p class="text-xs font-black uppercase tracking-[0.22em] text-[var(--muted)]">{{ $t('user_views.Quiz.time_left_label') }}</p>
             <div class="mt-2 text-4xl font-black tracking-[0.08em] text-[var(--text)]">{{ formatSeconds(timeLeft) }}</div>
           </div>
           <div class="mt-5 grid grid-cols-2 gap-3">
-            <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-4"><p class="text-xs font-bold text-[var(--muted)]">Bài thi</p><p class="mt-1 text-xl font-black text-[var(--text)]">{{ quizMeta.title || 'Quiz' }}</p></div>
+            <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-4"><p class="text-xs font-bold text-[var(--muted)]">{{ $t('user_views.Quiz.exam_label') }}</p><p class="mt-1 text-xl font-black text-[var(--text)]">{{ quizMeta.title || $t('user_views.Quiz.default_category') }}</p></div>
             <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-4"><p class="text-xs font-bold text-[var(--muted)]">Attempt</p><p class="mt-1 text-xl font-black text-[var(--text)]">#{{ attemptId || '-' }}</p></div>
           </div>
         </div>
       </article>
 
       <article class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-card)] backdrop-blur-2xl">
-        <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Question map</p>
+        <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">{{ $t('user_views.Quiz.question_map_label') }}</p>
         <div class="mt-4 grid grid-cols-5 gap-2">
           <button v-for="(_, index) in quizQuestions" :key="index" type="button" class="grid h-10 place-items-center rounded-2xl border text-xs font-black transition hover:-translate-y-0.5" :class="getQuestionMapClass(index)" @click="goToQuestion(index)">{{ index + 1 }}</button>
         </div>
@@ -93,10 +93,12 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { currentUserStorage, formatSeconds, normalizeQuestion, quizzesApi } from '@/services/api'
 
 const route = useRoute()
 const router = useRouter()
+const { t } = useI18n()
 
 const currentIndex = ref(0)
 const selectedAnswers = ref({})
@@ -162,7 +164,7 @@ const submitAttempt = async (autoSubmit = false) => {
     const timeSpent = startedAt.value ? Math.max(0, Math.round((Date.now() - startedAt.value) / 1000)) : 0
     const result = await quizzesApi.submitAttempt(route.params.id, {
       attempt_id: attemptId.value,
-      player_name: currentUserStorage.get()?.name || 'Guest',
+      player_name: currentUserStorage.get()?.name || t('user_views.Quiz.guest_name'),
       user_id: currentUserStorage.get()?.id,
       answers: selectedAnswers.value,
       time_spent_seconds: timeSpent,
@@ -174,9 +176,9 @@ const submitAttempt = async (autoSubmit = false) => {
       return
     }
 
-    errorMessage.value = autoSubmit ? 'Đã hết giờ nhưng không nhận được mã kết quả.' : 'Nộp bài xong nhưng không nhận được mã kết quả.'
+    errorMessage.value = autoSubmit ? t('user_views.Quiz.errors.auto_submit_missing_result') : t('user_views.Quiz.errors.submit_missing_result')
   } catch (error) {
-    errorMessage.value = `Không nộp được bài: ${error.message}`
+    errorMessage.value = t('user_views.Quiz.errors.submit_failed', { message: error.message })
     startTimer()
   } finally {
     isSubmitting.value = false
@@ -203,7 +205,7 @@ const loadQuiz = async () => {
     startedAt.value = Date.now()
     startTimer()
   } catch (error) {
-    errorMessage.value = `Không tải được bài thi: ${error.message}`
+    errorMessage.value = t('user_views.Quiz.errors.load_failed', { message: error.message })
   } finally {
     isLoading.value = false
   }

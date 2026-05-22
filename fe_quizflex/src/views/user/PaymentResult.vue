@@ -8,8 +8,8 @@
       <!-- Loading State -->
       <div v-if="isLoading" class="flex flex-col items-center justify-center gap-4 py-8">
         <div class="h-14 w-14 animate-spin rounded-full border-[5px] border-[var(--border)] border-t-[var(--primary)] shadow-md"></div>
-        <h2 class="text-2xl font-black text-[var(--text)] mt-3">Đang Xác Minh Giao Dịch</h2>
-        <p class="text-sm font-semibold text-[var(--muted)]">Vui lòng chờ trong giây lát, hệ thống đang kiểm tra chữ ký và cập nhật tài khoản của bạn...</p>
+        <h2 class="text-2xl font-black text-[var(--text)] mt-3">{{ $t('user_views.PaymentResult.loading_title') }}</h2>
+        <p class="text-sm font-semibold text-[var(--muted)]">{{ $t('user_views.PaymentResult.loading_description') }}</p>
       </div>
 
       <!-- Success State -->
@@ -20,35 +20,35 @@
         </div>
 
         <div class="grid gap-2">
-          <span class="text-xs font-black uppercase tracking-[0.2em] text-emerald-400">Giao dịch thành công</span>
-          <h2 class="text-3xl md:text-4xl font-black text-[var(--text)] tracking-tight">Chào Mừng Bạn Đến Với VIP!</h2>
+          <span class="text-xs font-black uppercase tracking-[0.2em] text-emerald-400">{{ $t('user_views.PaymentResult.success_badge') }}</span>
+          <h2 class="text-3xl md:text-4xl font-black text-[var(--text)] tracking-tight">{{ $t('user_views.PaymentResult.success_title') }}</h2>
           <p class="text-sm font-semibold text-[var(--muted)] leading-relaxed">
-            Hệ thống đã ghi nhận thanh toán và nâng cấp tài khoản của bạn thành công. Quyền lợi VIP đã được kích hoạt ngay lập tức!
+            {{ $t('user_views.PaymentResult.success_description') }}
           </p>
         </div>
 
         <!-- Receipt Box -->
         <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-5 text-left text-sm font-semibold grid gap-3">
           <div class="flex items-center justify-between">
-            <span class="text-[var(--muted)]">Mã giao dịch:</span>
+            <span class="text-[var(--muted)]">{{ $t('user_views.PaymentResult.order_code_label') }}</span>
             <span class="font-mono text-xs text-[var(--text)]">{{ resultData.order_code }}</span>
           </div>
           <div class="flex items-center justify-between">
-            <span class="text-[var(--muted)]">Số tiền thanh toán:</span>
+            <span class="text-[var(--muted)]">{{ $t('user_views.PaymentResult.amount_label') }}</span>
             <span class="font-black text-[var(--accent)]">{{ formatPrice(resultData.amount) }}</span>
           </div>
           <div class="flex items-center justify-between">
-            <span class="text-[var(--muted)]">Loại tài khoản mới:</span>
+            <span class="text-[var(--muted)]">{{ $t('user_views.PaymentResult.account_type_label') }}</span>
             <span class="inline-flex items-center gap-1 rounded bg-amber-500/10 text-amber-400 px-2 py-0.5 text-xs font-black uppercase border border-amber-500/20">
               👑 {{ resultData.user?.role }}
             </span>
           </div>
           <div class="flex items-center justify-between">
-            <span class="text-[var(--muted)]">AI Quota hiện tại:</span>
-            <span class="font-black text-[var(--primary)]">{{ resultData.user?.ai_quota_remaining }} lượt sử dụng</span>
+            <span class="text-[var(--muted)]">{{ $t('user_views.PaymentResult.ai_quota_label') }}</span>
+            <span class="font-black text-[var(--primary)]">{{ $t('user_views.PaymentResult.ai_quota_value', { quota: resultData.user?.ai_quota_remaining }) }}</span>
           </div>
           <div class="flex items-center justify-between" v-if="resultData.user?.vip_expires_at">
-            <span class="text-[var(--muted)]">Hạn định VIP:</span>
+            <span class="text-[var(--muted)]">{{ $t('user_views.PaymentResult.vip_expiry_label') }}</span>
             <span class="text-[var(--text)]">{{ formatDate(resultData.user?.vip_expires_at) }}</span>
           </div>
         </div>
@@ -59,14 +59,14 @@
             to="/" 
             class="h-12 flex items-center justify-center font-black rounded-full border border-[var(--border-strong)] bg-[var(--surface-soft)] text-[var(--text)] transition hover:bg-[var(--chip-active)] active:scale-[0.98]"
           >
-            Về Trang Chủ
+            {{ $t('user_views.PaymentResult.home_button') }}
           </router-link>
           
           <router-link 
             to="/dashboard/questions/ai" 
             class="h-12 flex items-center justify-center font-black rounded-full bg-gradient-to-r from-[var(--primary)] to-[var(--accent)] text-white shadow-[0_16px_36px_rgba(155,44,255,0.25)] transition hover:-translate-y-0.5 active:scale-[0.98]"
           >
-            Trải Nghiệm AI Ngay
+            {{ $t('user_views.PaymentResult.try_ai_button') }}
           </router-link>
         </div>
       </div>
@@ -79,16 +79,16 @@
         </div>
 
         <div class="grid gap-2">
-          <span class="text-xs font-black uppercase tracking-[0.2em] text-rose-400">Giao dịch thất bại</span>
-          <h2 class="text-3xl font-black text-[var(--text)] tracking-tight">Thanh Toán Chưa Hoàn Tất</h2>
+          <span class="text-xs font-black uppercase tracking-[0.2em] text-rose-400">{{ $t('user_views.PaymentResult.failure_badge') }}</span>
+          <h2 class="text-3xl font-black text-[var(--text)] tracking-tight">{{ $t('user_views.PaymentResult.failure_title') }}</h2>
           <p class="text-sm font-semibold text-[var(--muted)] leading-relaxed">
-            Hệ thống không thể xác minh thanh toán này. Có thể bạn đã hủy giao dịch hoặc có lỗi xảy ra từ phía ngân hàng.
+            {{ $t('user_views.PaymentResult.failure_description') }}
           </p>
         </div>
 
         <!-- Error Alert Message -->
         <div class="rounded-2xl border border-rose-500/25 bg-rose-500/10 p-4 text-sm font-bold text-rose-400 text-left">
-          ⚠ Chi tiết lỗi: {{ errorMsg || 'Giao dịch bị hủy bỏ bởi người dùng hoặc chữ ký xác minh không hợp lệ.' }}
+          {{ $t('user_views.PaymentResult.error_detail', { message: errorMsg || $t('user_views.PaymentResult.default_error') }) }}
         </div>
 
         <!-- Action Buttons -->
@@ -97,14 +97,14 @@
             to="/" 
             class="h-12 flex items-center justify-center font-black rounded-full border border-[var(--border-strong)] bg-[var(--surface-soft)] text-[var(--text)] transition hover:bg-[var(--chip-active)] active:scale-[0.98]"
           >
-            Quay Về Trang Chủ
+            {{ $t('user_views.PaymentResult.back_home_button') }}
           </router-link>
           
           <router-link 
             to="/upgrade" 
             class="h-12 flex items-center justify-center font-black rounded-full bg-rose-500 text-white shadow-[0_16px_36px_rgba(244,63,94,0.2)] transition hover:-translate-y-0.5 active:scale-[0.98]"
           >
-            Thử Lại Thanh Toán
+            {{ $t('user_views.PaymentResult.retry_payment_button') }}
           </router-link>
         </div>
       </div>
@@ -116,9 +116,11 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { currentUserStorage, paymentsApi } from '@/services/api'
 
 const route = useRoute()
+const { t } = useI18n()
 
 const isLoading = ref(true)
 const isSuccess = ref(false)
@@ -136,7 +138,7 @@ const verifyTransaction = async () => {
   if (!queryParams.orderId || !queryParams.signature) {
     isLoading.value = false
     isSuccess.value = false
-    errorMsg.value = 'Không tìm thấy thông tin xác minh giao dịch (Thiếu orderId hoặc chữ ký).'
+    errorMsg.value = t('user_views.PaymentResult.errors.missing_verification')
     return
   }
 
@@ -155,11 +157,11 @@ const verifyTransaction = async () => {
       }
     } else {
       isSuccess.value = false
-      errorMsg.value = `Giao dịch đã kết thúc với trạng thái: ${res.status || 'unknown'}`
+      errorMsg.value = t('user_views.PaymentResult.errors.status_finished', { status: res.status || 'unknown' })
     }
   } catch (error) {
     isSuccess.value = false
-    errorMsg.value = error.message || 'Xác minh chữ ký thanh toán thất bại tại hệ thống.'
+    errorMsg.value = error.message || t('user_views.PaymentResult.errors.signature_failed')
   } finally {
     isLoading.value = false
   }

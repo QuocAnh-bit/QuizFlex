@@ -37,11 +37,11 @@
           </p>
 
           <h2 class="mt-3 text-3xl font-black tracking-[-0.06em] text-[var(--text)]">
-            Đang tải trải nghiệm
+            {{ $t('components.AppLoading.title') }}
           </h2>
 
           <p class="mx-auto mt-3 max-w-xs text-sm font-semibold leading-6 text-[var(--muted)]">
-            Chuẩn bị giao diện, dữ liệu quiz và hiệu ứng tương tác.
+            {{ $t('components.AppLoading.description') }}
           </p>
 
           <div class="mt-7 overflow-hidden rounded-full border border-[var(--border)] bg-[var(--surface-soft)] p-1">

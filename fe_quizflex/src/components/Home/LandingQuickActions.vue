@@ -19,18 +19,18 @@
               class="mb-5 flex w-fit items-center gap-2 rounded-full border border-[var(--border-strong)] bg-[var(--chip-active)] px-4 py-2 text-sm font-black text-[var(--primary)] shadow-[0_12px_30px_rgba(155,44,255,0.16)]"
             >
               <span class="h-2 w-2 rounded-full bg-[var(--primary)] shadow-[0_0_16px_var(--primary)]"></span>
-              Tạo thủ công
+              {{ $t('components.LandingQuickActions.create_manual_badge') }}
             </div>
 
             <h2 class="max-w-md text-4xl font-black leading-[0.92] tracking-[-0.07em] text-[var(--text)] sm:text-3xl">
-              Tạo quiz mới
+              {{ $t('components.LandingQuickActions.create_manual_title') }}
               <span class="block bg-gradient-to-r from-[var(--primary)] via-[var(--primary-2)] to-[var(--accent)] bg-clip-text text-transparent">
-                trong vài phút.
+                {{ $t('components.LandingQuickActions.create_manual_highlight') }}
               </span>
             </h2>
 
             <p class="mt-5 max-w-md text-sm font-medium leading-7 text-[var(--muted)] sm:text-base">
-              Tự nhập câu hỏi, đáp án, thời gian làm bài và chế độ hiển thị cho bộ quiz của bạn.
+              {{ $t('components.LandingQuickActions.create_manual_description') }}
             </p>
 
             <div class="mt-6 flex flex-wrap gap-2">
@@ -49,11 +49,11 @@
                 class="group/btn relative inline-flex min-h-12 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-[var(--primary)] via-[var(--primary-2)] to-[var(--accent)] px-6 text-sm font-black text-white shadow-[0_18px_38px_rgba(155,44,255,0.28)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_24px_55px_rgba(155,44,255,0.38)] active:scale-95"
               >
                 <span class="absolute inset-0 -translate-x-[120%] bg-gradient-to-r from-transparent via-white/35 to-transparent transition duration-700 group-hover/btn:translate-x-[120%]"></span>
-                <span class="relative z-10">Mở Quiz Editor</span>
+                <span class="relative z-10">{{ $t('components.LandingQuickActions.create_button') }}</span>
               </router-link>
 
               <span class="text-xs font-bold text-[var(--muted)]">
-                Không cần AI, không cần vòng vo.
+                {{ $t('components.LandingQuickActions.create_button_note') }}
               </span>
             </div>
           </div>
@@ -79,10 +79,10 @@
               <div class="grid gap-3 p-4">
                 <div class="rounded-2xl border border-[var(--border)] bg-gradient-to-br from-[var(--surface-soft)] to-[rgba(155,44,255,0.12)] p-4">
                   <p class="text-xs font-black text-[var(--primary)]">
-                    Câu hỏi 01
+                    {{ $t('components.LandingQuickActions.question_number') }}
                   </p>
                   <h3 class="mt-2 text-sm font-black leading-5 text-[var(--text)]">
-                    Đâu là thành phần chính của một câu hỏi trắc nghiệm?
+                    {{ $t('components.LandingQuickActions.question_text') }}
                   </h3>
                 </div>
 
@@ -137,18 +137,18 @@
               class="mb-5 flex w-fit items-center gap-2 rounded-full border border-[var(--border-strong)] bg-[var(--chip-active)] px-4 py-2 text-sm font-black text-[var(--primary)] shadow-[0_12px_30px_rgba(155,44,255,0.16)]"
             >
               <span class="h-2 w-2 rounded-full bg-[var(--accent-2)] shadow-[0_0_16px_var(--accent-2)]"></span>
-              Tạo bằng AI
+              {{ $t('components.LandingQuickActions.ai_badge') }}
             </div>
 
             <h2 class="max-w-md text-4xl font-black leading-[0.92] tracking-[-0.07em] text-[var(--text)] sm:text-5xl">
-              AI Quiz
+              {{ $t('components.LandingQuickActions.ai_title') }}
               <span class="block bg-gradient-to-r from-[var(--accent-2)] via-[var(--primary-2)] to-[var(--accent)] bg-clip-text text-transparent">
-                Generator.
+                {{ $t('components.LandingQuickActions.ai_highlight') }}
               </span>
             </h2>
 
             <p class="mt-5 max-w-md text-sm font-medium leading-7 text-[var(--muted)] sm:text-base">
-              Sinh quiz từ chủ đề, văn bản hoặc tài liệu. Tạo bản nháp nhanh rồi chỉnh lại trước khi lưu.
+              {{ $t('components.LandingQuickActions.ai_description') }}
             </p>
 
             <div class="mt-6 flex flex-wrap gap-2">
@@ -167,11 +167,11 @@
                 class="group/btn relative inline-flex min-h-12 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-[var(--accent-2)] via-[var(--primary-2)] to-[var(--accent)] px-6 text-sm font-black text-white shadow-[0_18px_38px_rgba(155,44,255,0.28)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_24px_55px_rgba(155,44,255,0.38)] active:scale-95"
               >
                 <span class="absolute inset-0 -translate-x-[120%] bg-gradient-to-r from-transparent via-white/35 to-transparent transition duration-700 group-hover/btn:translate-x-[120%]"></span>
-                <span class="relative z-10">Tạo quiz bằng AI</span>
+                <span class="relative z-10">{{ $t('components.LandingQuickActions.ai_button') }}</span>
               </router-link>
 
               <span class="text-xs font-bold text-[var(--muted)]">
-                Tạo nhanh, vẫn chỉnh được.
+                {{ $t('components.LandingQuickActions.ai_button_note') }}
               </span>
             </div>
           </div>
@@ -207,43 +207,47 @@
 </template>
 
 <script setup>
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
+
 const createFeatures = [
-  'Thêm câu hỏi',
-  'Cài thời gian',
-  'Chọn quyền truy cập',
+  t('components.LandingQuickActions.create_feature_1'),
+  t('components.LandingQuickActions.create_feature_2'),
+  t('components.LandingQuickActions.create_feature_3'),
 ]
 
 const aiFeatures = [
-  'Nhập chủ đề',
-  'Sinh câu hỏi',
-  'Chỉnh và lưu',
+  t('components.LandingQuickActions.ai_feature_1'),
+  t('components.LandingQuickActions.ai_feature_2'),
+  t('components.LandingQuickActions.ai_feature_3'),
 ]
 
 const previewAnswers = [
   {
     key: 'A',
-    text: 'Câu hỏi, đáp án và điểm số',
+    text: t('components.LandingQuickActions.answer_a'),
     active: true,
   },
   {
     key: 'B',
-    text: 'Chỉ cần tiêu đề là đủ',
+    text: t('components.LandingQuickActions.answer_b'),
     active: false,
   },
 ]
 
 const editorStats = [
   {
-    value: '10',
-    label: 'Câu hỏi',
+    value: t('components.LandingQuickActions.stat_value_1'),
+    label: t('components.LandingQuickActions.stat_questions'),
   },
   {
-    value: '12m',
-    label: 'Thời gian',
+    value: t('components.LandingQuickActions.stat_value_2'),
+    label: t('components.LandingQuickActions.stat_time'),
   },
   {
-    value: '3',
-    label: 'Mức độ',
+    value: t('components.LandingQuickActions.stat_value_3'),
+    label: t('components.LandingQuickActions.stat_level'),
   },
 ]
 </script>

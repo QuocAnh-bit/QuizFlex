@@ -7,11 +7,13 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const theme = ref('dark')
 
-const label = computed(() => theme.value === 'dark' ? 'Giao diện tối' : 'Giao diện sáng')
-const icon = computed(() => theme.value === 'dark' ? '☾' : '☀')
+const label = computed(() => theme.value === 'dark' ? t('components.ThemeToggle.dark_mode') : t('components.ThemeToggle.light_mode'))
+const icon = computed(() => theme.value === 'dark' ? t('components.ThemeToggle.dark_icon') : t('components.ThemeToggle.light_icon'))
 
 function applyTheme(value) {
   theme.value = value

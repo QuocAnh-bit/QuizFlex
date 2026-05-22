@@ -1,0 +1,938 @@
+{
+  "common": {
+    "welcome": "QuizFlexへようこそ",
+    "save": "保存",
+    "cancel": "キャンセル"
+  },
+  "auth": {
+    "login": "ログイン",
+    "register": "登録",
+    "email": "メール",
+    "password": "パスワード",
+    "login_page": {
+      "workspace_badge": "QuizFlex Workspace",
+      "hero_title": "おかえりなさい。",
+      "hero_description": "ログインして、クイズ、リアルタイムルーム、AIによる問題作成の利用状況を管理します。",
+      "quiz_stat_label": "クイズ",
+      "ai_usage_stat_label": "AI利用",
+      "form_badge": "アカウントログイン",
+      "form_title": "QuizFlexを続ける",
+      "form_description": "usersテーブルにある既存アカウントでログインします。",
+      "email_placeholder": "you@example.com",
+      "password_placeholder": "••••••••",
+      "show_password": "表示",
+      "hide_password": "非表示",
+      "remember_me": "ログイン状態を保持",
+      "forgot_password": "パスワードを忘れましたか？",
+      "success_message": "ログインしました。",
+      "no_account": "アカウントをお持ちでないですか？",
+      "register_now": "今すぐ登録"
+    },
+    "register_page": {
+      "account_badge": "QuizFlex Account",
+      "hero_title": "よりスマートなクイズを作成。",
+      "hero_description": "手動、AI、OCRで問題を作成できます。個人プレイまたはルームでリアルタイムにプレイできます。",
+      "sample_quiz_stat_label": "サンプルクイズ",
+      "mode_stat_label": "モード",
+      "form_badge": "新規アカウント作成",
+      "form_title": "QuizFlexを始める",
+      "form_description": "アカウントを登録して、自分のクイズライブラリを作り始めましょう。",
+      "user_account_title": "ユーザーアカウント",
+      "user_account_description": "登録後、支払い画面でVIPにアップグレードできます。",
+      "full_name_label": "氏名",
+      "full_name_placeholder": "山田 太郎",
+      "username_label": "ユーザー名",
+      "username_placeholder": "quizmaster",
+      "email_placeholder": "you@example.com",
+      "password_placeholder": "8文字以上",
+      "show_password": "表示",
+      "hide_password": "非表示",
+      "accept_terms": "利用規約とプライバシーポリシーに同意します。",
+      "create_account": "アカウント作成",
+      "success_message": "アカウントを作成しました。移動しています...",
+      "has_account": "すでにアカウントをお持ちですか？"
+    },
+    "validation": {
+      "full_name_required": "氏名を入力してください。",
+      "username_min_3": "ユーザー名は3文字以上で入力してください。",
+      "email_required": "メールは必須です。",
+      "email_invalid": "メール形式が正しくありません。",
+      "password_required": "パスワードは必須です。",
+      "password_min_6": "パスワードは6文字以上で入力してください。",
+      "password_min_8": "パスワードは8文字以上で入力してください。",
+      "accept_terms_required": "規約に同意する必要があります。"
+    },
+    "forgot_password_page": {
+      "badge": "アカウント復旧",
+      "title": "パスワードをお忘れですか？",
+      "description": "バックエンドのメール設定後にパスワード復旧を行うため、メールアドレスを入力してください。",
+      "email_placeholder": "you@example.com",
+      "submit_button": "復旧リンクを送信",
+      "back_to_login": "ログインに戻る"
+    }
+  },
+  "admin_nav": {
+    "overview": "概要",
+    "quiz_bank": "クイズ管理",
+    "create_quiz": "クイズ作成",
+    "ai_generator": "AI Generator",
+    "ocr_upload": "OCR Upload",
+    "room": "ルーム",
+    "report": "レポート",
+    "payment": "支払い",
+    "users": "ユーザー",
+    "settings": "設定"
+  },
+  "admin_layout": {
+    "console_label": "Admin Console",
+    "dashboard_title": "Admin Dashboard",
+    "console_description": "システム、クイズ、ユーザー、レポート、支払いを管理します。",
+    "header_label": "QuizFlex admin",
+    "home_button": "ホーム",
+    "create_quiz_button": "クイズ作成"
+  },
+  "user_nav": {
+    "home": "ホーム",
+    "topics": "トピック",
+    "quizzes": "クイズを解く",
+    "join_room": "ルーム参加",
+    "results": "結果",
+    "profile": "プロフィール",
+    "upgrade": "アップグレード",
+    "admin_dashboard": "Admin dashboard",
+    "my_dashboard": "マイダッシュボード",
+    "login": "ログイン",
+    "register": "登録"
+  },
+  "user_layout": {
+    "login_button": "ログイン",
+    "start_button": "始める",
+    "logout_button": "ログアウト",
+    "open_menu": "メニュー",
+    "close_menu": "閉じる"
+  },
+  "navbar": {
+    "home": "ホーム",
+    "quizzes": "クイズ一覧",
+    "profile": "プロフィール"
+  },
+  "quiz": {
+    "start": "クイズ開始",
+    "next": "次の問題",
+    "submit": "提出",
+    "score": "スコア"
+  },
+  "user_views": {
+    "User": {
+      "title": "User page"
+    },
+    "Dashboard": {
+      "badge": "ユーザーダッシュボード",
+      "title": "学習とクイズ作成のワークスペース",
+      "description": "このエリアは管理ダッシュボードとは別です。ユーザーとVIPは、クイズ作成、クイズ管理、OCR、AI、ルーム管理に使用します。",
+      "create_quiz_button": "クイズ作成",
+      "quiz_bank_button": "クイズ管理",
+      "quick_actions": {
+        "my_quizzes": {
+          "title": "マイクイズ管理",
+          "desc": "作成したクイズの表示、絞り込み、編集、削除を行います。"
+        },
+        "create_manual": {
+          "title": "手動でクイズ作成",
+          "desc": "問題、回答、制限時間、カバー画像付きの新しいクイズを作成します。"
+        },
+        "ai_generator": {
+          "title": "AI Generator",
+          "desc": "AIでクイズの下書きを生成し、保存前に確認します。"
+        },
+        "ocr_upload": {
+          "title": "OCR Upload",
+          "desc": "画像や文書をアップロードし、OCRで問題を抽出します。"
+        },
+        "room": {
+          "title": "Room",
+          "desc": "学習グループ向けのリアルタイムクイズルームを作成・管理します。"
+        },
+        "results": {
+          "title": "マイ結果",
+          "desc": "保存された受験履歴とスコアを確認します。"
+        }
+      }
+    },
+    "Home": {
+      "hero_badge": "QuizFlex MVP • API Connected",
+      "hero_title_prefix": "クイズ作成をもっと速く。",
+      "hero_title_highlight": "もっと楽しくクイズに参加。",
+      "hero_description": "ランディング、クイズ一覧、ルーム参加、VIP/Adminダッシュボード、手動作成、OCR、レポートに対応。主要なクイズ機能はバックエンド接続済みで、モックだけではありません。",
+      "try_quiz_button": "クイズを試す",
+      "join_room_button": "Join room",
+      "dashboard_button": "ダッシュボードへ",
+      "live_preview": "Live preview",
+      "current_quiz_label": "進行中のクイズ",
+      "no_quiz_title": "クイズはまだありません",
+      "featured_quiz_meta": "{questions}問 • {duration} • {difficulty}",
+      "no_quiz_description": "ここに表示するには新しいクイズを作成してください。",
+      "no_public_quiz": "バックエンドに公開クイズがありません。",
+      "available_quiz_label": "利用可能なクイズ",
+      "topics_title": "注目トピックを探す",
+      "topics_description": "トピック別にクイズを選び、試用または独自問題セットのテンプレートとして利用できます。",
+      "search_placeholder": "クイズ、トピック、科目を検索...",
+      "all_category": "すべて",
+      "random_category": "ランダム",
+      "category_description": "{category}カテゴリのクイズです。",
+      "view_all": "すべて表示",
+      "by_author": "by {author}",
+      "question_count": "{count}問",
+      "stats": {
+        "public_quizzes": "Quiz public",
+        "categories": "カテゴリ",
+        "attempts": "受験数"
+      },
+      "preview": {
+        "public_quizzes": "Quiz public",
+        "total_questions": "総問題数",
+        "attempts": "受験数",
+        "average_score": "平均スコア"
+      }
+    },
+    "JoinRoom": {
+      "badge": "Join Room",
+      "title": "コードでルーム参加",
+      "description": "教師から提供されたルームコードを入力してグループクイズを開始します。",
+      "room_code_placeholder": "ルームコード",
+      "submit_button": "今すぐ参加",
+      "errors": {
+        "required": "ルームコードを入力してください。",
+        "not_found": "このルームコードは見つかりません。",
+        "load_failed": "ルームを見つけられません: {message}"
+      }
+    },
+    "QuizList": {
+      "badge": "Quiz catalog",
+      "title": "クイズ一覧",
+      "description": "Public、Private、Groupで絞り込み、名前、カテゴリ、難易度で検索できます。データはLaravel APIから直接取得します。",
+      "create_quiz_button": "新規クイズ作成",
+      "search_placeholder": "クイズ、カテゴリ、タグを検索...",
+      "visibility_all": "すべての公開範囲",
+      "visibility_public": "Public",
+      "visibility_private": "Private",
+      "visibility_group": "Group",
+      "difficulty_all": "すべての難易度",
+      "difficulty_easy": "易しい",
+      "difficulty_medium": "普通",
+      "difficulty_hard": "難しい",
+      "search_button": "検索",
+      "loading": "クイズ一覧を読み込み中...",
+      "no_description": "説明はまだありません。",
+      "question_label": "問題",
+      "duration_label": "時間",
+      "average_label": "TB",
+      "empty_title": "クイズが見つかりません",
+      "empty_description": "フィルターを変更するか、Adminで新しいクイズを作成してください。",
+      "errors": {
+        "load_failed": "クイズを読み込めません: {message}"
+      }
+    },
+    "QuizDetail": {
+      "no_description": "このクイズにはまだ説明がありません。",
+      "question_count_label": "問題数",
+      "duration_label": "時間",
+      "attempts_label": "受験数",
+      "start_button": "開始",
+      "edit_button": "クイズ編集",
+      "back_button": "一覧に戻る",
+      "loading": "クイズ詳細を読み込み中...",
+      "question_preview_badge": "Question preview",
+      "question_list_title": "問題一覧",
+      "question_points": "問{index} • {points}点",
+      "errors": {
+        "load_failed": "クイズ詳細を読み込めません: {message}"
+      }
+    },
+    "Quiz": {
+      "loading": "クイズを準備中...",
+      "question_progress": "問 {current} / {total}",
+      "default_category": "Quiz",
+      "default_difficulty": "普通",
+      "instruction": "回答を選んで次の問題へ進んでください。時間切れになると自動送信されます。",
+      "progress_label": "進捗",
+      "previous_button": "前の問題",
+      "selected_label": "選択済み:",
+      "not_selected": "未選択",
+      "submitting": "送信中...",
+      "submit_button": "提出",
+      "next_button": "次の問題",
+      "timer_badge": "Timer",
+      "timer_title": "カウントダウン",
+      "time_left_label": "残り",
+      "exam_label": "クイズ",
+      "question_map_label": "Question map",
+      "guest_name": "Guest",
+      "errors": {
+        "auto_submit_missing_result": "時間切れですが、結果IDを受け取れませんでした。",
+        "submit_missing_result": "送信済みですが、結果IDを受け取れませんでした。",
+        "submit_failed": "クイズを送信できません: {message}",
+        "load_failed": "クイズを読み込めません: {message}"
+      }
+    },
+    "QuizPlayView": {
+      "badge": "Quiz player",
+      "title": "クイズプレイヤーはAPIフローに移行しました",
+      "description": "/quizzes/:id/play で受験開始、タイマー、提出、結果保存を行います。",
+      "choose_quiz_button": "クイズ選択"
+    },
+    "Profile": {
+      "badge": "Profile",
+      "title": "個人プロフィール",
+      "description": "アバターとアカウント情報はデータベースに保存されます。",
+      "default_name": "QuizFlexユーザー",
+      "not_logged_in": "未ログイン",
+      "email_label": "Email",
+      "role_label": "Role",
+      "guest_role": "Guest",
+      "display_info_title": "表示情報",
+      "avatar_title": "ユーザーアバター",
+      "avatar_description": "画像ファイルのみアップロードできます。画像はバックエンドに保存され、パスはusersテーブルに保存されます。",
+      "upload_avatar_button": "画像をアップロード",
+      "remove_avatar_button": "画像を削除",
+      "selected_file": "選択済み: {name}",
+      "avatar_note": "アバターをDBに保存すると、ブラウザを変えても画像が保持されます。データはサーバー側に置くべきです。",
+      "full_name_label": "氏名",
+      "saving_button": "保存中...",
+      "save_button": "データベースに保存",
+      "success_saved": "プロフィールとアバターをデータベースに保存しました。",
+      "errors": {
+        "avatar_image_only": "アバターは画像ファイルである必要があります。",
+        "avatar_max_size": "アバターは最大2MBです。",
+        "load_failed": "プロフィールを読み込めません: {message}",
+        "login_required": "プロフィールを保存する前にログインしてください。",
+        "save_failed": "保存に失敗しました: {message}"
+      }
+    },
+    "PaymentResult": {
+      "loading_title": "取引を確認中",
+      "loading_description": "署名を確認し、アカウントを更新しています。しばらくお待ちください...",
+      "success_badge": "取引成功",
+      "success_title": "VIPへようこそ！",
+      "success_description": "支払いが記録され、アカウントが正常にアップグレードされました。VIP特典はすぐに有効です。",
+      "order_code_label": "取引コード:",
+      "amount_label": "支払金額:",
+      "account_type_label": "新しいアカウント種別:",
+      "ai_quota_label": "現在のAIクォータ:",
+      "ai_quota_value": "{quota}回利用可能",
+      "vip_expiry_label": "VIP有効期限:",
+      "home_button": "ホームへ",
+      "try_ai_button": "今すぐAIを試す",
+      "failure_badge": "取引失敗",
+      "failure_title": "支払い未完了",
+      "failure_description": "この支払いを確認できませんでした。取引がキャンセルされたか、銀行側でエラーが発生した可能性があります。",
+      "error_detail": "⚠ エラー詳細: {message}",
+      "default_error": "取引がユーザーによりキャンセルされたか、検証署名が無効です。",
+      "back_home_button": "ホームに戻る",
+      "retry_payment_button": "支払いを再試行",
+      "errors": {
+        "missing_verification": "取引確認情報が見つかりません（orderIdまたは署名が不足）。",
+        "status_finished": "取引は次の状態で終了しました: {status}",
+        "signature_failed": "システムで支払い署名の検証に失敗しました。"
+      }
+    },
+    "Results": {
+      "badge": "My results",
+      "title": "受験履歴",
+      "description": "quiz_attemptsに保存されたスコア、所要時間、状態を確認します。",
+      "loading": "履歴を読み込み中...",
+      "score_summary": "{score}/{total}点、{percent}%",
+      "empty_title": "受験履歴はまだありません",
+      "empty_description": "クイズを試すと、結果がquiz_attemptsに保存されます。",
+      "no_time": "時間記録なし",
+      "stats": {
+        "completed_quizzes": "完了したクイズ",
+        "average_score": "平均点",
+        "best_score": "最高",
+        "completed": "完了"
+      },
+      "errors": {
+        "load_failed": "履歴を読み込めません: {message}"
+      }
+    },
+    "AttemptResult": {
+      "badge": "Result",
+      "title": "受験結果",
+      "score_label": "スコア",
+      "percent_label": "割合",
+      "time_label": "時間",
+      "status_label": "ステータス",
+      "question_number": "問{index}",
+      "points_summary": "{earned}/{points}点",
+      "selected_answer": "選択した回答: {answer}",
+      "correct_answer": "正解: {answer}",
+      "not_selected": "未選択",
+      "loading": "結果を読み込み中...",
+      "actions_badge": "Actions",
+      "retry_button": "再挑戦",
+      "history_button": "履歴を見る",
+      "quiz_list_button": "クイズ一覧",
+      "errors": {
+        "load_failed": "結果を読み込めません: {message}"
+      }
+    },
+    "Upgrade": {
+      "hero_badge": "✦ Premium Access",
+      "hero_title_prefix": "すべてをアンロック",
+      "hero_title_highlight": "VIP特典",
+      "hero_description": "AI問題生成、資料スキャン、リアルタイム対戦ルームで学習と授業を強化します。",
+      "popular_badge": "人気プラン",
+      "per_plan": "/プラン",
+      "history_title": "取引履歴",
+      "history_description": "VIP支払い請求を確認・管理します。",
+      "no_transactions": "システムに取引はありません。",
+      "modal_title": "アップグレード確認",
+      "modal_description": "支払い方法を選択してください。",
+      "provider_momo": "pink MoMo",
+      "provider_vnpay": "blue VNPay",
+      "error_prefix": "⚠ {message}",
+      "momo_title": "MoMo電子ウォレット",
+      "momo_description": "MoMoアプリで即時決済（Sandbox）",
+      "choose_button": "選択 ➔",
+      "vnpay_title": "VNPay決済ゲートウェイ",
+      "vnpay_description": "国内ATMと国際カードに対応予定（近日公開）",
+      "coming_soon": "近日公開",
+      "processing_title": "決済ゲートウェイに接続中...",
+      "processing_description": "このウィンドウを閉じないでください",
+      "table": {
+        "order_code": "取引コード",
+        "plan": "プラン",
+        "provider": "決済ゲートウェイ",
+        "amount": "金額",
+        "status": "ステータス",
+        "created_at": "作成日"
+      },
+      "summary": {
+        "plan_label": "プラン:",
+        "period_label": "期間:",
+        "quota_label": "追加AIクォータ:",
+        "quota_value": "+{quota}回",
+        "total_label": "合計:"
+      },
+      "plans": {
+        "vip_1m": {
+          "name": "VIP 1か月",
+          "period": "30日間",
+          "desc": "低コストでサービスを試せます。",
+          "button": "今すぐアップグレード"
+        },
+        "vip_3m": {
+          "name": "VIP 3か月",
+          "period": "90日間",
+          "desc": "全特典付きで20%お得。",
+          "button": "人気プランを購入"
+        },
+        "vip_1y": {
+          "name": "VIP 1年",
+          "period": "365日間",
+          "desc": "クリエイター向けの最適プラン、33%お得。",
+          "button": "年間VIPを利用"
+        }
+      },
+      "features": {
+        "ai_100": "AI問題生成（+100回）",
+        "ai_350": "AI問題生成（+350回）",
+        "ai_1500": "AI問題生成（+1500回）",
+        "ocr": "PDF/画像OCRアップロード",
+        "private_quiz": "Privateクイズをアンロック",
+        "realtime_group": "グループ用リアルタイムルーム作成",
+        "realtime_large": "大規模リアルタイムルーム作成",
+        "realtime_max": "最大規模リアルタイムルーム作成",
+        "export_pdf_excel": "問題をPDF/Excelに出力",
+        "vip_badge": "名前の横にVIPバッジ"
+      },
+      "plan_names": {
+        "vip_1m": "VIP 1か月プラン",
+        "vip_3m": "VIP 3か月プラン",
+        "vip_1y": "VIP 1年プラン",
+        "custom": "カスタムVIPプラン"
+      },
+      "status": {
+        "pending": "処理中",
+        "success": "成功",
+        "failed": "失敗",
+        "refunded": "返金済み"
+      },
+      "errors": {
+        "payment_url_failed": "支払いURLを初期化できません。"
+      }
+    }
+  },
+  "admin_views": {
+    "Admin": {
+      "title": "Admin"
+    },
+    "Dashboard": {
+      "badge": "Admin Dashboard",
+      "title": "システム概要",
+      "description": "指標はクイズ、受験、ユーザーAPIから取得します。モックデータではありません。",
+      "quiz_bank_button": "クイズ管理",
+      "create_quiz_button": "クイズ作成",
+      "analytics_badge": "Analytics",
+      "analytics_title": "クイズ実績",
+      "report_button": "Report",
+      "row_meta": "所有者: {author} • {attempts}回受験",
+      "average_score": "平均点 {score}%",
+      "question_count": "{count}問",
+      "no_report_data": "分析対象のクイズがありません。",
+      "quick_actions_badge": "Quick actions",
+      "quick_actions_title": "主要フロー",
+      "stats": {
+        "total_quizzes": {
+          "label": "総クイズ数",
+          "hint": "quizzesテーブルから"
+        },
+        "attempts": {
+          "label": "受験数",
+          "hint": "quiz_attemptsテーブルから"
+        },
+        "average_score": {
+          "label": "平均点",
+          "hint": "完了した受験"
+        },
+        "users": {
+          "label": "ユーザー",
+          "hint": "usersテーブルから"
+        }
+      },
+      "quick_links": {
+        "create_manual": {
+          "title": "手動でクイズ作成",
+          "desc": "問題と回答付きのクイズを作成し、バックエンドに直接保存します。"
+        },
+        "quiz_bank": {
+          "title": "クイズ管理",
+          "desc": "クイズの検索、絞り込み、編集、論理削除を行います。"
+        },
+        "results": {
+          "title": "受験結果",
+          "desc": "quiz_attemptsに保存された受験を確認します。"
+        },
+        "users": {
+          "title": "ユーザー",
+          "desc": "ユーザー作成、ロール編集、ユーザー一覧管理を行います。"
+        }
+      },
+      "errors": {
+        "load_failed": "ダッシュボードを読み込めません: {message}"
+      }
+    },
+    "Settings": {
+      "badge": "Settings",
+      "title": "システム設定",
+      "description": "ロール別制限と新規クイズのデフォルト公開範囲を設定します。",
+      "ai_limits_badge": "AI limits",
+      "visibility_defaults_badge": "Visibility defaults",
+      "save_button": "設定を保存",
+      "unlimited": "Unlimited",
+      "ai_500": "月500回",
+      "ocr_120": "月120回",
+      "ai_10": "月10回",
+      "ocr_3": "月3回",
+      "roles": {
+        "admin": "Admin",
+        "user": "通常"
+      }
+    },
+    "Reports": {
+      "badge": "Reports",
+      "title": "レポートと分析",
+      "description": "quizzesとquiz_attempts APIからクイズ実績を集計します。",
+      "export_button": "Export CSV",
+      "row_meta": "{author} • {attempts}回受験 • {questions}問",
+      "empty": "レポートデータがありません。",
+      "errors": {
+        "load_failed": "レポートを読み込めません: {message}"
+      }
+    },
+    "AiQuiz": {
+      "badge": "AI Generator",
+      "title": "AIでクイズ構成を作成",
+      "description": "要件を入力し、設定を確認してからエディターへ進み、バックエンドに保存します。",
+      "prompt_placeholder": "例: 高校1年の光合成について、中程度の10問、各問4択で作成...",
+      "count_10": "10問",
+      "count_15": "15問",
+      "count_20": "20問",
+      "difficulty_easy": "易しい",
+      "difficulty_medium": "普通",
+      "difficulty_hard": "難しい",
+      "language_vi": "ベトナム語",
+      "language_en": "English",
+      "visibility_private": "Private",
+      "visibility_public": "Public",
+      "visibility_group": "Group",
+      "ocr_link_title": "Upload PDF / Image OCR",
+      "ocr_link_description": "ドラッグ＆ドロップアップロードとOCRプレビュー画面へ移動します。",
+      "prepare_button": "下書きを準備",
+      "preview_badge": "Preview",
+      "preview_title": "下書き",
+      "empty_preview": "まだ内容がありません。プロンプトを入力して下書きを準備してください。",
+      "request_label": "リクエスト",
+      "edit_button": "エディターで編集",
+      "guest": "Guest",
+      "quota": {
+        "role": "Role",
+        "ai_remaining": "残りAI回数",
+        "ocr_remaining": "残りOCR回数"
+      }
+    },
+    "Rooms": {
+      "badge": "Room Management",
+      "title": "Room quiz",
+      "description": "room_codeを持つバックエンドのクイズからルーム一覧を取得します。",
+      "create_group_button": "グループクイズ作成",
+      "loading": "ルームを読み込み中...",
+      "room_meta": "{questions}問 • {attempts}回受験 • {duration}",
+      "empty": "グループクイズはまだありません。",
+      "errors": {
+        "load_failed": "ルームを読み込めません: {message}"
+      }
+    },
+    "Question": {
+      "badge": "Quiz Library",
+      "user_badge": "My Quiz Library",
+      "title": "クイズ管理",
+      "user_title": "マイクイズ管理",
+      "description": "Laravel APIデータからタグ、難易度、公開範囲で検索・絞り込みます。",
+      "user_description": "管理・編集用に、自分のアカウントで作成したクイズのみ表示します。",
+      "upload_ocr_button": "Upload OCR",
+      "ai_generator_button": "AI Generator",
+      "create_quiz_button": "クイズ作成",
+      "search_placeholder": "クイズ名、作成者、タグで検索...",
+      "difficulty_all": "すべての難易度",
+      "difficulty_easy": "易しい",
+      "difficulty_medium": "普通",
+      "difficulty_hard": "難しい",
+      "tag_all": "すべてのタグ",
+      "visibility_all": "すべての公開範囲",
+      "visibility_public": "Public",
+      "visibility_private": "Private",
+      "visibility_group": "Group",
+      "visibility_chip_all": "すべて",
+      "loading": "バックエンドからクイズを読み込み中...",
+      "quiz_meta": "{category} • {tag} • by {author}",
+      "question_label": "問題",
+      "attempt_label": "受験数",
+      "score_label": "スコア",
+      "view_button": "Xem",
+      "edit_button": "編集",
+      "delete_button": "削除",
+      "empty_title": "クイズが見つかりません",
+      "empty_description": "フィルターを変更するか、新しいクイズを作成してください。",
+      "confirm_delete": "このクイズを論理削除しますか？",
+      "errors": {
+        "load_failed": "バックエンドを呼び出せません: {message}",
+        "delete_failed": "削除に失敗しました: {message}"
+      }
+    },
+    "Payments": {
+      "badge": "Payment",
+      "title": "VIPプランと支払い",
+      "description": "管理者は全取引を閲覧できます。通常ユーザーとVIPはアップグレードページで自分の取引のみ閲覧できます。",
+      "history_badge": "Payment history",
+      "history_title": "すべての取引",
+      "history_description": "この一覧は管理者専用です。",
+      "loading_button": "読み込み中...",
+      "reload_button": "再読み込み",
+      "loading_history": "取引履歴を読み込み中...",
+      "unknown_user": "不明",
+      "no_email": "メールなし",
+      "empty": "システムに取引はまだありません。",
+      "custom_plan": "カスタムVIPプラン",
+      "table": {
+        "user": "ユーザー",
+        "order_code": "取引コード",
+        "plan": "プラン",
+        "provider": "ゲートウェイ",
+        "amount": "金額",
+        "status": "ステータス",
+        "created_at": "作成日"
+      },
+      "plans": {
+        "vip_1m": {
+          "name": "VIP 1か月",
+          "period": "30日"
+        },
+        "vip_3m": {
+          "name": "VIP 3か月",
+          "period": "90日"
+        },
+        "vip_1y": {
+          "name": "VIP 1年",
+          "period": "365日"
+        }
+      },
+      "features": {
+        "ai_100": "AI +100回",
+        "ai_350": "AI +350回",
+        "ai_1500": "AI +1500回",
+        "ocr": "PDF/画像OCR",
+        "private_quiz": "Privateクイズをアンロック",
+        "realtime_large": "大規模リアルタイムルーム作成",
+        "export_pdf_excel": "問題をPDF/Excelに出力"
+      },
+      "status": {
+        "pending": "処理中",
+        "success": "成功",
+        "failed": "失敗",
+        "refunded": "返金済み"
+      },
+      "errors": {
+        "load_failed": "支払い履歴を読み込めません。"
+      }
+    },
+    "Users": {
+      "badge": "Admin UI",
+      "title": "ユーザー管理",
+      "description": "バックエンドAPIでユーザー作成、検索、ロール更新、削除を行います。",
+      "name_placeholder": "ユーザー名",
+      "password_placeholder": "パスワード",
+      "create_button": "ユーザー作成",
+      "search_placeholder": "名前またはメールでユーザー検索",
+      "role_all": "すべてのロール",
+      "role_admin": "Admin",
+      "role_vip": "VIP",
+      "role_guest": "Guest",
+      "role_user_en": "User",
+      "role_user": "通常",
+      "search_button": "検索",
+      "loading": "ユーザーを読み込み中...",
+      "joined_meta": "{email} • joined {joinedAt}",
+      "delete_button": "削除",
+      "confirm_delete": "このユーザーを削除しますか？",
+      "table": {
+        "user": "User",
+        "role": "Role",
+        "quiz": "Quiz",
+        "attempts": "受験数",
+        "action": "Action"
+      },
+      "success": {
+        "created": "ユーザーを作成しました。",
+        "role_updated": "ロールを更新しました。",
+        "deleted": "ユーザーを削除しました。"
+      },
+      "errors": {
+        "load_failed": "ユーザーを読み込めません: {message}",
+        "required": "名前、メール、パスワードをすべて入力してください。",
+        "create_failed": "ユーザー作成に失敗しました: {message}",
+        "role_update_failed": "ロール更新に失敗しました: {message}",
+        "delete_failed": "ユーザー削除に失敗しました: {message}"
+      }
+    },
+    "OcrUpload": {
+      "badge": "OCR Upload",
+      "title": "Upload Image OCR",
+      "description": "画像をアップロードし、バックエンドOCRを呼び出して、クイズ化前に内容をプレビューします。",
+      "processing_file": "ファイル処理中...",
+      "dropzone_title": "ここにファイルをドロップ、またはクリックして選択",
+      "file_hint": "PNG、JPG、JPEG、WEBP、BMP、TIFF、PDF。最大20MB。",
+      "ocr_ready": "OCR準備完了",
+      "rendered_questions": "✅ {count}問を生成しました",
+      "redirecting_editor": "。エディターへ移動中...",
+      "remove_file_button": "ファイル削除",
+      "processing_button": "処理中...",
+      "go_editor_button": "エディターへ",
+      "preview_badge": "OCR Preview",
+      "preview_title": "抽出結果",
+      "suggestion_badge": "AI suggestion",
+      "editor_badge": "Question Editor",
+      "editor_title": "問題編集",
+      "editor_description": "データベース保存前にOCR/AI問題を確認します。",
+      "total_questions": "総問題数: {count}",
+      "back_to_ocr_button": "OCRに戻る",
+      "question_number": "問{index}",
+      "delete_button": "削除",
+      "answer_label": "回答 {key}",
+      "correct_answer_label": "正解",
+      "not_selected": "未選択",
+      "add_question_button": "問題を追加",
+      "save_questions_button": "問題を保存",
+      "loading_upload": "ファイルをアップロード中...",
+      "loading_reading": "OCR内容を読み取り中...",
+      "loading_ai": "AIが問題を分析中...",
+      "loading_normalizing": "データを正規化中...",
+      "loading_finishing": "まもなく完了...",
+      "ocr_completed": "OCR完了",
+      "empty_ocr": "OCR内容はまだありません。画像をアップロードしてバックエンドで処理してください。",
+      "ocr_question_line": "問{index}: {question}",
+      "save_log": "DB保存のためバックエンドへ送信するデータ:",
+      "suggestions": {
+        "medium_10": "中程度の問題を10問作成",
+        "concepts_first": "概念問題を優先",
+        "add_application": "応用問題を2問追加",
+        "keep_private": "確認前は公開範囲をPrivateに保持"
+      },
+      "errors": {
+        "ocr_failed": "OCRに失敗しました: {message}"
+      }
+    },
+    "CreateQuiz": {
+      "badge": "Manual editor",
+      "edit_title": "クイズ編集",
+      "create_title": "手動でクイズ作成",
+      "description": "クイズ、問題、回答、カバー画像をバックエンドに直接保存します。フォームは単なる入力表より扱いやすくなりました。",
+      "quiz_title_label": "クイズタイトル",
+      "quiz_title_placeholder": "例: 高校1年生物の復習",
+      "tag_label": "Tag",
+      "tag_placeholder": "生物",
+      "description_label": "説明",
+      "description_placeholder": "受験者向けの短い説明",
+      "cover_badge": "カバー画像",
+      "cover_title": "クイズカバー",
+      "cover_description": "端末から画像ファイルのみアップロードできます。画像未選択時は代替グラデーションを使用します。",
+      "choose_image_button": "画像を選択",
+      "cover_file_label": "カバー画像ファイル",
+      "upload_image_button": "画像をアップロード",
+      "creator_avatar_label": "作成者アバター",
+      "current_creator": "現在の作成者",
+      "avatar_from_profile": "プロフィールのアバターを使用します。",
+      "remove_cover_button": "カバーを削除",
+      "untitled_quiz": "無題のクイズ",
+      "default_category_label": "カテゴリ",
+      "duration_label": "時間（分）",
+      "difficulty_label": "難易度",
+      "difficulty_easy": "易しい",
+      "difficulty_medium": "普通",
+      "difficulty_hard": "難しい",
+      "category_label": "カテゴリ",
+      "category_placeholder": "科学",
+      "visibility_title": "Visibility",
+      "room_code_label": "クイズに紐づくルーム",
+      "room_code_placeholder": "VD: QZ24",
+      "question_builder_badge": "Question builder",
+      "question_builder_title": "問題と回答",
+      "add_question_button": "問題を追加",
+      "question_number": "問{index}",
+      "delete_button": "削除",
+      "question_placeholder": "問題文",
+      "answer_placeholder": "回答 {key}",
+      "correct_answer_label": "正解",
+      "saving_button": "保存中...",
+      "save_button": "クイズを保存",
+      "live_preview_badge": "Live preview",
+      "preview_description": "説明はここに表示されます。",
+      "question_count": "{count}問",
+      "checklist_badge": "クイックチェック",
+      "default_category": "科学",
+      "guest_name": "Guest",
+      "selected_cover": "選択済み: {name}",
+      "saved_cover": "保存済みカバー画像を使用中です。",
+      "no_cover": "カバー画像がありません。代替グラデーションを使用します。",
+      "visibility": {
+        "public_description": "誰でも閲覧・受験できます。",
+        "private_description": "管理画面内でのみ表示されます。",
+        "group_description": "クイズをルームコードに紐づけます。"
+      },
+      "checklist": {
+        "has_title": "明確なタイトルあり",
+        "has_cover": "カバー画像または代替グラデーションあり",
+        "has_question": "1問以上",
+        "four_answers": "各問題に4つの回答あり",
+        "correct_answer": "各問題に正解あり",
+        "group_room": "グループクイズにはルームコードが必要です"
+      },
+      "success": {
+        "updated": "クイズを更新しました。",
+        "created": "新しいクイズを作成しました。"
+      },
+      "errors": {
+        "need_one_question": "クイズには少なくとも1問が必要です。",
+        "cover_image_only": "カバーファイルは画像である必要があります。",
+        "cover_max_size": "カバー画像は最大4MBです。",
+        "title_required": "クイズタイトルを入力してください。",
+        "room_required": "グループクイズにはルームコードが必要です。",
+        "question_empty": "問{index}に内容がありません。",
+        "answer_min": "問{index}には少なくとも2つの回答が必要です。",
+        "answer_empty": "問{index}に未入力の回答があります。",
+        "correct_missing": "問{index}で正解が選択されていません。",
+        "save_failed": "保存に失敗しました: {message}",
+        "load_edit_failed": "編集用クイズを読み込めません: {message}"
+      }
+    }
+  },
+  "components": {
+    "LanguageSwitcher": {
+      "vi": "ベトナム語",
+      "en": "英語",
+      "ja": "日本語",
+      "zh": "中国語"
+    },
+    "StatCard": {
+      "label": "ラベル",
+      "value": "値",
+      "hint": "ヒント"
+    },
+    "AppLoading": {
+      "title": "体験を準備中",
+      "description": "インターフェース、クイズデータ、インタラクティブエフェクトを準備しています。"
+    },
+    "AppCursor": {
+      "cursor_enabled": "カスタムカーソルが有効になりました"
+    },
+    "BrandLogo": {
+      "brand": "QuizFlex",
+      "alt": "QuizFlex Logo"
+    },
+    "SectionHeader": {
+      "eyebrow": "コンテンツラベル",
+      "title": "セクションタイトル",
+      "description": "セクション説明"
+    },
+    "ThemeToggle": {
+      "dark_mode": "ダークモード",
+      "light_mode": "ライトモード",
+      "dark_icon": "☾",
+      "light_icon": "☀"
+    },
+    "UserAvatar": {
+      "guest": "ゲスト",
+      "display_name": "表示名",
+      "avatar_alt": "{name}アバター"
+    },
+    "VisibilityBadge": {
+      "public": "公開",
+      "private": "非公開",
+      "group": "グループ",
+      "public_icon": "🌐",
+      "private_icon": "🔒",
+      "group_icon": "👥"
+    },
+    "LandingQuickActions": {
+      "create_manual_badge": "手動作成",
+      "create_manual_title": "新しいクイズを作成",
+      "create_manual_highlight": "数分で。",
+      "create_manual_description": "質問、回答、制限時間、表示設定を手動で入力してクイズを作成します。",
+      "create_feature_1": "質問を追加",
+      "create_feature_2": "時間制限を設定",
+      "create_feature_3": "アクセス権を選択",
+      "create_button": "クイズエディタを開く",
+      "create_button_note": "AIなし、複雑さなし。",
+      "ai_badge": "AIで作成",
+      "ai_title": "AIクイズ",
+      "ai_highlight": "ジェネレータ。",
+      "ai_description": "トピック、テキスト、またはドキュメントからクイズを生成します。ドラフトをすばやく作成して保存前に調整します。",
+      "ai_feature_1": "トピックを入力",
+      "ai_feature_2": "質問を生成",
+      "ai_feature_3": "編集して保存",
+      "ai_button": "AIでクイズを作成",
+      "ai_button_note": "すばやく作成、いつでも調整可能。",
+      "editor_label": "エディタ",
+      "question_number": "問題01",
+      "question_text": "複数選択問題の主要コンポーネントは何ですか？",
+      "answer_a": "質問、回答、およびポイント",
+      "answer_b": "タイトルだけで十分",
+      "stat_questions": "問題",
+      "stat_time": "時間",
+      "stat_level": "難易度",
+      "stat_value_1": "10",
+      "stat_value_2": "12m",
+      "stat_value_3": "3"
+    }
+  }
+}

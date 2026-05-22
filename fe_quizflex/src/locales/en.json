@@ -1,0 +1,938 @@
+{
+  "common": {
+    "welcome": "Welcome to QuizFlex",
+    "save": "Save",
+    "cancel": "Cancel"
+  },
+  "auth": {
+    "login": "Login",
+    "register": "Register",
+    "email": "Email",
+    "password": "Password",
+    "login_page": {
+      "workspace_badge": "QuizFlex Workspace",
+      "hero_title": "Welcome back.",
+      "hero_description": "Sign in to continue managing quizzes, realtime rooms, and AI question generation usage.",
+      "quiz_stat_label": "Quiz",
+      "ai_usage_stat_label": "AI usage",
+      "form_badge": "Account login",
+      "form_title": "Continue with QuizFlex",
+      "form_description": "Sign in with an existing account from the users table.",
+      "email_placeholder": "you@example.com",
+      "password_placeholder": "••••••••",
+      "show_password": "Show",
+      "hide_password": "Hide",
+      "remember_me": "Remember me",
+      "forgot_password": "Forgot password?",
+      "success_message": "Login successful.",
+      "no_account": "Don't have an account?",
+      "register_now": "Register now"
+    },
+    "register_page": {
+      "account_badge": "QuizFlex Account",
+      "hero_title": "Create smarter quizzes.",
+      "hero_description": "Create questions manually, with AI, or with OCR. Play solo or realtime in rooms.",
+      "sample_quiz_stat_label": "Sample quizzes",
+      "mode_stat_label": "Modes",
+      "form_badge": "Create a new account",
+      "form_title": "Start with QuizFlex",
+      "form_description": "Register an account and start building your quiz library.",
+      "user_account_title": "User account",
+      "user_account_description": "After registration, you can upgrade to VIP in the payment section.",
+      "full_name_label": "Full name",
+      "full_name_placeholder": "John Smith",
+      "username_label": "Username",
+      "username_placeholder": "quizmaster",
+      "email_placeholder": "you@example.com",
+      "password_placeholder": "At least 8 characters",
+      "show_password": "Show",
+      "hide_password": "Hide",
+      "accept_terms": "I agree to the terms of use and privacy policy.",
+      "create_account": "Create account",
+      "success_message": "Account created successfully. Redirecting...",
+      "has_account": "Already have an account?"
+    },
+    "validation": {
+      "full_name_required": "Please enter your full name.",
+      "username_min_3": "Username must be at least 3 characters.",
+      "email_required": "Email is required.",
+      "email_invalid": "Email format is invalid.",
+      "password_required": "Password is required.",
+      "password_min_6": "Password must be at least 6 characters.",
+      "password_min_8": "Password must be at least 8 characters.",
+      "accept_terms_required": "You need to agree to the terms."
+    },
+    "forgot_password_page": {
+      "badge": "Account recovery",
+      "title": "Forgot password?",
+      "description": "Enter your email to prepare the password recovery flow once backend email is configured.",
+      "email_placeholder": "you@example.com",
+      "submit_button": "Send recovery link",
+      "back_to_login": "Back to login"
+    }
+  },
+  "admin_nav": {
+    "overview": "Overview",
+    "quiz_bank": "Quiz bank",
+    "create_quiz": "Create quiz",
+    "ai_generator": "AI Generator",
+    "ocr_upload": "OCR Upload",
+    "room": "Room",
+    "report": "Report",
+    "payment": "Payment",
+    "users": "Users",
+    "settings": "Settings"
+  },
+  "admin_layout": {
+    "console_label": "Admin Console",
+    "dashboard_title": "Admin Dashboard",
+    "console_description": "Manage the system, quizzes, users, reports, and payments.",
+    "header_label": "QuizFlex admin",
+    "home_button": "Home",
+    "create_quiz_button": "Create quiz"
+  },
+  "user_nav": {
+    "home": "Home",
+    "topics": "Topics",
+    "quizzes": "Take quizzes",
+    "join_room": "Join room",
+    "results": "Results",
+    "profile": "Profile",
+    "upgrade": "Upgrade",
+    "admin_dashboard": "Admin dashboard",
+    "my_dashboard": "My dashboard",
+    "login": "Login",
+    "register": "Register"
+  },
+  "user_layout": {
+    "login_button": "Login",
+    "start_button": "Get started",
+    "logout_button": "Logout",
+    "open_menu": "Menu",
+    "close_menu": "Close"
+  },
+  "navbar": {
+    "home": "Home",
+    "quizzes": "Quizzes",
+    "profile": "Profile"
+  },
+  "quiz": {
+    "start": "Start Quiz",
+    "next": "Next Question",
+    "submit": "Submit",
+    "score": "Score"
+  },
+  "user_views": {
+    "User": {
+      "title": "User page"
+    },
+    "Dashboard": {
+      "badge": "User dashboard",
+      "title": "Your space for learning and creating quizzes",
+      "description": "This area is separate from the admin dashboard. Users and VIP members use it to create quizzes and manage quiz banks, OCR, AI, and rooms.",
+      "create_quiz_button": "Create quiz",
+      "quiz_bank_button": "Quiz bank",
+      "quick_actions": {
+        "my_quizzes": {
+          "title": "My quiz bank",
+          "desc": "View, filter, edit, and delete quizzes you created."
+        },
+        "create_manual": {
+          "title": "Create quiz manually",
+          "desc": "Create a new quiz with questions, answers, time limit, and cover image."
+        },
+        "ai_generator": {
+          "title": "AI Generator",
+          "desc": "Generate a quiz draft with AI, then review it before saving."
+        },
+        "ocr_upload": {
+          "title": "OCR Upload",
+          "desc": "Upload images or documents to extract questions with OCR."
+        },
+        "room": {
+          "title": "Room",
+          "desc": "Create and manage realtime quiz rooms for study groups."
+        },
+        "results": {
+          "title": "My results",
+          "desc": "View saved attempt history and scores."
+        }
+      }
+    },
+    "Home": {
+      "hero_badge": "QuizFlex MVP • API Connected",
+      "hero_title_prefix": "Create quizzes faster.",
+      "hero_title_highlight": "Play quizzes with more engagement.",
+      "hero_description": "Landing page, quiz catalog, room joining, VIP/Admin dashboards, manual quiz creation, OCR, and reports. The main quiz flow is now connected to the backend, so the data is no longer mock-only.",
+      "try_quiz_button": "Try a quiz",
+      "join_room_button": "Join room",
+      "dashboard_button": "Open dashboard",
+      "live_preview": "Live preview",
+      "current_quiz_label": "Active quiz",
+      "no_quiz_title": "No quiz yet",
+      "featured_quiz_meta": "{questions} questions • {duration} • {difficulty}",
+      "no_quiz_description": "Create a new quiz to show it here.",
+      "no_public_quiz": "No public quizzes found in the backend.",
+      "available_quiz_label": "Available quizzes",
+      "topics_title": "Explore featured topics",
+      "topics_description": "Quickly choose quizzes by topic, try them, or use them as templates for your own question sets.",
+      "search_placeholder": "Search quizzes, topics, subjects...",
+      "all_category": "All",
+      "random_category": "Random",
+      "category_description": "Quizzes in the {category} category.",
+      "view_all": "View all",
+      "by_author": "by {author}",
+      "question_count": "{count} questions",
+      "stats": {
+        "public_quizzes": "Quiz public",
+        "categories": "Categories",
+        "attempts": "Attempts"
+      },
+      "preview": {
+        "public_quizzes": "Quiz public",
+        "total_questions": "Total questions",
+        "attempts": "Attempts",
+        "average_score": "Average score"
+      }
+    },
+    "JoinRoom": {
+      "badge": "Join Room",
+      "title": "Join a room with a code",
+      "description": "Enter the room code provided by your teacher to find the group quiz and start.",
+      "room_code_placeholder": "ROOM CODE",
+      "submit_button": "Join now",
+      "errors": {
+        "required": "Please enter a room code.",
+        "not_found": "This room code was not found.",
+        "load_failed": "Could not find room: {message}"
+      }
+    },
+    "QuizList": {
+      "badge": "Quiz catalog",
+      "title": "Quiz list",
+      "description": "Filter by Public, Private, or Group; search by name, category, and difficulty. Data comes directly from the Laravel API.",
+      "create_quiz_button": "Create new quiz",
+      "search_placeholder": "Search quizzes, category, tag...",
+      "visibility_all": "All visibility",
+      "visibility_public": "Public",
+      "visibility_private": "Private",
+      "visibility_group": "Group",
+      "difficulty_all": "All difficulties",
+      "difficulty_easy": "Easy",
+      "difficulty_medium": "Medium",
+      "difficulty_hard": "Hard",
+      "search_button": "Search",
+      "loading": "Loading quiz list...",
+      "no_description": "No description yet.",
+      "question_label": "Questions",
+      "duration_label": "Time",
+      "average_label": "TB",
+      "empty_title": "No quizzes found",
+      "empty_description": "Change filters or create a new quiz in Admin.",
+      "errors": {
+        "load_failed": "Could not load quizzes: {message}"
+      }
+    },
+    "QuizDetail": {
+      "no_description": "This quiz has no description yet.",
+      "question_count_label": "Questions",
+      "duration_label": "Time",
+      "attempts_label": "Attempts",
+      "start_button": "Start quiz",
+      "edit_button": "Edit quiz",
+      "back_button": "Back to list",
+      "loading": "Loading quiz details...",
+      "question_preview_badge": "Question preview",
+      "question_list_title": "Question list",
+      "question_points": "Question {index} • {points} pts",
+      "errors": {
+        "load_failed": "Could not load quiz details: {message}"
+      }
+    },
+    "Quiz": {
+      "loading": "Preparing quiz...",
+      "question_progress": "Question {current} / {total}",
+      "default_category": "Quiz",
+      "default_difficulty": "Medium",
+      "instruction": "Choose an answer, then move to the next question. The system submits automatically when time runs out.",
+      "progress_label": "Progress",
+      "previous_button": "Previous",
+      "selected_label": "Selected:",
+      "not_selected": "Not selected",
+      "submitting": "Submitting...",
+      "submit_button": "Submit",
+      "next_button": "Next question",
+      "timer_badge": "Timer",
+      "timer_title": "Countdown",
+      "time_left_label": "Remaining",
+      "exam_label": "Quiz",
+      "question_map_label": "Question map",
+      "guest_name": "Guest",
+      "errors": {
+        "auto_submit_missing_result": "Time is up, but no result ID was returned.",
+        "submit_missing_result": "Submitted, but no result ID was returned.",
+        "submit_failed": "Could not submit quiz: {message}",
+        "load_failed": "Could not load quiz: {message}"
+      }
+    },
+    "QuizPlayView": {
+      "badge": "Quiz player",
+      "title": "The quiz player now uses the API flow",
+      "description": "Use /quizzes/:id/play to start an attempt, run the timer, submit, and save results.",
+      "choose_quiz_button": "Choose quiz"
+    },
+    "Profile": {
+      "badge": "Profile",
+      "title": "Personal profile",
+      "description": "Avatar and account information are stored in the database.",
+      "default_name": "QuizFlex user",
+      "not_logged_in": "Not logged in",
+      "email_label": "Email",
+      "role_label": "Role",
+      "guest_role": "Guest",
+      "display_info_title": "Display information",
+      "avatar_title": "User avatar",
+      "avatar_description": "Only image files are allowed. Images are stored in the backend and their paths in the users table.",
+      "upload_avatar_button": "Upload image",
+      "remove_avatar_button": "Remove image",
+      "selected_file": "Selected: {name}",
+      "avatar_note": "Storing the avatar in the database keeps it available across browsers. Server-side data is the source of truth.",
+      "full_name_label": "Full name",
+      "saving_button": "Saving...",
+      "save_button": "Save to database",
+      "success_saved": "Profile and avatar saved to database.",
+      "errors": {
+        "avatar_image_only": "Avatar must be an image file.",
+        "avatar_max_size": "Avatar must be at most 2MB.",
+        "load_failed": "Could not load profile: {message}",
+        "login_required": "Please log in before saving your profile.",
+        "save_failed": "Save failed: {message}"
+      }
+    },
+    "PaymentResult": {
+      "loading_title": "Verifying transaction",
+      "loading_description": "Please wait while the system verifies the signature and updates your account...",
+      "success_badge": "Transaction successful",
+      "success_title": "Welcome to VIP!",
+      "success_description": "Payment has been recorded and your account was upgraded successfully. VIP benefits are now active.",
+      "order_code_label": "Transaction code:",
+      "amount_label": "Payment amount:",
+      "account_type_label": "New account type:",
+      "ai_quota_label": "Current AI quota:",
+      "ai_quota_value": "{quota} uses",
+      "vip_expiry_label": "VIP expiry:",
+      "home_button": "Go to Home",
+      "try_ai_button": "Try AI now",
+      "failure_badge": "Transaction failed",
+      "failure_title": "Payment incomplete",
+      "failure_description": "The system could not verify this payment. The transaction may have been cancelled or the bank returned an error.",
+      "error_detail": "⚠ Error details: {message}",
+      "default_error": "The transaction was cancelled by the user or the verification signature is invalid.",
+      "back_home_button": "Back to Home",
+      "retry_payment_button": "Retry payment",
+      "errors": {
+        "missing_verification": "Transaction verification data not found (missing orderId or signature).",
+        "status_finished": "Transaction ended with status: {status}",
+        "signature_failed": "Payment signature verification failed in the system."
+      }
+    },
+    "Results": {
+      "badge": "My results",
+      "title": "Attempt history",
+      "description": "Review scores, duration, and status for attempts saved in quiz_attempts.",
+      "loading": "Loading history...",
+      "score_summary": "{score}/{total} points, {percent}%",
+      "empty_title": "No attempts yet",
+      "empty_description": "Try a quiz so the system can save the result to quiz_attempts.",
+      "no_time": "No time recorded",
+      "stats": {
+        "completed_quizzes": "Completed quizzes",
+        "average_score": "Avg. score",
+        "best_score": "Best",
+        "completed": "Completed"
+      },
+      "errors": {
+        "load_failed": "Could not load history: {message}"
+      }
+    },
+    "AttemptResult": {
+      "badge": "Result",
+      "title": "Attempt result",
+      "score_label": "Score",
+      "percent_label": "Rate",
+      "time_label": "Time",
+      "status_label": "Status",
+      "question_number": "Question {index}",
+      "points_summary": "{earned}/{points} points",
+      "selected_answer": "Your answer: {answer}",
+      "correct_answer": "Correct answer: {answer}",
+      "not_selected": "Not selected",
+      "loading": "Loading result...",
+      "actions_badge": "Actions",
+      "retry_button": "Retry",
+      "history_button": "View history",
+      "quiz_list_button": "Quiz list",
+      "errors": {
+        "load_failed": "Could not load result: {message}"
+      }
+    },
+    "Upgrade": {
+      "hero_badge": "✦ Premium Access",
+      "hero_title_prefix": "Unlock all",
+      "hero_title_highlight": "VIP benefits",
+      "hero_description": "Improve learning and teaching with AI question generation, document scanning, and realtime quiz rooms.",
+      "popular_badge": "Best seller",
+      "per_plan": "/plan",
+      "history_title": "Transaction history",
+      "history_description": "Track and manage your VIP payment invoices.",
+      "no_transactions": "You have no transactions in the system.",
+      "modal_title": "Confirm upgrade",
+      "modal_description": "Please select a payment method.",
+      "provider_momo": "pink MoMo",
+      "provider_vnpay": "blue VNPay",
+      "error_prefix": "⚠ {message}",
+      "momo_title": "MoMo e-wallet",
+      "momo_description": "Instant payment via MoMo app (Sandbox)",
+      "choose_button": "Select ➔",
+      "vnpay_title": "VNPay payment gateway",
+      "vnpay_description": "Supports domestic ATM and international cards (Coming soon)",
+      "coming_soon": "Coming soon",
+      "processing_title": "Connecting to payment gateway...",
+      "processing_description": "Please do not close this window",
+      "table": {
+        "order_code": "Transaction code",
+        "plan": "Plan",
+        "provider": "Payment gateway",
+        "amount": "Amount",
+        "status": "Status",
+        "created_at": "Created date"
+      },
+      "summary": {
+        "plan_label": "Plan:",
+        "period_label": "Term:",
+        "quota_label": "Additional AI quota:",
+        "quota_value": "+{quota} uses",
+        "total_label": "Total:"
+      },
+      "plans": {
+        "vip_1m": {
+          "name": "VIP 1 Month",
+          "period": "30-day term",
+          "desc": "Try the service at a very low cost.",
+          "button": "Upgrade now"
+        },
+        "vip_3m": {
+          "name": "VIP 3 Months",
+          "period": "90-day term",
+          "desc": "Save 20% with full benefits.",
+          "button": "Buy popular plan"
+        },
+        "vip_1y": {
+          "name": "VIP 1 Year",
+          "period": "365-day term",
+          "desc": "Best value for creators, save 33%.",
+          "button": "Get VIP for a full year"
+        }
+      },
+      "features": {
+        "ai_100": "AI question generation (+100 uses)",
+        "ai_350": "AI question generation (+350 uses)",
+        "ai_1500": "AI question generation (+1500 uses)",
+        "ocr": "Upload PDF/Image OCR",
+        "private_quiz": "Unlock private quizzes",
+        "realtime_group": "Create group realtime rooms",
+        "realtime_large": "Create large realtime rooms",
+        "realtime_max": "Create maximum realtime rooms",
+        "export_pdf_excel": "Export questions to PDF/Excel",
+        "vip_badge": "VIP badge next to name"
+      },
+      "plan_names": {
+        "vip_1m": "VIP 1 Month plan",
+        "vip_3m": "VIP 3 Months plan",
+        "vip_1y": "VIP 1 Year plan",
+        "custom": "Custom VIP plan"
+      },
+      "status": {
+        "pending": "Pending",
+        "success": "Success",
+        "failed": "Failed",
+        "refunded": "Refunded"
+      },
+      "errors": {
+        "payment_url_failed": "Could not initialize payment URL."
+      }
+    }
+  },
+  "admin_views": {
+    "Admin": {
+      "title": "Admin"
+    },
+    "Dashboard": {
+      "badge": "Admin Dashboard",
+      "title": "System overview",
+      "description": "Metrics are loaded from quiz, attempt, and user APIs. No mock dashboard data.",
+      "quiz_bank_button": "Quiz bank",
+      "create_quiz_button": "Create quiz",
+      "analytics_badge": "Analytics",
+      "analytics_title": "Quiz performance",
+      "report_button": "Report",
+      "row_meta": "Owner: {author} • {attempts} attempts",
+      "average_score": "Avg. score {score}%",
+      "question_count": "{count} questions",
+      "no_report_data": "No quizzes available for analytics.",
+      "quick_actions_badge": "Quick actions",
+      "quick_actions_title": "Main flows",
+      "stats": {
+        "total_quizzes": {
+          "label": "Total quizzes",
+          "hint": "From quizzes table"
+        },
+        "attempts": {
+          "label": "Attempts",
+          "hint": "From quiz_attempts table"
+        },
+        "average_score": {
+          "label": "Avg. score",
+          "hint": "Completed attempts"
+        },
+        "users": {
+          "label": "Users",
+          "hint": "From users table"
+        }
+      },
+      "quick_links": {
+        "create_manual": {
+          "title": "Create quiz manually",
+          "desc": "Create quizzes with questions and answers, saved directly to backend."
+        },
+        "quiz_bank": {
+          "title": "Quiz bank",
+          "desc": "Search, filter, edit, and soft-delete quizzes."
+        },
+        "results": {
+          "title": "Attempt results",
+          "desc": "View attempts saved in quiz_attempts."
+        },
+        "users": {
+          "title": "Users",
+          "desc": "Create users, edit roles, and manage the user list."
+        }
+      },
+      "errors": {
+        "load_failed": "Could not load dashboard: {message}"
+      }
+    },
+    "Settings": {
+      "badge": "Settings",
+      "title": "System settings",
+      "description": "Configure role-based limits and default visibility for new quizzes.",
+      "ai_limits_badge": "AI limits",
+      "visibility_defaults_badge": "Visibility defaults",
+      "save_button": "Save settings",
+      "unlimited": "Unlimited",
+      "ai_500": "500 uses/month",
+      "ocr_120": "120 uses/month",
+      "ai_10": "10 uses/month",
+      "ocr_3": "3 uses/month",
+      "roles": {
+        "admin": "Admin",
+        "user": "Standard"
+      }
+    },
+    "Reports": {
+      "badge": "Reports",
+      "title": "Reports & analytics",
+      "description": "Aggregate quiz performance from quizzes and quiz_attempts APIs.",
+      "export_button": "Export CSV",
+      "row_meta": "{author} • {attempts} attempts • {questions} questions",
+      "empty": "No report data available.",
+      "errors": {
+        "load_failed": "Could not load reports: {message}"
+      }
+    },
+    "AiQuiz": {
+      "badge": "AI Generator",
+      "title": "Create a quiz outline with AI",
+      "description": "Enter the request, review settings, then move to the editor to save the quiz to the backend.",
+      "prompt_placeholder": "Example: Create 10 medium-level quiz questions about grade 10 photosynthesis, with 4 answers each...",
+      "count_10": "10 questions",
+      "count_15": "15 questions",
+      "count_20": "20 questions",
+      "difficulty_easy": "Easy",
+      "difficulty_medium": "Medium",
+      "difficulty_hard": "Hard",
+      "language_vi": "Vietnamese",
+      "language_en": "English",
+      "visibility_private": "Private",
+      "visibility_public": "Public",
+      "visibility_group": "Group",
+      "ocr_link_title": "Upload PDF / Image OCR",
+      "ocr_link_description": "Go to the drag-and-drop upload and OCR preview interface.",
+      "prepare_button": "Prepare draft",
+      "preview_badge": "Preview",
+      "preview_title": "Draft",
+      "empty_preview": "No content yet. Enter a prompt and prepare a draft.",
+      "request_label": "Request",
+      "edit_button": "Edit in editor",
+      "guest": "Guest",
+      "quota": {
+        "role": "Role",
+        "ai_remaining": "AI remaining",
+        "ocr_remaining": "OCR remaining"
+      }
+    },
+    "Rooms": {
+      "badge": "Room Management",
+      "title": "Room quiz",
+      "description": "Rooms are loaded from quizzes that have room_code in the backend.",
+      "create_group_button": "Create group quiz",
+      "loading": "Loading rooms...",
+      "room_meta": "{questions} questions • {attempts} attempts • {duration}",
+      "empty": "No group quizzes yet.",
+      "errors": {
+        "load_failed": "Could not load rooms: {message}"
+      }
+    },
+    "Question": {
+      "badge": "Quiz Library",
+      "user_badge": "My Quiz Library",
+      "title": "Quiz bank",
+      "user_title": "My quiz bank",
+      "description": "Search and filter by tag, difficulty, and visibility from Laravel API data.",
+      "user_description": "Only shows quizzes created by your account for management and editing.",
+      "upload_ocr_button": "Upload OCR",
+      "ai_generator_button": "AI Generator",
+      "create_quiz_button": "Create quiz",
+      "search_placeholder": "Search by quiz name, author, tag...",
+      "difficulty_all": "All difficulties",
+      "difficulty_easy": "Easy",
+      "difficulty_medium": "Medium",
+      "difficulty_hard": "Hard",
+      "tag_all": "All tags",
+      "visibility_all": "All visibility",
+      "visibility_public": "Public",
+      "visibility_private": "Private",
+      "visibility_group": "Group",
+      "visibility_chip_all": "All",
+      "loading": "Loading quizzes from backend...",
+      "quiz_meta": "{category} • {tag} • by {author}",
+      "question_label": "Questions",
+      "attempt_label": "Attempts",
+      "score_label": "Score",
+      "view_button": "Xem",
+      "edit_button": "Edit",
+      "delete_button": "Delete",
+      "empty_title": "No quizzes found",
+      "empty_description": "Change filters or create a new quiz.",
+      "confirm_delete": "Soft-delete this quiz?",
+      "errors": {
+        "load_failed": "Could not call backend: {message}",
+        "delete_failed": "Delete failed: {message}"
+      }
+    },
+    "Payments": {
+      "badge": "Payment",
+      "title": "VIP plans & payments",
+      "description": "Admins can view all transactions. Regular and VIP users can only view their own transactions on the upgrade page.",
+      "history_badge": "Payment history",
+      "history_title": "All transactions",
+      "history_description": "This list is for admins only.",
+      "loading_button": "Loading...",
+      "reload_button": "Reload",
+      "loading_history": "Loading transaction history...",
+      "unknown_user": "Unknown",
+      "no_email": "No email",
+      "empty": "No transactions in the system yet.",
+      "custom_plan": "Custom VIP plan",
+      "table": {
+        "user": "Users",
+        "order_code": "Transaction code",
+        "plan": "Plan",
+        "provider": "Gateway",
+        "amount": "Amount",
+        "status": "Status",
+        "created_at": "Created date"
+      },
+      "plans": {
+        "vip_1m": {
+          "name": "VIP 1 Month",
+          "period": "30 days"
+        },
+        "vip_3m": {
+          "name": "VIP 3 Months",
+          "period": "90 days"
+        },
+        "vip_1y": {
+          "name": "VIP 1 Year",
+          "period": "365 days"
+        }
+      },
+      "features": {
+        "ai_100": "+100 AI uses",
+        "ai_350": "+350 AI uses",
+        "ai_1500": "+1500 AI uses",
+        "ocr": "PDF/Image OCR",
+        "private_quiz": "Unlock private quizzes",
+        "realtime_large": "Create large realtime rooms",
+        "export_pdf_excel": "Export questions to PDF/Excel"
+      },
+      "status": {
+        "pending": "Pending",
+        "success": "Success",
+        "failed": "Failed",
+        "refunded": "Refunded"
+      },
+      "errors": {
+        "load_failed": "Could not load payment history."
+      }
+    },
+    "Users": {
+      "badge": "Admin UI",
+      "title": "User management",
+      "description": "Create, search, update roles, and delete users via backend API.",
+      "name_placeholder": "User name",
+      "password_placeholder": "Password",
+      "create_button": "Create user",
+      "search_placeholder": "Search users by name or email",
+      "role_all": "All roles",
+      "role_admin": "Admin",
+      "role_vip": "VIP",
+      "role_guest": "Guest",
+      "role_user_en": "User",
+      "role_user": "Standard",
+      "search_button": "Search",
+      "loading": "Loading users...",
+      "joined_meta": "{email} • joined {joinedAt}",
+      "delete_button": "Delete",
+      "confirm_delete": "Delete this user?",
+      "table": {
+        "user": "User",
+        "role": "Role",
+        "quiz": "Quiz",
+        "attempts": "Attempts",
+        "action": "Action"
+      },
+      "success": {
+        "created": "User created.",
+        "role_updated": "Role updated.",
+        "deleted": "User deleted."
+      },
+      "errors": {
+        "load_failed": "Could not load users: {message}",
+        "required": "Name, email, and password are required.",
+        "create_failed": "User creation failed: {message}",
+        "role_update_failed": "Role update failed: {message}",
+        "delete_failed": "User deletion failed: {message}"
+      }
+    },
+    "OcrUpload": {
+      "badge": "OCR Upload",
+      "title": "Upload Image OCR",
+      "description": "Upload an image, call backend OCR, and preview content before converting it into a quiz.",
+      "processing_file": "Processing file...",
+      "dropzone_title": "Drop a file here or click to select",
+      "file_hint": "PNG, JPG, JPEG, WEBP, BMP, TIFF, PDF. Max 20MB.",
+      "ocr_ready": "OCR ready",
+      "rendered_questions": "✅ Rendered {count} questions",
+      "redirecting_editor": ". Redirecting to editor...",
+      "remove_file_button": "Remove file",
+      "processing_button": "Processing...",
+      "go_editor_button": "Go to editor",
+      "preview_badge": "OCR Preview",
+      "preview_title": "Extracted result",
+      "suggestion_badge": "AI suggestion",
+      "editor_badge": "Question Editor",
+      "editor_title": "Edit questions",
+      "editor_description": "Review OCR/AI questions before saving to the database.",
+      "total_questions": "Total questions: {count}",
+      "back_to_ocr_button": "Back to OCR",
+      "question_number": "Question {index}",
+      "delete_button": "Delete",
+      "answer_label": "Answer {key}",
+      "correct_answer_label": "Correct answer",
+      "not_selected": "Not selected",
+      "add_question_button": "Add question",
+      "save_questions_button": "Save questions",
+      "loading_upload": "Uploading file...",
+      "loading_reading": "Reading OCR content...",
+      "loading_ai": "AI is analyzing questions...",
+      "loading_normalizing": "Normalizing data...",
+      "loading_finishing": "Almost done...",
+      "ocr_completed": "OCR completed",
+      "empty_ocr": "No OCR content yet. Upload an image for backend processing.",
+      "ocr_question_line": "Question {index}: {question}",
+      "save_log": "Data sent to backend for saving:",
+      "suggestions": {
+        "medium_10": "Create 10 medium questions",
+        "concepts_first": "Prioritize concept questions",
+        "add_application": "Add 2 application questions",
+        "keep_private": "Keep visibility Private before review"
+      },
+      "errors": {
+        "ocr_failed": "OCR failed: {message}"
+      }
+    },
+    "CreateQuiz": {
+      "badge": "Manual editor",
+      "edit_title": "Edit quiz",
+      "create_title": "Create quiz manually",
+      "description": "Save quizzes, questions, answers, and cover images directly to the backend. The form is now cleaner than a plain data-entry table.",
+      "quiz_title_label": "Quiz title",
+      "quiz_title_placeholder": "Example: Grade 10 biology review",
+      "tag_label": "Tag",
+      "tag_placeholder": "Biology",
+      "description_label": "Description",
+      "description_placeholder": "Short description for quiz takers",
+      "cover_badge": "Cover image",
+      "cover_title": "Quiz cover",
+      "cover_description": "Only upload image files from your device. If no image is selected, the system uses a fallback gradient.",
+      "choose_image_button": "Choose image",
+      "cover_file_label": "Cover image file",
+      "upload_image_button": "Upload image",
+      "creator_avatar_label": "Creator avatar",
+      "current_creator": "Current creator",
+      "avatar_from_profile": "Avatar from profile.",
+      "remove_cover_button": "Remove cover",
+      "untitled_quiz": "Untitled quiz",
+      "default_category_label": "Categories",
+      "duration_label": "Duration (minutes)",
+      "difficulty_label": "Difficulty",
+      "difficulty_easy": "Easy",
+      "difficulty_medium": "Medium",
+      "difficulty_hard": "Hard",
+      "category_label": "Categories",
+      "category_placeholder": "Science",
+      "visibility_title": "Visibility",
+      "room_code_label": "Room linked to quiz",
+      "room_code_placeholder": "VD: QZ24",
+      "question_builder_badge": "Question builder",
+      "question_builder_title": "Questions and answers",
+      "add_question_button": "Add question",
+      "question_number": "Question {index}",
+      "delete_button": "Delete",
+      "question_placeholder": "Question content",
+      "answer_placeholder": "Answer {key}",
+      "correct_answer_label": "Correct answer",
+      "saving_button": "Saving...",
+      "save_button": "Save quiz",
+      "live_preview_badge": "Live preview",
+      "preview_description": "The description will appear here.",
+      "question_count": "{count} questions",
+      "checklist_badge": "Quick check",
+      "default_category": "Science",
+      "guest_name": "Guest",
+      "selected_cover": "Selected: {name}",
+      "saved_cover": "Using saved cover image.",
+      "no_cover": "No cover image selected. The system will use a fallback gradient.",
+      "visibility": {
+        "public_description": "Anyone can view and take the quiz.",
+        "private_description": "Only visible in the admin area.",
+        "group_description": "Link the quiz to a room code."
+      },
+      "checklist": {
+        "has_title": "Clear title provided",
+        "has_cover": "Cover image or fallback gradient available",
+        "has_question": "At least 1 question",
+        "four_answers": "Each question has 4 answers",
+        "correct_answer": "Each question has a correct answer",
+        "group_room": "Group quizzes require a room code"
+      },
+      "success": {
+        "updated": "Quiz updated.",
+        "created": "New quiz created."
+      },
+      "errors": {
+        "need_one_question": "A quiz needs at least 1 question.",
+        "cover_image_only": "Cover file must be an image.",
+        "cover_max_size": "Cover image must be at most 4MB.",
+        "title_required": "Please enter a quiz title.",
+        "room_required": "Group quizzes require a room code.",
+        "question_empty": "Question {index} has no content.",
+        "answer_min": "Question {index} needs at least 2 answers.",
+        "answer_empty": "Question {index} still has empty answers.",
+        "correct_missing": "Question {index} has no correct answer selected.",
+        "save_failed": "Save failed: {message}",
+        "load_edit_failed": "Could not load quiz for editing: {message}"
+      }
+    }
+  },
+  "components": {
+    "LanguageSwitcher": {
+      "vi": "Vietnamese",
+      "en": "English",
+      "ja": "Japanese",
+      "zh": "Chinese"
+    },
+    "StatCard": {
+      "label": "Label",
+      "value": "Value",
+      "hint": "Hint"
+    },
+    "AppLoading": {
+      "title": "Loading your experience",
+      "description": "Preparing interface, quiz data, and interactive effects."
+    },
+    "AppCursor": {
+      "cursor_enabled": "Custom cursor activated"
+    },
+    "BrandLogo": {
+      "brand": "QuizFlex",
+      "alt": "QuizFlex Logo"
+    },
+    "SectionHeader": {
+      "eyebrow": "Content label",
+      "title": "Section title",
+      "description": "Section description"
+    },
+    "ThemeToggle": {
+      "dark_mode": "Dark mode",
+      "light_mode": "Light mode",
+      "dark_icon": "☾",
+      "light_icon": "☀"
+    },
+    "UserAvatar": {
+      "guest": "Guest",
+      "display_name": "Display name",
+      "avatar_alt": "{name} avatar"
+    },
+    "VisibilityBadge": {
+      "public": "Public",
+      "private": "Private",
+      "group": "Group",
+      "public_icon": "🌐",
+      "private_icon": "🔒",
+      "group_icon": "👥"
+    },
+    "LandingQuickActions": {
+      "create_manual_badge": "Create manually",
+      "create_manual_title": "Create a new quiz",
+      "create_manual_highlight": "in minutes.",
+      "create_manual_description": "Manually input questions, answers, time limits, and visibility settings for your quiz.",
+      "create_feature_1": "Add questions",
+      "create_feature_2": "Set time limit",
+      "create_feature_3": "Choose access",
+      "create_button": "Open Quiz Editor",
+      "create_button_note": "No AI, no hassle.",
+      "ai_badge": "Create with AI",
+      "ai_title": "AI Quiz",
+      "ai_highlight": "Generator.",
+      "ai_description": "Generate quizzes from topics, text, or documents. Create a draft quickly and refine before saving.",
+      "ai_feature_1": "Enter topic",
+      "ai_feature_2": "Generate questions",
+      "ai_feature_3": "Edit and save",
+      "ai_button": "Create quiz with AI",
+      "ai_button_note": "Create fast, refine anytime.",
+      "editor_label": "EDITOR",
+      "question_number": "Question 01",
+      "question_text": "What is the main component of a multiple-choice question?",
+      "answer_a": "Question, answers, and points",
+      "answer_b": "Just a title is enough",
+      "stat_questions": "Questions",
+      "stat_time": "Time",
+      "stat_level": "Difficulty",
+      "stat_value_1": "10",
+      "stat_value_2": "12m",
+      "stat_value_3": "3"
+    }
+  }
+}

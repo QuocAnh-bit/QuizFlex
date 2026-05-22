@@ -10,18 +10,17 @@
         <p
           class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]"
         >
-          OCR Upload
+          {{ $t('admin_views.OcrUpload.badge') }}
         </p>
 
         <h1
           class="mt-2 text-4xl font-black tracking-[-0.06em] text-[var(--text)]"
         >
-          Upload Image OCR
+          {{ $t('admin_views.OcrUpload.title') }}
         </h1>
 
         <p class="mt-3 max-w-2xl text-sm leading-7 text-[var(--muted)]">
-          Upload ảnh, gọi backend OCR và preview nội dung trước khi chuyển thành
-          quiz.
+          {{ $t('admin_views.OcrUpload.description') }}
         </p>
 
         <label
@@ -51,13 +50,13 @@
             <h2 class="text-2xl font-black text-[var(--text)]">
               {{
                 isUploading
-                  ? "Đang xử lý file..."
-                  : "Thả file vào đây hoặc bấm để chọn"
+                  ? $t('admin_views.OcrUpload.processing_file')
+                  : $t('admin_views.OcrUpload.dropzone_title')
               }}
             </h2>
 
             <p class="mt-2 text-sm font-semibold text-[var(--muted)]">
-              PNG, JPG, JPEG, WEBP, BMP, TIFF, PDF. Tối đa 20MB.
+              {{ $t('admin_views.OcrUpload.file_hint') }}
             </p>
           </div>
         </label>
@@ -70,7 +69,7 @@
             <div>
               <b class="text-[var(--text)]">{{ fileName }}</b>
               <p class="mt-1 text-sm text-[var(--muted)]">
-                {{ isUploading ? loadingText : "OCR đã sẵn sàng" }}
+                {{ isUploading ? loadingText : $t('admin_views.OcrUpload.ocr_ready') }}
               </p>
             </div>
 
@@ -96,8 +95,8 @@
           v-if="totalQuestions > 0"
           class="mt-5 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm font-bold text-emerald-300"
         >
-          ✅ Đã render {{ totalQuestions }} câu hỏi
-          <span v-if="showReadyMessage">. Đang chuyển sang editor...</span>
+          {{ $t('admin_views.OcrUpload.rendered_questions', { count: totalQuestions }) }}
+          <span v-if="showReadyMessage">{{ $t('admin_views.OcrUpload.redirecting_editor') }}</span>
         </div>
 
         <div
@@ -114,7 +113,7 @@
             :disabled="isUploading"
             @click="resetFile"
           >
-            Xóa file
+            {{ $t('admin_views.OcrUpload.remove_file_button') }}
           </button>
 
           <button
@@ -123,7 +122,7 @@
             :disabled="isUploading || !totalQuestions"
             @click="currentView = 'edit'"
           >
-            {{ isUploading ? "Đang xử lý..." : "Chuyển sang editor" }}
+            {{ isUploading ? $t('admin_views.OcrUpload.processing_button') : $t('admin_views.OcrUpload.go_editor_button') }}
           </button>
         </div>
       </div>
@@ -136,11 +135,11 @@
         <p
           class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]"
         >
-          OCR Preview
+          {{ $t('admin_views.OcrUpload.preview_badge') }}
         </p>
 
         <h2 class="mt-2 text-2xl font-black text-[var(--text)]">
-          Kết quả trích xuất
+          {{ $t('admin_views.OcrUpload.preview_title') }}
         </h2>
 
         <div
@@ -158,7 +157,7 @@
         <p
           class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]"
         >
-          AI suggestion
+          {{ $t('admin_views.OcrUpload.suggestion_badge') }}
         </p>
 
         <div class="mt-4 grid gap-3">
@@ -183,28 +182,28 @@
           <p
             class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]"
           >
-            Question Editor
+            {{ $t('admin_views.OcrUpload.editor_badge') }}
           </p>
 
           <h1
             class="mt-2 text-4xl font-black tracking-[-0.06em] text-[var(--text)]"
           >
-            Chỉnh sửa câu hỏi
+            {{ $t('admin_views.OcrUpload.editor_title') }}
           </h1>
 
           <p class="mt-3 text-sm text-[var(--muted)]">
-            Kiểm tra lại câu hỏi OCR/AI trước khi lưu vào database.
+            {{ $t('admin_views.OcrUpload.editor_description') }}
           </p>
 
           <div
             class="mt-4 inline-flex rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-sm font-black text-emerald-300"
           >
-            Tổng số câu hỏi: {{ totalQuestions }}
+            {{ $t('admin_views.OcrUpload.total_questions', { count: totalQuestions }) }}
           </div>
         </div>
 
         <button class="btn-ghost" type="button" @click="currentView = 'upload'">
-          Quay lại OCR
+          {{ $t('admin_views.OcrUpload.back_to_ocr_button') }}
         </button>
       </div>
 
@@ -216,7 +215,7 @@
         >
           <div class="flex items-center justify-between gap-3">
             <p class="text-sm font-black text-[var(--primary)]">
-              Câu {{ index + 1 }}
+              {{ $t('admin_views.OcrUpload.question_number', { index: index + 1 }) }}
             </p>
 
             <button
@@ -224,7 +223,7 @@
               class="rounded-full bg-rose-500/10 px-3 py-1 text-xs font-black text-rose-300"
               @click="removeQuestion(index)"
             >
-              Xóa
+              {{ $t('admin_views.OcrUpload.delete_button') }}
             </button>
           </div>
 
@@ -237,7 +236,7 @@
           <div class="mt-4 grid gap-3 md:grid-cols-2">
             <div v-for="(optionText, optionKey) in q.options" :key="optionKey">
               <label class="text-xs font-black uppercase text-[var(--muted)]">
-                Đáp án {{ optionKey }}
+                {{ $t('admin_views.OcrUpload.answer_label', { key: optionKey }) }}
               </label>
 
               <input
@@ -249,14 +248,14 @@
 
           <div class="mt-4">
             <label class="text-xs font-black uppercase text-[var(--muted)]">
-              Đáp án đúng
+              {{ $t('admin_views.OcrUpload.correct_answer_label') }}
             </label>
 
             <select
               v-model="q.correct_answer"
               class="mt-2 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm font-bold text-[var(--text)] outline-none"
             >
-              <option :value="null">Chưa chọn</option>
+              <option :value="null">{{ $t('admin_views.OcrUpload.not_selected') }}</option>
 
               <option
                 v-for="(_, optionKey) in q.options"
@@ -272,11 +271,11 @@
 
       <div class="mt-8 flex flex-wrap gap-3">
         <button class="btn-ghost" type="button" @click="addQuestion">
-          Thêm câu hỏi
+          {{ $t('admin_views.OcrUpload.add_question_button') }}
         </button>
 
         <button class="btn-primary" type="button" @click="saveQuestions">
-          Lưu câu hỏi
+          {{ $t('admin_views.OcrUpload.save_questions_button') }}
         </button>
       </div>
     </article>
@@ -285,14 +284,16 @@
 
 <script setup>
 import { computed, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { ocrApi } from "@/services/api";
 
+const { t } = useI18n();
 const fileInput = ref(null);
 const fileName = ref("");
 const progress = ref(0);
 const isUploading = ref(false);
 const errorMessage = ref("");
-const loadingText = ref("Đang tải file...");
+const loadingText = ref(t("admin_views.OcrUpload.loading_upload"));
 const progressTimer = ref(null);
 
 const currentView = ref("upload");
@@ -301,20 +302,20 @@ const showReadyMessage = ref(false);
 
 const totalQuestions = computed(() => questions.value.length);
 
-const suggestions = [
-  "Tạo 10 câu mức trung bình",
-  "Ưu tiên câu hỏi khái niệm",
-  "Thêm 2 câu vận dụng",
-  "Giữ visibility: Private trước khi duyệt",
-];
+const suggestions = computed(() => [
+  t("admin_views.OcrUpload.suggestions.medium_10"),
+  t("admin_views.OcrUpload.suggestions.concepts_first"),
+  t("admin_views.OcrUpload.suggestions.add_application"),
+  t("admin_views.OcrUpload.suggestions.keep_private"),
+]);
 
 const ocrLines = computed(() => {
   if (!questions.value.length) {
-    return ["Chưa có nội dung OCR. Upload ảnh để backend xử lý."];
+    return [t("admin_views.OcrUpload.empty_ocr")];
   }
 
   return questions.value.map((item, index) => {
-    return `Câu ${index + 1}: ${item.question}`;
+    return t("admin_views.OcrUpload.ocr_question_line", { index: index + 1, question: item.question });
   });
 });
 
@@ -322,20 +323,20 @@ const startFakeProgress = () => {
   stopFakeProgress();
 
   progress.value = 10;
-  loadingText.value = "Đang tải file...";
+  loadingText.value = t("admin_views.OcrUpload.loading_upload");
 
   progressTimer.value = setInterval(() => {
     if (progress.value < 55) {
       progress.value += 3;
-      loadingText.value = "Đang đọc nội dung OCR...";
+      loadingText.value = t("admin_views.OcrUpload.loading_reading");
     } else if (progress.value < 80) {
       progress.value += 1;
-      loadingText.value = "AI đang phân tích câu hỏi...";
+      loadingText.value = t("admin_views.OcrUpload.loading_ai");
     } else if (progress.value < 92) {
       progress.value += 0.3;
-      loadingText.value = "Đang chuẩn hóa dữ liệu...";
+      loadingText.value = t("admin_views.OcrUpload.loading_normalizing");
     } else {
-      loadingText.value = "Sắp hoàn tất...";
+      loadingText.value = t("admin_views.OcrUpload.loading_finishing");
     }
   }, 800);
 };
@@ -366,7 +367,7 @@ const handleFile = async (event) => {
     stopFakeProgress();
 
     progress.value = 100;
-    loadingText.value = "Hoàn tất OCR";
+    loadingText.value = t("admin_views.OcrUpload.ocr_completed");
 
     const responseData = result.data || result;
     const quizData = responseData.data || responseData.quizOrc || responseData;
@@ -387,7 +388,7 @@ const handleFile = async (event) => {
   } catch (error) {
     stopFakeProgress();
 
-    errorMessage.value = `OCR thất bại: ${error.message}`;
+    errorMessage.value = t("admin_views.OcrUpload.errors.ocr_failed", { message: error.message });
     progress.value = 0;
 
     if (fileInput.value) {
@@ -407,7 +408,7 @@ const resetFile = () => {
   progress.value = 0;
   errorMessage.value = "";
   isUploading.value = false;
-  loadingText.value = "Đang tải file...";
+  loadingText.value = t("admin_views.OcrUpload.loading_upload");
   questions.value = [];
   showReadyMessage.value = false;
   currentView.value = "upload";
@@ -437,6 +438,6 @@ const removeQuestion = (index) => {
 };
 
 const saveQuestions = () => {
-  console.log("Data gửi về BE để lưu DB:", questions.value);
+  console.log(t("admin_views.OcrUpload.save_log"), questions.value);
 };
 </script>

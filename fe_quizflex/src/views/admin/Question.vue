@@ -4,14 +4,14 @@
       <div class="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[var(--primary)]/15 blur-3xl"></div>
       <div class="relative z-10 flex flex-col justify-between gap-5 xl:flex-row xl:items-end">
         <div>
-          <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">{{ isUserWorkspace ? 'My Quiz Library' : 'Quiz Library' }}</p>
-          <h1 class="mt-2 text-4xl font-black tracking-[-0.06em] text-[var(--text)]">{{ isUserWorkspace ? 'Kho quiz của tôi' : 'Kho quiz' }}</h1>
-          <p class="mt-3 max-w-2xl text-sm leading-7 text-[var(--muted)]">{{ isUserWorkspace ? 'Chỉ hiển thị các quiz do tài khoản của bạn tạo để quản lý và chỉnh sửa.' : 'Tìm kiếm, lọc theo tag, độ khó và visibility từ dữ liệu Laravel API.' }}</p>
+          <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">{{ isUserWorkspace ? $t('admin_views.Question.user_badge') : $t('admin_views.Question.badge') }}</p>
+          <h1 class="mt-2 text-4xl font-black tracking-[-0.06em] text-[var(--text)]">{{ isUserWorkspace ? $t('admin_views.Question.user_title') : $t('admin_views.Question.title') }}</h1>
+          <p class="mt-3 max-w-2xl text-sm leading-7 text-[var(--muted)]">{{ isUserWorkspace ? $t('admin_views.Question.user_description') : $t('admin_views.Question.description') }}</p>
         </div>
         <div class="flex flex-wrap gap-3">
-          <router-link class="btn-ghost" :to="`${questionBase}/ocr`">Upload OCR</router-link>
-          <router-link class="btn-ghost" :to="`${questionBase}/ai`">AI Generator</router-link>
-          <router-link class="btn-primary" :to="`${questionBase}/create`">Tạo quiz</router-link>
+          <router-link class="btn-ghost" :to="`${questionBase}/ocr`">{{ $t('admin_views.Question.upload_ocr_button') }}</router-link>
+          <router-link class="btn-ghost" :to="`${questionBase}/ai`">{{ $t('admin_views.Question.ai_generator_button') }}</router-link>
+          <router-link class="btn-primary" :to="`${questionBase}/create`">{{ $t('admin_views.Question.create_quiz_button') }}</router-link>
         </div>
       </div>
     </div>
@@ -20,11 +20,11 @@
       <div class="grid gap-4 xl:grid-cols-[1fr_auto_auto_auto] xl:items-center">
         <div class="flex items-center gap-3 rounded-2xl border border-[var(--border)] bg-[var(--input-bg)] px-4 py-3 transition focus-within:border-[var(--border-strong)]">
           <span class="text-lg">🔍</span>
-          <input v-model="search" class="w-full bg-transparent text-sm font-semibold text-[var(--text)] outline-none placeholder:text-[var(--muted)]" placeholder="Tìm theo tên quiz, tác giả, tag..." @keyup.enter="loadQuizzes" />
+          <input v-model="search" class="w-full bg-transparent text-sm font-semibold text-[var(--text)] outline-none placeholder:text-[var(--muted)]" :placeholder="$t('admin_views.Question.search_placeholder')" @keyup.enter="loadQuizzes" />
         </div>
-        <select v-model="difficultyFilter" class="field xl:w-44" @change="loadQuizzes"><option value="">Tất cả độ khó</option><option value="easy">Dễ</option><option value="medium">Vừa</option><option value="hard">Khó</option></select>
-        <select v-model="tagFilter" class="field xl:w-44"><option value="all">Tất cả tag</option><option v-for="tag in tags" :key="tag" :value="tag">{{ tag }}</option></select>
-        <select v-model="visibilityFilter" class="field xl:w-48" @change="loadQuizzes"><option value="all">Tất cả visibility</option><option value="public">Public</option><option value="private">Private</option><option value="group">Group</option></select>
+        <select v-model="difficultyFilter" class="field xl:w-44" @change="loadQuizzes"><option value="">{{ $t('admin_views.Question.difficulty_all') }}</option><option value="easy">{{ $t('admin_views.Question.difficulty_easy') }}</option><option value="medium">{{ $t('admin_views.Question.difficulty_medium') }}</option><option value="hard">{{ $t('admin_views.Question.difficulty_hard') }}</option></select>
+        <select v-model="tagFilter" class="field xl:w-44"><option value="all">{{ $t('admin_views.Question.tag_all') }}</option><option v-for="tag in tags" :key="tag" :value="tag">{{ tag }}</option></select>
+        <select v-model="visibilityFilter" class="field xl:w-48" @change="loadQuizzes"><option value="all">{{ $t('admin_views.Question.visibility_all') }}</option><option value="public">{{ $t('admin_views.Question.visibility_public') }}</option><option value="private">{{ $t('admin_views.Question.visibility_private') }}</option><option value="group">{{ $t('admin_views.Question.visibility_group') }}</option></select>
       </div>
 
       <div class="mt-5 flex flex-wrap gap-2">
@@ -32,7 +32,7 @@
       </div>
     </article>
 
-    <div v-if="isLoading" class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-10 text-center text-sm font-bold text-[var(--muted)]">Đang tải quiz từ backend...</div>
+    <div v-if="isLoading" class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-10 text-center text-sm font-bold text-[var(--muted)]">{{ $t('admin_views.Question.loading') }}</div>
     <div v-if="errorMessage" class="rounded-[2rem] border border-amber-500/30 bg-amber-500/10 p-5 text-sm font-bold text-amber-300">{{ errorMessage }}</div>
 
     <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -48,16 +48,16 @@
             <span class="rounded-full border border-[var(--border)] bg-[var(--surface-soft)] px-3 py-1 text-xs font-black text-[var(--muted)]">{{ quiz.difficulty }}</span>
           </div>
           <h3 class="text-xl font-black tracking-[-0.04em] text-[var(--text)] transition group-hover:text-[var(--primary)]">{{ quiz.title }}</h3>
-          <p class="mt-2 text-sm leading-6 text-[var(--muted)]">{{ quiz.category }} • {{ quiz.tag }} • by {{ quiz.author }}</p>
+          <p class="mt-2 text-sm leading-6 text-[var(--muted)]">{{ $t('admin_views.Question.quiz_meta', { category: quiz.category, tag: quiz.tag, author: quiz.author }) }}</p>
           <div class="mt-5 grid grid-cols-3 gap-2">
-            <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-3 text-center"><b class="block text-[var(--text)]">{{ quiz.questions }}</b><span class="text-[10px] font-bold text-[var(--muted)]">Câu</span></div>
-            <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-3 text-center"><b class="block text-[var(--text)]">{{ quiz.attempts }}</b><span class="text-[10px] font-bold text-[var(--muted)]">Lượt</span></div>
-            <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-3 text-center"><b class="block text-[var(--text)]">{{ quiz.avgScore }}%</b><span class="text-[10px] font-bold text-[var(--muted)]">Điểm</span></div>
+            <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-3 text-center"><b class="block text-[var(--text)]">{{ quiz.questions }}</b><span class="text-[10px] font-bold text-[var(--muted)]">{{ $t('admin_views.Question.question_label') }}</span></div>
+            <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-3 text-center"><b class="block text-[var(--text)]">{{ quiz.attempts }}</b><span class="text-[10px] font-bold text-[var(--muted)]">{{ $t('admin_views.Question.attempt_label') }}</span></div>
+            <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-3 text-center"><b class="block text-[var(--text)]">{{ quiz.avgScore }}%</b><span class="text-[10px] font-bold text-[var(--muted)]">{{ $t('admin_views.Question.score_label') }}</span></div>
           </div>
           <div class="mt-5 flex flex-wrap gap-2">
-            <router-link class="rounded-full border border-[var(--border)] bg-[var(--surface-soft)] px-4 py-2 text-xs font-black text-[var(--text)] transition hover:border-[var(--border-strong)] hover:bg-[var(--chip-active)]" :to="`/quizzes/${quiz.id}`">Xem</router-link>
-            <router-link class="rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--primary-2)] px-4 py-2 text-xs font-black text-white" :to="`${questionBase}/edit/${quiz.id}`">Sửa</router-link>
-            <button class="rounded-full border border-rose-500/30 bg-rose-500/10 px-4 py-2 text-xs font-black text-rose-300" type="button" @click="deleteQuiz(quiz.id)">Xóa</button>
+            <router-link class="rounded-full border border-[var(--border)] bg-[var(--surface-soft)] px-4 py-2 text-xs font-black text-[var(--text)] transition hover:border-[var(--border-strong)] hover:bg-[var(--chip-active)]" :to="`/quizzes/${quiz.id}`">{{ $t('admin_views.Question.view_button') }}</router-link>
+            <router-link class="rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--primary-2)] px-4 py-2 text-xs font-black text-white" :to="`${questionBase}/edit/${quiz.id}`">{{ $t('admin_views.Question.edit_button') }}</router-link>
+            <button class="rounded-full border border-rose-500/30 bg-rose-500/10 px-4 py-2 text-xs font-black text-rose-300" type="button" @click="deleteQuiz(quiz.id)">{{ $t('admin_views.Question.delete_button') }}</button>
           </div>
         </div>
       </article>
@@ -65,8 +65,8 @@
 
     <div v-if="!isLoading && filteredQuizzes.length === 0" class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-10 text-center shadow-[var(--shadow-card)]">
       <div class="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-3xl bg-[var(--chip-active)] text-3xl">🔎</div>
-      <h3 class="text-2xl font-black text-[var(--text)]">Không tìm thấy quiz</h3>
-      <p class="mt-2 text-sm text-[var(--muted)]">Đổi bộ lọc hoặc tạo quiz mới.</p>
+      <h3 class="text-2xl font-black text-[var(--text)]">{{ $t('admin_views.Question.empty_title') }}</h3>
+      <p class="mt-2 text-sm text-[var(--muted)]">{{ $t('admin_views.Question.empty_description') }}</p>
     </div>
   </section>
 </template>
@@ -74,9 +74,11 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import VisibilityBadge from '@/components/common/VisibilityBadge.vue'
 import { normalizeQuizCard, quizzesApi } from '@/services/api'
 
+const { t } = useI18n()
 const search = ref('')
 const difficultyFilter = ref('')
 const tagFilter = ref('all')
@@ -89,12 +91,12 @@ const quizzes = ref([])
 const isLoading = ref(false)
 const errorMessage = ref('')
 
-const visibilityChips = [
-  { value: 'all', label: 'Tất cả' },
+const visibilityChips = computed(() => [
+  { value: 'all', label: t('admin_views.Question.visibility_chip_all') },
   { value: 'public', label: '🌐 Public' },
   { value: 'private', label: '🔒 Private' },
   { value: 'group', label: '👥 Group' },
-]
+])
 
 const tags = computed(() => [...new Set(quizzes.value.map((quiz) => quiz.tag).filter(Boolean))])
 
@@ -117,7 +119,7 @@ const loadQuizzes = async () => {
     })
     quizzes.value = data.map(normalizeQuizCard)
   } catch (error) {
-    errorMessage.value = `Không gọi được backend: ${error.message}`
+    errorMessage.value = t('admin_views.Question.errors.load_failed', { message: error.message })
     quizzes.value = []
   } finally {
     isLoading.value = false
@@ -125,13 +127,13 @@ const loadQuizzes = async () => {
 }
 
 const deleteQuiz = async (id) => {
-  if (!window.confirm('Xóa mềm quiz này?')) return
+  if (!window.confirm(t('admin_views.Question.confirm_delete'))) return
 
   try {
     await quizzesApi.remove(id)
     quizzes.value = quizzes.value.filter((quiz) => quiz.id !== id)
   } catch (error) {
-    errorMessage.value = `Xóa thất bại: ${error.message}`
+    errorMessage.value = t('admin_views.Question.errors.delete_failed', { message: error.message })
   }
 }
 

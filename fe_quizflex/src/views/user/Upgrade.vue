@@ -8,13 +8,13 @@
       
       <div class="relative z-10 max-w-3xl mx-auto">
         <span class="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-strong)] bg-[var(--chip-active)] px-4 py-1.5 text-xs font-black uppercase tracking-wider text-[var(--primary)] shadow-[0_4px_12px_rgba(155,44,255,0.12)]">
-          ✦ Premium Access
+          {{ $t('user_views.Upgrade.hero_badge') }}
         </span>
         <h1 class="mt-5 text-4xl md:text-6xl font-black tracking-tight text-[var(--text)] leading-none">
-          Mở Khóa Toàn Bộ <span class="bg-gradient-to-r from-[var(--primary)] to-[var(--accent)] bg-clip-text text-transparent">Đặc Quyền VIP</span>
+          {{ $t('user_views.Upgrade.hero_title_prefix') }} <span class="bg-gradient-to-r from-[var(--primary)] to-[var(--accent)] bg-clip-text text-transparent">{{ $t('user_views.Upgrade.hero_title_highlight') }}</span>
         </h1>
         <p class="mt-4 text-base leading-relaxed text-[var(--muted)]">
-          Nâng cao khả năng học tập và giảng dạy với sức mạnh của AI sinh đề, scan tài liệu không giới hạn và tạo phòng thi đấu trực tuyến thời gian thực.
+          {{ $t('user_views.Upgrade.hero_description') }}
         </p>
       </div>
     </div>
@@ -35,7 +35,7 @@
           v-if="plan.popular" 
           class="absolute top-4 right-4 bg-gradient-to-r from-[var(--primary)] to-[var(--accent)] text-white text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full shadow-md"
         >
-          Bán Chạy Nhất
+          {{ $t('user_views.Upgrade.popular_badge') }}
         </span>
 
         <div>
@@ -51,7 +51,7 @@
           <!-- Pricing -->
           <div class="mt-6 flex items-baseline gap-1">
             <h2 class="text-4xl font-black tracking-tight text-[var(--text)]">{{ plan.priceLabel }}</h2>
-            <span v-if="plan.price > 0" class="text-sm font-semibold text-[var(--muted)]">/gói</span>
+            <span v-if="plan.price > 0" class="text-sm font-semibold text-[var(--muted)]">{{ $t('user_views.Upgrade.per_plan') }}</span>
           </div>
 
           <!-- Benefits Description -->
@@ -94,20 +94,20 @@
       class="overflow-hidden rounded-[2.2rem] border border-[var(--border)] bg-[var(--surface)]/40 p-6 md:p-8 shadow-[var(--shadow-card)] backdrop-blur-2xl"
     >
       <h3 class="text-2xl font-black text-[var(--text)] flex items-center gap-2">
-        <span>🕒</span> Lịch Sử Giao Dịch
+        <span>🕒</span> {{ $t('user_views.Upgrade.history_title') }}
       </h3>
-      <p class="text-sm text-[var(--muted)] mt-1 font-semibold">Theo dõi và quản lý các hóa đơn thanh toán VIP của bạn.</p>
+      <p class="text-sm text-[var(--muted)] mt-1 font-semibold">{{ $t('user_views.Upgrade.history_description') }}</p>
 
       <div class="mt-6 overflow-x-auto">
         <table class="w-full border-collapse text-left text-sm font-semibold">
           <thead>
             <tr class="border-b border-[var(--border)] text-[var(--muted)]">
-              <th class="pb-3 pr-4 font-black">Mã giao dịch</th>
-              <th class="pb-3 px-4 font-black">Gói</th>
-              <th class="pb-3 px-4 font-black">Cổng thanh toán</th>
-              <th class="pb-3 px-4 font-black">Số tiền</th>
-              <th class="pb-3 px-4 font-black">Trạng thái</th>
-              <th class="pb-3 pl-4 font-black">Ngày tạo</th>
+              <th class="pb-3 pr-4 font-black">{{ $t('user_views.Upgrade.table.order_code') }}</th>
+              <th class="pb-3 px-4 font-black">{{ $t('user_views.Upgrade.table.plan') }}</th>
+              <th class="pb-3 px-4 font-black">{{ $t('user_views.Upgrade.table.provider') }}</th>
+              <th class="pb-3 px-4 font-black">{{ $t('user_views.Upgrade.table.amount') }}</th>
+              <th class="pb-3 px-4 font-black">{{ $t('user_views.Upgrade.table.status') }}</th>
+              <th class="pb-3 pl-4 font-black">{{ $t('user_views.Upgrade.table.created_at') }}</th>
             </tr>
           </thead>
           <tbody>
@@ -120,10 +120,10 @@
               <td class="py-4 px-4 text-[var(--text)]">{{ item.plan_name || getPlanNameByAmount(item.amount) }}</td>
               <td class="py-4 px-4 text-xs font-bold uppercase text-[var(--muted)]">
                 <span class="inline-flex items-center gap-1 rounded bg-fuchsia-500/10 text-fuchsia-400 px-2 py-0.5" v-if="item.provider === 'momo'">
-                  pink MoMo
+                  {{ $t('user_views.Upgrade.provider_momo') }}
                 </span>
                 <span class="inline-flex items-center gap-1 rounded bg-blue-500/10 text-blue-400 px-2 py-0.5" v-else>
-                  blue VNPay
+                  {{ $t('user_views.Upgrade.provider_vnpay') }}
                 </span>
               </td>
               <td class="py-4 px-4 text-[var(--text)] font-black">{{ formatPrice(item.amount) }}</td>
@@ -139,7 +139,7 @@
             </tr>
             <tr v-if="historyList.length === 0">
               <td colspan="6" class="py-10 text-center text-[var(--muted)] font-bold">
-                Bạn chưa có giao dịch nào trên hệ thống.
+                {{ $t('user_views.Upgrade.no_transactions') }}
               </td>
             </tr>
           </tbody>
@@ -175,26 +175,26 @@
           <!-- Modal Header -->
           <div class="relative z-10 text-center">
             <span class="text-4xl">{{ selectedPlan.icon }}</span>
-            <h4 class="mt-3 text-2xl font-black text-[var(--text)]">Xác Nhận Nâng Cấp</h4>
-            <p class="text-sm text-[var(--muted)] mt-1 font-semibold">Vui lòng chọn phương thức thanh toán.</p>
+            <h4 class="mt-3 text-2xl font-black text-[var(--text)]">{{ $t('user_views.Upgrade.modal_title') }}</h4>
+            <p class="text-sm text-[var(--muted)] mt-1 font-semibold">{{ $t('user_views.Upgrade.modal_description') }}</p>
           </div>
 
           <!-- Order Summary Card -->
           <div class="mt-6 rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-4 relative z-10 grid gap-2">
             <div class="flex items-center justify-between font-bold text-sm">
-              <span class="text-[var(--muted)]">Gói cước:</span>
+              <span class="text-[var(--muted)]">{{ $t('user_views.Upgrade.summary.plan_label') }}</span>
               <span class="text-[var(--text)]">{{ selectedPlan.name }}</span>
             </div>
             <div class="flex items-center justify-between font-bold text-sm">
-              <span class="text-[var(--muted)]">Hạn định:</span>
+              <span class="text-[var(--muted)]">{{ $t('user_views.Upgrade.summary.period_label') }}</span>
               <span class="text-[var(--text)]">{{ selectedPlan.period }}</span>
             </div>
             <div class="flex items-center justify-between font-bold text-sm">
-              <span class="text-[var(--muted)]">AI Quota cộng thêm:</span>
-              <span class="text-[var(--primary)]">+{{ selectedPlan.quota }} lượt dùng</span>
+              <span class="text-[var(--muted)]">{{ $t('user_views.Upgrade.summary.quota_label') }}</span>
+              <span class="text-[var(--primary)]">{{ $t('user_views.Upgrade.summary.quota_value', { quota: selectedPlan.quota }) }}</span>
             </div>
             <div class="mt-2 pt-2 border-t border-[var(--border)] flex items-center justify-between font-black text-base">
-              <span class="text-[var(--text)]">Tổng tiền:</span>
+              <span class="text-[var(--text)]">{{ $t('user_views.Upgrade.summary.total_label') }}</span>
               <span class="text-[var(--accent)] text-lg">{{ selectedPlan.priceLabel }}</span>
             </div>
           </div>
@@ -204,7 +204,7 @@
             v-if="errorMessage" 
             class="mt-4 rounded-xl border border-rose-500/25 bg-rose-500/10 p-3 text-xs font-bold text-rose-400"
           >
-            ⚠ {{ errorMessage }}
+            {{ $t('user_views.Upgrade.error_prefix', { message: errorMessage }) }}
           </div>
 
           <!-- Payment Options -->
@@ -220,11 +220,11 @@
                   MoMo
                 </div>
                 <div class="text-left">
-                  <b class="block text-sm font-black text-[var(--text)] group-hover:text-fuchsia-400 transition">Ví Điện Tử MoMo</b>
-                  <span class="text-[10px] font-semibold text-[var(--muted)]">Thanh toán tức thì qua ứng dụng MoMo (Sandbox)</span>
+                  <b class="block text-sm font-black text-[var(--text)] group-hover:text-fuchsia-400 transition">{{ $t('user_views.Upgrade.momo_title') }}</b>
+                  <span class="text-[10px] font-semibold text-[var(--muted)]">{{ $t('user_views.Upgrade.momo_description') }}</span>
                 </div>
               </div>
-              <span class="text-xs font-black text-fuchsia-400">Chọn ➔</span>
+              <span class="text-xs font-black text-fuchsia-400">{{ $t('user_views.Upgrade.choose_button') }}</span>
             </button>
 
             <!-- VNPay (Inactive placeholder in checklist step, but designed beautifully) -->
@@ -237,11 +237,11 @@
                   VNPay
                 </div>
                 <div class="text-left">
-                  <b class="block text-sm font-black text-[var(--text)]">Cổng thanh toán VNPay</b>
-                  <span class="text-[10px] font-semibold text-[var(--muted)]">Hỗ trợ ATM nội địa & thẻ quốc tế (Sắp ra mắt)</span>
+                  <b class="block text-sm font-black text-[var(--text)]">{{ $t('user_views.Upgrade.vnpay_title') }}</b>
+                  <span class="text-[10px] font-semibold text-[var(--muted)]">{{ $t('user_views.Upgrade.vnpay_description') }}</span>
                 </div>
               </div>
-              <span class="text-[10px] font-black text-[var(--muted)]">Sắp có</span>
+              <span class="text-[10px] font-black text-[var(--muted)]">{{ $t('user_views.Upgrade.coming_soon') }}</span>
             </button>
           </div>
 
@@ -251,8 +251,8 @@
             class="absolute inset-0 bg-[var(--surface)]/90 backdrop-blur-sm z-30 flex flex-col items-center justify-center gap-3"
           >
             <div class="h-10 w-10 animate-spin rounded-full border-4 border-[var(--border)] border-t-[var(--primary)]"></div>
-            <p class="text-sm font-black text-[var(--text)]">Đang kết nối cổng thanh toán...</p>
-            <p class="text-xs font-bold text-[var(--muted)]">Vui lòng không đóng cửa sổ này</p>
+            <p class="text-sm font-black text-[var(--text)]">{{ $t('user_views.Upgrade.processing_title') }}</p>
+            <p class="text-xs font-bold text-[var(--muted)]">{{ $t('user_views.Upgrade.processing_description') }}</p>
           </div>
 
         </div>
@@ -263,12 +263,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { currentUserStorage, paymentsApi } from '@/services/api'
 
 const router = useRouter()
 const route = useRoute()
+const { t } = useI18n()
 const currentUser = ref(currentUserStorage.get())
 const historyList = ref([])
 
@@ -277,65 +279,65 @@ const selectedPlan = ref(null)
 const isProcessing = ref(false)
 const errorMessage = ref('')
 
-const plans = [
+const plans = computed(() => [
   {
     id: 'vip_1m',
-    name: 'VIP 1 Tháng',
+    name: t('user_views.Upgrade.plans.vip_1m.name'),
     price: 50000,
     priceLabel: '50.000đ',
-    period: 'Thời hạn 30 ngày',
+    period: t('user_views.Upgrade.plans.vip_1m.period'),
     icon: '⚡',
-    desc: 'Thử nghiệm dịch vụ với chi phí cực thấp.',
+    desc: t('user_views.Upgrade.plans.vip_1m.desc'),
     quota: 100,
-    btnText: 'Nâng cấp ngay',
+    btnText: t('user_views.Upgrade.plans.vip_1m.button'),
     popular: false,
     features: [
-      'Dùng AI sinh đề (+100 lượt)',
-      'Tải tài liệu PDF/Ảnh OCR',
-      'Mở khóa Quiz Private',
-      'Tạo phòng Realtime nhóm'
+      t('user_views.Upgrade.features.ai_100'),
+      t('user_views.Upgrade.features.ocr'),
+      t('user_views.Upgrade.features.private_quiz'),
+      t('user_views.Upgrade.features.realtime_group')
     ]
   },
   {
     id: 'vip_3m',
-    name: 'VIP 3 Tháng',
+    name: t('user_views.Upgrade.plans.vip_3m.name'),
     price: 120000,
     priceLabel: '120.000đ',
-    period: 'Thời hạn 90 ngày',
+    period: t('user_views.Upgrade.plans.vip_3m.period'),
     icon: '🚀',
-    desc: 'Lựa chọn tiết kiệm 20%, đầy đủ quyền lợi.',
+    desc: t('user_views.Upgrade.plans.vip_3m.desc'),
     quota: 350,
-    btnText: 'Mua gói ưu chuộng',
+    btnText: t('user_views.Upgrade.plans.vip_3m.button'),
     popular: true,
     features: [
-      'Dùng AI sinh đề (+350 lượt)',
-      'Tải tài liệu PDF/Ảnh OCR',
-      'Mở khóa Quiz Private',
-      'Tạo phòng Realtime lớn',
-      'Hỗ trợ xuất đề ra PDF/Excel'
+      t('user_views.Upgrade.features.ai_350'),
+      t('user_views.Upgrade.features.ocr'),
+      t('user_views.Upgrade.features.private_quiz'),
+      t('user_views.Upgrade.features.realtime_large'),
+      t('user_views.Upgrade.features.export_pdf_excel')
     ]
   },
   {
     id: 'vip_1y',
-    name: 'VIP 1 Năm',
+    name: t('user_views.Upgrade.plans.vip_1y.name'),
     price: 400000,
     priceLabel: '400.000đ',
-    period: 'Thời hạn 365 ngày',
+    period: t('user_views.Upgrade.plans.vip_1y.period'),
     icon: '👑',
-    desc: 'Lựa chọn tối ưu tiết kiệm 33% cho Creator.',
+    desc: t('user_views.Upgrade.plans.vip_1y.desc'),
     quota: 1500,
-    btnText: 'Sở hữu VIP trọn năm',
+    btnText: t('user_views.Upgrade.plans.vip_1y.button'),
     popular: false,
     features: [
-      'Dùng AI sinh đề (+1500 lượt)',
-      'Tải tài liệu PDF/Ảnh OCR',
-      'Mở khóa Quiz Private',
-      'Tạo phòng Realtime cực đại',
-      'Hỗ trợ xuất đề PDF/Excel',
-      'Badge VIP lấp lánh cạnh tên'
+      t('user_views.Upgrade.features.ai_1500'),
+      t('user_views.Upgrade.features.ocr'),
+      t('user_views.Upgrade.features.private_quiz'),
+      t('user_views.Upgrade.features.realtime_max'),
+      t('user_views.Upgrade.features.export_pdf_excel'),
+      t('user_views.Upgrade.features.vip_badge')
     ]
   }
-]
+])
 
 onMounted(() => {
   if (currentUser.value) {
@@ -343,7 +345,7 @@ onMounted(() => {
     
     // Tự động mở modal thanh toán nếu có plan truyền qua URL query
     if (route.query.plan) {
-      const matchedPlan = plans.find(p => p.id === route.query.plan)
+      const matchedPlan = plans.value.find(p => p.id === route.query.plan)
       if (matchedPlan) {
         openCheckout(matchedPlan)
       }
@@ -392,7 +394,7 @@ const handlePayment = async (provider) => {
       // Chuyển hướng trình duyệt sang cổng thanh toán Sandbox MoMo
       window.location.href = res.payUrl
     } else {
-      throw new Error(res.message || 'Không khởi tạo được URL thanh toán.')
+      throw new Error(res.message || t('user_views.Upgrade.errors.payment_url_failed'))
     }
   } catch (error) {
     errorMessage.value = error.message
@@ -403,10 +405,10 @@ const handlePayment = async (provider) => {
 // Helpers
 const getPlanNameByAmount = (amount) => {
   const parsed = Number(amount)
-  if (parsed === 50000) return 'Gói VIP 1 Tháng'
-  if (parsed === 120000) return 'Gói VIP 3 Tháng'
-  if (parsed === 400000) return 'Gói VIP 1 Năm'
-  return 'Gói VIP Tùy Chọn'
+  if (parsed === 50000) return t('user_views.Upgrade.plan_names.vip_1m')
+  if (parsed === 120000) return t('user_views.Upgrade.plan_names.vip_3m')
+  if (parsed === 400000) return t('user_views.Upgrade.plan_names.vip_1y')
+  return t('user_views.Upgrade.plan_names.custom')
 }
 
 const formatPrice = (value) => {
@@ -426,10 +428,10 @@ const formatDate = (dateString) => {
 
 const getStatusText = (status) => {
   const mapping = {
-    pending: 'Đang xử lý',
-    success: 'Thành công',
-    failed: 'Thất bại',
-    refunded: 'Đã hoàn tiền'
+    pending: t('user_views.Upgrade.status.pending'),
+    success: t('user_views.Upgrade.status.success'),
+    failed: t('user_views.Upgrade.status.failed'),
+    refunded: t('user_views.Upgrade.status.refunded')
   }
   return mapping[status] || status
 }
