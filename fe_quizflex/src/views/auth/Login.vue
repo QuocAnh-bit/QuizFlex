@@ -37,19 +37,29 @@ onMounted(() => {
 
 const validate = () => { errors.email = !form.email ? 'Email không được để trống.' : !/^\S+@\S+\.\S+$/.test(form.email) ? 'Email chưa đúng định dạng.' : ''; errors.password = !form.password ? 'Mật khẩu không được để trống.' : form.password.length < 6 ? 'Mật khẩu tối thiểu 6 ký tự.' : ''; return !errors.email && !errors.password }
 
+const safeRedirect = (value) => {
+  if (!value || typeof value !== 'string') return ''
+  if (!value.startsWith('/') || value.startsWith('//')) return ''
+  return value
+}
+
 const handleLogin = async () => {
   successMessage.value = ''
   if (!validate()) return
   try {
     const user = await authApi.login({ email: form.email, password: form.password })
-    const redirect = typeof route.query.redirect === 'string' && route.query.redirect.startsWith('/') && !route.query.redirect.startsWith('//')
-      ? route.query.redirect
-      : getDefaultRouteForRole(user.role)
-
     successMessage.value = 'Đăng nhập thành công.'
+
+    const query = {}
+    let targetPath = safeRedirect(route.query.redirect) || getDefaultRouteForRole(user.role)
+    if (route.query.plan) {
+      targetPath = '/upgrade'
+      query.plan = route.query.plan
+    }
+
     setTimeout(() => {
-      router.replace(redirect)
-    }, 500)
+      router.push({ path: targetPath, query })
+    }, 1000)
   } catch (error) {
     successMessage.value = ''
     errors.password = error.message
@@ -57,6 +67,6 @@ const handleLogin = async () => {
 }
 
 const goToRegister = () => {
-  router.push({ path: '/register', query: form.email ? { email: form.email } : {} })
+  router.push({ path: '/register', state: { email: form.email } })
 }
 </script>

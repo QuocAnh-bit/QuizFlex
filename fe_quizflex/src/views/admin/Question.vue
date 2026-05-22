@@ -4,9 +4,9 @@
       <div class="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[var(--primary)]/15 blur-3xl"></div>
       <div class="relative z-10 flex flex-col justify-between gap-5 xl:flex-row xl:items-end">
         <div>
-          <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Quiz Library</p>
-          <h1 class="mt-2 text-4xl font-black tracking-[-0.06em] text-[var(--text)]">Kho quiz</h1>
-          <p class="mt-3 max-w-2xl text-sm leading-7 text-[var(--muted)]">Tìm kiếm, lọc theo tag, độ khó và visibility từ dữ liệu Laravel API.</p>
+          <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">{{ isUserWorkspace ? 'My Quiz Library' : 'Quiz Library' }}</p>
+          <h1 class="mt-2 text-4xl font-black tracking-[-0.06em] text-[var(--text)]">{{ isUserWorkspace ? 'Kho quiz của tôi' : 'Kho quiz' }}</h1>
+          <p class="mt-3 max-w-2xl text-sm leading-7 text-[var(--muted)]">{{ isUserWorkspace ? 'Chỉ hiển thị các quiz do tài khoản của bạn tạo để quản lý và chỉnh sửa.' : 'Tìm kiếm, lọc theo tag, độ khó và visibility từ dữ liệu Laravel API.' }}</p>
         </div>
         <div class="flex flex-wrap gap-3">
           <router-link class="btn-ghost" :to="`${questionBase}/ocr`">Upload OCR</router-link>
@@ -82,7 +82,8 @@ const difficultyFilter = ref('')
 const tagFilter = ref('all')
 const visibilityFilter = ref('all')
 const route = useRoute()
-const questionBase = computed(() => route.path.startsWith('/dashboard') ? '/dashboard/questions' : '/admin/questions')
+const isUserWorkspace = computed(() => route.path.startsWith('/dashboard'))
+const questionBase = computed(() => isUserWorkspace.value ? '/dashboard/questions' : '/admin/questions')
 
 const quizzes = ref([])
 const isLoading = ref(false)
@@ -111,6 +112,7 @@ const loadQuizzes = async () => {
       search: search.value || undefined,
       difficulty: difficultyFilter.value || undefined,
       visibility: visibilityFilter.value === 'all' ? undefined : visibilityFilter.value,
+      owner: isUserWorkspace.value ? 'me' : undefined,
       per_page: 100,
     })
     quizzes.value = data.map(normalizeQuizCard)
