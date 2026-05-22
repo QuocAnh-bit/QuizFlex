@@ -43,6 +43,7 @@
 
           <div class="hidden shrink-0 items-center gap-3 xl:flex">
             <ThemeToggle />
+              <StreakXpBar />
 
             <router-link
               to="/login"
@@ -64,6 +65,7 @@
 
           <div class="flex shrink-0 items-center gap-2 xl:hidden">
             <ThemeToggle />
+            <StreakXpBar />
 
             <button
               type="button"
@@ -124,6 +126,7 @@ import { useRoute } from 'vue-router'
 
 import BrandLogo from '@/components/common/BrandLogo.vue'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
+import StreakXpBar from '@/components/common/StreakXpBar.vue'
 
 const route = useRoute()
 
@@ -159,6 +162,8 @@ const mainNav = [
     label: 'Nâng cấp',
     to: '/upgrade',
   },
+  { label: 'Xếp hạng', to: '/leaderboard' },
+{ label: 'Thành tích', to: '/gamification' },
 ]
 
 const mobileNav = [
