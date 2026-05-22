@@ -36,9 +36,9 @@ class RoomAssignment extends Model
     }
 
     public function assigner()
-{
-    return $this->belongsTo(User::class, 'assigned_by');
-}
+    {
+        return $this->belongsTo(User::class, 'assigned_by');
+    }
 
     public function submissions()
     {

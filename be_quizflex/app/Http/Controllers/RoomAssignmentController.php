@@ -55,7 +55,7 @@ class RoomAssignmentController extends Controller
             'deadline_at' => ['nullable', 'date', 'after_or_equal:starts_at'],
             'duration_minutes' => ['nullable', 'integer', 'min:1', 'max:600'],
             'max_attempts' => ['nullable', 'integer', 'min:1', 'max:20'],
-            'show_result_mode' => ['nullable', 'in:immediately,after_deadline,never'],
+            'show_result_mode' => 'nullable|in:immediately,after_submit,after_deadline,manual',
             'status' => ['nullable', 'in:draft,published,closed'],
         ]);
 
@@ -78,7 +78,7 @@ class RoomAssignmentController extends Controller
             'deadline_at' => $data['deadline_at'] ?? null,
             'duration_minutes' => $data['duration_minutes'] ?? null,
             'max_attempts' => $data['max_attempts'] ?? 1,
-            'show_result_mode' => $data['show_result_mode'] ?? 'immediately',
+            'show_result_mode' => $data['show_result_mode'] ?? 'after_submit',
             'status' => $data['status'] ?? 'published',
         ]);
 
@@ -110,8 +110,11 @@ class RoomAssignmentController extends Controller
             ], 403);
         }
 
-        $assignment->load(['quiz:id,title,category,difficulty,time_limit_seconds,is_public', 'assigner:id,name'])
-            ->loadCount('submissions');
+        $assignment->load([
+            'quiz:id,title,description,category,difficulty,time_limit_seconds,is_public',
+            'quiz.questions:id,quiz_id',
+            'assigner:id,name'
+        ])->loadCount('submissions');
 
         return response()->json([
             'success' => true,

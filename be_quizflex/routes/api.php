@@ -9,6 +9,7 @@ use App\Http\Controllers\QuestionController;
 use App\Http\Controllers\QuizAttemptController;
 use App\Http\Controllers\QuizController;
 use App\Http\Controllers\RoomAssignmentController;
+use App\Http\Controllers\RoomAssignmentSubmissionController;
 use App\Http\Controllers\RoomController;
 use App\Http\Controllers\UserController;
 
@@ -56,6 +57,11 @@ Route::middleware('auth_or_mock')->group(function () {
     Route::get('/rooms/{room}/assignments', [RoomAssignmentController::class, 'index']);
     Route::post('/rooms/{room}/assignments', [RoomAssignmentController::class, 'store']);
     Route::get('/rooms/{room}/assignments/{assignment}', [RoomAssignmentController::class, 'show']);
+
+    // Room assignment submissions
+Route::post('/rooms/{room}/assignments/{assignment}/start', [RoomAssignmentSubmissionController::class, 'start']);
+Route::post('/assignment-submissions/{submission}/answer', [RoomAssignmentSubmissionController::class, 'answer']);
+Route::post('/assignment-submissions/{submission}/submit', [RoomAssignmentSubmissionController::class, 'submit']);
 });
 
 
