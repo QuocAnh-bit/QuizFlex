@@ -16,6 +16,9 @@ class Question extends Model
         'type',
         'order',
         'points',
+        'question',
+        'correct_answer'
+
     ];
 
     protected $casts = [

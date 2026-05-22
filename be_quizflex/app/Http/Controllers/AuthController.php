@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use PHPOpenSourceSaver\JWTAuth\JWTGuard;
 
 class AuthController extends Controller
 {
@@ -18,14 +19,14 @@ class AuthController extends Controller
             'password' => ['required', 'string'],
         ]);
 
-        if (! $token = auth('api')->attempt($credentials)) {
+        if (! $token = $this->apiGuard()->attempt($credentials)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Email hoặc mật khẩu không đúng',
             ], 422);
         }
 
-        $user = auth('api')->user();
+        $user = $this->authenticatedUser();
 
         return response()->json([
             'success' => true,
@@ -88,7 +89,7 @@ class AuthController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Làm mới token thành công',
-                'token' => auth('api')->refresh(),
+                'token' => $this->apiGuard()->refresh(),
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -102,13 +103,13 @@ class AuthController extends Controller
     {
         return response()->json([
             'success' => true,
-            'data' => $this->formatUser(auth('api')->user()),
+            'data' => $this->formatUser($this->authenticatedUser()),
         ]);
     }
 
     public function updateProfile(Request $request)
     {
-        $user = auth('api')->user();
+        $user = $this->authenticatedUser();
 
         $data = $request->validate([
             'name' => ['sometimes', 'required', 'string', 'max:255'],
@@ -144,7 +145,7 @@ class AuthController extends Controller
 
     public function logout()
     {
-        auth('api')->logout();
+        $this->apiGuard()->logout();
 
         return response()->json([
             'success' => true,
@@ -152,6 +153,25 @@ class AuthController extends Controller
         ]);
     }
 
+
+    private function apiGuard(): JWTGuard
+    {
+        /** @var JWTGuard $guard */
+        $guard = auth('api');
+
+        return $guard;
+    }
+
+    private function authenticatedUser(): User
+    {
+        $user = $this->apiGuard()->user();
+
+        if (!$user instanceof User) {
+            abort(401, 'Unauthenticated.');
+        }
+
+        return $user;
+    }
 
     private function roleValueForDatabase(string $role): string
     {

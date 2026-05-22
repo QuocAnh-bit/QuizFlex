@@ -35,4 +35,14 @@ return [
         ],
     ],
 
+    'deepseek' => [
+        'api_key' => env('DEEPSEEK_API_KEY', env('OPENROUTER_API_KEY')),
+        'base_uri' => env('DEEPSEEK_BASE_URI', 'https://api.deepseek.com'),
+        'model' => env('DEEPSEEK_MODEL', 'deepseek-chat'),
+        'timeout' => (int) env('DEEPSEEK_TIMEOUT', 120),
+        'connect_timeout' => (int) env('DEEPSEEK_CONNECT_TIMEOUT', 30),
+        'ssl_verify' => env('DEEPSEEK_SSL_VERIFY', true),
+        'ca_bundle' => env('DEEPSEEK_CA_BUNDLE'),
+    ],
+
 ];

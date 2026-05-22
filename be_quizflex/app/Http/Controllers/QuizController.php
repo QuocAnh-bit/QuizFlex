@@ -11,20 +11,16 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use PHPOpenSourceSaver\JWTAuth\Exceptions\TokenExpiredException;
 
 class QuizController extends Controller
 {
     public function index(Request $request)
     {
-        $user = null;
-        if (auth('api')->parser()->hasToken()) {
-            try {
-                $user = auth('api')->parseToken()->authenticate();
-            } catch (\PHPOpenSourceSaver\JWTAuth\Exceptions\TokenExpiredException $e) {
-                return response()->json(['message' => 'Unauthenticated.'], 401);
-            } catch (\Exception $e) {
-                $user = null;
-            }
+        try {
+            $user = $this->resolveOptionalApiUser();
+        } catch (TokenExpiredException) {
+            return response()->json(['message' => 'Unauthenticated.'], 401);
         }
 
         $query = Quiz::query()
@@ -114,15 +110,10 @@ class QuizController extends Controller
 
     public function show(Quiz $quiz)
     {
-        $user = null;
-        if (auth('api')->parser()->hasToken()) {
-            try {
-                $user = auth('api')->parseToken()->authenticate();
-            } catch (\PHPOpenSourceSaver\JWTAuth\Exceptions\TokenExpiredException $e) {
-                return response()->json(['message' => 'Unauthenticated.'], 401);
-            } catch (\Exception $e) {
-                $user = null;
-            }
+        try {
+            $user = $this->resolveOptionalApiUser();
+        } catch (TokenExpiredException) {
+            return response()->json(['message' => 'Unauthenticated.'], 401);
         }
 
         Gate::forUser($user)->authorize('view', $quiz);
@@ -134,6 +125,22 @@ class QuizController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Chi tiết quiz',
+            'data' => $this->formatQuiz($quiz, true),
+        ]);
+    }
+
+    public function editData(Quiz $quiz)
+    {
+        $user = auth('api')->user();
+        Gate::forUser($user)->authorize('update', $quiz);
+
+        $quiz->load(['user:id,name', 'questions.answers'])
+            ->loadCount(['questions', 'attempts'])
+            ->loadAvg(['attempts as avg_score' => fn ($q) => $q->where('status', 'completed')], 'score');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Quiz edit data',
             'data' => $this->formatQuiz($quiz, true),
         ]);
     }
@@ -409,6 +416,21 @@ class QuizController extends Controller
         }
 
         return $currentQuiz?->time_limit_seconds ?? 600;
+    }
+
+    private function resolveOptionalApiUser(): ?User
+    {
+        if (!auth('api')->parser()->hasToken()) {
+            return null;
+        }
+
+        try {
+            return auth('api')->user();
+        } catch (TokenExpiredException $exception) {
+            throw $exception;
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     private function normalizeDifficulty(?string $difficulty): string

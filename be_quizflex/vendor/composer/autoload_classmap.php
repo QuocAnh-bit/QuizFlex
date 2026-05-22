@@ -7,6 +7,7 @@ $baseDir = dirname($vendorDir);
 
 return array(
     'App\\AI\\Prompts\\QuizPrompt' => $baseDir . '/app/AI/Prompts/QuizPrompt.php',
+    'App\\Http\\Controllers\\AIController' => $baseDir . '/app/Http/Controllers/AIController.php',
     'App\\Http\\Controllers\\AnswerController' => $baseDir . '/app/Http/Controllers/AnswerController.php',
     'App\\Http\\Controllers\\AuthController' => $baseDir . '/app/Http/Controllers/AuthController.php',
     'App\\Http\\Controllers\\Controller' => $baseDir . '/app/Http/Controllers/Controller.php',
@@ -17,6 +18,8 @@ return array(
     'App\\Http\\Controllers\\UserController' => $baseDir . '/app/Http/Controllers/UserController.php',
     'App\\Http\\Middleware\\CheckRole' => $baseDir . '/app/Http/Middleware/CheckRole.php',
     'App\\Http\\Middleware\\CheckVip' => $baseDir . '/app/Http/Middleware/CheckVip.php',
+    'App\\Jobs\\GenerateQuizJob' => $baseDir . '/app/Jobs/GenerateQuizJob.php',
+    'App\\Models\\AiLog' => $baseDir . '/app/Models/AiLog.php',
     'App\\Models\\Answer' => $baseDir . '/app/Models/Answer.php',
     'App\\Models\\Question' => $baseDir . '/app/Models/Question.php',
     'App\\Models\\Quiz' => $baseDir . '/app/Models/Quiz.php',

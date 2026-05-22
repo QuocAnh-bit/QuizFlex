@@ -613,6 +613,7 @@ class ComposerStaticInit1ca4ddd3606ad49d4b36cca0dceb0d92
 
     public static $classMap = array (
         'App\\AI\\Prompts\\QuizPrompt' => __DIR__ . '/../..' . '/app/AI/Prompts/QuizPrompt.php',
+        'App\\Http\\Controllers\\AIController' => __DIR__ . '/../..' . '/app/Http/Controllers/AIController.php',
         'App\\Http\\Controllers\\AnswerController' => __DIR__ . '/../..' . '/app/Http/Controllers/AnswerController.php',
         'App\\Http\\Controllers\\AuthController' => __DIR__ . '/../..' . '/app/Http/Controllers/AuthController.php',
         'App\\Http\\Controllers\\Controller' => __DIR__ . '/../..' . '/app/Http/Controllers/Controller.php',
@@ -623,6 +624,8 @@ class ComposerStaticInit1ca4ddd3606ad49d4b36cca0dceb0d92
         'App\\Http\\Controllers\\UserController' => __DIR__ . '/../..' . '/app/Http/Controllers/UserController.php',
         'App\\Http\\Middleware\\CheckRole' => __DIR__ . '/../..' . '/app/Http/Middleware/CheckRole.php',
         'App\\Http\\Middleware\\CheckVip' => __DIR__ . '/../..' . '/app/Http/Middleware/CheckVip.php',
+        'App\\Jobs\\GenerateQuizJob' => __DIR__ . '/../..' . '/app/Jobs/GenerateQuizJob.php',
+        'App\\Models\\AiLog' => __DIR__ . '/../..' . '/app/Models/AiLog.php',
         'App\\Models\\Answer' => __DIR__ . '/../..' . '/app/Models/Answer.php',
         'App\\Models\\Question' => __DIR__ . '/../..' . '/app/Models/Question.php',
         'App\\Models\\Quiz' => __DIR__ . '/../..' . '/app/Models/Quiz.php',

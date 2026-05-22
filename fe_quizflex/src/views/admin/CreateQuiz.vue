@@ -191,7 +191,7 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import VisibilityBadge from '@/components/common/VisibilityBadge.vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
-import { coverToBackground, currentUserStorage, difficultyLabel, normalizeQuestion, quizzesApi } from '@/services/api'
+import { buildEditorDraftFromQuiz, coverToBackground, currentUserStorage, difficultyLabel, normalizeQuestion, quizzesApi } from '@/services/api'
 
 const route = useRoute()
 const router = useRouter()
@@ -371,7 +371,7 @@ const loadQuizForEdit = async () => {
   if (!isEditMode.value) return
 
   try {
-    const quiz = await quizzesApi.get(route.params.id)
+    const quiz = await quizzesApi.getForEdit(route.params.id)
     form.title = quiz.title || ''
     form.tag = quiz.tag || ''
     form.description = quiz.description || ''
@@ -406,11 +406,78 @@ const loadQuizForEdit = async () => {
 const loadOcrDraft = () => {
   if (isEditMode.value) return
 
+  const draft = sessionStorage.getItem('quizflex_ai_draft')
+  if (draft) {
+    try {
+      const parsed = JSON.parse(draft)
+      hydrateDraft(parsed)
+      sessionStorage.removeItem('quizflex_ai_draft')
+      return
+    } catch {
+      sessionStorage.removeItem('quizflex_ai_draft')
+    }
+  }
+
+  const rawQuestions = sessionStorage.getItem('quizflex_questions')
+  if (rawQuestions) {
+    try {
+      const parsed = JSON.parse(rawQuestions)
+      if (Array.isArray(parsed) && parsed.length) {
+        form.tag = 'OCR'
+        form.category = 'OCR'
+        form.visibility = 'private'
+        questions.value = parsed.map((question, index) => ({
+          localId: `ocr-${index}-${Math.random()}`,
+          id: null,
+          text: question.question || '',
+          correct: question.correct_answer || 'A',
+          points: 1,
+          answers: ['A', 'B', 'C', 'D'].map((key) => ({
+            key,
+            text: question.options?.[key] || '',
+          })),
+        }))
+        sessionStorage.removeItem('quizflex_questions')
+        return
+      }
+    } catch {
+      sessionStorage.removeItem('quizflex_questions')
+    }
+  }
+
   const text = sessionStorage.getItem('quizflex_ocr_text')
   if (!text) return
 
   form.description = text.slice(0, 500)
   questions.value = [makeBlankQuestion()]
+}
+
+const hydrateDraft = (draft) => {
+  const normalized = buildEditorDraftFromQuiz(draft)
+  form.title = normalized.title || form.title
+  form.tag = normalized.tag || 'AI'
+  form.description = normalized.description || form.description
+  form.durationMinutes = normalized.durationMinutes || form.durationMinutes
+  form.difficulty = normalized.difficulty || form.difficulty
+  form.category = normalized.category || form.category
+  form.visibility = normalized.visibility || form.visibility
+  form.roomCode = normalized.roomCode || form.roomCode
+  questions.value = normalized.questions.length
+    ? normalized.questions.map((question, index) => ({
+        localId: `draft-${index}-${Math.random()}`,
+        id: question.id || null,
+        text: question.text || '',
+        correct: question.correct || 'A',
+        points: question.points || 1,
+        answers: question.answers?.length
+          ? question.answers.map((answer) => ({
+              id: answer.id || null,
+              key: answer.key,
+              text: answer.text || '',
+            }))
+          : [{ key: 'A', text: '' }, { key: 'B', text: '' }, { key: 'C', text: '' }, { key: 'D', text: '' }],
+      }))
+    : [makeBlankQuestion()]
 }
 
 const syncCreatorProfile = (event) => {
