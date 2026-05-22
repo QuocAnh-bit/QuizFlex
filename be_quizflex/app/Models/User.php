@@ -33,6 +33,11 @@ class User extends Authenticatable implements JWTSubject
         return $this->hasMany(QuizAttempt::class);
     }
 
+    public function payments()
+    {
+        return $this->hasMany(Payment::class);
+    }
+
     protected function casts(): array
     {
         return [

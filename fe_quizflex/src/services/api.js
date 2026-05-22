@@ -467,4 +467,21 @@ export const formatSeconds = (seconds = 0) => {
   return `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`
 }
 
+export const paymentsApi = {
+  async create(payload) {
+    const { data } = await api.post('/payments/create', payload)
+    return data
+  },
+
+  async callback(params) {
+    const { data } = await api.get('/payments/callback', { params })
+    return data
+  },
+
+  async history() {
+    const { data } = await api.get('/payments/history')
+    return data
+  }
+}
+
 export default api

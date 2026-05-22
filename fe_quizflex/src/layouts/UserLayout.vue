@@ -63,12 +63,6 @@
               </router-link>
             </template>
             <template v-else>
-              <router-link
-                :to="getDashboardRouteForRole(currentUser.role)"
-                class="inline-flex h-11 shrink-0 items-center justify-center whitespace-nowrap rounded-full border border-[var(--border)] bg-[var(--surface-soft)] px-5 text-sm font-black text-[var(--text)] transition duration-300 hover:-translate-y-0.5 hover:border-[var(--border-strong)] hover:bg-[var(--chip-active)] active:scale-95"
-              >
-                {{ currentUser.role === 'admin' ? 'Admin dashboard' : 'Dashboard của tôi' }}
-              </router-link>
               <div class="flex items-center gap-3 rounded-full border border-[var(--border)] bg-[var(--surface-soft)] pl-1.5 pr-4 py-1.5">
                  <UserAvatar :user="currentUser" size-class="h-8 w-8" text-class="text-xs" ring-class="ring-2 ring-white/10" />
                  <div class="grid leading-tight"><span class="text-xs font-black text-[var(--text)]">{{ currentUser.name }}</span><span class="text-[10px] font-bold text-[var(--primary)] uppercase">{{ currentUser.role }}</span></div>

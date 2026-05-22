@@ -9,6 +9,7 @@ use App\Http\Controllers\QuestionController;
 use App\Http\Controllers\QuizAttemptController;
 use App\Http\Controllers\QuizController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\PaymentController;
 use App\Services\AI\AIService;
 use App\AI\Prompts\QuizPrompt;
 
@@ -338,6 +339,9 @@ Route::middleware('auth:api')->group(function () {
     });
 
     Route::middleware('role:user,vip,admin')->group(function () {
+        // Protected Payment Routes
+        Route::get('/payments/history', [PaymentController::class, 'history']);
+
         // Protected Quiz Routes
         Route::post('/quizzes', [QuizController::class, 'store']);
         Route::put('/quizzes/{quiz}', [QuizController::class, 'update']);
@@ -361,6 +365,14 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/quizzes/{quiz}/attempts/submit', [QuizAttemptController::class, 'submit']);
     });
 });
+
+// Payment checkout creation. The controller still checks auth('api')->user(),
+// so unauthenticated requests return 401 instead of a confusing 404.
+Route::post('/payments/create', [PaymentController::class, 'create']);
+
+// Public Webhooks & Callbacks for Payments
+Route::post('/payments/webhook/momo', [PaymentController::class, 'webhookMomo']);
+Route::get('/payments/callback', [PaymentController::class, 'callback']);
 
 // Public Quiz Routes
 Route::get('/quizzes', [QuizController::class, 'index']);
