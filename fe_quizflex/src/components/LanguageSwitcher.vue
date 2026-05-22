@@ -1,5 +1,5 @@
 <template>
-  <select v-model="currentLocale" @change="switchLanguage">
+  <select class="btn-ghost px-4 py-2" v-model="currentLocale" @change="switchLanguage">
     <option value="vi">{{ $t('components.LanguageSwitcher.vi') }}</option>
     <option value="en">{{ $t('components.LanguageSwitcher.en') }}</option>
     <option value="ja">{{ $t('components.LanguageSwitcher.ja') }}</option>
