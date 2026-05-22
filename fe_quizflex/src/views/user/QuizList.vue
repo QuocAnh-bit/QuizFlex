@@ -6,9 +6,9 @@
         <div>
           <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Quiz catalog</p>
           <h1 class="mt-2 text-4xl font-black tracking-[-0.06em] text-[var(--text)]">Danh sách quiz</h1>
-          <p class="mt-3 max-w-2xl text-sm leading-7 text-[var(--muted)]">Lọc Public, Private hoặc Group, tìm kiếm theo tên, category và độ khó. Dữ liệu lấy trực tiếp từ Laravel API.</p>
+          <p class="mt-3 max-w-2xl text-sm leading-7 text-[var(--muted)]">Luồng Practice chỉ dùng quiz public. Chọn một đề để làm bài tự do, nộp bài và lưu kết quả vào quiz_attempts.</p>
         </div>
-        <router-link class="btn-primary" to="/admin/questions/create">Tạo quiz mới</router-link>
+        <router-link class="btn-primary" to="/results">Kết quả Practice</router-link>
       </div>
     </div>
 
@@ -19,7 +19,6 @@
           <option value="all">Tất cả visibility</option>
           <option value="public">Public</option>
           <option value="private">Private</option>
-          <option value="group">Group</option>
         </select>
         <select v-model="filters.difficulty" class="field xl:w-44" @change="loadQuizzes">
           <option value="">Tất cả độ khó</option>
@@ -61,7 +60,7 @@
 
     <div v-if="!isLoading && quizzes.length === 0" class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-10 text-center shadow-[var(--shadow-card)]">
       <h3 class="text-2xl font-black text-[var(--text)]">Không tìm thấy quiz</h3>
-      <p class="mt-2 text-sm text-[var(--muted)]">Đổi bộ lọc hoặc tạo quiz mới trong Admin.</p>
+      <p class="mt-2 text-sm text-[var(--muted)]">Đổi bộ lọc hoặc quay lại dashboard để chọn luồng khác.</p>
     </div>
   </section>
 </template>

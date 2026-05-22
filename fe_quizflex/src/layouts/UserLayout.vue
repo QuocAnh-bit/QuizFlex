@@ -119,18 +119,19 @@
 </template>
 
 <script setup>
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
 import BrandLogo from '@/components/common/BrandLogo.vue'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
+import { currentUserStorage } from '@/services/api'
 
 const route = useRoute()
 
 const isMenuOpen = ref(false)
 const isScrolled = ref(false)
 
-const mainNav = [
+const guestNav = [
   {
     label: 'Trang chủ',
     to: '/',
@@ -161,8 +162,75 @@ const mainNav = [
   },
 ]
 
-const mobileNav = [
-  ...mainNav,
+const loggedInNav = [
+  {
+    label: 'Dashboard',
+    to: '/',
+  },
+  {
+    label: 'Practice',
+    to: '/quizzes',
+  },
+  {
+    label: 'My Rooms',
+    to: '/rooms',
+  },
+  {
+    label: 'Join room',
+    to: '/join-room',
+  },
+  {
+    label: 'Results',
+    to: '/results',
+  },
+  {
+    label: 'Profile',
+    to: '/profile',
+  },
+  {
+    label: 'Upgrade',
+    to: '/upgrade',
+  },
+]
+
+const adminNav = [
+  {
+    label: 'Tổng quan',
+    to: '/admin',
+  },
+  {
+    label: 'Người dùng',
+    to: '/admin/users',
+  },
+  {
+    label: 'Gói VIP',
+    to: '/admin/payments',
+  },
+  {
+    label: 'Thống kê',
+    to: '/admin/reports',
+  },
+  {
+    label: 'Nội dung',
+    to: '/admin/questions',
+  },
+  {
+    label: 'Cài đặt',
+    to: '/admin/settings',
+  },
+]
+
+const currentUser = computed(() => currentUserStorage.get())
+const isGuest = computed(() => !currentUser.value?.id)
+const isAdmin = computed(() => String(currentUser.value?.role || '').toLowerCase() === 'admin')
+const mainNav = computed(() => {
+  if (isGuest.value) return guestNav
+  if (isAdmin.value) return adminNav
+  return loggedInNav
+})
+
+const mobileNav = computed(() => [
+  ...mainNav.value,
   {
     label: 'Đăng nhập',
     to: '/login',
@@ -171,7 +239,7 @@ const mobileNav = [
     label: 'Đăng ký',
     to: '/register',
   },
-]
+])
 
 const handleScroll = () => {
   isScrolled.value = window.scrollY > 12
@@ -184,6 +252,14 @@ const isActiveNav = (item) => {
 
   if (item.to === '/#quiz-topics') {
     return route.path === '/' && route.hash === '#quiz-topics'
+  }
+
+  if (item.to === '/rooms') {
+    return route.path.startsWith('/rooms')
+  }
+
+  if (item.to === '/quizzes') {
+    return route.path.startsWith('/quizzes') || route.path.startsWith('/quiz/')
   }
 
   return route.path === item.to

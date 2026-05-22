@@ -7,11 +7,39 @@ const api = axios.create({
   },
 })
 
+api.interceptors.request.use((config) => {
+  let currentUserId = null
+
+  try {
+    currentUserId = JSON.parse(localStorage.getItem('quizflex_current_user') || '{}')?.id
+  } catch {
+    currentUserId = null
+  }
+
+  const mockUserId = currentUserId || localStorage.getItem('mock_user_id') || '3'
+
+  config.headers = config.headers || {}
+  config.headers['Accept'] = 'application/json'
+  config.headers['X-Mock-User-Id'] = mockUserId
+
+  return config
+})
+
+if (import.meta.env.DEV) {
+  window.setMockUser = (id) => {
+    localStorage.setItem('mock_user_id', String(id))
+    console.log(`Đã đổi mock user sang ID ${id}. Reload lại trang để áp dụng.`)
+  }
+}
+
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     const message = error.response?.data?.message || error.message || 'API request failed'
-    return Promise.reject(new Error(message))
+    const normalizedError = new Error(message)
+    normalizedError.status = error.response?.status
+    normalizedError.errors = error.response?.data?.errors
+    return Promise.reject(normalizedError)
   },
 )
 
@@ -111,7 +139,7 @@ export const quizzesApi = {
   },
 
   async startAttempt(id, payload = {}) {
-    const { data } = await api.post(`/quizzes/${id}/attempts/start`, payload)
+    const { data } = await api.post(`/quizzes/${id}/attempts/start`)
     return unwrap(data)
   },
 
@@ -129,6 +157,75 @@ export const attemptsApi = {
 
   async get(id) {
     const { data } = await api.get(`/quiz-attempts/${id}`)
+    return unwrap(data)
+  },
+}
+
+export const roomsApi = {
+  async list(params = {}) {
+    const { data } = await api.get('/rooms', { params })
+    return unwrapCollection(data)
+  },
+
+  async create(payload) {
+    const { data } = await api.post('/rooms', payload)
+    return unwrap(data)
+  },
+
+  async get(id) {
+    const { data } = await api.get(`/rooms/${id}`)
+    return unwrap(data)
+  },
+
+  async join(code) {
+    const { data } = await api.post('/rooms/join', { code })
+    return unwrap(data)
+  },
+
+  async members(id) {
+    const { data } = await api.get(`/rooms/${id}/members`)
+    return unwrapCollection(data)
+  },
+}
+
+export const homeworkAssignmentsApi = {
+  async list(roomId) {
+    const { data } = await api.get(`/rooms/${roomId}/assignments`)
+    return unwrapCollection(data)
+  },
+
+  async create(roomId, payload) {
+    const { data } = await api.post(`/rooms/${roomId}/assignments`, payload)
+    return unwrap(data)
+  },
+
+  async get(roomId, assignmentId) {
+    const { data } = await api.get(`/rooms/${roomId}/assignments/${assignmentId}`)
+    return unwrap(data)
+  },
+
+  async listSubmissions(roomId, assignmentId) {
+    const { data } = await api.get(`/rooms/${roomId}/assignments/${assignmentId}/submissions`)
+    return unwrapCollection(data)
+  },
+
+  async getSubmissionResult(roomId, assignmentId, submissionId) {
+    const { data } = await api.get(`/rooms/${roomId}/assignments/${assignmentId}/submissions/${submissionId}`)
+    return unwrap(data)
+  },
+
+  async start(roomId, assignmentId) {
+    const { data } = await api.post(`/rooms/${roomId}/assignments/${assignmentId}/start`)
+    return unwrap(data)
+  },
+
+  async answer(submissionId, payload) {
+    const { data } = await api.post(`/assignment-submissions/${submissionId}/answer`, payload)
+    return unwrap(data)
+  },
+
+  async submit(submissionId) {
+    const { data } = await api.post(`/assignment-submissions/${submissionId}/submit`)
     return unwrap(data)
   },
 }
@@ -166,7 +263,6 @@ export const difficultyValue = (value) => ({
 
 export const normalizeQuizCard = (quiz) => ({
   ...quiz,
-  roomCode: quiz.room_code || '',
   duration: `${quiz.duration_minutes || Math.ceil((quiz.time_limit_seconds || 600) / 60)} phút`,
   questions: quiz.questions_count ?? (Array.isArray(quiz.questions) ? quiz.questions.length : 0),
   attempts: quiz.attempts_count ?? 0,
@@ -208,6 +304,44 @@ export const normalizeQuestion = (question) => ({
     isCorrect: Boolean(answer.is_correct),
   })),
 })
+
+export const normalizeAssignment = (assignment) => ({
+  ...assignment,
+  quizTitle: assignment.quiz_title || assignment.quiz?.title || 'Quiz chưa có tên',
+  quizDescription: assignment.quiz?.description || '',
+  questionCount: assignment.quiz?.questions_count ?? assignment.quiz?.questions?.length ?? assignment.total_questions ?? 0,
+  durationLabel: assignment.duration_minutes ? `${assignment.duration_minutes} phút` : 'Không giới hạn',
+  maxAttemptsLabel: assignment.max_attempts ? `${assignment.max_attempts} lần` : 'Không giới hạn',
+})
+
+const HOMEWORK_PROGRESS_KEY = 'quizflex_homework_progress'
+
+export const homeworkProgressStorage = {
+  getAll() {
+    try {
+      return JSON.parse(localStorage.getItem(HOMEWORK_PROGRESS_KEY) || '{}')
+    } catch {
+      return {}
+    }
+  },
+  get(assignmentId) {
+    return this.getAll()[String(assignmentId)] || null
+  },
+  set(assignmentId, value) {
+    const all = this.getAll()
+    all[String(assignmentId)] = {
+      ...(all[String(assignmentId)] || {}),
+      ...value,
+      updated_at: new Date().toISOString(),
+    }
+    localStorage.setItem(HOMEWORK_PROGRESS_KEY, JSON.stringify(all))
+  },
+  clear(assignmentId) {
+    const all = this.getAll()
+    delete all[String(assignmentId)]
+    localStorage.setItem(HOMEWORK_PROGRESS_KEY, JSON.stringify(all))
+  },
+}
 
 export const formatSeconds = (seconds = 0) => {
   const safeSeconds = Math.max(0, Number(seconds) || 0)

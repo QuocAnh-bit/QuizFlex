@@ -38,7 +38,7 @@
           </div>
           <div class="flex items-center gap-3">
             <ThemeToggle />
-            <router-link class="btn-ghost" to="/">Trang chủ</router-link>
+            <router-link class="btn-ghost" to="/admin">Admin Dashboard</router-link>
             <router-link class="btn-primary" to="/admin/questions/create">Tạo quiz</router-link>
           </div>
         </header>

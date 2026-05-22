@@ -5,7 +5,7 @@
       <div class="relative z-10">
         <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Manual editor</p>
         <h1 class="mt-2 text-4xl font-black tracking-[-0.06em] text-[var(--text)]">{{ isEditMode ? 'Sửa quiz' : 'Tạo quiz thủ công' }}</h1>
-        <p class="mt-3 max-w-2xl text-sm leading-7 text-[var(--muted)]">Lưu quiz, câu hỏi và đáp án trực tiếp vào backend. Visibility hỗ trợ Public, Private và Group.</p>
+        <p class="mt-3 max-w-2xl text-sm leading-7 text-[var(--muted)]">Lưu quiz, câu hỏi và đáp án trực tiếp vào backend. Visibility của quiz chỉ dùng cho luồng tự làm bài.</p>
 
         <div class="mt-8 grid gap-5">
           <div class="grid gap-4 md:grid-cols-[1fr_220px]">
@@ -22,13 +22,12 @@
 
         <div class="mt-8">
           <div class="mb-4 flex items-center justify-between gap-4"><h2 class="text-2xl font-black tracking-[-0.05em] text-[var(--text)]">Visibility</h2><VisibilityBadge :value="form.visibility" /></div>
-          <div class="grid gap-3 md:grid-cols-3">
+          <div class="grid gap-3 md:grid-cols-2">
             <button v-for="option in visibilityOptions" :key="option.value" type="button" class="relative overflow-hidden rounded-[1.4rem] border p-4 text-left transition duration-300 hover:-translate-y-1 active:scale-[0.98]" :class="form.visibility === option.value ? 'border-[var(--border-strong)] bg-[var(--chip-active)] shadow-[0_18px_44px_rgba(155,44,255,0.16)]' : 'border-[var(--border)] bg-[var(--surface-soft)] hover:border-[var(--border-strong)]'" @click="form.visibility = option.value">
               <div v-if="form.visibility === option.value" class="absolute inset-0 bg-gradient-to-br from-[var(--primary)]/10 via-[var(--primary-2)]/10 to-[var(--accent)]/10"></div>
               <div class="relative z-10"><div class="mb-3 text-2xl">{{ option.icon }}</div><b class="block text-[var(--text)]">{{ option.title }}</b><p class="mt-2 text-xs font-semibold leading-5 text-[var(--muted)]">{{ option.description }}</p></div>
             </button>
           </div>
-          <label v-if="form.visibility === 'group'" class="mt-4 grid gap-2 text-sm font-black text-[var(--text)]">Room gắn với quiz<input v-model="form.roomCode" class="field" placeholder="VD: QZ24" /></label>
         </div>
 
         <div class="mt-8 grid gap-4">
@@ -76,7 +75,6 @@ const router = useRouter()
 const visibilityOptions = [
   { value: 'public', icon: '🌐', title: 'Public', description: 'Ai cũng có thể xem và làm bài.' },
   { value: 'private', icon: '🔒', title: 'Private', description: 'Chỉ hiển thị trong khu quản trị.' },
-  { value: 'group', icon: '👥', title: 'Group', description: 'Gắn quiz với room code.' },
 ]
 
 const isEditMode = computed(() => Boolean(route.params.id))
@@ -92,7 +90,6 @@ const form = reactive({
   difficulty: 'medium',
   category: 'Khoa học',
   visibility: 'public',
-  roomCode: '',
 })
 
 const makeBlankQuestion = () => ({
@@ -105,7 +102,7 @@ const makeBlankQuestion = () => ({
 })
 
 const questions = ref([makeBlankQuestion()])
-const checklist = ['Có tiêu đề rõ ràng', 'Ít nhất 1 câu hỏi', 'Mỗi câu có 4 đáp án', 'Mỗi câu có đáp án đúng', 'Group quiz cần có room code']
+const checklist = ['Có tiêu đề rõ ràng', 'Ít nhất 1 câu hỏi', 'Mỗi câu có 4 đáp án', 'Mỗi câu có đáp án đúng', 'Public quiz sẽ hiển thị ở danh sách tự làm']
 const difficultyText = computed(() => difficultyLabel(form.difficulty))
 
 const addQuestion = () => questions.value.push(makeBlankQuestion())
@@ -122,7 +119,6 @@ const makePayload = () => {
     difficulty: form.difficulty,
     category: form.category.trim() || 'General',
     visibility: form.visibility,
-    roomCode: form.roomCode.trim(),
     questions: questions.value.map((question, index) => ({
       id: question.id || undefined,
       text: question.text.trim(),
@@ -142,7 +138,6 @@ const makePayload = () => {
 
 const validateBeforeSave = () => {
   if (!form.title.trim()) return 'Bạn chưa nhập tiêu đề quiz.'
-  if (form.visibility === 'group' && !form.roomCode.trim()) return 'Quiz dạng group cần có room code.'
   if (questions.value.length === 0) return 'Quiz cần ít nhất 1 câu hỏi.'
 
   for (const [index, question] of questions.value.entries()) {
@@ -187,7 +182,6 @@ const loadQuizForEdit = async () => {
     form.difficulty = quiz.difficulty || 'medium'
     form.category = quiz.category || 'Khoa học'
     form.visibility = quiz.visibility || 'public'
-    form.roomCode = quiz.room_code || ''
 
     questions.value = (quiz.questions || []).map((question) => {
       const normalized = normalizeQuestion(question)

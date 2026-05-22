@@ -24,7 +24,7 @@
         </div>
         <select v-model="difficultyFilter" class="field xl:w-44" @change="loadQuizzes"><option value="">Tất cả độ khó</option><option value="easy">Dễ</option><option value="medium">Vừa</option><option value="hard">Khó</option></select>
         <select v-model="tagFilter" class="field xl:w-44"><option value="all">Tất cả tag</option><option v-for="tag in tags" :key="tag" :value="tag">{{ tag }}</option></select>
-        <select v-model="visibilityFilter" class="field xl:w-48" @change="loadQuizzes"><option value="all">Tất cả visibility</option><option value="public">Public</option><option value="private">Private</option><option value="group">Group</option></select>
+        <select v-model="visibilityFilter" class="field xl:w-48" @change="loadQuizzes"><option value="all">Tất cả visibility</option><option value="public">Public</option><option value="private">Private</option></select>
       </div>
 
       <div class="mt-5 flex flex-wrap gap-2">
@@ -88,7 +88,6 @@ const visibilityChips = [
   { value: 'all', label: 'Tất cả' },
   { value: 'public', label: '🌐 Public' },
   { value: 'private', label: '🔒 Private' },
-  { value: 'group', label: '👥 Group' },
 ]
 
 const tags = computed(() => [...new Set(quizzes.value.map((quiz) => quiz.tag).filter(Boolean))])
