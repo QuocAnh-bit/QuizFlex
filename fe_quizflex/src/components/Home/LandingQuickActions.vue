@@ -45,7 +45,7 @@
 
             <div class="mt-8 flex flex-wrap items-center gap-3">
               <router-link
-                to="/admin/questions/create"
+                to="/dashboard/questions/create"
                 class="group/btn relative inline-flex min-h-12 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-[var(--primary)] via-[var(--primary-2)] to-[var(--accent)] px-6 text-sm font-black text-white shadow-[0_18px_38px_rgba(155,44,255,0.28)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_24px_55px_rgba(155,44,255,0.38)] active:scale-95"
               >
                 <span class="absolute inset-0 -translate-x-[120%] bg-gradient-to-r from-transparent via-white/35 to-transparent transition duration-700 group-hover/btn:translate-x-[120%]"></span>
@@ -163,7 +163,7 @@
 
             <div class="mt-8 flex flex-wrap items-center gap-3">
               <router-link
-                to="/admin/questions/ai"
+                to="/dashboard/questions/ai"
                 class="group/btn relative inline-flex min-h-12 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-[var(--accent-2)] via-[var(--primary-2)] to-[var(--accent)] px-6 text-sm font-black text-white shadow-[0_18px_38px_rgba(155,44,255,0.28)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_24px_55px_rgba(155,44,255,0.38)] active:scale-95"
               >
                 <span class="absolute inset-0 -translate-x-[120%] bg-gradient-to-r from-transparent via-white/35 to-transparent transition duration-700 group-hover/btn:translate-x-[120%]"></span>

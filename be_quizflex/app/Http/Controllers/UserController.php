@@ -49,14 +49,16 @@ class UserController extends Controller
             'vip_expires_at' => ['nullable', 'date'],
         ]);
 
+        $role = strtoupper($data['role'] ?? 'USER');
+
         $user = User::create([
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
-            'role' => strtoupper($data['role'] ?? 'USER'),
+            'role' => $role,
             'avatar' => $data['avatar'] ?? null,
-            'ai_quota_remaining' => $data['ai_quota_remaining'] ?? 5,
-            'vip_expires_at' => $data['vip_expires_at'] ?? null,
+            'ai_quota_remaining' => $data['ai_quota_remaining'] ?? $this->defaultAiQuotaForRole($role),
+            'vip_expires_at' => $data['vip_expires_at'] ?? ($role === 'VIP' ? now()->addMonth() : null),
         ]);
 
         return response()->json([
@@ -92,6 +94,18 @@ class UserController extends Controller
         $payload = collect($data)->except('password')->all();
         if (isset($payload['role'])) {
             $payload['role'] = strtoupper($payload['role']);
+
+            if (!array_key_exists('ai_quota_remaining', $payload)) {
+                $payload['ai_quota_remaining'] = $this->defaultAiQuotaForRole($payload['role']);
+            }
+
+            if ($payload['role'] === 'VIP' && !array_key_exists('vip_expires_at', $payload) && !$user->vip_expires_at) {
+                $payload['vip_expires_at'] = now()->addMonth();
+            }
+
+            if ($payload['role'] !== 'VIP' && $payload['role'] !== 'ADMIN' && !array_key_exists('vip_expires_at', $payload)) {
+                $payload['vip_expires_at'] = null;
+            }
         }
         if (!empty($data['password'])) {
             $payload['password'] = Hash::make($data['password']);
@@ -115,6 +129,16 @@ class UserController extends Controller
             'success' => true,
             'message' => 'Đã xóa người dùng',
         ]);
+    }
+
+    private function defaultAiQuotaForRole(string $role): int
+    {
+        return match (strtoupper($role)) {
+            'ADMIN' => 9999,
+            'VIP' => 500,
+            'GUEST' => 0,
+            default => 5,
+        };
     }
 
     private function formatUser(User $user): array

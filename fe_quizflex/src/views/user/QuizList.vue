@@ -8,7 +8,7 @@
           <h1 class="mt-2 text-4xl font-black tracking-[-0.06em] text-[var(--text)]">Danh sách quiz</h1>
           <p class="mt-3 max-w-2xl text-sm leading-7 text-[var(--muted)]">Lọc Public, Private hoặc Group, tìm kiếm theo tên, category và độ khó. Dữ liệu lấy trực tiếp từ Laravel API.</p>
         </div>
-        <router-link class="btn-primary" to="/admin/questions/create">Tạo quiz mới</router-link>
+        <router-link class="btn-primary" to="/dashboard/questions/create">Tạo quiz mới</router-link>
       </div>
     </div>
 

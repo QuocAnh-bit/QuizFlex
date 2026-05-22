@@ -9,9 +9,9 @@
           <p class="mt-3 max-w-2xl text-sm leading-7 text-[var(--muted)]">Tìm kiếm, lọc theo tag, độ khó và visibility từ dữ liệu Laravel API.</p>
         </div>
         <div class="flex flex-wrap gap-3">
-          <router-link class="btn-ghost" to="/admin/questions/ocr">Upload OCR</router-link>
-          <router-link class="btn-ghost" to="/admin/questions/ai">AI Generator</router-link>
-          <router-link class="btn-primary" to="/admin/questions/create">Tạo quiz</router-link>
+          <router-link class="btn-ghost" :to="`${questionBase}/ocr`">Upload OCR</router-link>
+          <router-link class="btn-ghost" :to="`${questionBase}/ai`">AI Generator</router-link>
+          <router-link class="btn-primary" :to="`${questionBase}/create`">Tạo quiz</router-link>
         </div>
       </div>
     </div>
@@ -56,7 +56,7 @@
           </div>
           <div class="mt-5 flex flex-wrap gap-2">
             <router-link class="rounded-full border border-[var(--border)] bg-[var(--surface-soft)] px-4 py-2 text-xs font-black text-[var(--text)] transition hover:border-[var(--border-strong)] hover:bg-[var(--chip-active)]" :to="`/quizzes/${quiz.id}`">Xem</router-link>
-            <router-link class="rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--primary-2)] px-4 py-2 text-xs font-black text-white" :to="`/admin/questions/edit/${quiz.id}`">Sửa</router-link>
+            <router-link class="rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--primary-2)] px-4 py-2 text-xs font-black text-white" :to="`${questionBase}/edit/${quiz.id}`">Sửa</router-link>
             <button class="rounded-full border border-rose-500/30 bg-rose-500/10 px-4 py-2 text-xs font-black text-rose-300" type="button" @click="deleteQuiz(quiz.id)">Xóa</button>
           </div>
         </div>
@@ -73,6 +73,7 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import VisibilityBadge from '@/components/common/VisibilityBadge.vue'
 import { normalizeQuizCard, quizzesApi } from '@/services/api'
 
@@ -80,6 +81,9 @@ const search = ref('')
 const difficultyFilter = ref('')
 const tagFilter = ref('all')
 const visibilityFilter = ref('all')
+const route = useRoute()
+const questionBase = computed(() => route.path.startsWith('/dashboard') ? '/dashboard/questions' : '/admin/questions')
+
 const quizzes = ref([])
 const isLoading = ref(false)
 const errorMessage = ref('')
