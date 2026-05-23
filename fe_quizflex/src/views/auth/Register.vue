@@ -58,14 +58,18 @@ const handleRegister = async () => {
       password: form.password,
       role: 'USER',
     })
-    successMessage.value = 'Tạo tài khoản thành công. Đang chuyển hướng...'
+    successMessage.value = 'Tạo tài khoản thành công. Đang chuyển hướng và tự động đăng nhập...'
     setTimeout(() => {
-      const query = { email: form.email }
+      const query = {}
       if (route.query.plan) {
         query.plan = route.query.plan
       }
-      router.push({ path: '/login', query })
-    }, 1000)
+      router.push({
+        path: '/login',
+        query,
+        state: { email: form.email, password: form.password }
+      })
+    }, 1200)
   } catch (error) {
     successMessage.value = ''
     errors.email = error.message

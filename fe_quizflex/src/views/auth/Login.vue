@@ -33,6 +33,13 @@ onMounted(() => {
   if (state && state.email) {
     form.email = state.email
   }
+  if (state && state.password) {
+    form.password = state.password
+    successMessage.value = 'Đăng ký thành công! Đang tự động đăng nhập...'
+    setTimeout(() => {
+      handleLogin()
+    }, 800)
+  }
 })
 
 const validate = () => { errors.email = !form.email ? 'Email không được để trống.' : !/^\S+@\S+\.\S+$/.test(form.email) ? 'Email chưa đúng định dạng.' : ''; errors.password = !form.password ? 'Mật khẩu không được để trống.' : form.password.length < 6 ? 'Mật khẩu tối thiểu 6 ký tự.' : ''; return !errors.email && !errors.password }
