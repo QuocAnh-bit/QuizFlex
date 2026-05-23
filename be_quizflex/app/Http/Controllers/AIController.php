@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Jobs\GenerateQuizJob;
 use App\Models\AiJob;
 use App\Models\AiLog;
+use App\Services\AI\PromptQualityValidator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -20,6 +21,24 @@ class AIController extends Controller
             'visibility' => ['nullable', 'string', 'in:private,public,group'],
         ]);
 
+        $prompt = trim((string) $data['prompt']);
+
+        $promptValidation = app(PromptQualityValidator::class)
+            ->validate($prompt);
+
+        if (!$promptValidation['valid']) {
+            return response()->json([
+                'success' => false,
+                'message' => $promptValidation['message'],
+                'code' => 'invalid_prompt',
+                'data' => [
+                    'quota_charged' => false,
+                    'job_id' => null,
+                    'status' => 'rejected',
+                ],
+            ], 422);
+        }
+
         $user = auth('api')->user();
 
         if (($user->ai_quota_remaining ?? 0) <= 0) {
@@ -32,7 +51,7 @@ class AIController extends Controller
         $job = AiJob::create([
             'user_id' => $user->id,
             'uuid' => (string) Str::uuid(),
-            'prompt' => trim((string) $data['prompt']),
+            'prompt' => $prompt,
             'requested_count' => $data['count'] ?? 10,
             'difficulty' => $data['difficulty'] ?? 'medium',
             'language' => $data['language'] ?? 'vi',

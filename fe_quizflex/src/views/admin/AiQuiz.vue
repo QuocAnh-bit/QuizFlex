@@ -153,6 +153,11 @@ const actionLabel = computed(() => {
   return 'Tạo quiz bằng AI'
 })
 
+const isInvalidPromptMessage = (message = '') =>
+  message.includes('Prompt chưa rõ nội dung') ||
+  message.includes('Vui lòng nhập đúng prompt') ||
+  message.includes('invalid_prompt')
+
 const stopPolling = () => {
   if (pollTimer) {
     clearTimeout(pollTimer)
@@ -226,7 +231,10 @@ const generateQuiz = async () => {
     await pollJob()
   } catch (error) {
     const msg = error?.message || String(error)
-    if (msg.includes('AI quota exhausted')) {
+
+    if (isInvalidPromptMessage(msg)) {
+      errorMessage.value = msg
+    } else if (msg.includes('AI quota exhausted')) {
       errorMessage.value = 'Bạn đã hết token'
     } else {
       errorMessage.value = `Không tạo được AI quiz: ${msg}`
