@@ -14,6 +14,8 @@ class QuizController extends Controller
 {
     public function index(Request $request)
     {
+        $user = $this->resolveMockUser($request);
+
         $query = Quiz::query()
             ->with('user:id,name')
             ->withCount(['questions', 'attempts'])
@@ -48,7 +50,13 @@ class QuizController extends Controller
                 $query->where('is_public', true)->where('status', 'published');
             } elseif ($visibility === 'private') {
                 $query->where('is_public', false);
+
+                if (!$this->isAdmin($user)) {
+                    $query->where('user_id', $user?->id ?? 0);
+                }
             }
+        } elseif (!$this->isAdmin($user)) {
+            $query->where('is_public', true)->where('status', 'published');
         }
 
         $perPage = min(max((int) $request->query('per_page', 50), 1), 100);
@@ -80,8 +88,17 @@ class QuizController extends Controller
         ], 201);
     }
 
-    public function show(Quiz $quiz)
+    public function show(Request $request, Quiz $quiz)
     {
+        $user = $this->resolveMockUser($request);
+
+        if (!$this->canViewQuiz($quiz, $user)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ban khong co quyen xem quiz nay.',
+            ], 403);
+        }
+
         $quiz->load(['user:id,name', 'questions.answers'])
             ->loadCount(['questions', 'attempts'])
             ->loadAvg(['attempts as avg_score' => fn ($q) => $q->where('status', 'completed')], 'score');
@@ -276,6 +293,35 @@ class QuizController extends Controller
             ['email' => 'guest@quizflex.local'],
             ['name' => 'Guest User', 'password' => bcrypt('password')]
         );
+    }
+
+    private function resolveMockUser(Request $request): ?User
+    {
+        if ($request->user()) {
+            return $request->user();
+        }
+
+        $userId = $request->header('X-Mock-User-Id');
+
+        return $userId ? User::find((int) $userId) : null;
+    }
+
+    private function isAdmin(?User $user): bool
+    {
+        return $user && strtoupper((string) $user->role) === 'ADMIN';
+    }
+
+    private function canViewQuiz(Quiz $quiz, ?User $user): bool
+    {
+        if ($quiz->is_public && $quiz->status === 'published') {
+            return true;
+        }
+
+        if (!$user) {
+            return false;
+        }
+
+        return $this->isAdmin($user) || (int) $quiz->user_id === (int) $user->id;
     }
 
     private function resolveTimeLimitSeconds(array $data): ?int

@@ -39,4 +39,4 @@ __screenshots__/
 *.timestamp-*-*.mjs
 
 # Security
-.env
+*.env

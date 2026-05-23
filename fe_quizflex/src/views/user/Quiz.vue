@@ -38,17 +38,17 @@
           <div class="grid gap-4">
             <button
               v-for="answer in currentQuestion.answers"
-              :key="answer.key"
+              :key="answer.id"
               type="button"
               class="group relative overflow-hidden rounded-[1.35rem] border p-4 text-left transition duration-300 hover:-translate-y-1 active:scale-[0.99]"
-              :class="getAnswerClass(answer.key)"
-              @click="selectedAnswer = answer.key"
+              :class="getAnswerClass(answer.id)"
+              @click="toggleAnswer(answer.id)"
             >
-              <div v-if="selectedAnswer === answer.key" class="absolute inset-0 bg-gradient-to-r from-[var(--primary)]/10 via-[var(--primary-2)]/10 to-[var(--accent)]/10"></div>
+              <div v-if="isAnswerSelected(answer.id)" class="absolute inset-0 bg-gradient-to-r from-[var(--primary)]/10 via-[var(--primary-2)]/10 to-[var(--accent)]/10"></div>
               <div class="relative z-10 flex items-center gap-4">
                 <span class="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-[var(--primary)] to-[var(--primary-2)] text-sm font-black text-white shadow-[0_14px_30px_rgba(155,44,255,0.24)]">{{ answer.key }}</span>
                 <span class="font-bold leading-7 text-[var(--text)]">{{ answer.text }}</span>
-                <span v-if="selectedAnswer === answer.key" class="ml-auto grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[var(--chip-active)] text-sm font-black text-[var(--primary)]">✓</span>
+                <span v-if="isAnswerSelected(answer.id)" class="ml-auto grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[var(--chip-active)] text-sm font-black text-[var(--primary)]">✓</span>
               </div>
             </button>
           </div>
@@ -56,7 +56,7 @@
           <div class="mt-8 flex flex-wrap items-center justify-between gap-3">
             <button class="btn-ghost disabled:cursor-not-allowed disabled:opacity-50" type="button" :disabled="currentIndex === 0" @click="goPrevious">Câu trước</button>
             <div class="flex flex-wrap items-center gap-3">
-              <span class="text-sm font-bold text-[var(--muted)]">Đã chọn: <b class="text-[var(--primary)]">{{ selectedAnswer || 'Chưa chọn' }}</b></span>
+              <span class="text-sm font-bold text-[var(--muted)]">Đã chọn: <b class="text-[var(--primary)]">{{ selectedAnswerLabel || 'Chưa chọn' }}</b></span>
               <button class="btn-primary" type="button" :disabled="isSubmitting" @click="goNext">{{ isSubmitting ? 'Đang nộp...' : isLastQuestion ? 'Nộp bài' : 'Câu tiếp theo' }}</button>
             </div>
           </div>
@@ -111,21 +111,34 @@ const errorMessage = ref('')
 let timer = null
 
 const currentQuestion = computed(() => quizQuestions.value[currentIndex.value] || { id: 0, question: '', answers: [] })
-const selectedAnswer = computed({
-  get: () => selectedAnswers.value[currentQuestion.value.id] || '',
-  set: (value) => {
-    if (!currentQuestion.value.id) return
-    selectedAnswers.value = { ...selectedAnswers.value, [currentQuestion.value.id]: value }
-  },
-})
+const selectedForCurrent = computed(() => selectedAnswers.value[currentQuestion.value.id] || [])
+const selectedAnswerLabel = computed(() =>
+  selectedForCurrent.value
+    .map((id) => currentQuestion.value.answers.find((answer) => Number(answer.id) === Number(id))?.key)
+    .filter(Boolean)
+    .join(', '),
+)
 const progressPercent = computed(() => Math.round(((currentIndex.value + 1) / Math.max(quizQuestions.value.length, 1)) * 100))
 const progressRingStyle = computed(() => ({ background: `conic-gradient(var(--accent-2) 0 ${progressPercent.value}%, var(--surface-soft) ${progressPercent.value}% 100%)` }))
 const isLastQuestion = computed(() => currentIndex.value === quizQuestions.value.length - 1)
 
-const getAnswerClass = (key) => selectedAnswer.value === key ? ['border-[var(--border-strong)]', 'bg-[var(--chip-active)]', 'shadow-[0_18px_44px_rgba(155,44,255,0.16)]'] : ['border-[var(--border)]', 'bg-[var(--surface-soft)]', 'hover:border-[var(--border-strong)]', 'hover:bg-[var(--surface)]']
+const isMultipleQuestion = (question) => String(question.type || '').includes('multiple')
+const isAnswerSelected = (answerId) => selectedForCurrent.value.some((id) => Number(id) === Number(answerId))
+const toggleAnswer = (answerId) => {
+  if (!currentQuestion.value.id) return
+
+  const current = selectedForCurrent.value
+  const next = isMultipleQuestion(currentQuestion.value)
+    ? current.includes(answerId) ? current.filter((id) => Number(id) !== Number(answerId)) : [...current, answerId]
+    : [answerId]
+
+  selectedAnswers.value = { ...selectedAnswers.value, [currentQuestion.value.id]: next }
+}
+const getAnswerClass = (answerId) => isAnswerSelected(answerId) ? ['border-[var(--border-strong)]', 'bg-[var(--chip-active)]', 'shadow-[0_18px_44px_rgba(155,44,255,0.16)]'] : ['border-[var(--border)]', 'bg-[var(--surface-soft)]', 'hover:border-[var(--border-strong)]', 'hover:bg-[var(--surface)]']
 const getQuestionMapClass = (i) => {
   const questionId = quizQuestions.value[i]?.id
-  return i === currentIndex.value ? ['border-[var(--border-strong)]', 'bg-[var(--chip-active)]', 'text-[var(--primary)]'] : selectedAnswers.value[questionId] ? ['border-emerald-500/30', 'bg-emerald-500/10', 'text-emerald-400'] : ['border-[var(--border)]', 'bg-[var(--surface-soft)]', 'text-[var(--muted)]']
+  const answerIds = selectedAnswers.value[questionId] || []
+  return i === currentIndex.value ? ['border-[var(--border-strong)]', 'bg-[var(--chip-active)]', 'text-[var(--primary)]'] : answerIds.length ? ['border-emerald-500/30', 'bg-emerald-500/10', 'text-emerald-400'] : ['border-[var(--border)]', 'bg-[var(--surface-soft)]', 'text-[var(--muted)]']
 }
 
 const goPrevious = () => { if (currentIndex.value > 0) currentIndex.value -= 1 }

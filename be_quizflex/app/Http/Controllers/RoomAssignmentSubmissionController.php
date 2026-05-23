@@ -28,14 +28,14 @@ class RoomAssignmentSubmissionController extends Controller
         if ((int) $assignment->room_id !== (int) $room->id) {
             return response()->json([
                 'success' => false,
-                'message' => 'BÃ i táº­p khÃ´ng thuá»™c room nÃ y.',
+                'message' => 'Assignment khong thuoc room nay.',
             ], 404);
         }
 
         if (!$this->canManageRoomSubmissions($room, $user)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Báº¡n khÃ´ng cÃ³ quyá»n xem bÃ i ná»™p cá»§a assignment nÃ y.',
+                'message' => 'Ban khong co quyen xem submissions cua assignment nay.',
             ], 403);
         }
 
@@ -50,7 +50,7 @@ class RoomAssignmentSubmissionController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Danh sÃ¡ch bÃ i ná»™p cá»§a assignment',
+            'message' => 'Danh sach submissions cua assignment.',
             'data' => $submissions,
         ]);
     }
@@ -69,14 +69,14 @@ class RoomAssignmentSubmissionController extends Controller
         if ((int) $assignment->room_id !== (int) $room->id || (int) $submission->assignment_id !== (int) $assignment->id) {
             return response()->json([
                 'success' => false,
-                'message' => 'KhÃ´ng tÃ¬m tháº¥y bÃ i ná»™p trong assignment nÃ y.',
+                'message' => 'Khong tim thay submission trong assignment nay.',
             ], 404);
         }
 
         if (!$this->canManageRoomSubmissions($room, $user)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Báº¡n khÃ´ng cÃ³ quyá»n xem káº¿t quáº£ bÃ i ná»™p nÃ y.',
+                'message' => 'Ban khong co quyen xem ket qua submission nay.',
             ], 403);
         }
 
@@ -88,8 +88,84 @@ class RoomAssignmentSubmissionController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Chi tiáº¿t bÃ i ná»™p cá»§a thÃ nh viÃªn',
+            'message' => 'Chi tiet submission cua thanh vien.',
             'data' => $this->formatManagedSubmissionResult($submission),
+        ]);
+    }
+
+    public function show(Request $request, RoomAssignmentSubmission $submission)
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthenticated.',
+            ], 401);
+        }
+
+        if ((int) $submission->user_id !== (int) $user->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ban khong co quyen xem submission nay.',
+            ], 403);
+        }
+
+        $submission->load(['assignment', 'answers.question', 'answers.answer']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Chi tiet ket qua homework.',
+            'data' => $this->formatStudentSubmissionResult($submission),
+        ]);
+    }
+
+    public function mySubmission(Request $request, Room $room, RoomAssignment $assignment)
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthenticated.',
+            ], 401);
+        }
+
+        if ((int) $assignment->room_id !== (int) $room->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Assignment khong thuoc room nay.',
+            ], 404);
+        }
+
+        if (!$this->isRoomMemberOrHost($room, $user->id)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ban khong thuoc room nay.',
+            ], 403);
+        }
+
+        $submission = RoomAssignmentSubmission::query()
+            ->where('assignment_id', $assignment->id)
+            ->where('user_id', $user->id)
+            ->latest('submitted_at')
+            ->latest('started_at')
+            ->first();
+
+        if (!$submission) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Chua co submission cho assignment nay.',
+                'data' => null,
+            ]);
+        }
+
+        $submission->load(['assignment', 'answers.question', 'answers.answer']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Submission hien tai cua hoc sinh.',
+            'data' => $this->formatStudentSubmissionResult($submission),
         ]);
     }
 
@@ -353,7 +429,7 @@ class RoomAssignmentSubmissionController extends Controller
             ], 403);
         }
 
-        if ($submission->status !== 'in_progress') {
+        if (!in_array($submission->status, ['in_progress', 'late'], true)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Lượt làm này đã được nộp hoặc đã kết thúc.',
@@ -372,11 +448,7 @@ class RoomAssignmentSubmissionController extends Controller
                 ], 404);
             }
 
-            $timeCheck = $this->checkTimeLimit($submission, $assignment);
-
-            if ($timeCheck !== true) {
-                return $timeCheck;
-            }
+            $isLate = $this->isPastTimeLimit($submission, $assignment);
 
             $totalQuestions = $assignment->quiz->questions->count();
 
@@ -393,7 +465,7 @@ class RoomAssignmentSubmissionController extends Controller
                 ->sum('score');
 
             $submission->update([
-                'status' => 'submitted',
+                'status' => $isLate ? 'late' : 'submitted',
                 'score' => $score,
                 'correct_count' => $correctCount,
                 'wrong_count' => $wrongCount,
@@ -406,20 +478,14 @@ class RoomAssignmentSubmissionController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Nộp bài thành công.',
-                'data' => $this->formatSubmissionResult($submission),
+                'data' => $this->formatStudentSubmissionResult($submission),
             ]);
         });
     }
 
     private function checkTimeLimit(RoomAssignmentSubmission $submission, RoomAssignment $assignment)
     {
-        $now = now();
-
-        if ($assignment->deadline_at && $now->gt($assignment->deadline_at)) {
-            $submission->update([
-                'status' => 'late',
-            ]);
-
+        if ($assignment->deadline_at && now()->gt($assignment->deadline_at)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Đã quá hạn làm bài.',
@@ -427,13 +493,7 @@ class RoomAssignmentSubmissionController extends Controller
         }
 
         if ($assignment->duration_minutes && $submission->started_at) {
-            $endTime = $submission->started_at->copy()->addMinutes($assignment->duration_minutes);
-
-            if ($now->gt($endTime)) {
-                $submission->update([
-                    'status' => 'late',
-                ]);
-
+            if (now()->gt($submission->started_at->copy()->addMinutes($assignment->duration_minutes))) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Đã hết thời gian làm bài.',
@@ -442,6 +502,19 @@ class RoomAssignmentSubmissionController extends Controller
         }
 
         return true;
+    }
+
+    private function isPastTimeLimit(RoomAssignmentSubmission $submission, RoomAssignment $assignment): bool
+    {
+        if ($assignment->deadline_at && now()->gt($assignment->deadline_at)) {
+            return true;
+        }
+
+        if ($assignment->duration_minutes && $submission->started_at) {
+            return now()->gt($submission->started_at->copy()->addMinutes($assignment->duration_minutes));
+        }
+
+        return false;
     }
 
     private function isRoomMemberOrHost(Room $room, int $userId): bool
@@ -570,6 +643,59 @@ class RoomAssignmentSubmissionController extends Controller
                 'answered_at' => optional($answer->answered_at)->toISOString(),
             ])->values(),
         ];
+    }
+
+    private function formatStudentSubmissionResult(RoomAssignmentSubmission $submission): array
+    {
+        $submission->loadMissing(['assignment', 'answers.question', 'answers.answer']);
+
+        if (!$this->canStudentViewResult($submission)) {
+            return [
+                ...$this->formatSubmission($submission),
+                'score' => null,
+                'correct_count' => null,
+                'wrong_count' => null,
+                'result_available' => false,
+                'result_message' => $this->studentResultMessage($submission),
+                'answers' => [],
+            ];
+        }
+
+        return [
+            ...$this->formatSubmissionResult($submission),
+            'result_available' => true,
+        ];
+    }
+
+    private function canStudentViewResult(RoomAssignmentSubmission $submission): bool
+    {
+        if (!in_array($submission->status, ['submitted', 'late'], true)) {
+            return false;
+        }
+
+        $assignment = $submission->assignment;
+        $mode = $assignment?->show_result_mode ?? 'after_submit';
+
+        if (in_array($mode, ['immediately', 'after_submit'], true)) {
+            return true;
+        }
+
+        if ($mode === 'after_deadline') {
+            return $assignment?->deadline_at && now()->gte($assignment->deadline_at);
+        }
+
+        return false;
+    }
+
+    private function studentResultMessage(RoomAssignmentSubmission $submission): string
+    {
+        $mode = $submission->assignment?->show_result_mode ?? 'after_submit';
+
+        return match ($mode) {
+            'after_deadline' => 'Ket qua se duoc hien thi sau deadline.',
+            'manual' => 'Giao vien chua mo ket qua cho assignment nay.',
+            default => 'Ket qua chua san sang.',
+        };
     }
 
     private function formatManagedSubmissionSummary(RoomAssignmentSubmission $submission): array

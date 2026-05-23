@@ -144,6 +144,17 @@ const loadAssignment = async () => {
   try {
     const data = await homeworkAssignmentsApi.get(route.params.roomId, route.params.assignmentId)
     assignment.value = normalizeAssignment(data)
+    const submission = await homeworkAssignmentsApi.getMySubmission(route.params.roomId, route.params.assignmentId).catch(() => null)
+    if (submission?.id) {
+      progress.value = {
+        ...(progress.value || {}),
+        submission_id: submission.id,
+        status: submission.status,
+        submitted_at: submission.submitted_at,
+        result: submission.result_available === false ? null : submission,
+      }
+      homeworkProgressStorage.set(route.params.assignmentId, progress.value)
+    }
   } catch (error) {
     if (error.status === 401) {
       errorMessage.value = 'Bạn cần đăng nhập để xem assignment.'

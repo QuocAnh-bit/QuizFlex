@@ -45,6 +45,7 @@
             <ThemeToggle />
 
             <router-link
+              v-if="isGuest"
               to="/login"
               class="inline-flex h-11 shrink-0 items-center justify-center whitespace-nowrap rounded-full border border-[var(--border)] bg-[var(--surface-soft)] px-5 text-sm font-black text-[var(--text)] transition duration-300 hover:-translate-y-0.5 hover:border-[var(--border-strong)] hover:bg-[var(--chip-active)] hover:shadow-[0_14px_35px_rgba(155,44,255,0.16)] active:scale-95"
             >
@@ -52,6 +53,7 @@
             </router-link>
 
             <router-link
+              v-if="isGuest"
               to="/register"
               class="group relative inline-flex h-11 shrink-0 items-center justify-center overflow-hidden whitespace-nowrap rounded-full bg-gradient-to-br from-[var(--primary)] via-[var(--primary-2)] to-[var(--accent)] px-6 text-sm font-black text-white shadow-[0_18px_38px_rgba(155,44,255,0.28)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_22px_48px_rgba(155,44,255,0.38)] active:scale-95"
             >
@@ -59,6 +61,13 @@
               <span class="relative z-10">
                 Bắt đầu
               </span>
+            </router-link>
+            <router-link
+              v-else
+              to="/profile"
+              class="inline-flex h-11 shrink-0 items-center justify-center whitespace-nowrap rounded-full border border-[var(--border)] bg-[var(--surface-soft)] px-5 text-sm font-black text-[var(--text)] transition duration-300 hover:-translate-y-0.5 hover:border-[var(--border-strong)] hover:bg-[var(--chip-active)] active:scale-95"
+            >
+              {{ currentUser?.role_label || currentUser?.role || 'User' }}
             </router-link>
           </div>
 

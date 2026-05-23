@@ -52,7 +52,15 @@
     <div v-if="errorMessage" class="rounded-[2rem] border border-rose-500/30 bg-rose-500/10 p-5 text-sm font-bold text-rose-300">{{ errorMessage }}</div>
 
     <div v-if="!isLoading && rooms.length" class="grid gap-4 lg:grid-cols-2">
-      <router-link v-for="room in rooms" :key="room.id" :to="`/rooms/${room.id}`" class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow-card)] transition hover:-translate-y-1 hover:border-[var(--border-strong)]">
+      <article
+        v-for="room in rooms"
+        :key="room.id"
+        class="cursor-pointer rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow-card)] transition hover:-translate-y-1 hover:border-[var(--border-strong)]"
+        role="button"
+        tabindex="0"
+        @click="goToRoom(room.id)"
+        @keyup.enter="goToRoom(room.id)"
+      >
         <div class="flex flex-wrap items-start justify-between gap-4">
           <div>
             <span class="rounded-full border border-[var(--border-strong)] bg-[var(--chip-active)] px-3 py-1 text-xs font-black text-[var(--primary)]">{{ room.type || 'homework' }}</span>
@@ -66,16 +74,23 @@
             <p class="text-xs font-bold text-[var(--muted)]">Thành viên</p>
             <b class="mt-1 block text-sm text-[var(--text)]">{{ room.members_count ?? '-' }}</b>
           </div>
-          <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-4">
+          <div v-if="room.type !== 'live'" class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-4">
             <p class="text-xs font-bold text-[var(--muted)]">Homework</p>
             <b class="mt-1 block text-sm text-[var(--text)]">{{ room.assignments_count ?? '-' }}</b>
+          </div>
+          <div v-else class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-4">
+            <p class="text-xs font-bold text-[var(--muted)]">Live Quiz</p>
+            <b class="mt-1 block text-sm text-[var(--text)]">Realtime</b>
           </div>
           <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-4">
             <p class="text-xs font-bold text-[var(--muted)]">Trạng thái</p>
             <b class="mt-1 block text-sm text-[var(--text)]">{{ room.status || 'waiting' }}</b>
           </div>
         </div>
-      </router-link>
+        <div class="mt-5 flex justify-end">
+          <button class="btn-primary px-4 py-2 text-xs" type="button" @click.stop="goToRoom(room.id)">Vào room</button>
+        </div>
+      </article>
     </div>
 
     <div v-if="!isLoading && !rooms.length && !errorMessage" class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-10 text-center shadow-[var(--shadow-card)]">
@@ -92,7 +107,7 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { currentUserStorage, roomsApi } from '@/services/api'
+import { authApi, currentUserStorage, roomsApi } from '@/services/api'
 
 const router = useRouter()
 const rooms = ref([])
@@ -117,11 +132,22 @@ const requireUpgrade = () => {
   router.push('/upgrade')
 }
 
+const goToRoom = (roomId) => {
+  const target = router.resolve({
+    name: 'room-detail',
+    params: { roomId: String(roomId) },
+  }).href
+  window.location.assign(target)
+}
+
 const loadRooms = async () => {
   isLoading.value = true
   errorMessage.value = ''
 
   try {
+    if (localStorage.getItem('mock_user_id')) {
+      await authApi.me().catch(() => null)
+    }
     rooms.value = await roomsApi.list()
   } catch (error) {
     if (error.status === 401) {

@@ -16,7 +16,14 @@ class MockAuthMiddleware
          * Lấy user giả lập từ header:
          * X-Mock-User-Id: 1
          */
-        $userId = $request->header('X-Mock-User-Id', 1);
+        if (!$request->headers->has('X-Mock-User-Id')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthenticated. Missing X-Mock-User-Id header.',
+            ], 401);
+        }
+
+        $userId = $request->header('X-Mock-User-Id');
 
         $user = User::find($userId);
 

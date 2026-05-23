@@ -88,6 +88,13 @@ class QuizAttemptController extends Controller
 
     $quiz->load('questions.answers');
 
+    if (!$this->canPracticeQuiz($quiz, $user)) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Ban khong co quyen practice quiz nay.',
+        ], 403);
+    }
+
     if ($quiz->questions->isEmpty()) {
         return response()->json([
             'success' => false,
@@ -268,6 +275,19 @@ class QuizAttemptController extends Controller
             ->map(fn (Answer $answer, int $index) => chr(65 + ($answer->order ?? $index)))
             ->values()
             ->all();
+    }
+
+    private function canPracticeQuiz(Quiz $quiz, $user): bool
+    {
+        if ($quiz->is_public && $quiz->status === 'published') {
+            return true;
+        }
+
+        if (!$user) {
+            return false;
+        }
+
+        return strtoupper((string) $user->role) === 'ADMIN' || (int) $quiz->user_id === (int) $user->id;
     }
 
 

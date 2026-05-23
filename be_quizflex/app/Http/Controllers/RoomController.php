@@ -21,7 +21,12 @@ class RoomController extends Controller
                             ->where('status', 'active');
                     });
             })
-            ->withCount(['members', 'assignments'])
+            ->withCount([
+                'members as members_count' => fn ($query) => $query
+                    ->where('status', 'active')
+                    ->where('role', '!=', 'owner'),
+                'assignments',
+            ])
             ->latest()
             ->get()
             ->map(fn($room) => $this->formatRoom($room));
@@ -71,7 +76,12 @@ class RoomController extends Controller
             'joined_at' => now(),
         ]);
 
-        $room->loadCount(['members', 'assignments']);
+        $room->loadCount([
+            'members as members_count' => fn ($query) => $query
+                ->where('status', 'active')
+                ->where('role', '!=', 'owner'),
+            'assignments',
+        ]);
 
         return response()->json([
             'success' => true,
@@ -94,7 +104,12 @@ class RoomController extends Controller
         $room->load([
             'host:id,name,email',
             'members.user:id,name,email,role',
-        ])->loadCount(['members', 'assignments']);
+        ])->loadCount([
+            'members as members_count' => fn ($query) => $query
+                ->where('status', 'active')
+                ->where('role', '!=', 'owner'),
+            'assignments',
+        ]);
 
         return response()->json([
             'success' => true,
@@ -112,6 +127,52 @@ class RoomController extends Controller
                     'joined_at' => optional($member->joined_at)->toISOString(),
                 ])->values(),
             ],
+        ]);
+    }
+
+    public function updateCode(Request $request, Room $room)
+    {
+        $user = $request->user();
+
+        if (!$this->canManageRoom($room, $user)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Chỉ chủ room hoặc admin mới được đổi mã room.',
+            ], 403);
+        }
+
+        $data = $request->validate([
+            'code' => ['required', 'string', 'min:4', 'max:12', 'regex:/^[A-Za-z0-9]+$/'],
+        ]);
+
+        $code = strtoupper(trim($data['code']));
+
+        $exists = Room::where('code', $code)
+            ->where('id', '!=', $room->id)
+            ->exists();
+
+        if ($exists) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Mã room này đã được sử dụng.',
+            ], 422);
+        }
+
+        $room->update([
+            'code' => $code,
+        ]);
+
+        $room->loadCount([
+            'members as members_count' => fn ($query) => $query
+                ->where('status', 'active')
+                ->where('role', '!=', 'owner'),
+            'assignments',
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Đổi mã room thành công.',
+            'data' => $this->formatRoom($room),
         ]);
     }
 
@@ -140,7 +201,12 @@ class RoomController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Bạn là chủ room này.',
-                'data' => $this->formatRoom($room->loadCount(['members', 'assignments'])),
+                'data' => $this->formatRoom($room->loadCount([
+                    'members as members_count' => fn ($query) => $query
+                        ->where('status', 'active')
+                        ->where('role', '!=', 'owner'),
+                    'assignments',
+                ])),
             ]);
         }
 
@@ -167,7 +233,12 @@ class RoomController extends Controller
             ]
         );
 
-        $room->loadCount(['members', 'assignments']);
+        $room->loadCount([
+            'members as members_count' => fn ($query) => $query
+                ->where('status', 'active')
+                ->where('role', '!=', 'owner'),
+            'assignments',
+        ]);
 
         return response()->json([
             'success' => true,
@@ -236,6 +307,19 @@ class RoomController extends Controller
             ->where('user_id', $userId)
             ->where('status', 'active')
             ->exists();
+    }
+
+    private function canManageRoom(Room $room, $user): bool
+    {
+        if (!$user) {
+            return false;
+        }
+
+        if (strtoupper((string) $user->role) === 'ADMIN') {
+            return true;
+        }
+
+        return (int) $room->host_id === (int) $user->id;
     }
 
     private function generateUniqueRoomCode(): string
