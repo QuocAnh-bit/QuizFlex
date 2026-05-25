@@ -202,6 +202,16 @@ export const authApi = {
     return unwrap(data)
   },
 
+  async verifyOtp(payload) {
+    const { data } = await api.post('/auth/verify-otp', payload)
+    return data
+  },
+
+  async resendOtp(payload) {
+    const { data } = await api.post('/auth/resend-otp', payload)
+    return unwrap(data)
+  },
+
   async me() {
     const { data } = await api.get('/auth/me')
     const user = unwrap(data)
