@@ -154,7 +154,7 @@ const handleLogout = async () => {
   router.push({ path: '/login', query: email ? { email } : {} })
 }
 
-const mainNav = [
+const baseNav = [
   {
     label: 'Trang chủ',
     to: '/',
@@ -166,10 +166,6 @@ const mainNav = [
   {
     label: 'Làm quiz',
     to: '/quizzes',
-  },
-  {
-    label: 'Join room',
-    to: '/join-room',
   },
   {
     label: 'Kết quả',
@@ -185,10 +181,69 @@ const mainNav = [
   },
 ]
 
+const homeworkNav = computed(() => {
+  if (!currentUser.value) return []
+
+  const role = String(currentUser.value.role || 'user').toLowerCase()
+  const items = [
+    {
+      label: 'Room Homework',
+      to: '/homework-rooms',
+    },
+  ]
+
+  if (['vip', 'admin'].includes(role)) {
+    items.push({
+      label: 'Tạo room',
+      to: '/homework-rooms/create',
+    })
+  }
+
+  items.push({
+    label: 'Tham gia room',
+    to: '/homework-rooms/join',
+  })
+
+  return items
+})
+
+const liveRoomNav = computed(() => {
+  if (!currentUser.value) return []
+
+  const role = String(currentUser.value.role || 'user').toLowerCase()
+  const items = [
+    {
+      label: 'Live Room',
+      to: '/live-rooms',
+    },
+  ]
+
+  if (role === 'vip') {
+    items.push({
+      label: 'Tạo Live Room',
+      to: '/live-rooms/create',
+    })
+  }
+
+  items.push({
+    label: 'Join Live Room',
+    to: '/live-rooms/join',
+  })
+
+  return items
+})
+
+const mainNav = computed(() => [
+  ...baseNav.slice(0, 3),
+  ...homeworkNav.value,
+  ...liveRoomNav.value,
+  ...baseNav.slice(3),
+])
+
 const mobileNav = computed(() => {
   if (currentUser.value) {
     return [
-      ...mainNav,
+      ...mainNav.value,
       {
         label: currentUser.value.role === 'admin' ? 'Admin dashboard' : 'Dashboard của tôi',
         to: getDashboardRouteForRole(currentUser.value.role),
@@ -197,7 +252,7 @@ const mobileNav = computed(() => {
   }
 
   return [
-    ...mainNav,
+    ...mainNav.value,
     {
       label: 'Đăng nhập',
       to: '/login',

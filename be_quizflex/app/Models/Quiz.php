@@ -46,4 +46,9 @@ class Quiz extends Model
     {
         return $this->hasMany(QuizAttempt::class);
     }
+
+    public function roomAssignments()
+    {
+        return $this->hasMany(RoomAssignment::class);
+    }
 }

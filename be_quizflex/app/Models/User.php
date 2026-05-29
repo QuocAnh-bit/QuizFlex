@@ -33,6 +33,16 @@ class User extends Authenticatable implements JWTSubject
         return $this->hasMany(QuizAttempt::class);
     }
 
+    public function ownedRooms()
+    {
+        return $this->hasMany(Room::class, 'owner_id');
+    }
+
+    public function roomMemberships()
+    {
+        return $this->hasMany(RoomMember::class);
+    }
+
     public function payments()
     {
         return $this->hasMany(Payment::class);

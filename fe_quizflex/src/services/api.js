@@ -374,6 +374,118 @@ export const attemptsApi = {
   },
 }
 
+export const homeworkApi = {
+  async getHomeworkRooms(params = {}) {
+    const { data } = await api.get('/rooms', { params })
+    return unwrapCollection(data)
+  },
+
+  async createHomeworkRoom(payload) {
+    const { data } = await api.post('/rooms', payload)
+    return unwrap(data)
+  },
+
+  async joinHomeworkRoom(code) {
+    const { data } = await api.post('/rooms/join', { code })
+    return unwrap(data)
+  },
+
+  async getHomeworkRoom(roomId) {
+    const { data } = await api.get(`/rooms/${roomId}`)
+    return unwrap(data)
+  },
+
+  async getRoomMembers(roomId) {
+    const { data } = await api.get(`/rooms/${roomId}/members`)
+    return unwrapCollection(data)
+  },
+
+  async getRoomAssignments(roomId) {
+    const { data } = await api.get(`/rooms/${roomId}/assignments`)
+    return unwrapCollection(data)
+  },
+
+  async createRoomAssignment(roomId, payload) {
+    const { data } = await api.post(`/rooms/${roomId}/assignments`, payload)
+    return unwrap(data)
+  },
+
+  async getRoomAssignment(assignmentId) {
+    const { data } = await api.get(`/room-assignments/${assignmentId}`)
+    return unwrap(data)
+  },
+
+  async getRoomAssignmentAttempts(assignmentId) {
+    const { data } = await api.get(`/room-assignments/${assignmentId}/attempts`)
+    return unwrapCollection(data)
+  },
+
+  async startRoomAssignmentAttempt(assignmentId, payload = {}) {
+    const { data } = await api.post(`/room-assignments/${assignmentId}/attempts/start`, payload)
+    return unwrap(data)
+  },
+
+  async answerRoomAssignmentAttempt(assignmentId, attemptId, payload) {
+    const { data } = await api.post(`/room-assignments/${assignmentId}/attempts/${attemptId}/answer`, payload)
+    return unwrap(data)
+  },
+
+  async submitRoomAssignmentAttempt(assignmentId, attemptId, payload) {
+    const body = payload?.answers ? payload : { answers: payload }
+    const { data } = await api.post(`/room-assignments/${assignmentId}/attempts/${attemptId}/submit`, body)
+    return unwrap(data)
+  },
+}
+
+export const liveRoomApi = {
+  async createLiveRoom(payload) {
+    const { data } = await api.post('/live-rooms', payload)
+    return unwrap(data)
+  },
+
+  async joinLiveRoom(code) {
+    const payload = typeof code === 'object' ? code : { code }
+    const { data } = await api.post('/live-rooms/join', payload)
+    return unwrap(data)
+  },
+
+  async getLiveRoom(id) {
+    const { data } = await api.get(`/live-rooms/${id}`)
+    return unwrap(data)
+  },
+
+  async startLiveRoom(id) {
+    const { data } = await api.post(`/live-rooms/${id}/start`)
+    return unwrap(data)
+  },
+
+  async getLiveCurrentQuestion(id) {
+    const { data } = await api.get(`/live-rooms/${id}/current-question`)
+    return unwrap(data)
+  },
+
+  async answerLiveQuestion(id, answerId) {
+    const payload = typeof answerId === 'object' ? answerId : { answer_id: answerId }
+    const { data } = await api.post(`/live-rooms/${id}/answer`, payload)
+    return unwrap(data)
+  },
+
+  async nextLiveQuestion(id) {
+    const { data } = await api.post(`/live-rooms/${id}/next-question`)
+    return unwrap(data)
+  },
+
+  async finishLiveRoom(id) {
+    const { data } = await api.post(`/live-rooms/${id}/finish`)
+    return unwrap(data)
+  },
+
+  async getLiveLeaderboard(id) {
+    const { data } = await api.get(`/live-rooms/${id}/leaderboard`)
+    return unwrapCollection(data)
+  },
+}
+
 export const ocrApi = {
   async scan(file) {
     const formData = new FormData()
