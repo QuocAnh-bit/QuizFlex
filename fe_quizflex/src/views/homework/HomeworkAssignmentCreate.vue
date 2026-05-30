@@ -23,6 +23,12 @@
         </div>
       </article>
 
+      <div class="grid gap-4 md:grid-cols-3">
+        <StatCard :value="String(quizzes.length)" label="Quiz có thể giao" hint="Nguồn từ kho quiz hiện có" />
+        <StatCard :value="String(form.max_attempts || 1)" label="Số lần làm" hint="Giới hạn cho mỗi thành viên" />
+        <StatCard :value="form.status" label="Trạng thái" hint="Trạng thái khi tạo assignment" />
+      </div>
+
       <article v-if="!canManageRoom" class="rounded-[2rem] border border-amber-500/30 bg-amber-500/10 p-6 text-sm font-bold text-amber-200">
         Bạn không có quyền giao bài trong room này.
       </article>
@@ -116,6 +122,7 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import StatCard from '@/components/cards/StatCard.vue'
 import { currentUserStorage, homeworkApi, quizzesApi } from '@/services/api'
 
 const route = useRoute()

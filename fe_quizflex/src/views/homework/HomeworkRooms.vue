@@ -19,7 +19,7 @@
     <div v-if="errorMessage" class="rounded-[2rem] border border-rose-500/30 bg-rose-500/10 p-5 text-sm font-bold text-rose-300">{{ errorMessage }}</div>
 
     <div v-if="!isLoading && rooms.length" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-      <article v-for="room in rooms" :key="room.id" class="rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow-card)]">
+      <article v-for="room in rooms" :key="room.id" class="group rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow-card)] transition duration-300 hover:-translate-y-1 hover:border-[var(--border-strong)]">
         <div class="flex items-start justify-between gap-3">
           <div>
             <h2 class="text-xl font-black text-[var(--text)]">{{ room.name || 'Room Homework' }}</h2>
@@ -40,7 +40,7 @@
         </div>
 
         <div class="mt-5 flex items-center justify-between gap-3">
-          <span class="rounded-full border border-[var(--border)] bg-[var(--surface-soft)] px-3 py-1 text-xs font-black text-[var(--muted)]">{{ room.status || 'active' }}</span>
+          <StatusBadge :value="room.status || 'active'" />
           <router-link class="btn-ghost" :to="`/homework-rooms/${room.id}`">Vào room</router-link>
         </div>
       </article>
@@ -60,6 +60,7 @@
 
 <script setup>
 import { onMounted, ref } from 'vue'
+import StatusBadge from '@/components/common/StatusBadge.vue'
 import { currentUserStorage, homeworkApi } from '@/services/api'
 
 const rooms = ref([])

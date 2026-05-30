@@ -9,6 +9,12 @@
       </div>
     </article>
 
+    <div class="grid gap-4 sm:grid-cols-3">
+      <StatCard value="Code" label="Mã room" hint="Backend sinh tự động" />
+      <StatCard value="Owner" label="Quyền quản lý" hint="Chủ room giao bài" />
+      <StatCard value="Assignments" label="Homework" hint="Giao nhiều quiz trong một room" />
+    </div>
+
     <form class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-card)]" @submit.prevent="submitForm">
       <div class="grid gap-5">
         <label class="grid gap-2">
@@ -36,6 +42,7 @@
 <script setup>
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import StatCard from '@/components/cards/StatCard.vue'
 import { homeworkApi } from '@/services/api'
 
 const router = useRouter()

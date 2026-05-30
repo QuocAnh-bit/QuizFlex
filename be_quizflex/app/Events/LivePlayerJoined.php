@@ -31,7 +31,9 @@ class LivePlayerJoined implements ShouldBroadcastNow
     public function broadcastWith(): array
     {
         $player = $this->player->loadMissing(['liveRoom', 'user:id,name']);
-        $summary = app(LiveRoomPayloadService::class)->playerSummary($player, $player->liveRoom);
+        $payloadService = app(LiveRoomPayloadService::class);
+        $summary = $payloadService->playerSummary($player, $player->liveRoom);
+        $playersProgress = $payloadService->playersProgress($player->liveRoom);
 
         return [
             'type' => 'player_joined',
@@ -41,6 +43,10 @@ class LivePlayerJoined implements ShouldBroadcastNow
             'player_name' => $player->user?->name,
             'joined_at' => $summary['joined_at'],
             'player' => $summary,
+            'player_count' => count($playersProgress),
+            'players' => $playersProgress,
+            'players_progress' => $playersProgress,
+            'leaderboard' => $payloadService->leaderboard($player->liveRoom),
         ];
     }
 }

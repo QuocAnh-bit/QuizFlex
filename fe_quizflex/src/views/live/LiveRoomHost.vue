@@ -16,7 +16,7 @@
         </div>
         <div class="grid gap-2 text-right">
           <span class="rounded-full bg-[var(--chip-active)] px-4 py-2 text-lg font-black tracking-[0.12em] text-[var(--primary)]">{{ liveRoom.code || '-' }}</span>
-          <span class="text-xs font-black uppercase tracking-[0.16em] text-[var(--muted)]">{{ roomStatus }}</span>
+          <StatusBadge :value="roomStatus" />
         </div>
       </div>
 
@@ -100,6 +100,7 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
+import StatusBadge from '@/components/common/StatusBadge.vue'
 import { getEcho } from '@/echo'
 import { liveRoomApi } from '@/services/api'
 
@@ -109,8 +110,10 @@ const monitor = ref({})
 const liveRoom = ref({})
 const isActionLoading = ref(false)
 const errorMessage = ref('')
+const lastRealtimeAt = ref(0)
 let pollTimer = null
 let liveChannel = null
+const realtimeFreshMs = 8000
 
 const hasLoadedRoom = computed(() => Boolean(liveRoom.value.id))
 const roomStatus = computed(() => monitor.value.room_status || liveRoom.value.status || 'loading')
@@ -123,7 +126,15 @@ const progressPercent = (player) => {
   return Math.min(100, Math.round((Number(player.answered_count ?? player.current_question_index ?? 0) / total) * 100))
 }
 
-const loadMonitor = async () => {
+const markRealtime = () => {
+  lastRealtimeAt.value = Date.now()
+}
+
+const hasRecentRealtime = () => Date.now() - lastRealtimeAt.value < realtimeFreshMs
+
+const loadMonitor = async (force = false) => {
+  if (!force && hasRecentRealtime()) return
+
   try {
     const data = await liveRoomApi.getLiveCurrentQuestion(liveRoomId.value)
     monitor.value = data
@@ -172,31 +183,57 @@ const applyLeaderboard = (leaderboardPayload) => {
 
 const handlePlayerJoined = (event) => {
   realtimeLog('live.player.joined', event)
-  if (!upsertPlayerProgress(event?.player)) {
-    loadMonitor()
+  markRealtime()
+  if (Array.isArray(event?.players_progress)) {
+    monitor.value = {
+      ...monitor.value,
+      players_progress: event.players_progress,
+      total_players: event.player_count ?? event.players_progress.length,
+      total_finished_players: event.players_progress.filter((item) => item.is_finished || item.player_finished || item.finished_at).length,
+      leaderboard: Array.isArray(event?.leaderboard) ? event.leaderboard : monitor.value.leaderboard,
+    }
+    return
   }
+
+  if (!upsertPlayerProgress(event?.player)) {
+    loadMonitor(true)
+  }
+  applyLeaderboard(event?.leaderboard)
 }
 
 const handleAnswerSubmitted = (event) => {
   realtimeLog('live.answer.submitted', event)
+  markRealtime()
   if (!upsertPlayerProgress(event?.player)) {
-    loadMonitor()
+    loadMonitor(true)
   }
+  applyLeaderboard(event?.leaderboard)
 }
 
 const handleLeaderboardUpdated = (event) => {
   realtimeLog('live.leaderboard.updated', event)
+  markRealtime()
   if (!applyLeaderboard(event?.leaderboard)) {
-    loadMonitor()
+    loadMonitor(true)
   }
 }
 
 const handleRoomStarted = (event) => {
   realtimeLog('live.room.started', event)
+  markRealtime()
+  const playersProgressPayload = Array.isArray(event?.players_progress) ? event.players_progress : monitor.value.players_progress
+  const leaderboardPayload = Array.isArray(event?.leaderboard) ? event.leaderboard : monitor.value.leaderboard
+
   monitor.value = {
     ...monitor.value,
     room_status: event?.status || 'playing',
     total_questions: event?.total_questions ?? monitor.value.total_questions,
+    players_progress: playersProgressPayload,
+    leaderboard: leaderboardPayload,
+    total_players: Array.isArray(playersProgressPayload) ? playersProgressPayload.length : monitor.value.total_players,
+    total_finished_players: Array.isArray(playersProgressPayload)
+      ? playersProgressPayload.filter((item) => item.is_finished || item.player_finished || item.finished_at).length
+      : monitor.value.total_finished_players,
   }
   liveRoom.value = {
     ...liveRoom.value,
@@ -207,10 +244,18 @@ const handleRoomStarted = (event) => {
 
 const handleRoomFinished = (event) => {
   realtimeLog('live.room.finished', event)
+  markRealtime()
+  const playersProgressPayload = Array.isArray(event?.players_progress) ? event.players_progress : monitor.value.players_progress
+
   monitor.value = {
     ...monitor.value,
     room_status: event?.status || 'finished',
     leaderboard: Array.isArray(event?.leaderboard) ? event.leaderboard : monitor.value.leaderboard,
+    players_progress: playersProgressPayload,
+    total_players: event?.total_players ?? (Array.isArray(playersProgressPayload) ? playersProgressPayload.length : monitor.value.total_players),
+    total_finished_players: event?.total_finished_players ?? (Array.isArray(playersProgressPayload)
+      ? playersProgressPayload.filter((item) => item.is_finished || item.player_finished || item.finished_at).length
+      : monitor.value.total_finished_players),
   }
   liveRoom.value = {
     ...liveRoom.value,
@@ -219,7 +264,7 @@ const handleRoomFinished = (event) => {
   }
 
   if (!Array.isArray(event?.leaderboard)) {
-    loadMonitor()
+    loadMonitor(true)
   }
 }
 
@@ -251,7 +296,6 @@ const startLive = async () => {
     const data = await liveRoomApi.startLiveRoom(liveRoomId.value)
     liveRoom.value = data.live_room || liveRoom.value
     monitor.value = data.monitor || monitor.value
-    await loadMonitor()
   } catch (error) {
     errorMessage.value = error.message || 'Không start được live room.'
   } finally {
@@ -273,7 +317,6 @@ const finishLive = async () => {
       live_room: data.live_room || liveRoom.value,
       leaderboard: data.leaderboard || monitor.value.leaderboard || [],
     }
-    await loadMonitor()
   } catch (error) {
     errorMessage.value = error.message || 'Không finish được live room.'
   } finally {
@@ -283,7 +326,7 @@ const finishLive = async () => {
 
 onMounted(async () => {
   subscribeToRealtime()
-  await loadMonitor()
+  await loadMonitor(true)
   pollTimer = setInterval(loadMonitor, 10000)
 })
 

@@ -31,7 +31,8 @@ class LiveAnswerSubmitted implements ShouldBroadcastNow
     public function broadcastWith(): array
     {
         $player = $this->player->loadMissing(['liveRoom', 'user:id,name']);
-        $summary = app(LiveRoomPayloadService::class)->playerSummary($player, $player->liveRoom);
+        $payloadService = app(LiveRoomPayloadService::class);
+        $summary = $payloadService->playerSummary($player, $player->liveRoom);
 
         return [
             'type' => 'answer_submitted',
@@ -43,6 +44,7 @@ class LiveAnswerSubmitted implements ShouldBroadcastNow
             'answered_count' => $summary['answered_count'],
             'player_finished' => $summary['player_finished'],
             'player' => $summary,
+            'leaderboard' => $payloadService->leaderboard($player->liveRoom),
         ];
     }
 }

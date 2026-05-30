@@ -11,6 +11,12 @@
       <p class="mt-3 max-w-3xl text-sm leading-7 text-[var(--muted)]">Chọn quiz, tạo mã live room và chuyển sang màn host monitor.</p>
     </article>
 
+    <div class="grid gap-4 md:grid-cols-3">
+      <StatCard :value="String(quizzes.length)" label="Quiz khả dụng" hint="Dùng để tạo live room" />
+      <StatCard value="Realtime" label="Cập nhật" hint="Reverb với polling fallback" />
+      <StatCard value="Host only" label="Điều khiển" hint="Host không nằm trong leaderboard" />
+    </div>
+
     <div v-if="errorMessage" class="rounded-[2rem] border border-rose-500/30 bg-rose-500/10 p-5 text-sm font-bold text-rose-300">{{ errorMessage }}</div>
     <div v-if="successMessage" class="rounded-[2rem] border border-emerald-500/30 bg-emerald-500/10 p-5 text-sm font-bold text-emerald-300">{{ successMessage }}</div>
 
@@ -43,6 +49,7 @@
 <script setup>
 import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import StatCard from '@/components/cards/StatCard.vue'
 import { liveRoomApi, quizzesApi } from '@/services/api'
 
 const router = useRouter()

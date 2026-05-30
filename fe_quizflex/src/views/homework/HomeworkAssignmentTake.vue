@@ -28,7 +28,7 @@
             </div>
             <div class="rounded-3xl border border-[var(--border)] bg-[var(--surface-soft)] p-5">
               <p class="text-sm font-bold text-[var(--muted)]">Trạng thái</p>
-              <b class="mt-2 block text-2xl font-black text-[var(--text)]">{{ result.attempt?.status || 'completed' }}</b>
+              <div class="mt-3"><StatusBadge :value="result.attempt?.status || 'completed'" /></div>
             </div>
           </div>
 
@@ -128,6 +128,7 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
+import StatusBadge from '@/components/common/StatusBadge.vue'
 import { formatSeconds, homeworkApi, normalizeQuestion } from '@/services/api'
 
 const route = useRoute()

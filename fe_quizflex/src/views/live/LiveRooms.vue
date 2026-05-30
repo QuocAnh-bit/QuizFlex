@@ -1,11 +1,14 @@
 <template>
   <section class="grid gap-6 py-8">
-    <article class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-soft)]">
+    <article class="relative overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-soft)]">
+      <div class="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[var(--primary)]/15 blur-3xl"></div>
+      <div class="relative z-10">
       <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Live Room</p>
       <h1 class="mt-2 text-4xl font-black tracking-[-0.06em] text-[var(--text)]">Chơi quiz trực tiếp</h1>
       <p class="mt-3 max-w-3xl text-sm leading-7 text-[var(--muted)]">
-        Host tạo phòng từ quiz, người chơi tham gia bằng mã và tự trả lời theo tiến độ riêng. Bảng xếp hạng cập nhật bằng polling.
+        Host tạo phòng từ quiz, người chơi tham gia bằng mã và tự trả lời theo tiến độ riêng. Bảng xếp hạng cập nhật realtime, polling giữ vai trò fallback.
       </p>
+      </div>
     </article>
 
     <div class="grid gap-5 md:grid-cols-2">

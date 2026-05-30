@@ -199,11 +199,6 @@ const homeworkNav = computed(() => {
     })
   }
 
-  items.push({
-    label: 'Tham gia room',
-    to: '/homework-rooms/join',
-  })
-
   return items
 })
 
@@ -225,10 +220,6 @@ const liveRoomNav = computed(() => {
     })
   }
 
-  items.push({
-    label: 'Join Live Room',
-    to: '/live-rooms/join',
-  })
 
   return items
 })

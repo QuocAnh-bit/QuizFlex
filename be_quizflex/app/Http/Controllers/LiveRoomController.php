@@ -13,6 +13,7 @@ use App\Models\LiveRoomAnswer;
 use App\Models\LiveRoomPlayer;
 use App\Models\Question;
 use App\Models\Quiz;
+use App\Services\LiveRoomPayloadService;
 use App\Services\QuestionOrderService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -387,8 +388,16 @@ class LiveRoomController extends Controller
 
         if (!$result['already_answered']) {
             LiveAnswerSubmitted::dispatch($result['player']);
-            LiveLeaderboardUpdated::dispatch($liveRoom->fresh());
+            if (!$this->maybeFinishLiveRoom($liveRoom->fresh())) {
+                LiveLeaderboardUpdated::dispatch($liveRoom->fresh());
+            }
         }
+
+        $liveRoomAfterAnswer = $liveRoom->fresh(['host:id,name,email', 'quiz:id,title']);
+        $payloadService = app(LiveRoomPayloadService::class);
+        $nextQuestion = $result['has_next_question']
+            ? $payloadService->currentQuestionForIndex($liveRoomAfterAnswer, (int) $result['player']->current_question_index)
+            : null;
 
         return response()->json([
             'success' => true,
@@ -402,6 +411,9 @@ class LiveRoomController extends Controller
                 'has_next_question' => (bool) $result['has_next_question'],
                 'player_finished' => (bool) $result['player']->finished_at,
                 'already_answered' => $result['already_answered'],
+                'room_status' => $liveRoomAfterAnswer->status,
+                'next_question' => $nextQuestion,
+                'leaderboard' => $payloadService->leaderboard($liveRoomAfterAnswer),
             ],
         ]);
     }
@@ -474,6 +486,40 @@ class LiveRoomController extends Controller
             'message' => 'Bang xep hang live room',
             'data' => $this->leaderboardData($liveRoom),
         ]);
+    }
+
+    private function maybeFinishLiveRoom(LiveRoom $liveRoom): bool
+    {
+        $liveRoom->refresh();
+        if ($liveRoom->status !== 'playing') {
+            return false;
+        }
+
+        $players = $this->playerQuery($liveRoom)->get(['id', 'finished_at']);
+        if ($players->isEmpty()) {
+            return false;
+        }
+
+        if ($players->contains(fn (LiveRoomPlayer $player) => is_null($player->finished_at))) {
+            return false;
+        }
+
+        $updated = LiveRoom::whereKey($liveRoom->id)
+            ->where('status', 'playing')
+            ->update([
+                'status' => 'finished',
+                'ended_at' => now(),
+            ]);
+
+        if (!$updated) {
+            return false;
+        }
+
+        $finishedRoom = $liveRoom->fresh(['host:id,name,email', 'quiz:id,title']);
+        LiveRoomFinished::dispatch($finishedRoom, 'all_players_finished');
+        LiveLeaderboardUpdated::dispatch($finishedRoom);
+
+        return true;
     }
 
     private function canUseQuiz($user, Quiz $quiz): bool

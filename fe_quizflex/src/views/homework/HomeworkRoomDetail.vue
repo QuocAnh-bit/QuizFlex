@@ -19,7 +19,7 @@
           </div>
           <div class="grid gap-2 text-right">
             <span class="rounded-full bg-[var(--chip-active)] px-4 py-2 text-sm font-black text-[var(--primary)]">{{ room.code || 'NO CODE' }}</span>
-            <span class="text-xs font-bold uppercase tracking-[0.16em] text-[var(--muted)]">{{ room.status || 'active' }}</span>
+            <StatusBadge :value="room.status || 'active'" />
           </div>
         </div>
 
@@ -60,9 +60,9 @@
                   <h3 class="font-black text-[var(--text)]">{{ member.user?.name || `User #${member.user_id}` }}</h3>
                   <p class="mt-1 text-xs font-bold text-[var(--muted)]">{{ member.user?.email || 'Chưa có email' }}</p>
                 </div>
-                <span class="rounded-full bg-[var(--chip-active)] px-3 py-1 text-xs font-black text-[var(--primary)]">{{ member.role || 'member' }}</span>
+                <StatusBadge :value="member.role || 'member'" />
               </div>
-              <p class="mt-3 text-xs font-bold text-[var(--muted)]">Trạng thái: {{ member.status || 'active' }}</p>
+              <div class="mt-3"><StatusBadge :value="member.status || 'active'" /></div>
             </article>
           </div>
 
@@ -83,7 +83,7 @@
               <div class="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
                 <div>
                   <div class="flex flex-wrap items-center gap-2">
-                    <span class="rounded-full bg-[var(--chip-active)] px-3 py-1 text-xs font-black text-[var(--primary)]">{{ assignment.status || 'published' }}</span>
+                    <StatusBadge :value="assignment.status || 'published'" />
                     <span class="rounded-full border border-[var(--border)] px-3 py-1 text-xs font-black text-[var(--muted)]">{{ assignment.show_result_mode || 'immediately' }}</span>
                   </div>
                   <h3 class="mt-3 text-xl font-black text-[var(--text)]">{{ assignment.title || assignment.quiz?.title || 'Bài được giao' }}</h3>
@@ -129,6 +129,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
+import StatusBadge from '@/components/common/StatusBadge.vue'
 import { currentUserStorage, homeworkApi } from '@/services/api'
 
 const route = useRoute()

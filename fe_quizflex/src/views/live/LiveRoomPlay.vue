@@ -22,7 +22,7 @@
           <div>
             <div class="mb-4 flex flex-wrap items-center gap-2">
               <span class="rounded-full bg-[var(--chip-active)] px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-[var(--primary)]">Câu {{ currentQuestionNumber }} / {{ progress.total_questions || 1 }}</span>
-              <span class="rounded-full border border-[var(--border)] px-4 py-2 text-xs font-black text-[var(--muted)]">{{ roomStatus }}</span>
+              <StatusBadge :value="roomStatus" />
             </div>
             <h1 class="max-w-4xl text-3xl font-black leading-tight tracking-[-0.055em] text-[var(--text)] sm:text-5xl">{{ question.question }}</h1>
           </div>
@@ -87,6 +87,7 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
+import StatusBadge from '@/components/common/StatusBadge.vue'
 import { getEcho } from '@/echo'
 import { liveRoomApi, normalizeQuestion } from '@/services/api'
 
@@ -100,9 +101,11 @@ const errorMessage = ref('')
 const answerMessage = ref('')
 const selectedAnswerId = ref(null)
 const isAnswering = ref(false)
+const lastRealtimeAt = ref(0)
 let pollTimer = null
 let leaderboardTimer = null
 let liveChannel = null
+const realtimeFreshMs = 8000
 
 const selectedAnswerClass = ['border-[var(--border-strong)]', 'bg-[var(--chip-active)]']
 const defaultAnswerClass = ['border-[var(--border)]', 'bg-[var(--surface-soft)]', 'hover:border-[var(--border-strong)]']
@@ -110,7 +113,15 @@ const isWaiting = computed(() => roomStatus.value === 'waiting')
 const isFinished = computed(() => roomStatus.value === 'finished' || progress.value.player_finished || progress.value.is_finished)
 const currentQuestionNumber = computed(() => Number(progress.value.player_current_question_index ?? progress.value.current_question_index ?? 0) + 1)
 
-const loadLeaderboard = async () => {
+const markRealtime = () => {
+  lastRealtimeAt.value = Date.now()
+}
+
+const hasRecentRealtime = () => Date.now() - lastRealtimeAt.value < realtimeFreshMs
+
+const loadLeaderboard = async (force = false) => {
+  if (!force && hasRecentRealtime()) return
+
   try {
     leaderboard.value = await liveRoomApi.getLiveLeaderboard(liveRoomId.value)
   } catch {
@@ -126,13 +137,15 @@ const applyQuestionData = (data) => {
   selectedAnswerId.value = null
 }
 
-const loadCurrentQuestion = async () => {
+const loadCurrentQuestion = async (force = false) => {
+  if (!force && hasRecentRealtime()) return
+
   try {
     const data = await liveRoomApi.getLiveCurrentQuestion(liveRoomId.value)
     applyQuestionData(data)
     errorMessage.value = ''
     if (roomStatus.value === 'finished' || data?.player_finished || data?.is_finished) {
-      await loadLeaderboard()
+      await loadLeaderboard(true)
     }
   } catch (error) {
     const message = error.message || ''
@@ -159,18 +172,36 @@ const applyLeaderboardPayload = (leaderboardPayload) => {
 
 const handleRoomStarted = async (event) => {
   realtimeLog('live.room.started', event)
+  markRealtime()
   roomStatus.value = event?.status || 'playing'
   progress.value = {
     ...progress.value,
     total_questions: event?.total_questions ?? progress.value.total_questions,
+    player_current_question_index: progress.value.player_current_question_index ?? 0,
+    current_question_index: progress.value.current_question_index ?? 0,
+    player_finished: false,
+    is_finished: false,
   }
-  await loadCurrentQuestion()
+  if (Array.isArray(event?.leaderboard)) {
+    leaderboard.value = event.leaderboard
+  }
+
+  if (event?.current_question) {
+    question.value = normalizeQuestion(event.current_question)
+    selectedAnswerId.value = null
+    errorMessage.value = ''
+    return
+  }
+
+  await loadCurrentQuestion(true)
 }
 
 const handleRoomFinished = async (event) => {
   realtimeLog('live.room.finished', event)
+  markRealtime()
   roomStatus.value = event?.status || 'finished'
   question.value = { id: 0, question: '', answers: [] }
+  answerMessage.value = event?.message || 'Live room da ket thuc.'
   progress.value = {
     ...progress.value,
     player_finished: true,
@@ -178,14 +209,15 @@ const handleRoomFinished = async (event) => {
   }
 
   if (!applyLeaderboardPayload(event?.leaderboard)) {
-    await loadLeaderboard()
+    await loadLeaderboard(true)
   }
 }
 
 const handleLeaderboardUpdated = async (event) => {
   realtimeLog('live.leaderboard.updated', event)
+  markRealtime()
   if (!applyLeaderboardPayload(event?.leaderboard) && isFinished.value) {
-    await loadLeaderboard()
+    await loadLeaderboard(true)
   }
 }
 
@@ -224,11 +256,20 @@ const submitAnswer = async (answerId) => {
       correct_count: result.correct_count,
       player_current_question_index: result.next_question_index,
       current_question_index: result.next_question_index,
+      answered_count: result.next_question_index,
       player_finished: result.player_finished,
       is_finished: result.player_finished,
     }
-    await loadCurrentQuestion()
-    await loadLeaderboard()
+    roomStatus.value = result.room_status || roomStatus.value
+    applyLeaderboardPayload(result.leaderboard)
+    markRealtime()
+
+    if (result.next_question) {
+      question.value = normalizeQuestion(result.next_question)
+      selectedAnswerId.value = null
+    } else {
+      question.value = { id: 0, question: '', answers: [] }
+    }
   } catch (error) {
     errorMessage.value = error.message || 'Không gửi được câu trả lời.'
   } finally {
@@ -238,7 +279,7 @@ const submitAnswer = async (answerId) => {
 
 onMounted(async () => {
   subscribeToRealtime()
-  await loadCurrentQuestion()
+  await loadCurrentQuestion(true)
   pollTimer = setInterval(loadCurrentQuestion, 10000)
   leaderboardTimer = setInterval(loadLeaderboard, 15000)
 })

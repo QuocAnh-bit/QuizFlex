@@ -40,7 +40,7 @@
           <p class="text-sm font-black text-[var(--text)]">{{ entry.score }}</p>
           <p class="text-sm font-black text-[var(--text)]">{{ entry.correct_count }}</p>
           <p class="text-sm font-black text-[var(--text)]">{{ entry.answered_count }}/{{ entry.total_questions }}</p>
-          <span class="w-fit rounded-full bg-[var(--chip-active)] px-3 py-1 text-xs font-black text-[var(--primary)]">{{ entry.is_finished ? 'Hoàn thành' : 'Đang chơi' }}</span>
+          <StatusBadge :value="entry.is_finished ? 'finished' : 'playing'" :label="entry.is_finished ? 'Hoàn thành' : 'Đang chơi'" />
           <p class="text-sm font-bold text-[var(--muted)]">{{ formatDateTime(entry.finished_at) }}</p>
         </article>
       </div>
@@ -57,6 +57,7 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
+import StatusBadge from '@/components/common/StatusBadge.vue'
 import { getEcho } from '@/echo'
 import { liveRoomApi } from '@/services/api'
 
@@ -65,15 +66,25 @@ const liveRoomId = computed(() => route.params.liveRoomId)
 const leaderboard = ref([])
 const isLoading = ref(false)
 const errorMessage = ref('')
+const lastRealtimeAt = ref(0)
 let pollTimer = null
 let liveChannel = null
+const realtimeFreshMs = 8000
 
 const formatDateTime = (value) => {
   if (!value) return '-'
   return new Date(value).toLocaleString('vi-VN')
 }
 
-const loadLeaderboard = async () => {
+const markRealtime = () => {
+  lastRealtimeAt.value = Date.now()
+}
+
+const hasRecentRealtime = () => Date.now() - lastRealtimeAt.value < realtimeFreshMs
+
+const loadLeaderboard = async (force = false) => {
+  if (!force && hasRecentRealtime()) return
+
   isLoading.value = true
   errorMessage.value = ''
 
@@ -92,13 +103,14 @@ const realtimeLog = (eventName, event) => {
 
 const applyLeaderboardPayload = (eventName, event) => {
   realtimeLog(eventName, event)
+  markRealtime()
   if (Array.isArray(event?.leaderboard)) {
     leaderboard.value = event.leaderboard
     errorMessage.value = ''
     return
   }
 
-  loadLeaderboard()
+  loadLeaderboard(true)
 }
 
 const subscribeToRealtime = () => {
@@ -121,7 +133,7 @@ const leaveRealtime = () => {
 
 onMounted(async () => {
   subscribeToRealtime()
-  await loadLeaderboard()
+  await loadLeaderboard(true)
   pollTimer = setInterval(loadLeaderboard, 15000)
 })
 

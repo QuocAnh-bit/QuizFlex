@@ -187,6 +187,7 @@ const unwrapCollection = (payload) => {
   if (Array.isArray(body?.data)) return body.data
   return []
 }
+const normalizeRoomCode = (value) => String(value || '').trim().toUpperCase()
 
 export const authApi = {
   async login(payload) {
@@ -444,7 +445,9 @@ export const liveRoomApi = {
   },
 
   async joinLiveRoom(code) {
-    const payload = typeof code === 'object' ? code : { code }
+    const payload = typeof code === 'object'
+      ? { ...code, code: normalizeRoomCode(code.code || code.room_code) }
+      : { code: normalizeRoomCode(code) }
     const { data } = await api.post('/live-rooms/join', payload)
     return unwrap(data)
   },

@@ -20,40 +20,51 @@ const apiOrigin = () => {
 
 const reverbScheme = () => import.meta.env.VITE_REVERB_SCHEME || 'http'
 
-export const createEcho = () => new Echo({
-  broadcaster: 'reverb',
-  key: import.meta.env.VITE_REVERB_APP_KEY,
-  wsHost: import.meta.env.VITE_REVERB_HOST || window.location.hostname,
-  wsPort: Number(import.meta.env.VITE_REVERB_PORT || 8080),
-  wssPort: Number(import.meta.env.VITE_REVERB_PORT || 8080),
-  forceTLS: reverbScheme() === 'https',
-  enabledTransports: ['ws', 'wss'],
-  authEndpoint: `${apiOrigin()}/broadcasting/auth`,
-  authorizer: (channel) => ({
-    authorize: (socketId, callback) => {
-      const token = localStorage.getItem(tokenKey)
+export const createEcho = () => {
+  const echo = new Echo({
+    broadcaster: 'reverb',
+    key: import.meta.env.VITE_REVERB_APP_KEY,
+    wsHost: import.meta.env.VITE_REVERB_HOST || window.location.hostname,
+    wsPort: Number(import.meta.env.VITE_REVERB_PORT || 8080),
+    wssPort: Number(import.meta.env.VITE_REVERB_PORT || 8080),
+    forceTLS: reverbScheme() === 'https',
+    enabledTransports: ['ws', 'wss'],
+    authEndpoint: `${apiOrigin()}/broadcasting/auth`,
+    authorizer: (channel) => ({
+      authorize: (socketId, callback) => {
+        const token = localStorage.getItem(tokenKey)
 
-      fetch(`${apiOrigin()}/broadcasting/auth`, {
-        method: 'POST',
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({
-          socket_id: socketId,
-          channel_name: channel.name,
-        }),
-      })
-        .then(async (response) => {
-          const data = await response.json().catch(() => ({}))
-          if (!response.ok) throw data
-          callback(false, data)
+        fetch(`${apiOrigin()}/broadcasting/auth`, {
+          method: 'POST',
+          headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({
+            socket_id: socketId,
+            channel_name: channel.name,
+          }),
         })
-        .catch((error) => callback(true, error))
-    },
-  }),
-})
+          .then(async (response) => {
+            const data = await response.json().catch(() => ({}))
+            if (!response.ok) throw data
+            callback(false, data)
+          })
+          .catch((error) => callback(true, error))
+      },
+    }),
+  })
+
+  echo.connector?.pusher?.connection?.bind('state_change', (state) => {
+    console.log('[realtime]', 'connection.state_change', new Date().toISOString(), state)
+  })
+  echo.connector?.pusher?.connection?.bind('error', (error) => {
+    console.log('[realtime]', 'connection.error', new Date().toISOString(), error)
+  })
+
+  return echo
+}
 
 export const getEcho = () => {
   if (!echoInstance) {

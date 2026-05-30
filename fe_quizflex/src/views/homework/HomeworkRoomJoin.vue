@@ -17,6 +17,17 @@
           <button class="btn-primary mt-6 w-full" type="submit" :disabled="isSubmitting">{{ isSubmitting ? 'Đang tham gia...' : 'Tham gia' }}</button>
         </form>
 
+        <div class="mt-5 grid gap-3 text-left sm:grid-cols-2">
+          <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-4">
+            <p class="text-xs font-black uppercase tracking-[0.16em] text-[var(--primary)]">Assignment</p>
+            <p class="mt-2 text-sm font-bold leading-6 text-[var(--muted)]">Sau khi join, bạn sẽ thấy các bài được giao trong room.</p>
+          </div>
+          <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-4">
+            <p class="text-xs font-black uppercase tracking-[0.16em] text-[var(--primary)]">Result</p>
+            <p class="mt-2 text-sm font-bold leading-6 text-[var(--muted)]">Kết quả hiển thị theo cấu hình của chủ room.</p>
+          </div>
+        </div>
+
         <div v-if="successMessage" class="mt-5 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm font-bold text-emerald-300">{{ successMessage }}</div>
         <div v-if="errorMessage" class="mt-5 rounded-2xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm font-bold text-rose-300">{{ errorMessage }}</div>
 

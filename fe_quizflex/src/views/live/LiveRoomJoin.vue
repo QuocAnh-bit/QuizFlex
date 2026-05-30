@@ -11,6 +11,21 @@
       <p class="mt-3 max-w-3xl text-sm leading-7 text-[var(--muted)]">Nhập mã phòng do host chia sẻ để vào màn chơi live quiz.</p>
     </article>
 
+    <div class="grid gap-3 md:grid-cols-3">
+      <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-4">
+        <p class="text-xs font-black uppercase tracking-[0.16em] text-[var(--primary)]">Code</p>
+        <p class="mt-2 text-sm font-bold text-[var(--muted)]">Nhập mã do host chia sẻ.</p>
+      </div>
+      <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-4">
+        <p class="text-xs font-black uppercase tracking-[0.16em] text-[var(--primary)]">Waiting</p>
+        <p class="mt-2 text-sm font-bold text-[var(--muted)]">Chờ host start nếu room chưa bắt đầu.</p>
+      </div>
+      <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-4">
+        <p class="text-xs font-black uppercase tracking-[0.16em] text-[var(--primary)]">Progress</p>
+        <p class="mt-2 text-sm font-bold text-[var(--muted)]">Mỗi player có tiến độ riêng.</p>
+      </div>
+    </div>
+
     <div v-if="errorMessage" class="rounded-[2rem] border border-rose-500/30 bg-rose-500/10 p-5 text-sm font-bold text-rose-300">{{ errorMessage }}</div>
 
     <form class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-card)]" @submit.prevent="handleJoin">
@@ -37,21 +52,26 @@ const router = useRouter()
 const code = ref('')
 const isSubmitting = ref(false)
 const errorMessage = ref('')
+const resolveLiveRoomId = (data) => data?.live_room?.id || data?.live_room_id || data?.room?.id || data?.id
 
 const handleJoin = async () => {
-  if (!code.value) {
+  if (isSubmitting.value) return
+
+  const roomCode = String(code.value || '').trim().toUpperCase()
+  if (!roomCode) {
     errorMessage.value = 'Vui lòng nhập mã live room.'
     return
   }
 
   isSubmitting.value = true
   errorMessage.value = ''
+  code.value = roomCode
 
   try {
-    const data = await liveRoomApi.joinLiveRoom(code.value)
-    const liveRoomId = data.live_room?.id
+    const data = await liveRoomApi.joinLiveRoom(roomCode)
+    const liveRoomId = resolveLiveRoomId(data)
     if (!liveRoomId) throw new Error('Response không có live room id.')
-    router.push(`/live-rooms/${liveRoomId}/play`)
+    await router.push({ name: 'live-room-play', params: { liveRoomId: String(liveRoomId) } })
   } catch (error) {
     errorMessage.value = error.message || 'Không tham gia được live room.'
   } finally {

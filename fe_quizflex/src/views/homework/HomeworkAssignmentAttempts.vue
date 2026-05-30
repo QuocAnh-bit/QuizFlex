@@ -56,7 +56,7 @@
             <h3 class="font-black text-[var(--text)]">{{ attempt.user?.name || `User #${attempt.user_id}` }}</h3>
             <p class="mt-1 text-xs font-bold text-[var(--muted)]">{{ attempt.user?.email || 'Chưa có email' }}</p>
           </div>
-          <span class="w-fit rounded-full bg-[var(--chip-active)] px-3 py-1 text-xs font-black text-[var(--primary)]">{{ attempt.status || '-' }}</span>
+          <StatusBadge :value="attempt.status || '-'" />
           <p class="text-sm font-black text-[var(--text)]">{{ formatScore(attempt) }}</p>
           <p class="text-sm font-black text-[var(--text)]">{{ formatCorrectCount(attempt) }}</p>
           <p class="text-sm font-bold text-[var(--muted)]">{{ formatDateTime(attempt.started_at) }}</p>
@@ -76,6 +76,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
+import StatusBadge from '@/components/common/StatusBadge.vue'
 import { homeworkApi } from '@/services/api'
 
 const route = useRoute()
