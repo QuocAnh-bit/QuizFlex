@@ -8,6 +8,7 @@ use App\Models\AiLog;
 use App\Services\AI\PromptQualityValidator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Throwable;
 
 class AIController extends Controller
 {
@@ -59,11 +60,27 @@ class AIController extends Controller
             'status' => 'pending',
         ]);
 
-        GenerateQuizJob::dispatch($job->uuid);
+        $runSynchronously = config('queue.default') === 'sync' || $request->boolean('sync');
+
+        try {
+            if ($runSynchronously) {
+                GenerateQuizJob::dispatchSync($job->uuid);
+                $job->refresh();
+            } else {
+                GenerateQuizJob::dispatch($job->uuid);
+            }
+        } catch (Throwable $exception) {
+            $job->refresh();
+
+            if ($job->status !== 'failed') {
+                (new GenerateQuizJob($job->uuid))->failed($exception);
+                $job->refresh();
+            }
+        }
 
         return response()->json([
-            'success' => true,
-            'message' => 'AI job queued.',
+            'success' => $job->status !== 'failed',
+            'message' => $runSynchronously ? 'AI job processed.' : 'AI job queued.',
             'data' => [
                 'job_id' => $job->uuid,
                 'status' => $job->status,
@@ -72,8 +89,11 @@ class AIController extends Controller
                 'difficulty' => $job->difficulty,
                 'language' => $job->language,
                 'visibility' => $job->visibility,
+                'questions_generated' => $job->questions_generated,
+                'quiz_id' => $job->quiz_id,
+                'error_message' => $job->error_message,
             ],
-        ], 202);
+        ], $job->status === 'failed' ? 500 : ($runSynchronously ? 200 : 202));
     }
 
     public function show(int $id)

@@ -3,55 +3,83 @@
 namespace App\Services\AI;
 
 use GuzzleHttp\Client as GuzzleClient;
-use OpenAI;
-use OpenAI\Client;
+use GuzzleHttp\Exception\RequestException;
 use RuntimeException;
 use Throwable;
 
 class AIService
 {
-    private Client $client;
+    private GuzzleClient $http;
+    private string $apiKey;
+    private string $baseUri;
+    private string $model;
+    private bool $usesOpenRouter;
 
     public function __construct()
     {
-        $apiKey = (string) config('services.deepseek.api_key', '');
+        $openrouterKey = trim((string) config('services.openrouter.api_key', ''));
+        $deepseekKey = trim((string) config('services.deepseek.api_key', ''));
 
-        if ($apiKey === '') {
-            throw new RuntimeException(
-                'DeepSeek API key is missing. Set DEEPSEEK_API_KEY or OPENROUTER_API_KEY.'
-            );
+        $this->usesOpenRouter = $openrouterKey !== '';
+
+        if ($this->usesOpenRouter) {
+            $this->apiKey = $openrouterKey;
+            $this->baseUri = $this->normalizeBaseUri((string) config('services.openrouter.base_uri', 'https://openrouter.ai/api/v1'));
+            $this->model = trim((string) config('services.openrouter.model', 'deepseek/deepseek-chat-v3-0324')) ?: 'deepseek/deepseek-chat-v3-0324';
+
+            $timeout = (int) config('services.openrouter.timeout', config('services.deepseek.timeout', 120));
+            $connectTimeout = (int) config('services.openrouter.connect_timeout', config('services.deepseek.connect_timeout', 30));
+        } else {
+            $this->apiKey = $deepseekKey;
+            $this->baseUri = $this->normalizeBaseUri((string) config('services.deepseek.base_uri', 'https://api.deepseek.com'));
+            $this->model = trim((string) config('services.deepseek.model', 'deepseek-chat')) ?: 'deepseek-chat';
+
+            $timeout = (int) config('services.deepseek.timeout', 120);
+            $connectTimeout = (int) config('services.deepseek.connect_timeout', 30);
         }
 
-        $this->client = OpenAI::factory()
-            ->withApiKey($apiKey)
-            ->withBaseUri((string) config('services.deepseek.base_uri', 'https://api.deepseek.com'))
-            ->withHttpClient(new GuzzleClient([
-                'verify' => $this->resolveVerifyOption(),
-                'timeout' => (int) config('services.deepseek.timeout', 120),
-                'connect_timeout' => (int) config('services.deepseek.connect_timeout', 30),
-            ]))
-            ->make();
+        if ($this->apiKey === '') {
+            throw new RuntimeException('Missing AI API key. Set OPENROUTER_API_KEY or DEEPSEEK_API_KEY in backend .env, then run php artisan optimize:clear.');
+        }
+
+        $this->http = new GuzzleClient([
+            'base_uri' => $this->baseUri . '/',
+            'verify' => $this->resolveVerifyOption(),
+            'timeout' => $timeout,
+            'connect_timeout' => $connectTimeout,
+        ]);
     }
 
     public function generateQuiz(string $prompt, int $count = 10): array
     {
-        $result = $this->requestJsonPayload($this->buildPrompt($prompt, $count));
+        $count = max(1, min(50, $count));
+        $lastException = null;
 
-        if (!$this->isGeneratedQuizValid($result['payload'])) {
-            throw new RuntimeException('AI JSON structure invalid.');
+        for ($attempt = 1; $attempt <= 2; $attempt++) {
+            try {
+                $result = $this->requestJsonPayload($this->buildPrompt($prompt, $count));
+
+                if (!$this->isGeneratedQuizValid($result['payload'])) {
+                    throw new RuntimeException('AI JSON structure invalid.');
+                }
+
+                $quiz = $this->normalizeGeneratedQuiz($result['payload'], $count);
+                $quiz['meta'] = [
+                    'tokens_used' => $result['tokens_used'],
+                    'raw_json' => $result['raw_json'],
+                    'requested_count' => $count,
+                    'actual_count' => count($quiz['questions']),
+                    'provider' => $this->usesOpenRouter ? 'openrouter' : 'deepseek',
+                    'model' => $this->model,
+                ];
+
+                return $quiz;
+            } catch (Throwable $exception) {
+                $lastException = $exception;
+            }
         }
 
-        if (count($result['payload']['questions']) !== $count) {
-            throw new RuntimeException("AI returned " . count($result['payload']['questions']) . " questions, expected {$count}.");
-        }
-
-        $quiz = $this->normalizeGeneratedQuiz($result['payload']);
-        $quiz['meta'] = [
-            'tokens_used' => $result['tokens_used'],
-            'raw_json' => $result['raw_json'],
-        ];
-
-        return $quiz;
+        throw new RuntimeException($lastException?->getMessage() ?: 'AI generation failed.');
     }
 
     public function parseQuiz(string $prompt): array
@@ -101,39 +129,141 @@ PROMPT;
 
     private function requestJsonPayload(string $prompt): array
     {
-        try {
-            $response = $this->client->chat()->create([
-                'model' => (string) config('services.deepseek.model', 'deepseek-chat'),
-                'messages' => [
-                    [
-                        'role' => 'user',
-                        'content' => $prompt,
-                    ],
+        $payload = [
+            'model' => $this->model,
+            'messages' => [
+                [
+                    'role' => 'system',
+                    'content' => 'You generate valid JSON only. Do not wrap JSON in markdown.',
                 ],
-                'temperature' => 0.7,
-            ]);
+                [
+                    'role' => 'user',
+                    'content' => $prompt,
+                ],
+            ],
+            'temperature' => 0.4,
+        ];
 
-            $content = $response->choices[0]->message->content ?? null;
-
-            if (!is_string($content) || trim($content) === '') {
-                throw new RuntimeException('AI returned empty response.');
-            }
-
-            $json = $this->cleanJson($content);
-            $payload = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
-
-            if (!is_array($payload)) {
-                throw new RuntimeException('AI response JSON must decode to an object.');
-            }
-
-            return [
-                'payload' => $payload,
-                'raw_json' => $json,
-                'tokens_used' => (int) ($response->usage->totalTokens ?? 0),
-            ];
-        } catch (Throwable $exception) {
-            throw new RuntimeException($exception->getMessage(), (int) $exception->getCode(), $exception);
+        if (!$this->usesOpenRouter) {
+            $payload['response_format'] = ['type' => 'json_object'];
         }
+
+        try {
+            return $this->sendChatCompletion($payload);
+        } catch (RuntimeException $exception) {
+            if (!str_contains(strtolower($exception->getMessage()), 'response_format')) {
+                throw $exception;
+            }
+
+            unset($payload['response_format']);
+            return $this->sendChatCompletion($payload);
+        }
+    }
+
+    private function sendChatCompletion(array $payload): array
+{
+    try {
+        $headers = $this->buildHeaders();
+
+        if (
+            empty($headers['Authorization']) ||
+            trim($headers['Authorization']) === 'Bearer' ||
+            trim($headers['Authorization']) === 'Bearer '
+        ) {
+            throw new RuntimeException('Authorization header is empty. Check OPENROUTER_API_KEY in .env.');
+        }
+
+        $url = $this->baseUri . '/chat/completions';
+
+        $response = $this->http->post($url, [
+            'headers' => $headers,
+            'json' => $payload,
+        ]);
+
+        $body = (string) $response->getBody();
+        $decoded = json_decode($body, true, 512, JSON_THROW_ON_ERROR);
+
+        $content = $decoded['choices'][0]['message']['content'] ?? null;
+
+        if (!is_string($content) || trim($content) === '') {
+            throw new RuntimeException('AI returned empty response.');
+        }
+
+        $json = $this->cleanJson($content);
+        $generated = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
+
+        if (!is_array($generated)) {
+            throw new RuntimeException('AI response JSON must decode to an object.');
+        }
+
+        return [
+            'payload' => $generated,
+            'raw_json' => $json,
+            'tokens_used' => (int) ($decoded['usage']['total_tokens'] ?? 0),
+        ];
+    } catch (RequestException $exception) {
+        $responseBody = $exception->getResponse() ? (string) $exception->getResponse()->getBody() : '';
+        $message = $this->extractApiErrorMessage($responseBody) ?: $exception->getMessage();
+
+        throw new RuntimeException($message, (int) $exception->getCode(), $exception);
+    } catch (Throwable $exception) {
+        throw new RuntimeException($exception->getMessage(), (int) $exception->getCode(), $exception);
+    }
+}
+
+    private function buildHeaders(): array
+    {
+        $headers = [
+            'Authorization' => 'Bearer ' . $this->apiKey,
+            'Content-Type' => 'application/json',
+            'Accept' => 'application/json',
+        ];
+
+        if ($this->usesOpenRouter) {
+            $referer = trim((string) config(
+                'services.openrouter.http_referer',
+                config('services.deepseek.openrouter_http_referer', config('app.url', 'http://localhost:8000'))
+            ));
+
+            $title = trim((string) config(
+                'services.openrouter.title',
+                config('services.deepseek.openrouter_title', config('app.name', 'QuizFlex'))
+            ));
+
+            if ($referer !== '') {
+                $headers['HTTP-Referer'] = $referer;
+            }
+
+            if ($title !== '') {
+                $headers['X-Title'] = $title;
+            }
+        }
+
+        return $headers;
+    }
+
+    private function extractApiErrorMessage(string $responseBody): ?string
+    {
+        if (trim($responseBody) === '') {
+            return null;
+        }
+
+        $decoded = json_decode($responseBody, true);
+
+        if (!is_array($decoded)) {
+            return trim($responseBody);
+        }
+
+        $message = $decoded['error']['message']
+            ?? $decoded['message']
+            ?? $decoded['error']
+            ?? null;
+
+        if (is_array($message)) {
+            return json_encode($message, JSON_UNESCAPED_UNICODE);
+        }
+
+        return is_string($message) ? $message : null;
     }
 
     private function isGeneratedQuizValid(array $data): bool
@@ -175,13 +305,18 @@ PROMPT;
         return true;
     }
 
-    private function normalizeGeneratedQuiz(array $data): array
+    private function normalizeGeneratedQuiz(array $data, ?int $limit = null): array
     {
         $title = trim((string) ($data['title'] ?? ''));
+        $questions = collect($data['questions']);
+
+        if ($limit !== null) {
+            $questions = $questions->take($limit);
+        }
 
         return [
             'title' => $title !== '' ? $title : 'AI Generated Quiz',
-            'questions' => collect($data['questions'])
+            'questions' => $questions
                 ->map(fn (array $question) => [
                     'content' => trim((string) $question['content']),
                     'answers' => collect($question['answers'])
@@ -234,9 +369,27 @@ PROMPT;
 
     private function cleanJson(string $text): string
     {
-        $text = preg_replace('/```json|```/', '', $text);
+        $text = trim((string) preg_replace('/```(?:json)?|```/i', '', $text));
 
-        return trim((string) $text);
+        $firstBrace = strpos($text, '{');
+        $lastBrace = strrpos($text, '}');
+
+        if ($firstBrace !== false && $lastBrace !== false && $lastBrace > $firstBrace) {
+            return substr($text, $firstBrace, $lastBrace - $firstBrace + 1);
+        }
+
+        return $text;
+    }
+
+    private function normalizeBaseUri(string $baseUri): string
+    {
+        $baseUri = trim($baseUri);
+
+        if ($baseUri === '') {
+            return $this->usesOpenRouter ? 'https://openrouter.ai/api/v1' : 'https://api.deepseek.com';
+        }
+
+        return rtrim($baseUri, '/');
     }
 
     private function resolveVerifyOption(): bool|string

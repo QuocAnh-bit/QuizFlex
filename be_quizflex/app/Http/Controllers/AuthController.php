@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use App\Services\Auth\OtpService;
 use PHPOpenSourceSaver\JWTAuth\JWTGuard;
 
 class AuthController extends Controller
@@ -27,6 +28,29 @@ class AuthController extends Controller
         }
 
         $user = $this->authenticatedUser();
+
+        // Kiểm tra xem tài khoản đã xác thực email (OTP) chưa
+        if ($user->email_verified_at === null) {
+            $this->apiGuard()->logout(); // Đăng xuất lập tức để vô hiệu hóa token vừa tạo
+            
+            // Gửi lại OTP tự động để hỗ trợ người dùng tiếp tục xác thực
+            try {
+                $otpService = app(OtpService::class);
+                $otpService->generateOtp($user->email);
+            } catch (\Exception $e) {
+                // Ghi log lỗi gửi mail ra laravel.log
+                \Illuminate\Support\Facades\Log::error('Login OTP Mail Error: ' . $e->getMessage(), [
+                    'exception' => $e
+                ]);
+            }
+
+            return response()->json([
+                'success' => false,
+                'needs_verification' => true,
+                'email' => $user->email,
+                'message' => 'Tài khoản của bạn chưa được kích hoạt. Một mã OTP mới đã được gửi tới email của bạn.',
+            ], 403);
+        }
 
         return response()->json([
             'success' => true,
@@ -76,9 +100,20 @@ class AuthController extends Controller
 
         $user = User::create($payload);
 
+        // Tự động sinh OTP và gửi qua log/mail
+        try {
+            $otpService = app(OtpService::class);
+            $otpService->generateOtp($user->email);
+        } catch (\Exception $e) {
+            // Ghi log lỗi gửi mail ra laravel.log để nhà phát triển biết lý do gửi mail thất bại
+            \Illuminate\Support\Facades\Log::error('Registration OTP Mail Error: ' . $e->getMessage(), [
+                'exception' => $e
+            ]);
+        }
+
         return response()->json([
             'success' => true,
-            'message' => 'Tạo tài khoản thành công. Vui lòng đăng nhập để tiếp tục.',
+            'message' => 'Đăng ký tài khoản thành công! Một mã OTP đã được gửi tới email của bạn để kích hoạt.',
             'data' => $this->formatUser($user),
         ], 201);
     }
@@ -96,6 +131,64 @@ class AuthController extends Controller
                 'success' => false,
                 'message' => 'Token không hợp lệ hoặc đã bị vô hiệu hóa',
             ], 401);
+        }
+    }
+
+    public function verifyOtp(Request $request)
+    {
+        $data = $request->validate([
+            'email' => ['required', 'email'],
+            'otp' => ['required', 'string', 'size:6'],
+        ]);
+
+        try {
+            $otpService = app(OtpService::class);
+            $otpService->verifyOtp($data['email'], $data['otp']);
+
+            // Xác thực email của user
+            $user = User::where('email', $data['email'])->first();
+            $token = null;
+            if ($user) {
+                $user->email_verified_at = now();
+                $user->save();
+
+                // Tự động đăng nhập và sinh JWT Token
+                $token = auth('api')->login($user);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Xác thực OTP thành công! Tài khoản của bạn đã được kích hoạt.',
+                'token' => $token,
+                'data' => $user ? $this->formatUser($user) : null,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 422);
+        }
+    }
+
+    public function resendOtp(Request $request)
+    {
+        $data = $request->validate([
+            'email' => ['required', 'email'],
+        ]);
+
+        try {
+            $otpService = app(OtpService::class);
+            $otpService->generateOtp($data['email']);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Một mã OTP mới đã được gửi tới email của bạn.',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 422);
         }
     }
 

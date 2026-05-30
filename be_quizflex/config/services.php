@@ -6,12 +6,6 @@ return [
     |--------------------------------------------------------------------------
     | Third Party Services
     |--------------------------------------------------------------------------
-    |
-    | This file is for storing the credentials for third party services such
-    | as Mailgun, Postmark, AWS and more. This file provides the de facto
-    | location for this type of information, allowing packages to have
-    | a conventional file to locate the various service credentials.
-    |
     */
 
     'postmark' => [
@@ -35,14 +29,39 @@ return [
         ],
     ],
 
+    'momo' => [
+        'partner_code' => env('MOMO_PARTNER_CODE', 'MOMOBKUN20180810'),
+        'access_key' => env('MOMO_ACCESS_KEY', 'klm05Y2lhgWgl2uU'),
+        'secret_key' => env('MOMO_SECRET_KEY', 'escribe551051'),
+        'endpoint' => env('MOMO_ENDPOINT', 'https://test-payment.momo.vn/v2/gateway/api/create'),
+        'redirect_url' => env('MOMO_REDIRECT_URL', 'http://localhost:5173/payment-result'),
+        'ipn_url' => env('MOMO_IPN_URL', 'http://localhost:8000/api/payments/webhook/momo'),
+    ],
+
     'deepseek' => [
-        'api_key' => env('DEEPSEEK_API_KEY', env('OPENROUTER_API_KEY')),
+        'api_key' => env('DEEPSEEK_API_KEY'),
         'base_uri' => env('DEEPSEEK_BASE_URI', 'https://api.deepseek.com'),
         'model' => env('DEEPSEEK_MODEL', 'deepseek-chat'),
         'timeout' => (int) env('DEEPSEEK_TIMEOUT', 120),
         'connect_timeout' => (int) env('DEEPSEEK_CONNECT_TIMEOUT', 30),
-        'ssl_verify' => env('DEEPSEEK_SSL_VERIFY', true),
+        'ssl_verify' => filter_var(env('DEEPSEEK_SSL_VERIFY', true), FILTER_VALIDATE_BOOL),
         'ca_bundle' => env('DEEPSEEK_CA_BUNDLE'),
+    ],
+
+    'openrouter' => [
+        'api_key' => env('OPENROUTER_API_KEY'),
+        'base_uri' => env('OPENROUTER_BASE_URI', 'https://openrouter.ai/api/v1'),
+        'model' => env('OPENROUTER_MODEL', 'deepseek/deepseek-chat-v3-0324'),
+        'timeout' => (int) env('OPENROUTER_TIMEOUT', 120),
+        'connect_timeout' => (int) env('OPENROUTER_CONNECT_TIMEOUT', 30),
+        'http_referer' => env('OPENROUTER_HTTP_REFERER', env('APP_URL', 'http://localhost:8000')),
+        'title' => env('OPENROUTER_TITLE', env('APP_NAME', 'QuizFlex')),
+    ],
+
+    'google' => [
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect' => env('GOOGLE_REDIRECT_URI'),
     ],
 
 ];

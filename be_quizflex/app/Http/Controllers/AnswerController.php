@@ -5,11 +5,15 @@ namespace App\Http\Controllers;
 use App\Models\Answer;
 use App\Models\Question;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class AnswerController extends Controller
 {
     public function store(Request $request, Question $question)
     {
+        $question->loadMissing('quiz');
+        Gate::forUser(auth('api')->user())->authorize('update', $question->quiz);
+
         $data = $request->validate([
             'content' => ['required_without:text', 'nullable', 'string'],
             'text' => ['required_without:content', 'nullable', 'string'],
@@ -32,6 +36,9 @@ class AnswerController extends Controller
 
     public function update(Request $request, Answer $answer)
     {
+        $answer->loadMissing('question.quiz');
+        Gate::forUser(auth('api')->user())->authorize('update', $answer->question->quiz);
+
         $data = $request->validate([
             'content' => ['nullable', 'string'],
             'text' => ['nullable', 'string'],
@@ -54,6 +61,9 @@ class AnswerController extends Controller
 
     public function destroy(Answer $answer)
     {
+        $answer->loadMissing('question.quiz');
+        Gate::forUser(auth('api')->user())->authorize('update', $answer->question->quiz);
+
         $answer->delete();
 
         return response()->json([

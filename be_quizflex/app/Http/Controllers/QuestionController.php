@@ -7,6 +7,7 @@ use App\Models\Question;
 use App\Models\Quiz;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 
 class QuestionController extends Controller
@@ -24,6 +25,8 @@ class QuestionController extends Controller
 
     public function store(Request $request, Quiz $quiz)
     {
+        Gate::forUser(auth('api')->user())->authorize('update', $quiz);
+
         $data = $this->validateQuestionPayload($request);
 
         $question = DB::transaction(function () use ($quiz, $data) {
@@ -60,6 +63,9 @@ class QuestionController extends Controller
 
     public function update(Request $request, Question $question)
     {
+        $question->loadMissing('quiz');
+        Gate::forUser(auth('api')->user())->authorize('update', $question->quiz);
+
         $data = $this->validateQuestionPayload($request, true);
 
         $question = DB::transaction(function () use ($question, $data) {
@@ -87,6 +93,9 @@ class QuestionController extends Controller
 
     public function destroy(Question $question)
     {
+        $question->loadMissing('quiz');
+        Gate::forUser(auth('api')->user())->authorize('update', $question->quiz);
+
         $question->delete();
 
         return response()->json([

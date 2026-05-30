@@ -175,7 +175,7 @@ api.interceptors.response.use(
       }
     }
 
-    const message = error.response?.data?.message || error.message || 'API request failed'
+    const message = error.response?.data?.data?.error_message || error.response?.data?.error_message || error.response?.data?.message || error.message || 'API request failed'
     return Promise.reject(new Error(message))
   },
 )
@@ -199,6 +199,16 @@ export const authApi = {
 
   async register(payload) {
     const { data } = await api.post('/auth/register', payload)
+    return unwrap(data)
+  },
+
+  async verifyOtp(payload) {
+    const { data } = await api.post('/auth/verify-otp', payload)
+    return data
+  },
+
+  async resendOtp(payload) {
+    const { data } = await api.post('/auth/resend-otp', payload)
     return unwrap(data)
   },
 
@@ -507,6 +517,23 @@ export const formatSeconds = (seconds = 0) => {
   const minutes = Math.floor(safeSeconds / 60)
   const remainingSeconds = safeSeconds % 60
   return `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`
+}
+
+export const paymentsApi = {
+  async create(payload) {
+    const { data } = await api.post('/payments/create', payload)
+    return data
+  },
+
+  async callback(params) {
+    const { data } = await api.get('/payments/callback', { params })
+    return data
+  },
+
+  async history() {
+    const { data } = await api.get('/payments/history')
+    return data
+  }
 }
 
 export default api

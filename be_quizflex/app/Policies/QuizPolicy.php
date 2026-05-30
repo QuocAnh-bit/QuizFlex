@@ -40,7 +40,7 @@ class QuizPolicy
         }
         
         $role = strtolower($user->role ?? 'user');
-        if ($role === 'admin' || $role === 'vip') {
+        if ($role === 'admin') {
             return true;
         }
 

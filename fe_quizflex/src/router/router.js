@@ -19,9 +19,10 @@ const routes = [
   { path: '/quiz/:id', redirect: (to) => `/quizzes/${to.params.id}` },
   { path: '/join-room', name: 'join-room', component: () => import('@/views/user/JoinRoom.vue'), meta: { layout: 'user', title: 'Join room' } },
   { path: '/upgrade', name: 'upgrade', component: () => import('@/views/user/Upgrade.vue'), meta: { layout: 'user', title: 'Nâng cấp VIP' } },
-  { path: '/results', name: 'results', component: () => import('@/views/user/Results.vue'), meta: { layout: 'user', title: 'Kết quả của tôi', requiresAuth: true } },
-  { path: '/results/:id', name: 'attempt-result', component: () => import('@/views/user/AttemptResult.vue'), meta: { layout: 'user', title: 'Kết quả bài làm', requiresAuth: true } },
-  { path: '/profile', name: 'profile', component: () => import('@/views/user/Profile.vue'), meta: { layout: 'user', title: 'Hồ sơ cá nhân', requiresAuth: true } },
+  { path: '/payment-result', name: 'payment-result', component: () => import('@/views/user/PaymentResult.vue'), meta: { layout: 'user', title: 'Kết quả thanh toán' } },
+  { path: '/results', name: 'results', component: () => import('@/views/user/Results.vue'), meta: { layout: 'user', title: 'Kết quả của tôi' } },
+  { path: '/results/:id', name: 'attempt-result', component: () => import('@/views/user/AttemptResult.vue'), meta: { layout: 'user', title: 'Kết quả bài làm' } },
+  { path: '/profile', name: 'profile', component: () => import('@/views/user/Profile.vue'), meta: { layout: 'user', title: 'Hồ sơ cá nhân' } },
 
   { path: '/login', name: 'login', component: () => import('@/views/auth/Login.vue'), meta: { layout: 'auth', title: 'Đăng nhập' } },
   { path: '/register', name: 'register', component: () => import('@/views/auth/Register.vue'), meta: { layout: 'auth', title: 'Đăng ký' } },
@@ -69,6 +70,7 @@ router.beforeEach(async (to) => {
   let user = currentUserStorage.get()
   const token = tokenStorage.get()
   const isAuthLayout = to.meta.layout === 'auth'
+  const requiresAuth = Boolean(to.meta.requiresAuth)
 
   if (!token && user) {
     authApi.clearSession()
@@ -85,14 +87,14 @@ router.beforeEach(async (to) => {
   }
 
   if (user && isAuthLayout) {
-    return safeRedirect(String(to.query.redirect || '')) || getDefaultRouteForRole(user.role)
+    return getDefaultRouteForRole(user.role)
   }
 
-  if (to.meta.requiresAuth && !user) {
+  if (!user && requiresAuth) {
     return { path: '/login', query: { redirect: to.fullPath } }
   }
 
-  if (user && Array.isArray(to.meta.roles) && !hasAnyRole(user, to.meta.roles)) {
+  if (user && Array.isArray(to.meta.roles) && to.meta.roles.length && !hasAnyRole(user, to.meta.roles)) {
     return getDefaultRouteForRole(user.role)
   }
 
