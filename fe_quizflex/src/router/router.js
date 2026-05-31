@@ -63,6 +63,15 @@ const routes = [
   { path: '/admin/settings', name: 'admin-settings', component: () => import('@/views/admin/Settings.vue'), meta: { layout: 'admin', title: 'Settings', requiresAuth: true, roles: adminRoles } },
 
   { path: '/:pathMatch(.*)*', name: 'not-found', redirect: '/' },
+
+  {
+  path: '/gamification',
+  component: () => import('@/views/user/GamificationStats.vue'),
+},
+{
+  path: '/leaderboard',
+  component: () => import('@/views/user/Leaderboard.vue'),
+},
 ]
 
 const router = createRouter({
@@ -120,3 +129,4 @@ router.afterEach((to) => {
 })
 
 export default router
+

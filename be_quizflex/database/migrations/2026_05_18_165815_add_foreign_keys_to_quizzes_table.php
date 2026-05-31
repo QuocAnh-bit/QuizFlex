@@ -6,19 +6,23 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::table('quizzes', function (Blueprint $table) {
             $table->foreign(['user_id'], 'fk_quizzes_user_id')->references(['id'])->on('users')->onUpdate('cascade')->onDelete('cascade');
+        Schema::create('quiz_attempts', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->foreignId('quiz_id')->constrained()->onDelete('cascade');
+            $table->integer('score')->default(0);
+            $table->integer('xp_earned')->default(0);
+            $table->string('status')->default('in_progress');
+            $table->timestamp('started_at')->nullable();
+            $table->timestamp('finished_at')->nullable();
+            $table->timestamps();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::table('quizzes', function (Blueprint $table) {

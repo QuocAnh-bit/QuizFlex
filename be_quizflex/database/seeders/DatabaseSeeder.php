@@ -23,6 +23,7 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
+<<<<<<< HEAD
         $guest = User::firstOrCreate(
             ['email' => 'guest@quizflex.local'],
             [
@@ -119,5 +120,16 @@ class DatabaseSeeder extends Seeder
                 }
             }
         }
+=======
+        User::factory()->create([
+            'name' => 'Test User',
+            'email' => 'test@example.com',
+        ]);
+
+         $this->call([
+        // ... các seeder cũ
+        BadgeSeeder::class,
+    ]);
+>>>>>>> origin/huydev
     }
 }

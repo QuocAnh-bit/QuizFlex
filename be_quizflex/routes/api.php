@@ -31,6 +31,7 @@ Route::get('/test', function () {
 });
 
 
+<<<<<<< HEAD
 
 Route::get('/ai-test', function () {
     try {
@@ -430,3 +431,38 @@ Route::get('/quizzes', [QuizController::class, 'index']);
 Route::get('/quizzes/{quiz}', [QuizController::class, 'show']);
 Route::get('/quizzes/{quiz}/questions', [QuestionController::class, 'index']);
 Route::get('/questions/{question}', [QuestionController::class, 'show']);
+=======
+Route::get('/user', function (Request $request) {
+    return $request->user();
+})->middleware('auth:sanctum');
+
+use App\Http\Controllers\GamificationController;
+
+// Route::middleware('auth:sanctum')->group(function () {
+//     Route::get('/user/stats', [GamificationController::class, 'getUserStats']);
+//     Route::post('/user/xp/add', [GamificationController::class, 'addXp']);
+//     Route::get('/leaderboard', [GamificationController::class, 'leaderboard']);
+//     Route::get('/badges', [GamificationController::class, 'badges']);
+// });
+
+use App\Http\Controllers\QuizAttemptController;
+
+// Route::middleware('auth:sanctum')->group(function () {
+//     Route::post('/quiz/start',         [QuizAttemptController::class, 'start']);
+//     Route::post('/quiz/{id}/submit',   [QuizAttemptController::class, 'submit']);
+//     Route::get('/quiz/history',        [QuizAttemptController::class, 'history']);
+// });
+
+// Public routes - không cần đăng nhập
+Route::get('/badges', [GamificationController::class, 'badges']);
+Route::get('/leaderboard', [GamificationController::class, 'leaderboard']);
+
+// Protected routes - cần đăng nhập
+// Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/user/stats', [GamificationController::class, 'getUserStats']);
+    Route::post('/user/xp/add', [GamificationController::class, 'addXp']);
+    Route::post('/quiz/start', [QuizAttemptController::class, 'start']);
+    Route::post('/quiz/{id}/submit', [QuizAttemptController::class, 'submit']);
+    Route::get('/quiz/history', [QuizAttemptController::class, 'history']);
+
+>>>>>>> origin/huydev

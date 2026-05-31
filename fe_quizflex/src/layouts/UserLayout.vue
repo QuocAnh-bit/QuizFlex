@@ -43,6 +43,7 @@
 
           <div class="hidden shrink-0 items-center gap-3 xl:flex">
             <ThemeToggle />
+              <StreakXpBar />
 
             <template v-if="!currentUser">
               <router-link
@@ -73,6 +74,7 @@
 
           <div class="flex shrink-0 items-center gap-2 xl:hidden">
             <ThemeToggle />
+            <StreakXpBar />
 
             <button
               type="button"
@@ -133,8 +135,12 @@ import { useRoute, useRouter } from 'vue-router'
 
 import BrandLogo from '@/components/common/BrandLogo.vue'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
+<<<<<<< HEAD
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import { authApi, currentUserStorage, getDashboardRouteForRole } from '@/services/api'
+=======
+import StreakXpBar from '@/components/common/StreakXpBar.vue'
+>>>>>>> origin/huydev
 
 const route = useRoute()
 const router = useRouter()
@@ -179,6 +185,8 @@ const baseNav = [
     label: 'Nâng cấp',
     to: '/upgrade',
   },
+  { label: 'Xếp hạng', to: '/leaderboard' },
+{ label: 'Thành tích', to: '/gamification' },
 ]
 
 const homeworkNav = computed(() => {
