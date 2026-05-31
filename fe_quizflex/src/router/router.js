@@ -16,6 +16,7 @@ const routes = [
   { path: '/quizzes', name: 'quiz-list', component: () => import('@/views/user/QuizList.vue'), meta: { layout: 'user', title: 'Danh sách quiz' } },
   { path: '/quizzes/:id', name: 'quiz-detail', component: () => import('@/views/user/QuizDetail.vue'), meta: { layout: 'user', title: 'Chi tiết quiz' } },
   { path: '/quizzes/:id/play', name: 'quiz-play', component: () => import('@/views/user/Quiz.vue'), meta: { layout: 'user', title: 'Làm quiz' } },
+  { path: '/quizzes/:id/flashcards', name: 'quiz-flashcards', component: () => import('@/views/user/Flashcards.vue'), meta: { layout: 'user', title: 'Ôn tập Flashcard' } },
   { path: '/quiz/:id', redirect: (to) => `/quizzes/${to.params.id}` },
   { path: '/join-room', name: 'join-room', component: () => import('@/views/user/JoinRoom.vue'), meta: { layout: 'user', title: 'Join room' } },
   { path: '/upgrade', name: 'upgrade', component: () => import('@/views/user/Upgrade.vue'), meta: { layout: 'user', title: 'Nâng cấp VIP' } },
