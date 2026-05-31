@@ -7,7 +7,9 @@ use App\Models\UserStreak;
 use App\Models\Badge;
 use App\Models\UserBadge;
 use App\Models\User;
+use App\Models\QuizAttempt;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
 class GamificationController extends Controller
@@ -123,8 +125,24 @@ class GamificationController extends Controller
 
         Badge::whereNotIn('id', $earnedBadgeIds)->get()->each(function ($badge) use ($userId, $userXp, $streak, &$newBadges) {
             $earned = match ($badge->condition_type) {
-                'xp_reached' => $userXp->xp >= $badge->condition_value,
+                'xp_reached'  => $userXp->xp >= $badge->condition_value,
                 'streak_days' => $streak && $streak->current_streak >= $badge->condition_value,
+
+                // Nhà thông thái AI — tạo đủ số quiz bằng AI
+                'ai_quiz_created' => DB::table('quizzes')
+                    ->where('user_id', $userId)
+                    ->where('is_ai_generated', true)
+                    ->count() >= $badge->condition_value,
+
+                // Cú đêm — hoàn thành quiz lúc 0h–5h sáng giờ VN
+                'night_owl' => QuizAttempt::where('user_id', $userId)
+                    ->whereNotNull('finished_at')
+                    ->whereRaw("HOUR(CONVERT_TZ(finished_at, '+00:00', '+07:00')) < 5")
+                    ->exists(),
+
+                // Chiến thần 100% — N lần liên tiếp đạt điểm tuyệt đối
+                'perfect_score_streak' => $this->checkPerfectScoreStreak($userId, $badge->condition_value),
+
                 default => false,
             };
 
@@ -135,5 +153,27 @@ class GamificationController extends Controller
         });
 
         return $newBadges;
+    }
+
+    // Helper: Kiểm tra N lần gần nhất có đạt 100% không
+    private function checkPerfectScoreStreak(int $userId, int $required): bool
+    {
+        $recent = QuizAttempt::where('user_id', $userId)
+            ->whereNotNull('finished_at')
+            ->orderByDesc('finished_at')
+            ->limit($required)
+            ->get(['quiz_id', 'score']);
+
+        if ($recent->count() < $required) return false;
+
+        foreach ($recent as $attempt) {
+            $total = DB::table('questions')
+                ->where('quiz_id', $attempt->quiz_id)
+                ->count();
+
+            if ($total === 0 || $attempt->score < $total) return false;
+        }
+
+        return true;
     }
 }
