@@ -6,17 +6,29 @@ use App\Models\Answer;
 use App\Models\Question;
 use App\Models\Quiz;
 use App\Models\QuizAttempt;
-use App\Models\User;
+use App\Services\QuestionOrderService;
+use App\Services\QuizGradingService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class QuizAttemptController extends Controller
 {
+    public function __construct(private readonly QuestionOrderService $questionOrderService)
+    {
+    }
+
     public function index(Request $request)
     {
+        $user = $request->user();
+
         $query = QuizAttempt::query()
             ->with(['quiz:id,title,category,is_public,room_code,time_limit_seconds', 'user:id,name'])
             ->latest('started_at');
+
+        if (strtolower((string) ($user->role ?? 'user')) !== 'admin') {
+            $query->where('user_id', $user->id);
+        }
 
         if ($request->filled('quiz_id')) {
             $query->where('quiz_id', $request->query('quiz_id'));
@@ -36,138 +48,152 @@ class QuizAttemptController extends Controller
         ]);
     }
 
-    public function show(QuizAttempt $quizAttempt)
+    public function show(Request $request, QuizAttempt $quizAttempt)
     {
+        $user = $request->user();
+        if (strtolower((string) ($user->role ?? 'user')) !== 'admin' && (int) $quizAttempt->user_id !== (int) $user->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn không có quyền xem lượt làm bài này.',
+            ], 403);
+        }
+
         $quizAttempt->load(['quiz.questions.answers', 'user:id,name']);
+        $data = $this->formatAttempt($quizAttempt, true);
+
+        if ($quizAttempt->status === 'in_progress' && $quizAttempt->quiz) {
+            $data['quiz_for_taking'] = $this->formatQuizForTaking($quizAttempt->quiz, $quizAttempt);
+        }
 
         return response()->json([
             'success' => true,
             'message' => 'Chi tiết kết quả làm bài',
-            'data' => $this->formatAttempt($quizAttempt, true),
+            'data' => $data,
         ]);
     }
 
     public function start(Request $request, Quiz $quiz)
     {
-        $request->validate([
-            'user_id' => ['nullable', 'integer', 'exists:users,id'],
-            'player_name' => ['nullable', 'string', 'max:255'],
+        $data = $request->validate([
+            'attempt_id' => ['nullable', 'integer', 'exists:quiz_attempts,id'],
         ]);
 
-        $user = $this->resolveUser($request, $request->input('player_name'));
+        $user = $request->user();
 
-        $attempt = QuizAttempt::create([
-            'user_id' => $user->id,
-            'quiz_id' => $quiz->id,
-            'score' => 0,
-            'total_points' => $quiz->questions()->sum('points'),
-            'time_spent_seconds' => null,
-            'answers_snapshot' => [],
-            'status' => 'in_progress',
-            'started_at' => now(),
-        ]);
+        if (!$this->canStartPractice($user, $quiz)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn không có quyền làm quiz này.',
+            ], 403);
+        }
 
         $quiz->load('questions.answers');
+
+        $attempt = $this->findReusablePracticeAttempt($quiz, $user->id, $data['attempt_id'] ?? null);
+
+        if ($attempt) {
+            $attempt = $this->questionOrderService->ensureAttemptOrder($attempt, $quiz);
+        } else {
+            $payload = [
+                'user_id' => $user->id,
+                'quiz_id' => $quiz->id,
+                'score' => 0,
+                'total_points' => $quiz->questions->sum(fn (Question $question) => (int) ($question->points ?? 0)),
+                'time_spent_seconds' => null,
+                'answers_snapshot' => [],
+                'status' => 'in_progress',
+                'started_at' => now(),
+            ];
+
+            if (Schema::hasColumn('quiz_attempts', 'question_order')) {
+                $payload['question_order'] = $this->questionOrderService->makeForQuiz($quiz);
+            }
+
+            if (Schema::hasColumn('quiz_attempts', 'mode')) {
+                $payload['mode'] = 'practice';
+            }
+
+            $attempt = QuizAttempt::create($payload);
+        }
 
         return response()->json([
             'success' => true,
             'message' => 'Bắt đầu làm bài',
             'data' => [
                 'attempt' => $this->formatAttempt($attempt),
-                'quiz' => $this->formatQuizForTaking($quiz),
+                'quiz' => $this->formatQuizForTaking($quiz, $attempt),
             ],
         ], 201);
     }
 
-    public function submit(Request $request, Quiz $quiz)
+    public function submit(Request $request, Quiz $quiz, QuizGradingService $gradingService)
     {
         $data = $request->validate([
-            'attempt_id' => ['nullable', 'integer', 'exists:quiz_attempts,id'],
+            'attempt_id' => ['required', 'integer', 'exists:quiz_attempts,id'],
             'answers' => ['required', 'array'],
-            'time_spent_seconds' => ['nullable', 'integer', 'min:0'],
-            'player_name' => ['nullable', 'string', 'max:255'],
-            'user_id' => ['nullable', 'integer', 'exists:users,id'],
         ]);
 
-        $user = $this->resolveUser($request, $data['player_name'] ?? null);
+        $user = $request->user();
 
-        $result = DB::transaction(function () use ($quiz, $data, $user) {
+        $result = DB::transaction(function () use ($quiz, $data, $user, $gradingService) {
             $quiz->load('questions.answers');
 
-            $attempt = null;
-            if (!empty($data['attempt_id'])) {
-                $attempt = QuizAttempt::where('quiz_id', $quiz->id)->find($data['attempt_id']);
-            }
+            $attempt = QuizAttempt::where('quiz_id', $quiz->id)->find($data['attempt_id']);
 
             if (!$attempt) {
-                $attempt = QuizAttempt::create([
-                    'user_id' => $user->id,
-                    'quiz_id' => $quiz->id,
-                    'score' => 0,
-                    'total_points' => 0,
-                    'status' => 'in_progress',
-                    'started_at' => now(),
-                ]);
+                abort(response()->json([
+                    'success' => false,
+                    'message' => 'Không tìm thấy lượt làm bài cho quiz này.',
+                ], 404));
             }
 
-            $snapshot = [];
-            $score = 0;
-            $totalPoints = 0;
-            $correctCount = 0;
-
-            foreach ($quiz->questions as $question) {
-                $points = (int) ($question->points ?? 10);
-                $totalPoints += $points;
-
-                $selectedRaw = $data['answers'][$question->id] ?? $data['answers'][(string) $question->id] ?? [];
-                $selectedIds = $this->resolveSelectedAnswerIds($question, $selectedRaw);
-                $correctIds = $question->answers->where('is_correct', true)->pluck('id')->map(fn ($id) => (int) $id)->sort()->values()->all();
-
-                $isCorrect = $selectedIds === $correctIds && count($correctIds) > 0;
-                if ($isCorrect) {
-                    $score += $points;
-                    $correctCount++;
-                }
-
-                $snapshot[] = [
-                    'question_id' => $question->id,
-                    'question' => $question->content,
-                    'selected_answer_ids' => $selectedIds,
-                    'selected_answer_keys' => $this->answerKeysFromIds($question, $selectedIds),
-                    'correct_answer_ids' => $correctIds,
-                    'correct_answer_keys' => $this->answerKeysFromIds($question, $correctIds),
-                    'is_correct' => $isCorrect,
-                    'points' => $points,
-                    'earned_points' => $isCorrect ? $points : 0,
-                ];
+            if ((int) $attempt->user_id !== (int) $user->id) {
+                abort(response()->json([
+                    'success' => false,
+                    'message' => 'Bạn không có quyền nộp lượt làm bài này.',
+                ], 403));
             }
 
-            // Calculate time spent strictly on server time to prevent client-side time cheating
+            if ($attempt->status === 'completed') {
+                abort(response()->json([
+                    'success' => false,
+                    'message' => 'Lượt làm bài này đã được nộp.',
+                ], 422));
+            }
+
+            $this->questionOrderService->applyOrderToQuiz($quiz, $attempt->question_order ?? []);
+            $graded = $gradingService->grade($quiz, $data['answers']);
+            $finishedAt = now();
             $timeSpent = 0;
             if ($attempt->started_at) {
-                $timeSpent = max(0, $attempt->started_at->diffInSeconds(now()));
+                $timeSpent = max(0, $attempt->started_at->diffInSeconds($finishedAt));
             }
 
-            $attempt->update([
-                'user_id' => $user->id,
-                'score' => $score,
-                'total_points' => $totalPoints,
+            $update = [
+                'score' => $graded['score'],
+                'total_points' => $graded['total_points'],
                 'time_spent_seconds' => $timeSpent,
-                'answers_snapshot' => $snapshot,
+                'answers_snapshot' => $graded['answers_snapshot'],
                 'status' => 'completed',
-                'finished_at' => now(),
-            ]);
+                'finished_at' => $finishedAt,
+            ];
+
+            if (Schema::hasColumn('quiz_attempts', 'submitted_at')) {
+                $update['submitted_at'] = $finishedAt;
+            }
+
+            $attempt->update($update);
 
             $attempt->load(['quiz', 'user:id,name']);
 
             return [
                 'attempt' => $this->formatAttempt($attempt, true),
-                'score' => $score,
-                'total_points' => $totalPoints,
-                'score_percent' => $totalPoints > 0 ? round($score * 100 / $totalPoints, 2) : 0,
-                'correct_count' => $correctCount,
-                'total_questions' => $quiz->questions->count(),
-                'answers_snapshot' => $snapshot,
+                'score' => $graded['score'],
+                'total_points' => $graded['total_points'],
+                'score_percent' => $graded['total_points'] > 0 ? round($graded['score'] * 100 / $graded['total_points'], 2) : 0,
+                'correct_count' => $graded['correct_count'],
+                'total_questions' => $graded['total_questions'],
+                'answers_snapshot' => $graded['answers_snapshot'],
             ];
         });
 
@@ -178,66 +204,34 @@ class QuizAttemptController extends Controller
         ]);
     }
 
-    private function resolveSelectedAnswerIds(Question $question, mixed $raw): array
+    private function canStartPractice($user, Quiz $quiz): bool
     {
-        $values = is_array($raw) ? $raw : [$raw];
-        $answerIds = [];
+        $role = strtolower((string) ($user->role ?? 'user'));
+        if ($role === 'admin' || (int) $quiz->user_id === (int) $user->id) {
+            return true;
+        }
 
-        foreach ($values as $value) {
-            if ($value === null || $value === '') {
-                continue;
-            }
+        return (bool) $quiz->is_public && $quiz->status === 'published';
+    }
 
-            if (is_numeric($value)) {
-                $answerIds[] = (int) $value;
-                continue;
-            }
+    private function findReusablePracticeAttempt(Quiz $quiz, int $userId, ?int $attemptId = null): ?QuizAttempt
+    {
+        if (!$attemptId) {
+            return null;
+        }
 
-            $key = strtoupper((string) $value);
-            $answer = $question->answers->first(function (Answer $answer, int $index) use ($key) {
-                return chr(65 + ($answer->order ?? $index)) === $key;
+        $query = QuizAttempt::query()
+            ->where('quiz_id', $quiz->id)
+            ->where('user_id', $userId)
+            ->where('status', 'in_progress');
+
+        if (Schema::hasColumn('quiz_attempts', 'mode')) {
+            $query->where(function ($modeQuery) {
+                $modeQuery->whereNull('mode')->orWhere('mode', 'practice');
             });
-
-            if ($answer) {
-                $answerIds[] = (int) $answer->id;
-            }
         }
 
-        return collect($answerIds)->unique()->sort()->values()->all();
-    }
-
-    private function answerKeysFromIds(Question $question, array $ids): array
-    {
-        return $question->answers
-            ->filter(fn (Answer $answer) => in_array((int) $answer->id, $ids, true))
-            ->map(fn (Answer $answer, int $index) => chr(65 + ($answer->order ?? $index)))
-            ->values()
-            ->all();
-    }
-
-    private function resolveUser(Request $request, ?string $playerName = null): User
-    {
-        if ($request->user()) {
-            return $request->user();
-        }
-
-        if ($request->filled('user_id')) {
-            $user = User::find((int) $request->input('user_id'));
-            if ($user) {
-                return $user;
-            }
-        }
-
-        $user = User::firstOrCreate(
-            ['email' => 'guest@quizflex.local'],
-            ['name' => $playerName ?: 'Guest User', 'password' => bcrypt('password')]
-        );
-
-        if ($playerName && $user->name !== $playerName) {
-            $user->update(['name' => $playerName]);
-        }
-
-        return $user;
+        return $query->whereKey($attemptId)->first();
     }
 
     private function formatAttempt(QuizAttempt $attempt, bool $includeSnapshot = false): array
@@ -264,6 +258,9 @@ class QuizAttemptController extends Controller
             'status' => $attempt->status,
             'started_at' => $attempt->started_at,
             'finished_at' => $attempt->finished_at,
+            'submitted_at' => $attempt->submitted_at ?? null,
+            'mode' => $attempt->mode ?? 'practice',
+            'question_order' => $attempt->question_order ?? [],
         ];
 
         if ($includeSnapshot) {
@@ -273,8 +270,12 @@ class QuizAttemptController extends Controller
         return $data;
     }
 
-    private function formatQuizForTaking(Quiz $quiz): array
+    private function formatQuizForTaking(Quiz $quiz, ?QuizAttempt $attempt = null): array
     {
+        $questions = $attempt
+            ? $this->questionOrderService->questionsForQuiz($quiz, $attempt->question_order ?? [])
+            : $quiz->questions->values();
+
         return [
             'id' => $quiz->id,
             'title' => $quiz->title,
@@ -282,7 +283,7 @@ class QuizAttemptController extends Controller
             'category' => $quiz->category,
             'difficulty' => $quiz->difficulty,
             'time_limit_seconds' => $quiz->time_limit_seconds ?? 600,
-            'questions' => $quiz->questions->map(fn (Question $question) => [
+            'questions' => $questions->map(fn (Question $question) => [
                 'id' => $question->id,
                 'content' => $question->content,
                 'text' => $question->content,

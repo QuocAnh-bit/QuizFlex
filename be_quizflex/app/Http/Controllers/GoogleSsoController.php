@@ -13,7 +13,10 @@ class GoogleSsoController extends Controller
      */
     public function redirectToGoogle()
     {
-        return Socialite::driver('google')->redirect();
+        // Thêm tham số prompt=select_account để ép buộc Google luôn hiển thị giao diện chọn tài khoản Email
+        return Socialite::driver('google')
+            ->with(['prompt' => 'select_account'])
+            ->redirect();
     }
 
     /**

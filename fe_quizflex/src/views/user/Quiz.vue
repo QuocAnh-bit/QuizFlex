@@ -93,7 +93,7 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { currentUserStorage, formatSeconds, normalizeQuestion, quizzesApi } from '@/services/api'
+import { formatSeconds, normalizeQuestion, quizzesApi } from '@/services/api'
 
 const route = useRoute()
 const router = useRouter()
@@ -104,11 +104,12 @@ const quizQuestions = ref([])
 const quizMeta = ref({ title: '', category: '', difficulty: '', timeLimitSeconds: 600 })
 const attemptId = ref(null)
 const timeLeft = ref(0)
-const startedAt = ref(null)
 const isLoading = ref(false)
 const isSubmitting = ref(false)
 const errorMessage = ref('')
 let timer = null
+
+const attemptStorageKey = computed(() => `quizflex_practice_attempt_${route.params.id}`)
 
 const currentQuestion = computed(() => quizQuestions.value[currentIndex.value] || { id: 0, question: '', answers: [] })
 const selectedAnswer = computed({
@@ -159,17 +160,14 @@ const submitAttempt = async (autoSubmit = false) => {
   clearInterval(timer)
 
   try {
-    const timeSpent = startedAt.value ? Math.max(0, Math.round((Date.now() - startedAt.value) / 1000)) : 0
     const result = await quizzesApi.submitAttempt(route.params.id, {
       attempt_id: attemptId.value,
-      player_name: currentUserStorage.get()?.name || 'Guest',
-      user_id: currentUserStorage.get()?.id,
       answers: selectedAnswers.value,
-      time_spent_seconds: timeSpent,
     })
 
     const id = result.attempt?.id
     if (id) {
+      sessionStorage.removeItem(attemptStorageKey.value)
       router.push(`/results/${id}`)
       return
     }
@@ -188,10 +186,13 @@ const loadQuiz = async () => {
   errorMessage.value = ''
 
   try {
-    const currentUser = currentUserStorage.get()
-    const data = await quizzesApi.startAttempt(route.params.id, { user_id: currentUser?.id, player_name: currentUser?.name })
+    const savedAttemptId = Number(sessionStorage.getItem(attemptStorageKey.value) || 0) || undefined
+    const data = await quizzesApi.startAttempt(route.params.id, savedAttemptId ? { attempt_id: savedAttemptId } : {})
     const quiz = data.quiz
     attemptId.value = data.attempt?.id
+    if (attemptId.value) {
+      sessionStorage.setItem(attemptStorageKey.value, String(attemptId.value))
+    }
     quizMeta.value = {
       title: quiz.title,
       category: quiz.category,
@@ -200,7 +201,6 @@ const loadQuiz = async () => {
     }
     quizQuestions.value = (quiz.questions || []).map((question) => normalizeQuestion({ ...question, difficulty: quiz.difficulty, category: quiz.category }))
     timeLeft.value = quiz.time_limit_seconds || 600
-    startedAt.value = Date.now()
     startTimer()
   } catch (error) {
     errorMessage.value = `Không tải được bài thi: ${error.message}`
