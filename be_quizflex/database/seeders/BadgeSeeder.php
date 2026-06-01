@@ -60,7 +60,7 @@ class BadgeSeeder extends Seeder
                 'condition_value' => 800,
             ],
             [
-                'name'            => 'Huyền thoại',
+                'name'            => 'Chiến thần',
                 'description'     => 'Đạt top 1 bảng xếp hạng',
                 'icon'            => '🏆',
                 'condition_type'  => 'xp_reached',
@@ -68,6 +68,11 @@ class BadgeSeeder extends Seeder
             ],
         ];
 
-        DB::table('badges')->insert($badges);
+        foreach ($badges as $badge) {
+            \App\Models\Badge::updateOrCreate(
+                ['name' => $badge['name']],
+                $badge
+            );
+        }
     }
 }

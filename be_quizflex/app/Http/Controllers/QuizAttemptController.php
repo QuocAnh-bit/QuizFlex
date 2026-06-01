@@ -174,9 +174,13 @@ class QuizAttemptController extends Controller
                 $timeSpent = max(0, $attempt->started_at->diffInSeconds($finishedAt));
             }
 
+            $scorePercent = $graded['total_points'] > 0 ? round($graded['score'] * 100 / $graded['total_points'], 2) : 0;
+            $xpEarned = $this->calculateXp((int) $scorePercent, $graded['total_questions']);
+
             $update = [
                 'score' => $graded['score'],
                 'total_points' => $graded['total_points'],
+                'xp_earned' => $xpEarned,
                 'time_spent_seconds' => $timeSpent,
                 'answers_snapshot' => $graded['answers_snapshot'],
                 'status' => 'completed',
@@ -189,16 +193,21 @@ class QuizAttemptController extends Controller
 
             $attempt->update($update);
 
+            // Award XP, update streak, check badges
+            $newBadges = $this->awardXp($user->id, $xpEarned);
+
             $attempt->load(['quiz', 'user:id,name']);
 
             return [
                 'attempt' => $this->formatAttempt($attempt, true),
                 'score' => $graded['score'],
                 'total_points' => $graded['total_points'],
-                'score_percent' => $graded['total_points'] > 0 ? round($graded['score'] * 100 / $graded['total_points'], 2) : 0,
+                'score_percent' => $scorePercent,
                 'correct_count' => $graded['correct_count'],
                 'total_questions' => $graded['total_questions'],
                 'answers_snapshot' => $graded['answers_snapshot'],
+                'xp_earned' => $xpEarned,
+                'new_badges' => $newBadges,
             ];
         });
 

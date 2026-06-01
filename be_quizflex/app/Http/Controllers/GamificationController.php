@@ -62,14 +62,16 @@ class GamificationController extends Controller
     // Bảng xếp hạng
     public function leaderboard()
     {
-        $leaderboard = UserXp::with('user:id,name')
+        $leaderboard = UserXp::whereHas('user')
+            ->with('user:id,name')
             ->orderByDesc('xp')
             ->take(50)
             ->get()
             ->map(function ($item, $index) {
                 return [
                     'rank' => $index + 1,
-                    'name' => $item->user->name,
+                    'user_id' => $item->user_id,
+                    'name' => optional($item->user)->name ?? 'Người dùng ẩn danh',
                     'xp' => $item->xp,
                     'level' => $item->level,
                 ];

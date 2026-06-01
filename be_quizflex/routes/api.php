@@ -454,9 +454,10 @@ Route::get('/badges', [GamificationController::class, 'badges']);
 Route::get('/leaderboard', [GamificationController::class, 'leaderboard']);
 
 // Protected routes - cần đăng nhập
-// Route::middleware('auth:sanctum')->group(function () {
-Route::get('/user/stats', [GamificationController::class, 'getUserStats']);
-Route::post('/user/xp/add', [GamificationController::class, 'addXp']);
-Route::post('/quiz/start', [QuizAttemptController::class, 'startGamified']);
-Route::post('/quiz/{id}/submit', [QuizAttemptController::class, 'submitGamified']);
-Route::get('/quiz/history', [QuizAttemptController::class, 'history']);
+Route::middleware('auth:api')->group(function () {
+    Route::get('/user/stats', [GamificationController::class, 'getUserStats']);
+    Route::post('/user/xp/add', [GamificationController::class, 'addXp']);
+    Route::post('/quiz/start', [QuizAttemptController::class, 'startGamified']);
+    Route::post('/quiz/{id}/submit', [QuizAttemptController::class, 'submitGamified']);
+    Route::get('/quiz/history', [QuizAttemptController::class, 'history']);
+});

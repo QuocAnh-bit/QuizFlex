@@ -8,7 +8,7 @@
     <header class="sticky top-0 z-50 mx-auto w-[calc(100%-24px)] max-w-[1720px] pt-4">
       <div
         :class="[
-          'relative overflow-hidden rounded-[1.75rem] border px-4 py-3 backdrop-blur-2xl transition duration-300',
+          'relative rounded-[1.75rem] border px-4 py-3 backdrop-blur-2xl transition duration-300',
           isScrolled
             ? 'border-[var(--border-strong)] bg-[var(--surface)]/90 shadow-[0_22px_70px_rgba(0,0,0,0.24)]'
             : 'border-[var(--border)] bg-[var(--surface)]/70 shadow-[var(--shadow-card)]',
@@ -64,10 +64,43 @@
               </router-link>
             </template>
             <template v-else>
-              <div class="flex items-center gap-3 rounded-full border border-[var(--border)] bg-[var(--surface-soft)] pl-1.5 pr-4 py-1.5">
-                 <UserAvatar :user="currentUser" size-class="h-8 w-8" text-class="text-xs" ring-class="ring-2 ring-white/10" />
-                 <div class="grid leading-tight"><span class="text-xs font-black text-[var(--text)]">{{ currentUser.name }}</span><span class="text-[10px] font-bold text-[var(--primary)] uppercase">{{ currentUser.role }}</span></div>
-                 <button @click="handleLogout" class="ml-2 text-xs font-black text-rose-500 hover:text-rose-400">Đăng xuất</button>
+              <div class="relative user-dropdown-container">
+                <button 
+                  @click="isUserDropdownOpen = !isUserDropdownOpen" 
+                  class="flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface-soft)] p-1 pr-3.5 hover:bg-[var(--border-light)] hover:shadow-lg active:scale-95 transition duration-200"
+                >
+                  <UserAvatar :user="currentUser" size-class="h-8 w-8" text-class="text-xs" ring-class="ring-2 ring-white/10" />
+                  <span class="text-xs font-black text-[var(--text)] max-w-[90px] truncate">{{ currentUser.name }}</span>
+                  <span class="text-[9px] text-[var(--muted)] transition-transform duration-200" :class="{ 'rotate-180': isUserDropdownOpen }">▼</span>
+                </button>
+                
+                <!-- Dropdown list -->
+                <transition name="dropdown-slide">
+                  <div v-if="isUserDropdownOpen" class="absolute right-0 top-full mt-2 w-56 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-2 shadow-2xl backdrop-blur-md z-50">
+                    <!-- User Info Header -->
+                    <div class="px-4 py-3 border-b border-[var(--border)] mb-1">
+                      <p class="text-sm font-black text-[var(--text)] truncate">{{ currentUser.name }}</p>
+                      <p class="text-[10px] font-bold text-[var(--primary)] uppercase mt-0.5">{{ currentUser.role_label || currentUser.role }}</p>
+                    </div>
+                    <!-- Navigation Links -->
+                    <router-link @click="isUserDropdownOpen = false" to="/profile" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold text-[var(--text)] hover:bg-[var(--surface-soft)] transition">
+                      👤 Hồ sơ cá nhân
+                    </router-link>
+                    <router-link @click="isUserDropdownOpen = false" to="/gamification" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold text-[var(--text)] hover:bg-[var(--surface-soft)] transition">
+                      🏆 Thành tích & Huy hiệu
+                    </router-link>
+                    <router-link @click="isUserDropdownOpen = false" to="/results" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold text-[var(--text)] hover:bg-[var(--surface-soft)] transition">
+                      📊 Lịch sử làm bài
+                    </router-link>
+                    <router-link @click="isUserDropdownOpen = false" to="/upgrade" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold text-[var(--text)] hover:bg-[var(--surface-soft)] transition">
+                      👑 Nâng cấp VIP
+                    </router-link>
+                    <div class="border-t border-[var(--border)] my-1"></div>
+                    <button @click="handleLogoutClick" class="flex w-full items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-black text-rose-500 hover:bg-rose-500/10 transition text-left">
+                      🚪 Đăng xuất
+                    </button>
+                  </div>
+                </transition>
               </div>
             </template>
           </div>
@@ -144,6 +177,7 @@ const router = useRouter()
 
 const isMenuOpen = ref(false)
 const isScrolled = ref(false)
+const isUserDropdownOpen = ref(false)
 const currentUser = ref(currentUserStorage.get())
 
 const syncCurrentUser = (event) => {
@@ -151,10 +185,41 @@ const syncCurrentUser = (event) => {
 }
 
 const handleLogout = async () => {
-  const email = currentUser.value?.email || ''
-  await authApi.logout()
+  const user = currentUser.value || currentUserStorage.get()
+  const email = user?.email || ''
+  
+  if (user) {
+    // Lưu lại thông tin tài khoản đăng nhập nhanh
+    localStorage.setItem('quizflex_last_user', JSON.stringify({
+      name: user.name,
+      email: user.email,
+      avatar: user.avatar,
+      role_label: user.role_label || user.role || 'user',
+    }))
+  }
+  
+  // Chạy logout backend ngầm để hủy token
+  authApi.logout().catch((e) => console.error('Background logout request failed:', e))
+  
+  // Xóa user local ngay lập tức để cập nhật UI
   currentUser.value = null
-  router.push({ path: '/login', query: email ? { email } : {} })
+  
+  // Kiểm tra xem trang hiện tại có yêu cầu đăng nhập không
+  const requiresAuth = route.meta.requiresAuth
+  
+  if (requiresAuth) {
+    // Nếu là trang private, chuyển hướng về đăng nhập kèm cờ đăng xuất thành công
+    router.push({ path: '/login', query: email ? { email, logout: 'success' } : { logout: 'success' } })
+  } else {
+    // Nếu là trang public (Trang chủ, Xếp hạng), giữ nguyên trang
+    // và kích hoạt hiệu ứng loading kiểu chuyển tab bằng cách thay đổi query
+    router.push({ path: route.path, query: { _refresh: Date.now() } })
+  }
+}
+
+const handleLogoutClick = async () => {
+  isUserDropdownOpen.value = false
+  await handleLogout()
 }
 
 const baseNav = [
@@ -163,101 +228,76 @@ const baseNav = [
     to: '/',
   },
   {
-    label: 'Chủ đề',
-    to: '/#quiz-topics',
-  },
-  {
     label: 'Làm quiz',
     to: '/quizzes',
   },
   {
-    label: 'Kết quả',
-    to: '/results',
+    label: 'Xếp hạng',
+    to: '/leaderboard',
   },
-  {
-    label: 'Hồ sơ',
-    to: '/profile',
-  },
-  {
-    label: 'Nâng cấp',
-    to: '/upgrade',
-  },
-  { label: 'Xếp hạng', to: '/leaderboard' },
-{ label: 'Thành tích', to: '/gamification' },
 ]
 
 const homeworkNav = computed(() => {
   if (!currentUser.value) return []
-
-  const role = String(currentUser.value.role || 'user').toLowerCase()
-  const items = [
+  return [
     {
       label: 'Room Homework',
       to: '/homework-rooms',
     },
-  ]
-
-  if (['vip', 'admin'].includes(role)) {
-    items.push({
+    {
       label: 'Tạo room',
       to: '/homework-rooms/create',
-    })
-  }
-
-  return items
+    },
+  ]
 })
 
 const liveRoomNav = computed(() => {
   if (!currentUser.value) return []
-
-  const role = String(currentUser.value.role || 'user').toLowerCase()
-  const items = [
+  return [
     {
       label: 'Live Room',
       to: '/live-rooms',
     },
   ]
-
-  if (role === 'vip') {
-    items.push({
-      label: 'Tạo Live Room',
-      to: '/live-rooms/create',
-    })
-  }
-
-
-  return items
 })
 
+// Menu chính cực kỳ rút gọn cho Desktop ở giữa navbar
 const mainNav = computed(() => [
-  ...baseNav.slice(0, 3),
+  ...baseNav.slice(0, 2),
   ...homeworkNav.value,
   ...liveRoomNav.value,
-  ...baseNav.slice(3),
+  ...baseNav.slice(2),
 ])
 
+// Mobile Nav đầy đủ tất cả danh mục
 const mobileNav = computed(() => {
+  const items = [
+    { label: 'Trang chủ', to: '/' },
+    { label: 'Làm quiz', to: '/quizzes' },
+    { label: 'Xếp hạng', to: '/leaderboard' },
+  ]
+
   if (currentUser.value) {
-    return [
-      ...mainNav.value,
+    items.push(
+      { label: 'Room Homework', to: '/homework-rooms' },
+      { label: 'Live Room', to: '/live-rooms' },
+      { label: 'Thành tích', to: '/gamification' },
+      { label: 'Kết quả của tôi', to: '/results' },
+      { label: 'Hồ sơ cá nhân', to: '/profile' },
+      { label: 'Nâng cấp VIP', to: '/upgrade' },
       {
         label: currentUser.value.role === 'admin' ? 'Admin dashboard' : 'Dashboard của tôi',
         to: getDashboardRouteForRole(currentUser.value.role),
-      },
-    ]
+      }
+    )
+  } else {
+    items.push(
+      { label: 'Đăng nhập', to: '/login' },
+      { label: 'Đăng ký', to: '/register' }
+    )
   }
 
-  return [
-    ...mainNav.value,
-    {
-      label: 'Đăng nhập',
-      to: '/login',
-    },
-    {
-      label: 'Đăng ký',
-      to: '/register',
-    },
-  ]
+  return items
 })
 
 const handleScroll = () => {
@@ -353,17 +393,38 @@ const getMobileNavLinkClass = (item) => {
   ]
 }
 
+const closeDropdowns = (e) => {
+  if (!e.target.closest('.user-dropdown-container')) {
+    isUserDropdownOpen.value = false
+  }
+}
+
 onMounted(() => {
   handleScroll()
   currentUser.value = currentUserStorage.get()
   window.addEventListener('scroll', handleScroll, { passive: true })
   window.addEventListener('quizflex-user-updated', syncCurrentUser)
   window.addEventListener('storage', syncCurrentUser)
+  window.addEventListener('click', closeDropdowns)
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('scroll', handleScroll)
   window.removeEventListener('quizflex-user-updated', syncCurrentUser)
   window.removeEventListener('storage', syncCurrentUser)
+  window.removeEventListener('click', closeDropdowns)
 })
 </script>
+
+<style scoped>
+.dropdown-slide-enter-active,
+.dropdown-slide-leave-active {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dropdown-slide-enter-from,
+.dropdown-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-8px) scale(0.96);
+}
+</style>

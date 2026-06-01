@@ -49,12 +49,20 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import axios from 'axios'
+import api, { currentUserStorage } from '@/services/api'
 
 const leaderboard = ref([])
 
 onMounted(async () => {
-  const { data } = await axios.get('/api/leaderboard')
-  leaderboard.value = data
+  try {
+    const { data } = await api.get('/leaderboard')
+    const currentUser = currentUserStorage.get()
+    leaderboard.value = data.map(item => ({
+      ...item,
+      is_me: currentUser && (Number(item.user_id) === Number(currentUser.id)),
+    }))
+  } catch (error) {
+    console.error('Lỗi khi tải bảng xếp hạng:', error)
+  }
 })
 </script>

@@ -6,5 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class Badge extends Model
 {
-    //
+    protected $fillable = [
+        'name',
+        'description',
+        'icon',
+        'condition_type',
+        'condition_value',
+    ];
 }

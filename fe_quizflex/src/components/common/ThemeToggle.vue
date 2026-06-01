@@ -1,7 +1,11 @@
 <template>
-  <button class="btn-ghost px-4 py-2" type="button" @click="toggleTheme">
-    <span>{{ icon }}</span>
-    <span class="hidden sm:inline">{{ label }}</span>
+  <button
+    class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--surface-soft)] text-base hover:bg-[var(--border-light)] hover:shadow-lg active:scale-95 transition duration-200"
+    type="button"
+    @click="toggleTheme"
+    :title="label"
+  >
+    {{ icon }}
   </button>
 </template>
 
