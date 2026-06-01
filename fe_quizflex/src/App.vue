@@ -1,6 +1,6 @@
 <template>
   <AppLoading :show="isLoading" />
-  <AppCursor />
+  <!-- <AppCursor /> -->
 
   <component :is="layout">
     <router-view />
@@ -8,86 +8,86 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import { useRoute, useRouter } from "vue-router";
 
-import AdminLayout from '@/layouts/AdminLayout.vue'
-import UserLayout from '@/layouts/UserLayout.vue'
-import AuthLayout from '@/layouts/AuthLayout.vue'
+import AdminLayout from "@/layouts/AdminLayout.vue";
+import UserLayout from "@/layouts/UserLayout.vue";
+import AuthLayout from "@/layouts/AuthLayout.vue";
 
-import AppCursor from '@/components/common/AppCursor.vue'
-import AppLoading from '@/components/common/AppLoading.vue'
+import AppCursor from "@/components/common/AppCursor.vue";
+import AppLoading from "@/components/common/AppLoading.vue";
 
-const route = useRoute()
-const router = useRouter()
+const route = useRoute();
+const router = useRouter();
 
-const isLoading = ref(true)
+const isLoading = ref(true);
 
-let loadingTimer = null
-let forceCloseTimer = null
-let removeBeforeGuard = null
-let removeAfterGuard = null
+let loadingTimer = null;
+let forceCloseTimer = null;
+let removeBeforeGuard = null;
+let removeAfterGuard = null;
 
-const MIN_LOADING_TIME = 1500
+const MIN_LOADING_TIME = 1500;
 
 const layout = computed(() => {
-  const layoutName = route.meta.layout
+  const layoutName = route.meta.layout;
 
   const layouts = {
     admin: AdminLayout,
     user: UserLayout,
     auth: AuthLayout,
-  }
+  };
 
-  return layouts[layoutName] || UserLayout
-})
+  return layouts[layoutName] || UserLayout;
+});
 
 const startLoading = () => {
-  clearTimeout(loadingTimer)
-  clearTimeout(forceCloseTimer)
+  clearTimeout(loadingTimer);
+  clearTimeout(forceCloseTimer);
 
-  isLoading.value = true
+  isLoading.value = true;
 
   forceCloseTimer = setTimeout(() => {
-    isLoading.value = false
-  }, MIN_LOADING_TIME + 700)
-}
+    isLoading.value = false;
+  }, MIN_LOADING_TIME + 700);
+};
 
 const stopLoading = () => {
-  clearTimeout(loadingTimer)
-  clearTimeout(forceCloseTimer)
+  clearTimeout(loadingTimer);
+  clearTimeout(forceCloseTimer);
 
   loadingTimer = setTimeout(() => {
-    isLoading.value = false
-  }, MIN_LOADING_TIME)
-}
+    isLoading.value = false;
+  }, MIN_LOADING_TIME);
+};
 
 onMounted(() => {
   removeBeforeGuard = router.beforeEach((to, from, next) => {
     if (to.fullPath !== from.fullPath) {
-      startLoading()
+      startLoading();
     }
 
-    next()
-  })
+    next();
+  });
 
   removeAfterGuard = router.afterEach(() => {
-    stopLoading()
-  })
+    stopLoading();
+  });
 
-  stopLoading()
-})
+  stopLoading();
+});
 
 onBeforeUnmount(() => {
-  clearTimeout(loadingTimer)
-  clearTimeout(forceCloseTimer)
+  clearTimeout(loadingTimer);
+  clearTimeout(forceCloseTimer);
 
   if (removeBeforeGuard) {
-    removeBeforeGuard()
+    removeBeforeGuard();
   }
 
   if (removeAfterGuard) {
-    removeAfterGuard()
+    removeAfterGuard();
   }
-})
+});
 </script>

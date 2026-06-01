@@ -48,6 +48,11 @@ return [
         'ca_bundle' => env('DEEPSEEK_CA_BUNDLE'),
     ],
 
+    'mistral' => [
+        'api_key' => env('MISTRAL_API_KEY'),
+        'ocr_model' => env('MISTRAL_OCR_MODEL', 'mistral-ocr-latest'),
+    ],
+
     'openrouter' => [
         'api_key' => env('OPENROUTER_API_KEY'),
         'base_uri' => env('OPENROUTER_BASE_URI', 'https://openrouter.ai/api/v1'),

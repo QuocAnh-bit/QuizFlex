@@ -1,4 +1,15 @@
 <?php return array (
+  'helgesverre/mistral' => 
+  array (
+    'aliases' => 
+    array (
+      'Mistral' => 'HelgeSverre\\Mistral\\Facades\\Mistral',
+    ),
+    'providers' => 
+    array (
+      0 => 'HelgeSverre\\Mistral\\MistralServiceProvider',
+    ),
+  ),
   'kitloong/laravel-migrations-generator' => 
   array (
     'providers' => 
@@ -65,6 +76,31 @@
     'providers' => 
     array (
       0 => 'PHPOpenSourceSaver\\JWTAuth\\Providers\\LaravelServiceProvider',
+    ),
+  ),
+  'saloonphp/laravel-plugin' => 
+  array (
+    'aliases' => 
+    array (
+      'Saloon' => 'Saloon\\Laravel\\Facades\\Saloon',
+    ),
+    'providers' => 
+    array (
+      0 => 'Saloon\\Laravel\\SaloonServiceProvider',
+    ),
+  ),
+  'spatie/laravel-data' => 
+  array (
+    'providers' => 
+    array (
+      0 => 'Spatie\\LaravelData\\LaravelDataServiceProvider',
+    ),
+  ),
+  'spatie/php-structure-discoverer' => 
+  array (
+    'providers' => 
+    array (
+      0 => 'Spatie\\StructureDiscoverer\\StructureDiscovererServiceProvider',
     ),
   ),
 );
