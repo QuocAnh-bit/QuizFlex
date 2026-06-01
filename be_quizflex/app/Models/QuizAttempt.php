@@ -25,6 +25,7 @@ class QuizAttempt extends Model
         'started_at',
         'finished_at',
         'submitted_at',
+        'xp_earned',
     ];
 
     protected $casts = [
@@ -37,6 +38,7 @@ class QuizAttempt extends Model
         'started_at' => 'datetime',
         'finished_at' => 'datetime',
         'submitted_at' => 'datetime',
+        'xp_earned' => 'integer',
     ];
 
     public function user()
@@ -58,12 +60,4 @@ class QuizAttempt extends Model
     {
         return $this->belongsTo(RoomAssignment::class, 'assignment_id');
     }
-        'user_id', 'quiz_id', 'score', 'xp_earned',
-        'status', 'started_at', 'finished_at',
-    ];
-
-    protected $casts = [
-        'started_at'  => 'datetime',
-        'finished_at' => 'datetime',
-    ];
 }
