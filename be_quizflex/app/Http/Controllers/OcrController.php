@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\AI\Prompts\QuizPrompt;
 use App\Services\AI\AIService;
+use App\Services\QuizStoreService;
 use Illuminate\Http\Request;
 use thiagoalessio\TesseractOCR\TesseractOCR;
 use Smalot\PdfParser\Parser;
@@ -202,5 +203,21 @@ class OcrController extends Controller
                 'error' => $e->getMessage(),
             ], 500);
         }
+    }
+
+    public function importQuiz(Request $request, QuizStoreService $quizStoreService)
+    {
+        $normalizedData = $quizStoreService->normalizeOcrPayload($request->all());
+
+        $quiz = $quizStoreService->createQuizWithQuestions(
+            $normalizedData,
+            auth('api')->user()
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Import OCR thành công',
+            'data' => $quiz,
+        ], 201);
     }
 }

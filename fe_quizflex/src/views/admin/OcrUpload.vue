@@ -802,7 +802,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import draggable from "vuedraggable";
 import "mathlive";
 import "mathlive/static.css";
-import { ocrApi } from "@/services/api";
+import { importOcrQuiz, ocrApi } from "@/services/api";
 
 const fileInput = ref(null);
 const fileName = ref("");
@@ -817,6 +817,7 @@ const ocrMode = ref("normal");
 const questions = ref([]);
 const questionImageInputs = ref([]);
 const showReadyMessage = ref(false);
+const saving = ref(false);
 const isDirty = ref(false);
 
 const quizInfo = ref({
@@ -1404,7 +1405,7 @@ const removeQuestion = (index) => {
   markDirty();
 };
 
-const saveQuestions = () => {
+const saveQuestions = async () => {
   const payload = buildQuizPayload();
 
   if (!payload.quiz.title.trim()) {
@@ -1412,10 +1413,24 @@ const saveQuestions = () => {
     return;
   }
 
-  sessionStorage.setItem("quizflex_quiz_payload", JSON.stringify(payload));
-  isDirty.value = false;
+  try {
+    saving.value = true;
 
-  console.log("Data gửi về BE để lưu DB:", payload);
+    const { data } = await importOcrQuiz(payload);
+
+    sessionStorage.removeItem("quizflex_quiz_payload");
+    isDirty.value = false;
+
+    alert("Lưu bộ đề thành công");
+
+    console.log("Quiz đã lưu:", data);
+  } catch (error) {
+    console.error(error);
+
+    alert(error?.response?.data?.message || "Có lỗi xảy ra khi lưu bộ đề.");
+  } finally {
+    saving.value = false;
+  }
 };
 </script>
 

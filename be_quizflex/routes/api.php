@@ -73,6 +73,8 @@ Route::middleware('auth:api')->group(function () {
         Route::put('/quizzes/{quiz}', [QuizController::class, 'update']);
         Route::patch('/quizzes/{quiz}', [QuizController::class, 'update']);
         Route::delete('/quizzes/{quiz}', [QuizController::class, 'destroy']);
+        Route::post('/ocr/import-quiz', [OcrController::class, 'importQuiz']);
+
 
         // Protected Question & Answer Routes
         Route::post('/quizzes/{quiz}/questions', [QuestionController::class, 'store']);

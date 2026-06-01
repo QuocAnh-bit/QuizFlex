@@ -12,6 +12,10 @@ const api = axios.create({
   },
 });
 
+export const importOcrQuiz = (payload) => {
+  return api.post("/ocr/import-quiz", payload);
+};
+
 export const normalizeRole = (role) => {
   const value = String(role || "guest")
     .trim()
