@@ -135,12 +135,9 @@ import { useRoute, useRouter } from 'vue-router'
 
 import BrandLogo from '@/components/common/BrandLogo.vue'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
-<<<<<<< HEAD
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import { authApi, currentUserStorage, getDashboardRouteForRole } from '@/services/api'
-=======
 import StreakXpBar from '@/components/common/StreakXpBar.vue'
->>>>>>> origin/huydev
 
 const route = useRoute()
 const router = useRouter()

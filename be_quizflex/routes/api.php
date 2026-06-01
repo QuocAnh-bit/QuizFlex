@@ -457,6 +457,6 @@ Route::get('/leaderboard', [GamificationController::class, 'leaderboard']);
 // Route::middleware('auth:sanctum')->group(function () {
 Route::get('/user/stats', [GamificationController::class, 'getUserStats']);
 Route::post('/user/xp/add', [GamificationController::class, 'addXp']);
-Route::post('/quiz/start', [QuizAttemptController::class, 'start']);
-Route::post('/quiz/{id}/submit', [QuizAttemptController::class, 'submit']);
+Route::post('/quiz/start', [QuizAttemptController::class, 'startGamified']);
+Route::post('/quiz/{id}/submit', [QuizAttemptController::class, 'submitGamified']);
 Route::get('/quiz/history', [QuizAttemptController::class, 'history']);
