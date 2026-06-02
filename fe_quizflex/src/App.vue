@@ -1,6 +1,6 @@
 <template>
   <AppLoading :show="isLoading" />
-  <AppCursor />
+  <!-- <AppCursor /> -->
 
   <component :is="layout">
     <router-view />

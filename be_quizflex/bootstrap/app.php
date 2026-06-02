@@ -11,6 +11,10 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
+    ->withBroadcasting(
+        __DIR__.'/../routes/channels.php',
+        ['middleware' => ['api', 'auth:api']],
+    )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'role' => \App\Http\Middleware\CheckRole::class,
@@ -19,4 +23,12 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
-    })->create();
+    })
+    ->withExceptions(function (Exceptions $exceptions): void {
+    $exceptions->render(function (\Illuminate\Auth\AuthenticationException $e, $request) {
+        if ($request->is('api/*')) {
+            return response()->json(['message' => 'Unauthenticated.'], 401);
+        }
+    });
+})->create();
+    

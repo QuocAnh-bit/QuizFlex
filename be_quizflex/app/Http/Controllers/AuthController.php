@@ -143,7 +143,14 @@ class AuthController extends Controller
 
         try {
             $otpService = app(OtpService::class);
-            $otpService->verifyOtp($data['email'], $data['otp']);
+            $res = $otpService->verifyOtp($data['email'], $data['otp']);
+
+            if (!$res['status']) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $res['message'],
+                ], 422);
+            }
 
             // Xác thực email của user
             $user = User::where('email', $data['email'])->first();

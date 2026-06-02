@@ -27,6 +27,12 @@
 
         <div class="mt-8 flex flex-wrap gap-3">
           <router-link class="btn-primary" :to="`/quizzes/${quiz.id}/play`">Bắt đầu làm bài</router-link>
+          <router-link 
+            class="inline-flex h-11 shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-gradient-to-br from-[var(--primary)]/10 to-[var(--accent)]/10 border border-[var(--primary)]/30 hover:border-[var(--primary)]/60 px-5 text-sm font-black text-[var(--primary)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(155,44,255,0.12)] active:scale-95" 
+            :to="`/quizzes/${quiz.id}/flashcards`"
+          >
+            ⚡ Ôn tập Flashcard
+          </router-link>
           <router-link class="btn-ghost" :to="`/dashboard/questions/edit/${quiz.id}`">Sửa quiz</router-link>
           <router-link class="btn-ghost" to="/quizzes">Quay lại danh sách</router-link>
         </div>

@@ -27,14 +27,16 @@
     23 => 'KitLoong\\MigrationsGenerator\\MigrationsGeneratorServiceProvider',
     24 => 'Laravel\\Pail\\PailServiceProvider',
     25 => 'Laravel\\Pao\\Laravel\\ServiceProvider',
-    26 => 'Laravel\\Sanctum\\SanctumServiceProvider',
-    27 => 'Laravel\\Socialite\\SocialiteServiceProvider',
-    28 => 'Laravel\\Tinker\\TinkerServiceProvider',
-    29 => 'Carbon\\Laravel\\ServiceProvider',
-    30 => 'NunoMaduro\\Collision\\Adapters\\Laravel\\CollisionServiceProvider',
-    31 => 'Termwind\\Laravel\\TermwindServiceProvider',
-    32 => 'PHPOpenSourceSaver\\JWTAuth\\Providers\\LaravelServiceProvider',
-    33 => 'App\\Providers\\AppServiceProvider',
+    26 => 'Laravel\\Reverb\\ApplicationManagerServiceProvider',
+    27 => 'Laravel\\Reverb\\ReverbServiceProvider',
+    28 => 'Laravel\\Sanctum\\SanctumServiceProvider',
+    29 => 'Laravel\\Socialite\\SocialiteServiceProvider',
+    30 => 'Laravel\\Tinker\\TinkerServiceProvider',
+    31 => 'Carbon\\Laravel\\ServiceProvider',
+    32 => 'NunoMaduro\\Collision\\Adapters\\Laravel\\CollisionServiceProvider',
+    33 => 'Termwind\\Laravel\\TermwindServiceProvider',
+    34 => 'PHPOpenSourceSaver\\JWTAuth\\Providers\\LaravelServiceProvider',
+    35 => 'App\\Providers\\AppServiceProvider',
   ),
   'eager' => 
   array (
@@ -51,12 +53,13 @@
     10 => 'KitLoong\\MigrationsGenerator\\MigrationsGeneratorServiceProvider',
     11 => 'Laravel\\Pail\\PailServiceProvider',
     12 => 'Laravel\\Pao\\Laravel\\ServiceProvider',
-    13 => 'Laravel\\Sanctum\\SanctumServiceProvider',
-    14 => 'Carbon\\Laravel\\ServiceProvider',
-    15 => 'NunoMaduro\\Collision\\Adapters\\Laravel\\CollisionServiceProvider',
-    16 => 'Termwind\\Laravel\\TermwindServiceProvider',
-    17 => 'PHPOpenSourceSaver\\JWTAuth\\Providers\\LaravelServiceProvider',
-    18 => 'App\\Providers\\AppServiceProvider',
+    13 => 'Laravel\\Reverb\\ReverbServiceProvider',
+    14 => 'Laravel\\Sanctum\\SanctumServiceProvider',
+    15 => 'Carbon\\Laravel\\ServiceProvider',
+    16 => 'NunoMaduro\\Collision\\Adapters\\Laravel\\CollisionServiceProvider',
+    17 => 'Termwind\\Laravel\\TermwindServiceProvider',
+    18 => 'PHPOpenSourceSaver\\JWTAuth\\Providers\\LaravelServiceProvider',
+    19 => 'App\\Providers\\AppServiceProvider',
   ),
   'deferred' => 
   array (
@@ -217,6 +220,8 @@
     'validator' => 'Illuminate\\Validation\\ValidationServiceProvider',
     'validation.presence' => 'Illuminate\\Validation\\ValidationServiceProvider',
     'Illuminate\\Contracts\\Validation\\UncompromisedVerifier' => 'Illuminate\\Validation\\ValidationServiceProvider',
+    'Laravel\\Reverb\\ApplicationManager' => 'Laravel\\Reverb\\ApplicationManagerServiceProvider',
+    'Laravel\\Reverb\\Contracts\\ApplicationProvider' => 'Laravel\\Reverb\\ApplicationManagerServiceProvider',
     'Laravel\\Socialite\\Contracts\\Factory' => 'Laravel\\Socialite\\SocialiteServiceProvider',
     'command.tinker' => 'Laravel\\Tinker\\TinkerServiceProvider',
   ),
@@ -259,6 +264,9 @@
     array (
     ),
     'Illuminate\\Validation\\ValidationServiceProvider' => 
+    array (
+    ),
+    'Laravel\\Reverb\\ApplicationManagerServiceProvider' => 
     array (
     ),
     'Laravel\\Socialite\\SocialiteServiceProvider' => 

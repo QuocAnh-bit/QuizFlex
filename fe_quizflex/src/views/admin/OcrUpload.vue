@@ -285,7 +285,17 @@
 
 <script setup>
 import { computed, ref } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import { ocrApi } from "@/services/api";
+
+const route = useRoute();
+const router = useRouter();
+
+const questionBase = computed(() =>
+  route.path.startsWith("/dashboard")
+    ? "/dashboard/questions"
+    : "/admin/questions"
+);
 
 const fileInput = ref(null);
 const fileName = ref("");
@@ -437,6 +447,11 @@ const removeQuestion = (index) => {
 };
 
 const saveQuestions = () => {
-  console.log("Data gửi về BE để lưu DB:", questions.value);
+  if (!questions.value.length) {
+    errorMessage.value = "Chưa có câu hỏi nào để lưu.";
+    return;
+  }
+  sessionStorage.setItem("quizflex_questions", JSON.stringify(questions.value));
+  router.push(`${questionBase.value}/create`);
 };
 </script>

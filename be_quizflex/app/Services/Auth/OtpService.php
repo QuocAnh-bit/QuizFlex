@@ -34,8 +34,15 @@ class OtpService
             'updated_at' => Carbon::now(),
         ]);
 
-        // 4. Gửi email chứa OTP cho người dùng
-        Mail::to($email)->send(new SendOtpMail($rawOtp));
+        // Ghi log OTP ngay lập tức để nhà phát triển xem được trong laravel.log
+        \Illuminate\Support\Facades\Log::info("=== OTP CODE FOR {$email}: [{$rawOtp}] ===");
+
+        // 4. Gửi email chứa OTP cho người dùng (bọc trong try-catch để tránh chặn luồng HTTP khi SMTP lỗi)
+        try {
+            Mail::to($email)->send(new SendOtpMail($rawOtp));
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning("Could not send OTP email to {$email}. Error: " . $e->getMessage());
+        }
 
         return $rawOtp;
     }

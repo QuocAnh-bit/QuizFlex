@@ -119,5 +119,18 @@ class DatabaseSeeder extends Seeder
                 }
             }
         }
+        User::firstOrCreate(
+            ['email' => 'test@example.com'],
+            [
+                'name' => 'Test User',
+                'password' => bcrypt('password'),
+                'role' => 'USER',
+            ]
+        );
+
+        $this->call([
+            // ... các seeder cũ
+            BadgeSeeder::class,
+        ]);
     }
 }

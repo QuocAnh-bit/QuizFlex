@@ -298,11 +298,11 @@ const handleVerifyOtp = async () => {
 
     successMessage.value = 'Kích hoạt tài khoản thành công! Đang chuyển hướng sang trang đăng nhập...'
     
-    // Chuyển hướng về trang Đăng nhập và tự điền Email vừa đăng ký
+    // Chuyển hướng về trang Đăng nhập và tự điền Email và Mật khẩu vừa đăng ký
     setTimeout(() => {
       router.push({
         path: '/login',
-        state: { email: form.email }
+        state: { email: form.email, password: form.password }
       })
     }, 1500)
 

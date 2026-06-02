@@ -18,7 +18,6 @@ class Question extends Model
         'points',
         'question',
         'correct_answer'
-
     ];
 
     protected $casts = [

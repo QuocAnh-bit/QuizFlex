@@ -12,22 +12,33 @@ class QuizAttempt extends Model
     protected $fillable = [
         'user_id',
         'quiz_id',
+        'room_id',
+        'assignment_id',
+        'mode',
+        'attempt_number',
         'score',
         'total_points',
         'time_spent_seconds',
         'answers_snapshot',
+        'question_order',
         'status',
         'started_at',
         'finished_at',
+        'submitted_at',
+        'xp_earned',
     ];
 
     protected $casts = [
+        'attempt_number' => 'integer',
         'score' => 'integer',
         'total_points' => 'integer',
         'time_spent_seconds' => 'integer',
         'answers_snapshot' => 'array',
+        'question_order' => 'array',
         'started_at' => 'datetime',
         'finished_at' => 'datetime',
+        'submitted_at' => 'datetime',
+        'xp_earned' => 'integer',
     ];
 
     public function user()
@@ -38,5 +49,15 @@ class QuizAttempt extends Model
     public function quiz()
     {
         return $this->belongsTo(Quiz::class);
+    }
+
+    public function room()
+    {
+        return $this->belongsTo(Room::class);
+    }
+
+    public function assignment()
+    {
+        return $this->belongsTo(RoomAssignment::class, 'assignment_id');
     }
 }
