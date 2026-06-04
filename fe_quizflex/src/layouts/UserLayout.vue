@@ -92,6 +92,9 @@
                     <router-link @click="isUserDropdownOpen = false" to="/results" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold text-[var(--text)] hover:bg-[var(--surface-soft)] transition">
                       📊 Lịch sử làm bài
                     </router-link>
+                    <router-link @click="isUserDropdownOpen = false" to="/analytics" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold text-[var(--text)] hover:bg-[var(--surface-soft)] transition">
+                      📈 Phân tích năng lực
+                    </router-link>
                     <router-link @click="isUserDropdownOpen = false" to="/upgrade" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold text-[var(--text)] hover:bg-[var(--surface-soft)] transition">
                       👑 Nâng cấp VIP
                     </router-link>
@@ -283,6 +286,7 @@ const mobileNav = computed(() => {
       { label: 'Live Room', to: '/live-rooms' },
       { label: 'Thành tích', to: '/gamification' },
       { label: 'Kết quả của tôi', to: '/results' },
+      { label: '📈 Phân tích năng lực', to: '/analytics' },
       { label: 'Hồ sơ cá nhân', to: '/profile' },
       { label: 'Nâng cấp VIP', to: '/upgrade' },
       {

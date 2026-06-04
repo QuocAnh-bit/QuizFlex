@@ -22,6 +22,7 @@ const routes = [
   { path: '/upgrade', name: 'upgrade', component: () => import('@/views/user/Upgrade.vue'), meta: { layout: 'user', title: 'Nâng cấp VIP' } },
   { path: '/payment-result', name: 'payment-result', component: () => import('@/views/user/PaymentResult.vue'), meta: { layout: 'user', title: 'Kết quả thanh toán' } },
   { path: '/results', name: 'results', component: () => import('@/views/user/Results.vue'), meta: { layout: 'user', title: 'Kết quả của tôi', requiresAuth: true, roles: workspaceRoles } },
+  { path: '/analytics', name: 'analytics', component: () => import('@/views/user/Analytics.vue'), meta: { layout: 'user', title: 'Phân tích năng lực', requiresAuth: true, roles: workspaceRoles } },
   { path: '/results/:id', name: 'attempt-result', component: () => import('@/views/user/AttemptResult.vue'), meta: { layout: 'user', title: 'Kết quả bài làm', requiresAuth: true, roles: workspaceRoles } },
   { path: '/homework-rooms', name: 'homework-rooms', component: () => import('@/views/homework/HomeworkRooms.vue'), meta: { layout: 'user', title: 'Room Homework', requiresAuth: true, roles: workspaceRoles } },
   { path: '/homework-rooms/create', name: 'homework-room-create', component: () => import('@/views/homework/HomeworkRoomCreate.vue'), meta: { layout: 'user', title: 'Tạo room homework', requiresAuth: true, roles: workspaceRoles } },
