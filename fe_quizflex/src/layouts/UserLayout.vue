@@ -5,7 +5,9 @@
     <div class="orb orb-two"></div>
     <div class="orb orb-three"></div>
 
-    <header class="sticky top-0 z-50 mx-auto w-[calc(100%-24px)] max-w-[1720px] pt-4">
+    <header
+      class="sticky top-0 z-50 mx-auto w-[calc(100%-24px)] max-w-[1720px] pt-4"
+    >
       <div
         :class="[
           'relative rounded-[1.75rem] border px-4 py-3 backdrop-blur-2xl transition duration-300',
@@ -14,9 +16,15 @@
             : 'border-[var(--border)] bg-[var(--surface)]/70 shadow-[var(--shadow-card)]',
         ]"
       >
-        <div class="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[var(--border-strong)] to-transparent"></div>
-        <div class="pointer-events-none absolute -left-20 -top-24 h-44 w-44 rounded-full bg-[var(--primary)]/15 blur-3xl"></div>
-        <div class="pointer-events-none absolute -right-20 -top-24 h-44 w-44 rounded-full bg-[var(--accent)]/10 blur-3xl"></div>
+        <div
+          class="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[var(--border-strong)] to-transparent"
+        ></div>
+        <div
+          class="pointer-events-none absolute -left-20 -top-24 h-44 w-44 rounded-full bg-[var(--primary)]/15 blur-3xl"
+        ></div>
+        <div
+          class="pointer-events-none absolute -right-20 -top-24 h-44 w-44 rounded-full bg-[var(--accent)]/10 blur-3xl"
+        ></div>
 
         <div class="relative z-10 flex items-center justify-between gap-4">
           <router-link
@@ -57,10 +65,10 @@
                 to="/register"
                 class="group relative inline-flex h-11 shrink-0 items-center justify-center overflow-hidden whitespace-nowrap rounded-full bg-gradient-to-br from-[var(--primary)] via-[var(--primary-2)] to-[var(--accent)] px-6 text-sm font-black text-white shadow-[0_18px_38px_rgba(155,44,255,0.28)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_22px_48px_rgba(155,44,255,0.38)] active:scale-95"
               >
-                <span class="absolute inset-0 translate-x-[-120%] bg-gradient-to-r from-transparent via-white/30 to-transparent transition duration-700 group-hover:translate-x-[120%]"></span>
-                <span class="relative z-10">
-                  Bắt đầu
-                </span>
+                <span
+                  class="absolute inset-0 translate-x-[-120%] bg-gradient-to-r from-transparent via-white/30 to-transparent transition duration-700 group-hover:translate-x-[120%]"
+                ></span>
+                <span class="relative z-10"> Bắt đầu </span>
               </router-link>
             </template>
             <template v-else>
@@ -114,7 +122,7 @@
               class="inline-flex h-11 items-center justify-center whitespace-nowrap rounded-full border border-[var(--border)] bg-[var(--surface-soft)] px-4 text-sm font-black text-[var(--text)] shadow-[var(--shadow-card)] transition duration-300 hover:border-[var(--border-strong)] active:scale-95"
               @click="isMenuOpen = !isMenuOpen"
             >
-              {{ isMenuOpen ? 'Đóng' : 'Menu' }}
+              {{ isMenuOpen ? "Đóng" : "Menu" }}
             </button>
           </div>
         </div>
@@ -132,7 +140,9 @@
           v-if="isMenuOpen"
           class="relative mt-3 overflow-hidden rounded-[1.75rem] border border-[var(--border-strong)] bg-[var(--surface)]/95 p-3 shadow-[0_24px_80px_rgba(0,0,0,0.28)] backdrop-blur-2xl xl:hidden"
         >
-          <div class="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-[var(--primary)]/15 blur-3xl"></div>
+          <div
+            class="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-[var(--primary)]/15 blur-3xl"
+          ></div>
 
           <nav class="relative z-10 grid gap-2 text-sm font-bold">
             <router-link
@@ -163,8 +173,8 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import { useRoute, useRouter } from "vue-router";
 
 import BrandLogo from '@/components/common/BrandLogo.vue'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
@@ -172,8 +182,8 @@ import UserAvatar from '@/components/common/UserAvatar.vue'
 import { authApi, currentUserStorage, getDashboardRouteForRole } from '@/services/api'
 import StreakXpBar from '@/components/common/StreakXpBar.vue'
 
-const route = useRoute()
-const router = useRouter()
+const route = useRoute();
+const router = useRouter();
 
 const isMenuOpen = ref(false)
 const isScrolled = ref(false)
@@ -181,8 +191,8 @@ const isUserDropdownOpen = ref(false)
 const currentUser = ref(currentUserStorage.get())
 
 const syncCurrentUser = (event) => {
-  currentUser.value = event?.detail ?? currentUserStorage.get()
-}
+  currentUser.value = event?.detail ?? currentUserStorage.get();
+};
 
 const handleLogout = async () => {
   const user = currentUser.value || currentUserStorage.get()
@@ -224,8 +234,8 @@ const handleLogoutClick = async () => {
 
 const baseNav = [
   {
-    label: 'Trang chủ',
-    to: '/',
+    label: "Trang chủ",
+    to: "/",
   },
   {
     label: 'Làm quiz',
@@ -235,7 +245,7 @@ const baseNav = [
     label: 'Xếp hạng',
     to: '/leaderboard',
   },
-]
+];
 
 const homeworkNav = computed(() => {
   if (!currentUser.value) return []
@@ -286,7 +296,10 @@ const mobileNav = computed(() => {
       { label: 'Hồ sơ cá nhân', to: '/profile' },
       { label: 'Nâng cấp VIP', to: '/upgrade' },
       {
-        label: currentUser.value.role === 'admin' ? 'Admin dashboard' : 'Dashboard của tôi',
+        label:
+          currentUser.value.role === "admin"
+            ? "Admin dashboard"
+            : "Dashboard của tôi",
         to: getDashboardRouteForRole(currentUser.value.role),
       }
     )
@@ -301,97 +314,97 @@ const mobileNav = computed(() => {
 })
 
 const handleScroll = () => {
-  isScrolled.value = window.scrollY > 12
-}
+  isScrolled.value = window.scrollY > 12;
+};
 
 const isActiveNav = (item) => {
-  if (item.to === '/') {
-    return route.path === '/' && !route.hash
+  if (item.to === "/") {
+    return route.path === "/" && !route.hash;
   }
 
-  if (item.to === '/#quiz-topics') {
-    return route.path === '/' && route.hash === '#quiz-topics'
+  if (item.to === "/#quiz-topics") {
+    return route.path === "/" && route.hash === "#quiz-topics";
   }
 
-  return route.path === item.to
-}
+  return route.path === item.to;
+};
 
 const getNavLinkClass = (item) => {
   const baseClass = [
-    'relative',
-    'shrink-0',
-    'overflow-hidden',
-    'rounded-full',
-    'px-4',
-    'py-2.5',
-    'text-[var(--muted)]',
-    'transition',
-    'duration-300',
-    'hover:-translate-y-0.5',
-    'hover:text-[var(--text)]',
-    'active:scale-95',
-  ]
+    "relative",
+    "shrink-0",
+    "overflow-hidden",
+    "rounded-full",
+    "px-4",
+    "py-2.5",
+    "text-[var(--muted)]",
+    "transition",
+    "duration-300",
+    "hover:-translate-y-0.5",
+    "hover:text-[var(--text)]",
+    "active:scale-95",
+  ];
 
   if (!isActiveNav(item)) {
-    return baseClass
+    return baseClass;
   }
 
   return [
     ...baseClass,
-    'bg-[var(--chip-active)]',
-    'text-[var(--text)]',
-    'shadow-[0_10px_28px_rgba(155,44,255,0.16)]',
-    'before:absolute',
-    'before:inset-0',
-    'before:bg-gradient-to-r',
-    'before:from-[var(--primary)]/15',
-    'before:via-[var(--primary-2)]/15',
-    'before:to-[var(--accent)]/15',
-    'after:absolute',
-    'after:bottom-1',
-    'after:left-1/2',
-    'after:h-1',
-    'after:w-1',
-    'after:-translate-x-1/2',
-    'after:rounded-full',
-    'after:bg-[var(--primary)]',
-    'after:shadow-[0_0_18px_var(--primary)]',
-  ]
-}
+    "bg-[var(--chip-active)]",
+    "text-[var(--text)]",
+    "shadow-[0_10px_28px_rgba(155,44,255,0.16)]",
+    "before:absolute",
+    "before:inset-0",
+    "before:bg-gradient-to-r",
+    "before:from-[var(--primary)]/15",
+    "before:via-[var(--primary-2)]/15",
+    "before:to-[var(--accent)]/15",
+    "after:absolute",
+    "after:bottom-1",
+    "after:left-1/2",
+    "after:h-1",
+    "after:w-1",
+    "after:-translate-x-1/2",
+    "after:rounded-full",
+    "after:bg-[var(--primary)]",
+    "after:shadow-[0_0_18px_var(--primary)]",
+  ];
+};
 
 const getMobileNavLinkClass = (item) => {
   const baseClass = [
-    'flex',
-    'items-center',
-    'justify-between',
-    'rounded-2xl',
-    'border',
-    'px-4',
-    'py-3.5',
-    'transition',
-    'duration-300',
-    'active:scale-[0.98]',
-  ]
+    "flex",
+    "items-center",
+    "justify-between",
+    "rounded-2xl",
+    "border",
+    "px-4",
+    "py-3.5",
+    "transition",
+    "duration-300",
+    "active:scale-[0.98]",
+  ];
 
   if (!isActiveNav(item)) {
     return [
       ...baseClass,
-      'border-transparent',
-      'text-[var(--muted)]',
-      'hover:border-[var(--border)]',
-      'hover:bg-[var(--surface-soft)]',
-      'hover:text-[var(--text)]',
-    ]
+      "border-transparent",
+      "text-[var(--muted)]",
+      "hover:border-[var(--border)]",
+      "hover:bg-[var(--surface-soft)]",
+      "hover:text-[var(--text)]",
+    ];
   }
 
   return [
     ...baseClass,
-    'border-[var(--border-strong)]',
-    'bg-[var(--chip-active)]',
-    'text-[var(--text)]',
-    'shadow-[0_14px_34px_rgba(155,44,255,0.14)]',
-  ]
-}
+    "border-[var(--border-strong)]",
+    "bg-[var(--chip-active)]",
+    "text-[var(--text)]",
+    "shadow-[0_14px_34px_rgba(155,44,255,0.14)]",
+  ];
+};
 
 const closeDropdowns = (e) => {
   if (!e.target.closest('.user-dropdown-container')) {

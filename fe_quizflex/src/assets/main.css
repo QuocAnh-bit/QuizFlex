@@ -219,11 +219,25 @@ select {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
-html.has-game-cursor * {
+/* html.has-game-cursor * {
   cursor: none;
+  z-index: 99999;
 }
 html.has-game-cursor input,
 html.has-game-cursor textarea,
 html.has-game-cursor select {
   cursor: text;
+  z-index: 99999;
+
+} */
+* {
+  cursor: auto !important;
 }
+
+button,
+input,
+textarea,
+select {
+  cursor: auto !important;
+}
+
