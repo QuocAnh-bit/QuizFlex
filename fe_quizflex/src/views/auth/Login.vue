@@ -332,8 +332,23 @@ const handleLogin = async () => {
 const loginWithGoogle = () => {
   // URL redirect của Backend cho Google SSO
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api'
-  // Chuyển hướng người dùng qua Backend để chạy Socialite
-  window.location.href = `${apiBaseUrl.replace('/api', '')}/auth/google/redirect`
+  let backendUrl = ''
+  
+  if (apiBaseUrl.startsWith('http')) {
+    backendUrl = apiBaseUrl.replace(/\/api$/, '')
+  } else {
+    // Relative path fallback (e.g. /api)
+    backendUrl = `${window.location.protocol}//${window.location.hostname}:8000`
+  }
+  
+  // Đồng bộ hóa giữa localhost và 127.0.0.1 dựa trên tên miền hiện tại của trình duyệt
+  if (window.location.hostname === 'localhost' && backendUrl.includes('127.0.0.1')) {
+    backendUrl = backendUrl.replace('127.0.0.1', 'localhost')
+  } else if (window.location.hostname === '127.0.0.1' && backendUrl.includes('localhost')) {
+    backendUrl = backendUrl.replace('localhost', '127.0.0.1')
+  }
+  
+  window.location.href = `${backendUrl}/auth/google/redirect`
 }
 
 const goToRegister = () => {
