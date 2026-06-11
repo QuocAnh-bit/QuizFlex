@@ -104,6 +104,9 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/rooms/{room}', [RoomController::class, 'show']);
         Route::post('/rooms/{room}/join', [RoomController::class, 'joinRoom']);
         Route::get('/rooms/{room}/members', [RoomController::class, 'members']);
+        Route::get('/homework-rooms/{room}/allowed-members', [RoomController::class, 'allowedMembers']);
+        Route::post('/homework-rooms/{room}/allowed-members', [RoomController::class, 'storeAllowedMembers']);
+        Route::delete('/homework-rooms/{room}/allowed-members/{allowedMember}', [RoomController::class, 'destroyAllowedMember']);
 
         Route::get('/rooms/{room}/assignments', [RoomAssignmentController::class, 'index']);
         Route::post('/rooms/{room}/assignments', [RoomAssignmentController::class, 'store']);

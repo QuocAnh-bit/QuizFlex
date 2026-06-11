@@ -468,6 +468,22 @@ export const homeworkApi = {
     return unwrapCollection(data)
   },
 
+  async getAllowedMembers(roomId) {
+    const { data } = await api.get(`/homework-rooms/${roomId}/allowed-members`)
+    return unwrapCollection(data)
+  },
+
+  async addAllowedMembers(roomId, emails) {
+    const payload = Array.isArray(emails) ? { emails } : { email: emails }
+    const { data } = await api.post(`/homework-rooms/${roomId}/allowed-members`, payload)
+    return unwrapCollection(data)
+  },
+
+  async removeAllowedMember(roomId, allowedMemberId) {
+    const { data } = await api.delete(`/homework-rooms/${roomId}/allowed-members/${allowedMemberId}`)
+    return data
+  },
+
   async getRoomAssignments(roomId) {
     const { data } = await api.get(`/rooms/${roomId}/assignments`)
     return unwrapCollection(data)
