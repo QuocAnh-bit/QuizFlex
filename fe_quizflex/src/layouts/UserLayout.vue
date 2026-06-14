@@ -101,7 +101,7 @@
                       📊 Lịch sử làm bài
                     </router-link>
                     <router-link @click="isUserDropdownOpen = false" to="/upgrade" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold text-[var(--text)] hover:bg-[var(--surface-soft)] transition">
-                      👑 Nâng cấp VIP
+                      👑 Nâng cấp tài khoản
                     </router-link>
                     <div class="border-t border-[var(--border)] my-1"></div>
                     <button @click="handleLogoutClick" class="flex w-full items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-black text-rose-500 hover:bg-rose-500/10 transition text-left">
@@ -294,7 +294,7 @@ const mobileNav = computed(() => {
       { label: 'Thành tích', to: '/gamification' },
       { label: 'Kết quả của tôi', to: '/results' },
       { label: 'Hồ sơ cá nhân', to: '/profile' },
-      { label: 'Nâng cấp VIP', to: '/upgrade' },
+      { label: 'Nâng cấp tài khoản', to: '/upgrade' },
       {
         label:
           currentUser.value.role === "admin"

@@ -44,8 +44,6 @@ Route::get('/ai-direct', function () {
     );
 });
 
-Route::post('/ocr/scan', [OcrController::class, 'scan']);
-
 Route::post('/auth/login', [AuthController::class, 'login']);
 Route::post('/auth/register', [AuthController::class, 'register']);
 Route::post('/auth/verify-otp', [AuthController::class, 'verifyOtp']);
@@ -58,6 +56,8 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/auth/profile', [AuthController::class, 'updateProfile']);
     Route::post('/ai/generate', [AIController::class, 'generate']);
     Route::post('/ai/generate-quiz', [AIController::class, 'generate']);
+    Route::post('/ocr/scan', [OcrController::class, 'scan']);
+    Route::post('/payments/activate-trial', [PaymentController::class, 'activateTrial']);
     Route::get('/ai/jobs/{jobId}', [AIController::class, 'status'])->whereUuid('jobId');
     Route::get('/ai/quiz-status/{jobId}', [AIController::class, 'status'])->whereUuid('jobId');
     Route::get('/ai/logs/{id}', [AIController::class, 'show']);
@@ -68,7 +68,7 @@ Route::middleware('auth:api')->group(function () {
         Route::apiResource('users', UserController::class);
     });
 
-    Route::middleware('role:user,vip,admin')->group(function () {
+    Route::middleware('role:free,plus,pro,ultra,admin')->group(function () {
         // Protected Payment Routes
         Route::get('/payments/history', [PaymentController::class, 'history']);
 
@@ -133,6 +133,7 @@ Route::post('/payments/create', [PaymentController::class, 'create']);
 // Public Webhooks & Callbacks for Payments
 Route::post('/payments/webhook/momo', [PaymentController::class, 'webhookMomo']);
 Route::get('/payments/callback', [PaymentController::class, 'callback']);
+Route::get('/payments/check-status/{orderCode}', [PaymentController::class, 'checkStatus']);
 
 // Public Quiz Routes
 Route::get('/quizzes', [QuizController::class, 'index']);

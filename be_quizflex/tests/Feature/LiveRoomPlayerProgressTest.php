@@ -26,9 +26,12 @@ class LiveRoomPlayerProgressTest extends TestCase
 
     public function test_live_room_uses_player_specific_progress(): void
     {
-        $host = User::factory()->create(['role' => 'VIP']);
-        $playerA = User::factory()->create(['role' => 'USER']);
-        $playerB = User::factory()->create(['role' => 'USER']);
+        $host = User::factory()->create([
+            'role' => 'PRO',
+            'vip_expires_at' => now()->addYear()
+        ]);
+        $playerA = User::factory()->create(['role' => 'FREE']);
+        $playerB = User::factory()->create(['role' => 'FREE']);
         $quiz = $this->createQuizWithQuestions($host);
 
         $createResponse = $this->actingAs($host, 'api')

@@ -26,7 +26,7 @@ class QuizController extends Controller
         $query = Quiz::query()
             ->with('user:id,name')
             ->withCount(['questions', 'attempts'])
-            ->withAvg(['attempts as avg_score' => fn ($q) => $q->where('status', 'completed')], 'score')
+            ->withAvg(['attempts as avg_score' => fn($q) => $q->where('status', 'completed')], 'score')
             ->latest();
 
         if ($request->filled('search')) {
@@ -80,13 +80,13 @@ class QuizController extends Controller
             if (!$isAdmin) {
                 $query->where(function ($q) use ($user) {
                     $q->where('is_public', true)
-                      ->orWhere('user_id', $user?->id ?? -1);
+                        ->orWhere('user_id', $user?->id ?? -1);
                 });
             }
         } else {
             // Default or visibility = 'all':
             // - ADMIN: sees all quizzes.
-            // - USER/VIP/GUEST: sees public published quizzes OR their own quizzes.
+            // - FREE/PLUS/PRO/ULTRA/GUEST: sees public published quizzes OR their own quizzes.
             // - When mine/owner=me is requested, keep the owner-only filter above.
             if (!$mineOnly && !$isAdmin) {
                 $query->where(function ($q) use ($user) {
@@ -101,7 +101,7 @@ class QuizController extends Controller
         }
 
         $perPage = min(max((int) $request->query('per_page', 50), 1), 100);
-        $quizzes = $query->paginate($perPage)->through(fn (Quiz $quiz) => $this->formatQuiz($quiz));
+        $quizzes = $query->paginate($perPage)->through(fn(Quiz $quiz) => $this->formatQuiz($quiz));
 
         return response()->json([
             'success' => true,
@@ -138,11 +138,12 @@ class QuizController extends Controller
         }
 
         Gate::forUser($user)->authorize('view', $quiz);
-
+        // chỉ lấy id và name của người tạo quiz, Trong mỗi question, lấy tiếp answers
         $quiz->load(['user:id,name', 'questions.answers'])
             ->loadCount(['questions', 'attempts'])
-            ->loadAvg(['attempts as avg_score' => fn ($q) => $q->where('status', 'completed')], 'score');
 
+            ->loadAvg(['attempts as avg_score' => fn($q) => $q->where('status', 'completed')], 'score');
+        // tính điểm trung bình
         return response()->json([
             'success' => true,
             'message' => 'Chi tiết quiz',
@@ -157,7 +158,7 @@ class QuizController extends Controller
 
         $quiz->load(['user:id,name', 'questions.answers'])
             ->loadCount(['questions', 'attempts'])
-            ->loadAvg(['attempts as avg_score' => fn ($q) => $q->where('status', 'completed')], 'score');
+            ->loadAvg(['attempts as avg_score' => fn($q) => $q->where('status', 'completed')], 'score');
 
         return response()->json([
             'success' => true,
@@ -365,8 +366,8 @@ class QuizController extends Controller
     private function syncAnswers(Question $question, array $answers, mixed $correct): void
     {
         $correctKeys = collect(is_array($correct) ? $correct : [$correct])
-            ->filter(fn ($value) => $value !== null && $value !== '')
-            ->map(fn ($value) => strtoupper((string) $value))
+            ->filter(fn($value) => $value !== null && $value !== '')
+            ->map(fn($value) => strtoupper((string) $value))
             ->values()
             ->all();
 
@@ -495,7 +496,7 @@ class QuizController extends Controller
         ];
 
         if ($includeQuestions) {
-            $data['questions'] = $quiz->questions->map(fn (Question $question) => $this->formatQuestion($question))->values();
+            $data['questions'] = $quiz->questions->map(fn(Question $question) => $this->formatQuestion($question))->values();
         }
 
         return $data;
@@ -512,7 +513,7 @@ class QuizController extends Controller
             'type' => $question->type,
             'order' => $question->order,
             'points' => $question->points,
-            'answers' => $question->answers->map(fn (Answer $answer, int $index) => [
+            'answers' => $question->answers->map(fn(Answer $answer, int $index) => [
                 'id' => $answer->id,
                 'question_id' => $answer->question_id,
                 'content' => $answer->content,

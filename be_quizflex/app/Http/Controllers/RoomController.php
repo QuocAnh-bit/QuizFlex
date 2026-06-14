@@ -47,7 +47,7 @@ class RoomController extends Controller
         if (!$this->canCreateRoom($user)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Tinh nang tao phong yeu cau tai khoan VIP.',
+                'message' => 'Tính năng tạo phòng yêu cầu tài khoản nâng cấp (Plus/Pro/Ultra).',
             ], 403);
         }
 
@@ -201,7 +201,8 @@ class RoomController extends Controller
 
     private function canCreateRoom($user): bool
     {
-        return in_array(strtolower((string) ($user->role ?? 'user')), ['admin', 'vip'], true);
+        $tier = $user->getSubscriptionTier();
+        return in_array($tier, ['plus', 'pro', 'ultra', 'admin'], true);
     }
 
     private function canViewRoom($user, Room $room): bool

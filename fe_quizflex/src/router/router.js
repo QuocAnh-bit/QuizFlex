@@ -7,8 +7,8 @@ import {
   tokenStorage,
 } from '@/services/api'
 
-const workspaceRoles = ['admin', 'vip', 'user']
-const userDashboardRoles = ['admin', 'vip', 'user']
+const workspaceRoles = ['admin', 'free', 'plus', 'pro', 'ultra']
+const userDashboardRoles = ['admin', 'free', 'plus', 'pro', 'ultra']
 const adminRoles = ['admin']
 
 const routes = [
@@ -19,7 +19,7 @@ const routes = [
   { path: '/quizzes/:id/play', name: 'quiz-play', component: () => import('@/views/user/Quiz.vue'), meta: { layout: 'user', title: 'Làm quiz', requiresAuth: true, roles: workspaceRoles } },
   { path: '/quiz/:id', redirect: (to) => `/quizzes/${to.params.id}` },
   { path: '/join-room', name: 'join-room', component: () => import('@/views/user/JoinRoom.vue'), meta: { layout: 'user', title: 'Join room' } },
-  { path: '/upgrade', name: 'upgrade', component: () => import('@/views/user/Upgrade.vue'), meta: { layout: 'user', title: 'Nâng cấp VIP' } },
+  { path: '/upgrade', name: 'upgrade', component: () => import('@/views/user/Upgrade.vue'), meta: { layout: 'user', title: 'Nâng cấp tài khoản' } },
   { path: '/payment-result', name: 'payment-result', component: () => import('@/views/user/PaymentResult.vue'), meta: { layout: 'user', title: 'Kết quả thanh toán' } },
   { path: '/results', name: 'results', component: () => import('@/views/user/Results.vue'), meta: { layout: 'user', title: 'Kết quả của tôi', requiresAuth: true, roles: workspaceRoles } },
   { path: '/results/:id', name: 'attempt-result', component: () => import('@/views/user/AttemptResult.vue'), meta: { layout: 'user', title: 'Kết quả bài làm', requiresAuth: true, roles: workspaceRoles } },

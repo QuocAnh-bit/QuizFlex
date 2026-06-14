@@ -67,7 +67,7 @@ class AuthController extends Controller
             'username' => ['nullable', 'string', 'min:3', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:6', 'max:255'],
-            'role' => ['nullable', Rule::in(['USER', 'VIP', 'user', 'vip'])],
+            'role' => ['nullable', Rule::in(['FREE', 'PLUS', 'PRO', 'ULTRA', 'ADMIN', 'free', 'plus', 'pro', 'ultra', 'admin', 'USER', 'user'])],
         ]);
 
         if (Schema::hasColumn('users', 'username')) {
@@ -76,7 +76,10 @@ class AuthController extends Controller
             ]);
         }
 
-        $role = strtoupper($data['role'] ?? 'USER');
+        $role = strtoupper($data['role'] ?? 'FREE');
+        if ($role === 'USER') {
+            $role = 'FREE';
+        }
         $storedRole = $this->roleValueForDatabase($role);
 
         $payload = [
@@ -95,7 +98,7 @@ class AuthController extends Controller
         }
 
         if (Schema::hasColumn('users', 'vip_expires_at')) {
-            $payload['vip_expires_at'] = $role === 'VIP' ? now()->addMonth() : null;
+            $payload['vip_expires_at'] = in_array(strtoupper($role), ['PLUS', 'PRO', 'ULTRA']) ? now()->addMonth() : null;
         }
 
         $user = User::create($payload);
@@ -303,7 +306,9 @@ class AuthController extends Controller
     {
         return match (strtoupper($role)) {
             'ADMIN' => 9999,
-            'VIP' => 500,
+            'ULTRA' => 1500,
+            'PRO' => 350,
+            'PLUS' => 100,
             'GUEST' => 0,
             default => 5,
         };
@@ -311,20 +316,32 @@ class AuthController extends Controller
 
     private function formatUser(User $user): array
     {
+        $tier = $user->getSubscriptionTier();
+        
+        $isTrial = false;
+        if ($user->trial_used_at && $user->vip_expires_at) {
+            $trialExpiry = \Carbon\Carbon::parse($user->trial_used_at)->addDays(7);
+            $isTrial = $trialExpiry->isFuture() && \Carbon\Carbon::parse($user->vip_expires_at)->lte($trialExpiry);
+        }
+
+        $roleLabel = match ($tier) {
+            'admin' => 'Admin',
+            'plus' => $isTrial ? 'Plus (Dùng thử)' : 'Plus',
+            'pro' => 'Pro',
+            'ultra' => 'Ultra',
+            default => 'Free',
+        };
+
         return [
             'id' => $user->id,
             'name' => $user->name,
             'email' => $user->email,
-            'role' => strtolower($user->role ?? 'user'),
-            'role_label' => match (strtoupper($user->role ?? 'USER')) {
-                'ADMIN' => 'Admin',
-                'VIP' => 'VIP',
-                'GUEST' => 'Guest',
-                default => 'Thường',
-            },
+            'role' => $tier,
+            'role_label' => $roleLabel,
             'avatar' => $this->resolveAvatarForResponse($user->avatar),
             'ai_quota_remaining' => $user->ai_quota_remaining,
-            'vip_expires_at' => $user->vip_expires_at,
+            'vip_expires_at' => $user->vip_expires_at ? $user->vip_expires_at->toDateTimeString() : null,
+            'trial_used_at' => $user->trial_used_at ? $user->trial_used_at->toDateTimeString() : null,
             'created_at' => $user->created_at,
             'updated_at' => $user->updated_at,
         ];

@@ -28,27 +28,27 @@ class PaymentService
     }
 
     /**
-     * Map plan IDs to pricing, duration and AI quota benefits
+     * Liên kết mã định danh gói dịch vụ với giá cả, thời lượng và các lợi ích về hạn mức AI.
      */
     public function getPlans()
     {
         return [
-            'vip_1m' => [
-                'name' => 'VIP 1 Tháng',
+            'plus_1m' => [
+                'name' => 'Gói Plus',
                 'amount' => 50000,
                 'days' => 30,
                 'quota' => 100
             ],
-            'vip_3m' => [
-                'name' => 'VIP 3 Tháng',
+            'pro_1m' => [
+                'name' => 'Gói Pro',
                 'amount' => 120000,
-                'days' => 90,
+                'days' => 30,
                 'quota' => 350
             ],
-            'vip_1y' => [
-                'name' => 'VIP 1 Năm',
-                'amount' => 40000,
-                'days' => 365,
+            'ultra_1m' => [
+                'name' => 'Gói Ultra',
+                'amount' => 250000,
+                'days' => 30,
                 'quota' => 1500
             ]
         ];
@@ -81,7 +81,7 @@ class PaymentService
         if (env('MOMO_MOCK', false) === true) {
             $requestId = $orderCode . '_' . time();
             $extraData = base64_encode(json_encode(['plan_id' => $planId, 'user_id' => $user->id]));
-            
+
             $mockParams = [
                 'partnerCode' => 'MOMO_MOCK',
                 'orderId' => $orderCode,
@@ -96,7 +96,7 @@ class PaymentService
                 'responseTime' => time() * 1000,
                 'extraData' => $extraData,
             ];
-            
+
             $rawHash = "accessKey=mock_access_key" .
                 "&amount=" . $mockParams['amount'] .
                 "&extraData=" . $mockParams['extraData'] .
@@ -110,7 +110,7 @@ class PaymentService
                 "&transId=" . $mockParams['transId'] .
                 "&payType=" . $mockParams['payType'];
             $mockParams['signature'] = hash_hmac("sha256", $rawHash, "mock_secret_key");
-            
+
             $mockPayUrl = $this->redirectUrl . '?' . http_build_query($mockParams);
 
             Log::info('MoMo Mock checkout created successfully', ['orderId' => $orderCode, 'payUrl' => $mockPayUrl]);
@@ -170,14 +170,14 @@ class PaymentService
 
         if ($response->failed()) {
             Log::error('MoMo connection failed', ['body' => $response->body()]);
-            
+
             if (isset($resData['message'])) {
                 throw new \Exception("MoMo trả về lỗi: " . $resData['message']);
             }
-            
+
             throw new \Exception("Không thể kết nối đến cổng thanh toán MoMo.");
         }
-        
+
         if (isset($resData['resultCode']) && $resData['resultCode'] == 0 && isset($resData['payUrl'])) {
             return [
                 'payUrl' => $resData['payUrl'],
@@ -287,13 +287,13 @@ class PaymentService
                 'amount' => $payment->amount
             ]);
             // Gói mặc định nếu không khớp
-            $matchedPlan = $plans['vip_1m'];
-            $matchedPlan['id'] = 'vip_1m';
+            $matchedPlan = $plans['plus_1m'];
+            $matchedPlan['id'] = 'plus_1m';
         }
 
-        // 3. Tiến hành nâng cấp VIP và cấp Quota
+        // 3. Tiến hành nâng cấp và cấp Quota
         $user = $payment->user;
-        
+
         $days = $matchedPlan['days'];
         $quota = $matchedPlan['quota'];
 
@@ -305,7 +305,14 @@ class PaymentService
             $newExpiry = Carbon::now()->addDays($days);
         }
 
-        $user->role = 'VIP';
+        // Ánh xạ gói dịch vụ sang vai trò người dùng (PLUS, PRO, ULTRA)
+        $newRole = match ($matchedPlan['id']) {
+            'ultra_1m' => 'ULTRA',
+            'pro_1m' => 'PRO',
+            default => 'PLUS',
+        };
+
+        $user->role = $newRole;
         $user->vip_expires_at = $newExpiry;
         $user->ai_quota_remaining = ($user->ai_quota_remaining ?? 0) + $quota;
         $user->save();
