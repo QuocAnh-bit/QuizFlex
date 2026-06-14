@@ -442,6 +442,13 @@ export const attemptsApi = {
   },
 };
 
+export const adminDashboardApi = {
+  async overview() {
+    const { data } = await api.get("/admin/dashboard/overview");
+    return unwrap(data);
+  },
+};
+
 export const homeworkApi = {
   async getHomeworkRooms(params = {}) {
     const { data } = await api.get('/rooms', { params })
