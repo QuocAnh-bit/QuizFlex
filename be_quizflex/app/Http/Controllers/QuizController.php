@@ -588,6 +588,13 @@ public function adminIndex(Request $request)
             $query->where('is_public', false);
         }
     }
+    // Filter AI generated
+if ($request->filled('ai_generated')) {
+    $query->where(
+        'is_ai_generated',
+        $request->ai_generated
+    );
+}
 
     $quizzes = $query
         ->paginate(10)
@@ -641,12 +648,14 @@ public function adminShow($id)
     );
 
     return response()->json([
-        'success' => true,
-        'data' => [
-            'quiz' => $quiz,
-            'average_score' => $averageScore,
-        ]
-    ]);
+    'success' => true,
+    'data' => [
+        'quiz' => $quiz,
+        'average_score' => $averageScore,
+        'is_ai_generated' =>
+            $quiz->is_ai_generated,
+    ]
+]);
 }
 
 
