@@ -4,12 +4,13 @@ import api from '@/services/api'
 
 const quizzes = ref([])
 const loading = ref(false)
-
 const filters = ref({
   search: '',
   creator: '',
+  category: '',
   difficulty: '',
-  visibility: ''
+  visibility: '',
+  ai_generated: ''
 })
 
 const fetchQuizzes = async () => {
@@ -52,7 +53,7 @@ onMounted(() => {
     </div>
 
     <!-- Search + Filter -->
-    <div class="grid grid-cols-4 gap-4 mb-5">
+    <div class="grid grid-cols-6 gap-4 mb-5">
       <input
         v-model="filters.search"
         type="text"
@@ -61,10 +62,17 @@ onMounted(() => {
       />
       <input
         v-model="filters.creator"
+        
         type="text"
         placeholder="Người tạo..."
         class="border p-2 rounded-lg text-black bg-white"
       />
+      <input
+  v-model="filters.category"
+  type="text"
+  placeholder="Danh mục..."
+  class="border p-2 rounded-lg text-black bg-white"
+/>
       <select v-model="filters.difficulty" class="border p-2 rounded-lg text-black bg-white">
         <option value="">Độ khó</option>
         <option value="easy">Dễ</option>
@@ -75,7 +83,24 @@ onMounted(() => {
         <option value="">Hiển thị</option>
         <option value="public">Public</option>
         <option value="private">Private</option>
+
       </select>
+      <select
+  v-model="filters.ai_generated"
+  class="border p-2 rounded-lg text-black bg-white"
+>
+  <option value="">
+    Quiz AI
+  </option>
+
+  <option value="1">
+    AI Generated
+  </option>
+
+  <option value="0">
+    Quiz thường
+  </option>
+</select>
     </div>
 
     <button @click="fetchQuizzes" class="bg-blue-600 text-white px-4 py-2 rounded-lg mb-5">

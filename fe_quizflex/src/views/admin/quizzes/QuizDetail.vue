@@ -77,7 +77,25 @@ onMounted(() => {
             <strong>Độ khó:</strong>
             {{ quiz.difficulty }}
           </p>
+        <div>
+  <span class="font-semibold">
+    Quiz AI:
+  </span>
 
+  <span
+    :class="
+      quiz.is_ai_generated
+        ? 'text-green-600'
+        : 'text-red-500'
+    "
+  >
+    {{
+      quiz.is_ai_generated
+        ? 'Có'
+        : 'Không'
+    }}
+  </span>
+</div>
           <p>
             <strong>Trạng thái:</strong>
 
