@@ -244,6 +244,43 @@ class RoomController extends Controller
         ]);
     }
 
+    public function destroyMember(Request $request, Room $room, RoomMember $member)
+    {
+        if (!$this->canManageRoomMembers($request->user(), $room)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ban khong co quyen xoa thanh vien khoi phong nay.',
+            ], 403);
+        }
+
+        if ((int) $member->room_id !== (int) $room->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Thanh vien nay khong thuoc phong hien tai.',
+            ], 404);
+        }
+
+        if ((int) $member->user_id === (int) $room->owner_id || $member->role === 'owner') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Khong the xoa chu phong khoi phong.',
+            ], 422);
+        }
+
+        $member->forceFill(['status' => 'removed'])->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Da xoa thanh vien khoi phong.',
+            'data' => [
+                'id' => $member->id,
+                'room_id' => $member->room_id,
+                'user_id' => $member->user_id,
+                'status' => $member->status,
+            ],
+        ]);
+    }
+
     public function allowedMembers(Request $request, Room $room)
     {
         if (!$this->canManageAllowedMembers($request->user(), $room)) {
@@ -374,6 +411,12 @@ class RoomController extends Controller
         return strtolower((string) ($user->role ?? 'user')) === 'admin';
     }
 
+    private function canManageRoomMembers($user, Room $room): bool
+    {
+        return $room->type === 'homework'
+            && ($this->isAdmin($user) || (int) $room->owner_id === (int) $user->id);
+    }
+
     private function canManageAllowedMembers($user, Room $room): bool
     {
         return $room->type === 'homework' && (int) $room->owner_id === (int) $user->id;
@@ -430,7 +473,7 @@ class RoomController extends Controller
             'description' => $room->description,
             'type' => $room->type,
             'code' => $room->code,
-            'status' => $room->status,
+            'status' => $room->status === 'active' ? 'open' : $room->status,
             'max_players' => $room->max_players,
             'join_policy' => $room->join_policy ?: 'open',
             'owner' => $room->owner,

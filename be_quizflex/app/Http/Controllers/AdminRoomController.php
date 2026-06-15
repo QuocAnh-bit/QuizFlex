@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\LiveRoomFinished;
 use App\Models\LiveRoom;
 use App\Models\LiveRoomAnswer;
 use App\Models\LiveRoomPlayer;
@@ -11,6 +12,7 @@ use App\Models\RoomAssignment;
 use App\Models\RoomMember;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class AdminRoomController extends Controller
 {
@@ -41,6 +43,49 @@ class AdminRoomController extends Controller
                     ->values(),
                 'meta' => $this->paginationMeta($rooms),
             ],
+        ]);
+    }
+
+    public function homeworkTrash(Request $request)
+    {
+        $perPage = $this->perPage($request);
+        $query = Room::onlyTrashed()
+            ->where('type', 'homework')
+            ->with(['owner:id,name,email'])
+            ->withCount([
+                'members as member_count' => fn (Builder $memberQuery) => $memberQuery
+                    ->where('status', 'active')
+                    ->whereColumn('room_members.user_id', '!=', 'rooms.owner_id'),
+                'assignments as assignment_count',
+            ])
+            ->latest();
+
+        $this->applyRoomFilters($query, $request, 'owner');
+
+        $rooms = $query->paginate($perPage);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Admin homework rooms trash',
+            'data' => [
+                'items' => $rooms->getCollection()
+                    ->map(fn (Room $room) => $this->formatHomeworkRoomSummary($room))
+                    ->values(),
+                'meta' => $this->paginationMeta($rooms),
+            ],
+        ]);
+    }
+
+    public function restoreHomework($id)
+    {
+        $room = Room::onlyTrashed()->findOrFail($id);
+        abort_if($room->type !== 'homework', 404);
+        $room->restore();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Homework room restored.',
+            'data' => $this->formatHomeworkRoomSummary($room->fresh(['owner'])),
         ]);
     }
 
@@ -90,6 +135,110 @@ class AdminRoomController extends Controller
         ]);
     }
 
+    public function closeHomework(Room $room)
+    {
+        abort_if($room->type !== 'homework', 404);
+
+        $user = auth('api')->user();
+        if (strtolower($user->role ?? '') !== 'admin' && (int)$room->owner_id !== (int)$user->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn không có quyền đóng phòng này.',
+            ], 403);
+        }
+
+        if (!$room->trashed()) {
+            $room->forceFill([
+                'status' => 'closed',
+                'ended_at' => $room->ended_at ?: now(),
+            ])->save();
+        }
+
+        $room->load('owner:id,name,email')->loadCount([
+            'members as member_count' => fn (Builder $query) => $query
+                ->where('status', 'active')
+                ->where('user_id', '!=', $room->owner_id),
+            'assignments as assignment_count',
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Homework room closed.',
+            'data' => $this->formatHomeworkRoomSummary($room, true),
+        ]);
+    }
+
+    public function openHomework(Room $room)
+    {
+        abort_if($room->type !== 'homework', 404);
+
+        $user = auth('api')->user();
+        if (strtolower($user->role ?? '') !== 'admin' && (int)$room->owner_id !== (int)$user->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn không có quyền mở lại phòng này.',
+            ], 403);
+        }
+
+        if (!$room->trashed() && $room->status === 'closed') {
+            $room->forceFill([
+                'status' => 'active',
+                'ended_at' => null,
+            ])->save();
+        }
+
+        $room->load('owner:id,name,email')->loadCount([
+            'members as member_count' => fn (Builder $query) => $query
+                ->where('status', 'active')
+                ->where('user_id', '!=', $room->owner_id),
+            'assignments as assignment_count',
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Homework room opened.',
+            'data' => $this->formatHomeworkRoomSummary($room, true),
+        ]);
+    }
+
+    public function softDeleteHomework(Room $room)
+    {
+        abort_if($room->type !== 'homework', 404);
+
+        $room->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Homework room soft deleted.',
+        ]);
+    }
+
+    public function removeHomeworkMember(Room $room, RoomMember $member)
+    {
+        abort_if($room->type !== 'homework', 404);
+        abort_if((int) $member->room_id !== (int) $room->id, 404);
+
+        if ((int) $member->user_id === (int) $room->owner_id || $member->role === 'owner') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Room owner cannot be removed from the room.',
+            ], 422);
+        }
+
+        $member->forceFill(['status' => 'removed'])->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Homework room member removed.',
+            'data' => [
+                'id' => $member->id,
+                'room_id' => $member->room_id,
+                'user_id' => $member->user_id,
+                'status' => $member->status,
+            ],
+        ]);
+    }
+
     public function liveIndex(Request $request)
     {
         $perPage = $this->perPage($request);
@@ -115,6 +264,46 @@ class AdminRoomController extends Controller
                     ->values(),
                 'meta' => $this->paginationMeta($rooms),
             ],
+        ]);
+    }
+
+    public function liveTrash(Request $request)
+    {
+        $perPage = $this->perPage($request);
+        $query = LiveRoom::onlyTrashed()
+            ->with(['host:id,name,email', 'quiz:id,title'])
+            ->withCount([
+                'players as player_count' => fn (Builder $playerQuery) => $playerQuery
+                    ->where('status', 'joined')
+                    ->whereColumn('live_room_players.user_id', '!=', 'live_rooms.host_id'),
+            ])
+            ->latest();
+
+        $this->applyLiveRoomFilters($query, $request);
+
+        $rooms = $query->paginate($perPage);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Admin live rooms trash',
+            'data' => [
+                'items' => $rooms->getCollection()
+                    ->map(fn (LiveRoom $liveRoom) => $this->formatLiveRoomSummary($liveRoom))
+                    ->values(),
+                'meta' => $this->paginationMeta($rooms),
+            ],
+        ]);
+    }
+
+    public function restoreLive($id)
+    {
+        $liveRoom = LiveRoom::onlyTrashed()->findOrFail($id);
+        $liveRoom->restore();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Live room restored.',
+            'data' => $this->formatLiveRoomSummary($liveRoom->fresh(['host', 'quiz'])),
         ]);
     }
 
@@ -176,6 +365,44 @@ class AdminRoomController extends Controller
         ]);
     }
 
+    public function closeLive(LiveRoom $liveRoom)
+    {
+        if (in_array($liveRoom->status, ['waiting', 'playing'], true)) {
+            $liveRoom = DB::transaction(function () use ($liveRoom) {
+                $liveRoom->forceFill([
+                    'status' => 'finished',
+                    'ended_at' => $liveRoom->ended_at ?: now(),
+                ])->save();
+
+                return $liveRoom->fresh(['host:id,name,email', 'quiz:id,title']);
+            });
+
+            LiveRoomFinished::dispatch($liveRoom, 'admin_closed');
+        }
+
+        $liveRoom->loadMissing(['host:id,name,email', 'quiz:id,title'])->loadCount([
+            'players as player_count' => fn (Builder $query) => $query
+                ->where('status', 'joined')
+                ->where('user_id', '!=', $liveRoom->host_id),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Live room finished.',
+            'data' => $this->formatLiveRoomSummary($liveRoom, true),
+        ]);
+    }
+
+    public function softDeleteLive(LiveRoom $liveRoom)
+    {
+        $liveRoom->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Live room soft deleted.',
+        ]);
+    }
+
     private function applyRoomFilters(Builder $query, Request $request, string $ownerRelation): void
     {
         $search = trim((string) $request->query('search', ''));
@@ -191,7 +418,12 @@ class AdminRoomController extends Controller
         }
 
         if ($request->filled('status')) {
-            $query->where('status', $request->query('status'));
+            $status = $request->query('status');
+            if ($status === 'removed') {
+                $query->onlyTrashed();
+            } else {
+                $query->where('status', $status === 'open' ? 'active' : $status);
+            }
         }
 
         if ($request->filled('owner_id')) {
@@ -222,7 +454,12 @@ class AdminRoomController extends Controller
         }
 
         if ($request->filled('status')) {
-            $query->where('status', $request->query('status'));
+            $status = $request->query('status');
+            if ($status === 'removed') {
+                $query->onlyTrashed();
+            } else {
+                $query->where('status', $status);
+            }
         }
 
         if ($request->filled('host_id')) {
@@ -244,9 +481,10 @@ class AdminRoomController extends Controller
             'id' => $room->id,
             'name' => $room->name,
             'code' => $room->code,
-            'status' => $room->status,
+            'status' => $room->trashed() ? 'removed' : ($room->status === 'active' ? 'open' : $room->status),
             'created_at' => $room->created_at,
             'updated_at' => $room->updated_at,
+            'deleted_at' => $room->deleted_at ? $room->deleted_at->toIso8601String() : null,
             'owner' => $room->owner ? [
                 'id' => $room->owner->id,
                 'name' => $room->owner->name,
@@ -352,11 +590,12 @@ class AdminRoomController extends Controller
             'title' => $liveRoom->title,
             'name' => $liveRoom->title,
             'code' => $liveRoom->code,
-            'status' => $liveRoom->status,
+            'status' => $liveRoom->trashed() ? 'removed' : $liveRoom->status,
             'created_at' => $liveRoom->created_at,
             'started_at' => $liveRoom->started_at,
             'finished_at' => $liveRoom->ended_at,
             'ended_at' => $liveRoom->ended_at,
+            'deleted_at' => $liveRoom->deleted_at ? $liveRoom->deleted_at->toIso8601String() : null,
             'host' => $liveRoom->host ? [
                 'id' => $liveRoom->host->id,
                 'name' => $liveRoom->host->name,

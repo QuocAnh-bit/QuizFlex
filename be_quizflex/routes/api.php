@@ -65,13 +65,24 @@ Route::middleware('auth:api')->group(function () {
     Route::get('/ai/logs/{id}', [AIController::class, 'show']);
 
 
+    Route::patch('/admin/rooms/homework/{room}/close', [AdminRoomController::class, 'closeHomework'])->withTrashed();
+    Route::patch('/admin/rooms/homework/{room}/open', [AdminRoomController::class, 'openHomework'])->withTrashed();
+
     // Admin Only
     Route::middleware('role:admin')->group(function () {
         Route::get('/admin/dashboard/overview', [AdminDashboardController::class, 'overview']);
         Route::get('/admin/rooms/homework', [AdminRoomController::class, 'homeworkIndex']);
-        Route::get('/admin/rooms/homework/{room}', [AdminRoomController::class, 'homeworkShow']);
+        Route::get('/admin/rooms/homework/trash', [AdminRoomController::class, 'homeworkTrash']);
+        Route::delete('/admin/rooms/homework/{room}', [AdminRoomController::class, 'softDeleteHomework'])->withTrashed();
+        Route::patch('/admin/rooms/homework/{id}/restore', [AdminRoomController::class, 'restoreHomework']);
+        Route::delete('/admin/rooms/homework/{room}/members/{member}', [AdminRoomController::class, 'removeHomeworkMember']);
+        Route::get('/admin/rooms/homework/{room}', [AdminRoomController::class, 'homeworkShow'])->withTrashed();
         Route::get('/admin/rooms/live', [AdminRoomController::class, 'liveIndex']);
-        Route::get('/admin/rooms/live/{liveRoom}', [AdminRoomController::class, 'liveShow']);
+        Route::get('/admin/rooms/live/trash', [AdminRoomController::class, 'liveTrash']);
+        Route::patch('/admin/rooms/live/{liveRoom}/close', [AdminRoomController::class, 'closeLive'])->withTrashed();
+        Route::delete('/admin/rooms/live/{liveRoom}', [AdminRoomController::class, 'softDeleteLive'])->withTrashed();
+        Route::patch('/admin/rooms/live/{id}/restore', [AdminRoomController::class, 'restoreLive']);
+        Route::get('/admin/rooms/live/{liveRoom}', [AdminRoomController::class, 'liveShow'])->withTrashed();
         Route::apiResource('users', UserController::class);
     });
 
@@ -111,6 +122,7 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/rooms/{room}', [RoomController::class, 'show']);
         Route::post('/rooms/{room}/join', [RoomController::class, 'joinRoom']);
         Route::get('/rooms/{room}/members', [RoomController::class, 'members']);
+        Route::delete('/rooms/{room}/members/{member}', [RoomController::class, 'destroyMember']);
         Route::get('/homework-rooms/{room}/allowed-members', [RoomController::class, 'allowedMembers']);
         Route::post('/homework-rooms/{room}/allowed-members', [RoomController::class, 'storeAllowedMembers']);
         Route::delete('/homework-rooms/{room}/allowed-members/{allowedMember}', [RoomController::class, 'destroyAllowedMember']);

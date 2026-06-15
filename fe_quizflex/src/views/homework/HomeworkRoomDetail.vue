@@ -93,13 +93,23 @@
           <div v-if="filteredMembers.length" class="mt-5 grid gap-3">
             <article v-for="member in filteredMembers" :key="member.id || `${member.room_id}-${member.user_id}`" class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-4">
               <div class="flex items-start justify-between gap-3">
-                <div>
-                  <h3 class="font-black text-[var(--text)]">{{ member.user?.name || `User #${member.user_id}` }}</h3>
-                  <p class="mt-1 text-xs font-bold text-[var(--muted)]">{{ member.user?.email || 'Chưa có email' }}</p>
+                <div class="min-w-0">
+                  <h3 class="font-black text-[var(--text)] truncate">{{ member.user?.name || `User #${member.user_id}` }}</h3>
+                  <p class="mt-1 text-xs font-bold text-[var(--muted)] truncate">{{ member.user?.email || 'Chưa có email' }}</p>
                 </div>
                 <StatusBadge :value="member.role || 'member'" />
               </div>
-              <div class="mt-3"><StatusBadge :value="member.status || 'active'" /></div>
+              <div class="mt-3 flex items-center justify-between">
+                <StatusBadge :value="member.status || 'active'" />
+                <button
+                  v-if="canManageRoom"
+                  class="btn-ghost px-3 py-1.5 text-xs text-rose-400 hover:bg-rose-500/10"
+                  type="button"
+                  @click="removeMember(member)"
+                >
+                  Xóa
+                </button>
+              </div>
             </article>
           </div>
 
@@ -265,6 +275,16 @@ const removeAllowedMember = async (allowedMemberId) => {
     allowedMembersMessage.value = 'Đã xóa email khỏi danh sách.'
   } catch (error) {
     allowedMembersError.value = `Không xóa được email: ${error.message}`
+  }
+}
+
+const removeMember = async (member) => {
+  if (!window.confirm(`Xóa thành viên "${member.user?.name || member.user_id}" khỏi Homework room này?`)) return
+  try {
+    await homeworkApi.removeRoomMember(roomId.value, member.id)
+    members.value = members.value.filter((m) => Number(m.id) !== Number(member.id))
+  } catch (error) {
+    errorMessage.value = `Không xóa được thành viên: ${error.message}`
   }
 }
 
