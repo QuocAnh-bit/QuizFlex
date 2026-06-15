@@ -48,7 +48,7 @@ const routes = [
   { path: '/dashboard/questions/edit/:id', name: 'user-question-edit', component: () => import('@/views/admin/CreateQuiz.vue'), meta: { layout: 'user', title: 'Sửa quiz', requiresAuth: true, roles: workspaceRoles } },
   { path: '/dashboard/questions/ai', name: 'user-question-ai', component: () => import('@/views/admin/AiQuiz.vue'), meta: { layout: 'user', title: 'AI Generator', requiresAuth: true, roles: workspaceRoles } },
   { path: '/dashboard/questions/ocr', name: 'user-question-ocr', component: () => import('@/views/admin/OcrUpload.vue'), meta: { layout: 'user', title: 'OCR Upload', requiresAuth: true, roles: workspaceRoles } },
-  { path: '/dashboard/rooms', name: 'user-rooms', component: () => import('@/views/admin/Rooms.vue'), meta: { layout: 'user', title: 'Room của tôi', requiresAuth: true, roles: workspaceRoles } },
+  { path: '/dashboard/rooms', name: 'user-rooms', component: () => import('@/views/admin/UserRooms.vue'), meta: { layout: 'user', title: 'Room của tôi', requiresAuth: true, roles: workspaceRoles } },
 
   { path: '/admin', name: 'admin-dashboard', component: () => import('@/views/admin/Dashboard.vue'), meta: { layout: 'admin', title: 'Dashboard admin', requiresAuth: true, roles: adminRoles } },
   { path: '/admin/questions', name: 'admin-questions', component: () => import('@/views/admin/Question.vue'), meta: { layout: 'admin', title: 'Kho quiz admin', requiresAuth: true, roles: adminRoles } },
@@ -56,22 +56,17 @@ const routes = [
   { path: '/admin/questions/edit/:id', name: 'admin-question-edit', component: () => import('@/views/admin/CreateQuiz.vue'), meta: { layout: 'admin', title: 'Sửa quiz admin', requiresAuth: true, roles: adminRoles } },
   { path: '/admin/questions/ai', name: 'admin-question-ai', component: () => import('@/views/admin/AiQuiz.vue'), meta: { layout: 'admin', title: 'AI Generator admin', requiresAuth: true, roles: adminRoles } },
   { path: '/admin/questions/ocr', name: 'admin-question-ocr', component: () => import('@/views/admin/OcrUpload.vue'), meta: { layout: 'admin', title: 'OCR Upload admin', requiresAuth: true, roles: adminRoles } },
-  { path: '/admin/rooms', name: 'admin-rooms', component: () => import('@/views/admin/Rooms.vue'), meta: { layout: 'admin', title: 'Room admin', requiresAuth: true, roles: adminRoles } },
+  { path: '/admin/rooms', redirect: '/admin/rooms/homework' },
+  { path: '/admin/rooms/homework', name: 'admin-homework-rooms', component: () => import('@/views/admin/AdminHomeworkRooms.vue'), meta: { layout: 'admin', title: 'Homework Rooms', requiresAuth: true, roles: adminRoles } },
+  { path: '/admin/rooms/live', name: 'admin-live-rooms', component: () => import('@/views/admin/AdminLiveRooms.vue'), meta: { layout: 'admin', title: 'Live Rooms', requiresAuth: true, roles: adminRoles } },
   { path: '/admin/reports', name: 'admin-reports', component: () => import('@/views/admin/Reports.vue'), meta: { layout: 'admin', title: 'Report', requiresAuth: true, roles: adminRoles } },
   { path: '/admin/payments', name: 'admin-payments', component: () => import('@/views/admin/Payments.vue'), meta: { layout: 'admin', title: 'Payment', requiresAuth: true, roles: adminRoles } },
   { path: '/admin/users', name: 'admin-users', component: () => import('@/views/admin/Users.vue'), meta: { layout: 'admin', title: 'User management', requiresAuth: true, roles: adminRoles } },
   { path: '/admin/settings', name: 'admin-settings', component: () => import('@/views/admin/Settings.vue'), meta: { layout: 'admin', title: 'Settings', requiresAuth: true, roles: adminRoles } },
 
+  { path: '/gamification', component: () => import('@/views/user/GamificationStats.vue') },
+  { path: '/leaderboard', component: () => import('@/views/user/Leaderboard.vue') },
   { path: '/:pathMatch(.*)*', name: 'not-found', redirect: '/' },
-
-  {
-  path: '/gamification',
-  component: () => import('@/views/user/GamificationStats.vue'),
-},
-{
-  path: '/leaderboard',
-  component: () => import('@/views/user/Leaderboard.vue'),
-},
 ]
 
 const router = createRouter({
@@ -82,12 +77,6 @@ const router = createRouter({
     return { top: 0, behavior: 'smooth' }
   },
 })
-
-const safeRedirect = (value) => {
-  if (!value || typeof value !== 'string') return ''
-  if (!value.startsWith('/') || value.startsWith('//')) return ''
-  return value
-}
 
 router.beforeEach(async (to) => {
   let user = currentUserStorage.get()
@@ -129,4 +118,3 @@ router.afterEach((to) => {
 })
 
 export default router
-

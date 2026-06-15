@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AnswerController;
 use App\Http\Controllers\AdminDashboardController;
+use App\Http\Controllers\AdminRoomController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\OcrController;
 use App\Http\Controllers\QuestionController;
@@ -67,6 +68,10 @@ Route::middleware('auth:api')->group(function () {
     // Admin Only
     Route::middleware('role:admin')->group(function () {
         Route::get('/admin/dashboard/overview', [AdminDashboardController::class, 'overview']);
+        Route::get('/admin/rooms/homework', [AdminRoomController::class, 'homeworkIndex']);
+        Route::get('/admin/rooms/homework/{room}', [AdminRoomController::class, 'homeworkShow']);
+        Route::get('/admin/rooms/live', [AdminRoomController::class, 'liveIndex']);
+        Route::get('/admin/rooms/live/{liveRoom}', [AdminRoomController::class, 'liveShow']);
         Route::apiResource('users', UserController::class);
     });
 

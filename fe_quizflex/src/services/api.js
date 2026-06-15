@@ -449,6 +449,35 @@ export const adminDashboardApi = {
   },
 };
 
+export const adminRoomApi = {
+  async getHomeworkRooms(params = {}) {
+    const { data } = await api.get("/admin/rooms/homework", { params });
+    return unwrap(data);
+  },
+
+  async getHomeworkRoomDetail(id) {
+    const { data } = await api.get(`/admin/rooms/homework/${id}`);
+    return unwrap(data);
+  },
+
+  async getLiveRooms(params = {}) {
+    const { data } = await api.get("/admin/rooms/live", { params });
+    return unwrap(data);
+  },
+
+  async getLiveRoomDetail(id) {
+    const { data } = await api.get(`/admin/rooms/live/${id}`);
+    return unwrap(data);
+  },
+};
+
+export const adminRoomsApi = {
+  listHomework: adminRoomApi.getHomeworkRooms,
+  getHomework: adminRoomApi.getHomeworkRoomDetail,
+  listLive: adminRoomApi.getLiveRooms,
+  getLive: adminRoomApi.getLiveRoomDetail,
+};
+
 export const homeworkApi = {
   async getHomeworkRooms(params = {}) {
     const { data } = await api.get('/rooms', { params })
