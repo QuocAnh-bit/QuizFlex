@@ -20,8 +20,9 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import axios from 'axios'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
+import { useRoute } from 'vue-router'
+import api, { tokenStorage } from '@/services/api'
 
 const stats = ref({
   xp: 0,
@@ -32,13 +33,49 @@ const stats = ref({
 
 const xpInLevel = computed(() => stats.value.xp % 100)
 const xpPercent = computed(() => xpInLevel.value)
+const route = useRoute()
 
-onMounted(async () => {
+const fetchStats = async () => {
+  if (!tokenStorage.get()) {
+    stats.value = {
+      xp: 0,
+      level: 1,
+      current_streak: 0,
+      xp_to_next_level: 100,
+    }
+    return
+  }
+
   try {
-    const { data } = await axios.get('/api/user/stats')
+    const { data } = await api.get('/user/stats')
     stats.value = data
   } catch (e) {
-    // user belum login, tampilkan default
+    // reset về mặc định nếu chưa đăng nhập hoặc lỗi
+    stats.value = {
+      xp: 0,
+      level: 1,
+      current_streak: 0,
+      xp_to_next_level: 100,
+    }
   }
+}
+
+// Watch thay đổi đường dẫn (đặc biệt khi vừa làm xong quiz và chuyển trang)
+watch(() => route.path, () => {
+  fetchStats()
+})
+
+// Đồng bộ khi đăng nhập/đăng xuất/cập nhật user
+const handleUserUpdate = () => {
+  fetchStats()
+}
+
+onMounted(() => {
+  fetchStats()
+  window.addEventListener('quizflex-user-updated', handleUserUpdate)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('quizflex-user-updated', handleUserUpdate)
 })
 </script>

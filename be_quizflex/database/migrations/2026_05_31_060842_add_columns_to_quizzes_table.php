@@ -9,7 +9,6 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('quizzes', function (Blueprint $table) {
-            $table->foreignId('user_id')->after('id')->constrained()->onDelete('cascade');
             $table->boolean('is_ai_generated')->default(false)->after('user_id');
         });
     }
@@ -17,8 +16,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('quizzes', function (Blueprint $table) {
-            $table->dropForeign(['user_id']);
-            $table->dropColumn(['user_id', 'is_ai_generated']);
+            $table->dropColumn(['is_ai_generated']);
         });
     }
 };

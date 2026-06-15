@@ -95,7 +95,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import axios from 'axios'
+import api from '@/services/api'
 
 const stats = ref({ xp: 0, level: 1, current_streak: 0, longest_streak: 0, badges: [] })
 const allBadges = ref([])
@@ -115,12 +115,16 @@ const weekDays = computed(() => {
 })
 
 onMounted(async () => {
-  const [statsRes, badgesRes] = await Promise.all([
-    axios.get('/api/user/stats'),
-    axios.get('/api/badges'),
-  ])
-  stats.value = statsRes.data
-  allBadges.value = badgesRes.data
+  try {
+    const [statsRes, badgesRes] = await Promise.all([
+      api.get('/user/stats'),
+      api.get('/badges'),
+    ])
+    stats.value = statsRes.data
+    allBadges.value = badgesRes.data
+  } catch (error) {
+    console.error('Lỗi khi tải thông tin thành tích:', error)
+  }
 })
 </script>
 

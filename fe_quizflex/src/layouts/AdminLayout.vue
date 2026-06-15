@@ -10,9 +10,9 @@
           <div class="rounded-[1.75rem] border border-[var(--border)] bg-[var(--surface)] p-4 shadow-[var(--shadow-card)]">
             <BrandLogo to="/admin" />
             <div class="mt-5 rounded-3xl border border-[var(--border-strong)] bg-[var(--chip-active)] p-4">
-              <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Mock role</p>
-              <h3 class="mt-1 text-2xl font-black tracking-[-0.05em] text-[var(--text)]">{{ roleLabels[currentRole] }} Console</h3>
-              <p class="mt-2 text-xs font-bold leading-5 text-[var(--muted)]">FE đang dùng dữ liệu giả để mô phỏng Admin/VIP/User.</p>
+              <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Admin Console</p>
+              <h3 class="mt-1 text-2xl font-black tracking-[-0.05em] text-[var(--text)]">Admin Dashboard</h3>
+              <p class="mt-2 text-xs font-bold leading-5 text-[var(--muted)]">Quản lý hệ thống, quiz, người dùng, báo cáo và thanh toán.</p>
             </div>
           </div>
 
@@ -33,7 +33,7 @@
 
         <header class="mb-6 hidden items-center justify-between gap-4 lg:flex">
           <div>
-            <p class="text-sm font-black uppercase tracking-[0.2em] text-[var(--primary)]">QuizFlex console</p>
+            <p class="text-sm font-black uppercase tracking-[0.2em] text-[var(--primary)]">QuizFlex admin</p>
             <h1 class="mt-1 text-4xl font-black tracking-[-0.06em] text-[var(--text)]">{{ pageTitle }}</h1>
           </div>
           <div class="flex items-center gap-3">
@@ -54,11 +54,10 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import BrandLogo from '@/components/common/BrandLogo.vue'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
-import { currentRole, roleLabels } from '@/data/demoData'
 
 const route = useRoute()
 
-const menu = [
+const menu = computed(() => [
   { label: 'Tổng quan', to: '/admin', icon: 'DB' },
   { label: 'Kho quiz', to: '/admin/questions', icon: 'QZ' },
   { label: 'Tạo quiz', to: '/admin/questions/create', icon: '+' },
@@ -69,7 +68,7 @@ const menu = [
   { label: 'Payment', to: '/admin/payments', icon: '$' },
   { label: 'Users', to: '/admin/users', icon: 'US' },
   { label: 'Settings', to: '/admin/settings', icon: 'ST' },
-]
+])
 
 const pageTitle = computed(() => route.meta.title || 'Dashboard')
 

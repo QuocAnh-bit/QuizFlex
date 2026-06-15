@@ -7,6 +7,22 @@ use Illuminate\Database\Eloquent\Model;
 
 class Answer extends Model
 {
-    /** @use HasFactory<\Database\Factories\AnswerFactory> */
     use HasFactory;
+
+    protected $fillable = [
+        'question_id',
+        'content',
+        'is_correct',
+        'order',
+    ];
+
+    protected $casts = [
+        'is_correct' => 'boolean',
+        'order' => 'integer',
+    ];
+
+    public function question()
+    {
+        return $this->belongsTo(Question::class);
+    }
 }
