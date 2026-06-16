@@ -6,7 +6,7 @@
         <div>
           <p class="text-sm font-black uppercase tracking-[0.2em] text-[var(--primary)]">Dashboard người dùng</p>
           <h1 class="mt-3 text-4xl font-black tracking-[-0.06em] text-[var(--text)] sm:text-5xl">Không gian học và tạo quiz của bạn</h1>
-          <p class="mt-4 max-w-2xl text-sm font-medium leading-7 text-[var(--muted)]">Trang này tách khỏi dashboard admin. User và VIP dùng khu vực này để tạo quiz, quản lý kho quiz, OCR, AI và room.</p>
+          <p class="mt-4 max-w-2xl text-sm font-medium leading-7 text-[var(--muted)]">Trang này tách khỏi dashboard admin. Người dùng sử dụng khu vực này để tạo quiz, quản lý kho quiz, OCR, AI và room.</p>
         </div>
         <div class="flex flex-wrap gap-3">
           <router-link class="btn-primary" to="/dashboard/questions/create">Tạo quiz</router-link>

@@ -231,6 +231,7 @@ const isReviewingWeakOnly = ref(false)
 
 const totalCount = computed(() => questions.value.length)
 const currentCard = computed(() => activeList.value[currentIndex.value] || { question: '', answers: [] })
+// xác định thẻ hiện tại đang hiện thị dựa trên currentIndex
 const progressPercent = computed(() => {
   if (activeList.value.length === 0) return 0
   return Math.round((currentIndex.value / activeList.value.length) * 100)
@@ -246,6 +247,7 @@ const goBack = () => {
 
 const markAnswer = (isMastered) => {
   const originalQuestion = currentCard.value
+  // sẽ lấy câu hỏi và đáp án từ currentCard
   
   if (isMastered) {
     // Add to mastered if not already there, remove from weak
@@ -296,10 +298,12 @@ const restartOnlyWeak = () => {
 }
 
 const loadQuizDetails = async () => {
+  // hàm bất đồng bộ async, vì nó phải gọi API trên backend
   isLoading.value = true
   errorMessage.value = ''
   
   try {
+    //frontend gọi api lấy chi tiết quiz theo id trên url
     const rawData = await quizzesApi.get(route.params.id)
     const normalizedQuiz = normalizeQuizCard(rawData)
     
@@ -312,7 +316,7 @@ const loadQuizDetails = async () => {
     const rawQuestions = rawData.questions || []
     questions.value = rawQuestions.map(q => normalizeQuestion(q))
     activeList.value = [...questions.value]
-    
+    // lưu câu hỏi vào activelist
   } catch (error) {
     errorMessage.value = `Không tải được dữ liệu: ${error.message}`
   } finally {

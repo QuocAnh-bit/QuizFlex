@@ -11,11 +11,61 @@
           ✦ Premium Access
         </span>
         <h1 class="mt-5 text-4xl md:text-6xl font-black tracking-tight text-[var(--text)] leading-none">
-          Mở Khóa Toàn Bộ <span class="bg-gradient-to-r from-[var(--primary)] to-[var(--accent)] bg-clip-text text-transparent">Đặc Quyền VIP</span>
+          Mở Khóa Toàn Bộ <span class="bg-gradient-to-r from-[var(--primary)] to-[var(--accent)] bg-clip-text text-transparent">Đặc Quyền Premium</span>
         </h1>
         <p class="mt-4 text-base leading-relaxed text-[var(--muted)]">
           Nâng cao khả năng học tập và giảng dạy với sức mạnh của AI sinh đề, scan tài liệu không giới hạn và tạo phòng thi đấu trực tuyến thời gian thực.
         </p>
+      </div>
+    </div>
+
+    <!-- Trial Promo Banner / Active Status Banner -->
+    <div v-if="currentUser" class="grid gap-6">
+      <!-- Trial Promo Banner -->
+      <div 
+        v-if="currentUser.role === 'free' && !currentUser.trial_used_at"
+        class="relative overflow-hidden rounded-[2rem] border border-emerald-500/30 bg-emerald-500/5 p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-[0_8px_32px_rgba(16,185,129,0.08)] backdrop-blur-md"
+      >
+        <div class="pointer-events-none absolute left-0 top-0 h-full w-48 bg-gradient-to-r from-emerald-500/10 to-transparent"></div>
+        <div class="relative z-10 text-left">
+          <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/20 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-emerald-400 border border-emerald-500/20 mb-2">
+            ✦ Trải nghiệm miễn phí
+          </span>
+          <h3 class="text-xl md:text-2xl font-black text-[var(--text)]">Dùng thử Gói Plus Miễn Phí 7 Ngày</h3>
+          <p class="text-sm text-[var(--muted)] mt-1 font-semibold leading-relaxed">
+            Trải nghiệm đầy đủ đặc quyền của gói **Plus** (tạo phòng Live, Homework và OCR scan) để tăng tốc học tập.<br>
+            Nhận ngay **+20 lượt AI** sinh đề. Sử dụng một lần duy nhất cho mỗi tài khoản.
+          </p>
+        </div>
+        <button 
+          @click="activateFreeTrial"
+          :disabled="isActivatingTrial"
+          class="relative z-10 shrink-0 h-12 px-6 flex items-center justify-center font-black rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-[0_12px_24px_rgba(16,185,129,0.2)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition duration-300 disabled:opacity-50"
+        >
+          {{ isActivatingTrial ? 'Đang kích hoạt...' : 'Kích Hoạt Dùng Thử 🚀' }}
+        </button>
+      </div>
+
+      <!-- Active Trial Status Banner -->
+      <div 
+        v-else-if="currentUser.role === 'plus' && currentUser.trial_used_at && isCurrentlyInTrial"
+        class="relative overflow-hidden rounded-[2rem] border border-[var(--primary)]/30 bg-[var(--primary)]/5 p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-[0_8px_32px_rgba(124,58,237,0.08)] backdrop-blur-md"
+      >
+        <div class="relative z-10 text-left">
+          <span class="inline-flex items-center gap-1.5 rounded-full bg-[var(--primary)]/20 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-[var(--primary)] border border-[var(--primary)]/20 mb-2">
+            ✦ Trạng thái dùng thử
+          </span>
+          <h3 class="text-xl md:text-2xl font-black text-[var(--text)] flex items-center gap-2">
+            <span>✨</span> Bạn đang trong thời gian dùng thử Plus
+          </h3>
+          <p class="text-sm text-[var(--muted)] mt-1 font-semibold">
+            Đặc quyền Plus dùng thử của bạn sẽ kết thúc vào ngày: <span class="text-[var(--primary)] font-black">{{ formatTrialExpiry(currentUser.vip_expires_at) }}</span>.<br>
+            Sau thời gian dùng thử, tài khoản của bạn sẽ tự động trở lại gói Free mà không làm mất dữ liệu.
+          </p>
+        </div>
+        <div class="text-xs font-black text-[var(--muted)] shrink-0 bg-[var(--surface-soft)] px-4 py-2 rounded-full border border-[var(--border)]">
+          Hết hạn sẽ tự động về gói Free
+        </div>
       </div>
     </div>
 
@@ -40,18 +90,36 @@
 
         <div>
           <!-- Plan Header -->
-          <div class="flex items-center gap-3">
-            <span class="text-3xl">{{ plan.icon }}</span>
-            <div>
-              <p class="font-black text-xl text-[var(--text)]">{{ plan.name }}</p>
-              <p class="text-xs font-semibold text-[var(--muted)]">{{ plan.period }}</p>
+          <div class="flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+              <span class="text-3xl">{{ plan.icon }}</span>
+              <div>
+                <p class="font-black text-xl text-[var(--text)]">{{ plan.name }}</p>
+                <p class="text-xs font-semibold text-[var(--muted)]">
+                  {{ plan.id === 'plus_1m' && showPlusTrial ? 'Thời hạn 7 ngày' : plan.period }}
+                </p>
+              </div>
             </div>
+            <!-- Trial Badge for Plus -->
+            <span 
+              v-if="plan.id === 'plus_1m' && showPlusTrial"
+              class="bg-emerald-500/10 text-emerald-400 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border border-emerald-500/20 shrink-0"
+            >
+              Có Dùng Thử
+            </span>
           </div>
 
           <!-- Pricing -->
-          <div class="mt-6 flex items-baseline gap-1">
-            <h2 class="text-4xl font-black tracking-tight text-[var(--text)]">{{ plan.priceLabel }}</h2>
-            <span v-if="plan.price > 0" class="text-sm font-semibold text-[var(--muted)]">/gói</span>
+          <div class="mt-6 flex items-baseline gap-1 flex-wrap">
+            <template v-if="plan.id === 'plus_1m' && showPlusTrial">
+              <span class="text-xl line-through text-[var(--muted)] font-black mr-2">50.000đ</span>
+              <h2 class="text-4xl font-black tracking-tight text-[var(--text)]">0đ</h2>
+              <span class="text-sm font-semibold text-[var(--muted)]">/7 ngày dùng thử</span>
+            </template>
+            <template v-else>
+              <h2 class="text-4xl font-black tracking-tight text-[var(--text)]">{{ plan.priceLabel }}</h2>
+              <span v-if="plan.price > 0" class="text-sm font-semibold text-[var(--muted)]">/gói</span>
+            </template>
           </div>
 
           <!-- Benefits Description -->
@@ -72,9 +140,17 @@
           </div>
         </div>
 
-        <!-- Action Button -->
+        <!-- Action Button / Dual buttons for Plus Trial -->
         <div class="mt-8">
           <button 
+            v-if="plan.id === 'plus_1m' && showPlusTrial"
+            @click="activateFreeTrial"
+            class="w-full h-12 flex items-center justify-center font-black rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-[0_12px_24px_rgba(16,185,129,0.2)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition duration-300"
+          >
+            Dùng thử Plus miễn phí 7 ngày
+          </button>
+          <button 
+            v-else
             @click="openCheckout(plan)"
             class="w-full h-12 flex items-center justify-center font-black rounded-full transition duration-300 active:scale-[0.98]"
             :class="plan.popular
@@ -96,7 +172,7 @@
       <h3 class="text-2xl font-black text-[var(--text)] flex items-center gap-2">
         <span>🕒</span> Lịch Sử Giao Dịch
       </h3>
-      <p class="text-sm text-[var(--muted)] mt-1 font-semibold">Theo dõi và quản lý các hóa đơn thanh toán VIP của bạn.</p>
+      <p class="text-sm text-[var(--muted)] mt-1 font-semibold">Theo dõi và quản lý các hóa đơn thanh toán của bạn.</p>
 
       <div class="mt-6 overflow-x-auto">
         <table class="w-full border-collapse text-left text-sm font-semibold">
@@ -120,10 +196,16 @@
               <td class="py-4 px-4 text-[var(--text)]">{{ item.plan_name || getPlanNameByAmount(item.amount) }}</td>
               <td class="py-4 px-4 text-xs font-bold uppercase text-[var(--muted)]">
                 <span class="inline-flex items-center gap-1 rounded bg-fuchsia-500/10 text-fuchsia-400 px-2 py-0.5" v-if="item.provider === 'momo'">
-                  pink MoMo
+                  MoMo
+                </span>
+                <span class="inline-flex items-center gap-1 rounded bg-emerald-500/10 text-emerald-400 px-2 py-0.5" v-else-if="item.provider === 'payos'">
+                  VietQR (PayOS)
+                </span>
+                <span class="inline-flex items-center gap-1 rounded bg-purple-500/10 text-purple-400 px-2 py-0.5" v-else-if="item.provider === 'trial'">
+                  Dùng thử
                 </span>
                 <span class="inline-flex items-center gap-1 rounded bg-blue-500/10 text-blue-400 px-2 py-0.5" v-else>
-                  blue VNPay
+                  VNPay
                 </span>
               </td>
               <td class="py-4 px-4 text-[var(--text)] font-black">{{ formatPrice(item.amount) }}</td>
@@ -209,6 +291,29 @@
 
           <!-- Payment Options -->
           <div class="mt-6 grid gap-3 relative z-10">
+            <!-- PayOS VietQR -->
+            <button 
+              @click="handlePayment('payos')"
+              :disabled="isProcessing"
+              class="flex items-center justify-between rounded-[1.25rem] border border-emerald-500/40 bg-emerald-500/5 p-4 transition duration-300 hover:border-emerald-400 hover:bg-emerald-500/10 active:scale-[0.98] group disabled:opacity-50 relative overflow-hidden shadow-[0_0_15px_rgba(16,185,129,0.05)]"
+            >
+              <div class="pointer-events-none absolute right-0 top-0 h-16 w-16 rounded-full bg-emerald-500/10 blur-xl"></div>
+              <div class="flex items-center gap-3 relative z-10">
+                <div class="h-10 w-10 shrink-0 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex flex-col items-center justify-center text-white shadow-md">
+                  <span class="text-[10px] font-black leading-none">Viet</span>
+                  <span class="text-[11px] font-black leading-none tracking-tight">QR</span>
+                </div>
+                <div class="text-left">
+                  <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/20 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-emerald-400 border border-emerald-500/20 mb-1">
+                    ✦ Khuyên dùng
+                  </span>
+                  <b class="block text-sm font-black text-[var(--text)] group-hover:text-emerald-400 transition">Thanh toán VietQR (PayOS)</b>
+                  <span class="text-[10px] font-semibold text-[var(--muted)]">Quét mã chuyển khoản từ mọi App Ngân hàng (Sandbox)</span>
+                </div>
+              </div>
+              <span class="text-xs font-black text-emerald-400 relative z-10">Chọn ➔</span>
+            </button>
+
             <!-- MoMo Wallet -->
             <button 
               @click="handlePayment('momo')"
@@ -259,87 +364,382 @@
       </div>
     </Transition>
 
+    <!-- Waiting for Payment Modal (Polling State) -->
+    <Transition
+      enter-active-class="transition duration-300 ease-out"
+      enter-from-class="opacity-0"
+      enter-to-class="opacity-100"
+      leave-active-class="transition duration-200 ease-in"
+      leave-from-class="opacity-100"
+      leave-to-class="opacity-0"
+    >
+      <div 
+        v-if="isWaitingForPayment" 
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4"
+      >
+        <div class="relative overflow-hidden w-full max-w-[480px] rounded-[2.2rem] border border-emerald-500/30 bg-[var(--surface)] p-6 md:p-8 shadow-[0_24px_80px_rgba(16,185,129,0.1)] text-center transition">
+          <div class="pointer-events-none absolute -right-20 -top-20 h-44 w-44 rounded-full bg-emerald-500/10 blur-3xl"></div>
+          <div class="pointer-events-none absolute -left-20 -bottom-20 h-44 w-44 rounded-full bg-teal-500/10 blur-3xl"></div>
+
+          <!-- Pulsing QR / Loading Circle -->
+          <div class="relative mx-auto h-24 w-24 flex items-center justify-center">
+            <div class="absolute inset-0 rounded-full border-4 border-emerald-500/20 border-t-emerald-400 animate-spin"></div>
+            <div class="h-16 w-16 rounded-full bg-emerald-500/10 border border-emerald-500/35 flex items-center justify-center text-3xl animate-pulse">
+              📱
+            </div>
+          </div>
+
+          <h4 class="mt-6 text-2xl font-black text-[var(--text)]">Đang Chờ Quét Mã VietQR</h4>
+          <p class="text-sm font-semibold text-[var(--muted)] mt-2 leading-relaxed">
+            Hệ thống đang kiểm tra thanh toán tự động.<br>
+            Vui lòng hoàn tất giao dịch trên trang thanh toán PayOS.
+          </p>
+
+          <!-- Status indicator badge -->
+          <div class="mt-4 inline-flex items-center gap-2 rounded-full bg-emerald-500/10 px-4 py-1.5 text-xs font-black text-emerald-400 border border-emerald-500/20 uppercase tracking-widest animate-pulse">
+            <span class="h-2 w-2 rounded-full bg-emerald-400"></span>
+            Đang đồng bộ trực tiếp
+          </div>
+
+          <!-- Payment Help Info -->
+          <div class="mt-6 rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-4 text-left text-xs font-semibold grid gap-2">
+            <div class="flex justify-between">
+              <span class="text-[var(--muted)]">Đơn hàng:</span>
+              <span class="font-mono font-bold text-[var(--text)]">#{{ paymentOrderCode }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-[var(--muted)]">Số tiền:</span>
+              <span class="font-black text-emerald-400 text-sm">{{ selectedPlan?.priceLabel }}</span>
+            </div>
+            <p class="mt-2 text-[10px] text-[var(--muted)] border-t border-[var(--border)] pt-2 leading-relaxed">
+              💡 <b>Sandbox:</b> Click nút <b>"Giả lập thanh toán thành công"</b> trên trang PayOS để hoàn tất kiểm thử mà không tốn tiền thật.
+            </p>
+          </div>
+
+          <!-- Actions -->
+          <div class="mt-6 grid gap-3">
+            <a 
+              :href="checkoutUrl" 
+              target="_blank" 
+              class="h-12 w-full flex items-center justify-center font-black rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-[0_16px_36px_rgba(16,185,129,0.25)] transition hover:-translate-y-0.5 active:scale-[0.98]"
+            >
+              Mở Lại Trang Thanh Toán 🚀
+            </a>
+            <button 
+              @click="cancelWaitingForPayment"
+              class="h-12 w-full flex items-center justify-center font-black rounded-full border border-[var(--border-strong)] bg-[var(--surface-soft)] text-[var(--text)] transition hover:bg-[var(--chip-active)] active:scale-[0.98]"
+            >
+              Hủy & Quay Lại
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
+    <!-- Confirm Trial Modal -->
+    <Transition
+      enter-active-class="transition duration-300 ease-out"
+      enter-from-class="opacity-0"
+      enter-to-class="opacity-100"
+      leave-active-class="transition duration-200 ease-in"
+      leave-from-class="opacity-100"
+      leave-to-class="opacity-0"
+    >
+      <div 
+        v-if="isConfirmTrialModalOpen" 
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4"
+        @click.self="closeConfirmTrialModal"
+      >
+        <div class="relative overflow-hidden w-full max-w-[500px] rounded-[2.2rem] border border-emerald-500/30 bg-[var(--surface)] p-6 md:p-8 shadow-[0_24px_80px_rgba(16,185,129,0.15)] transition">
+          <div class="pointer-events-none absolute -right-20 -top-20 h-44 w-44 rounded-full bg-emerald-500/15 blur-3xl"></div>
+          
+          <!-- Close Button -->
+          <button 
+            @click="closeConfirmTrialModal"
+            class="absolute top-4 right-4 h-9 w-9 flex items-center justify-center rounded-full border border-[var(--border)] bg-[var(--surface-soft)] text-[var(--text)] transition hover:border-[var(--border-strong)] active:scale-95"
+          >
+            ✕
+          </button>
+
+          <!-- Modal Header -->
+          <div class="relative z-10 text-center">
+            <span class="text-4xl">🎁</span>
+            <h4 class="mt-3 text-2xl font-black text-[var(--text)]">Dùng Thử Plus 7 Ngày</h4>
+            <p class="text-sm text-[var(--muted)] mt-1 font-semibold">Mở khóa đặc quyền VIP hoàn toàn miễn phí</p>
+          </div>
+
+          <!-- Trial Benefits and Info -->
+          <div class="mt-6 rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-5 relative z-10 grid gap-4">
+            <div class="grid gap-2.5 text-sm text-[var(--text)]">
+              <div class="flex items-start gap-2.5">
+                <span class="text-emerald-400 mt-0.5">✨</span>
+                <span class="font-bold leading-normal">Nhận ngay +20 lượt AI tạo đề.</span>
+              </div>
+              <div class="flex items-start gap-2.5">
+                <span class="text-emerald-400 mt-0.5">✨</span>
+                <span class="font-bold leading-normal">Mở khóa tính năng quét tài liệu bằng AI OCR.</span>
+              </div>
+              <div class="flex items-start gap-2.5">
+                <span class="text-emerald-400 mt-0.5">✨</span>
+                <span class="font-bold leading-normal">Tạo phòng Live thi đấu nhóm & phòng Homework.</span>
+              </div>
+            </div>
+            
+            <div class="pt-3.5 border-t border-[var(--border)] text-xs text-[var(--muted)] leading-relaxed">
+              <p class="font-bold text-amber-500/90 flex items-start gap-2">
+                <span class="mt-0.5">⚠️</span>
+                <span>Mỗi tài khoản chỉ được kích hoạt dùng thử duy nhất 1 lần. Hết hạn 7 ngày, tài khoản sẽ tự động chuyển về gói Free (không tự động trừ tiền hoặc gia hạn).</span>
+              </p>
+            </div>
+          </div>
+
+          <!-- Error Alert for Trial -->
+          <div 
+            v-if="trialErrorMessage" 
+            class="mt-4 rounded-xl border border-rose-500/25 bg-rose-500/10 p-3 text-xs font-bold text-rose-400"
+          >
+            ⚠ {{ trialErrorMessage }}
+          </div>
+
+          <!-- Actions -->
+          <div class="mt-6 grid gap-3 relative z-10">
+            <button 
+              @click="submitActivateTrial"
+              :disabled="isActivatingTrial"
+              class="h-12 w-full flex items-center justify-center font-black rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-[0_12px_24px_rgba(16,185,129,0.2)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition duration-300 disabled:opacity-50"
+            >
+              {{ isActivatingTrial ? 'Đang kích hoạt...' : 'Kích Hoạt Dùng Thử Ngay 🚀' }}
+            </button>
+            <button 
+              @click="closeConfirmTrialModal"
+              :disabled="isActivatingTrial"
+              class="h-12 w-full flex items-center justify-center font-black rounded-full border border-[var(--border-strong)] bg-[var(--surface-soft)] text-[var(--text)] transition hover:bg-[var(--chip-active)] active:scale-[0.98] disabled:opacity-50"
+            >
+              Hủy bỏ
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
+    <!-- Success Trial Modal -->
+    <Transition
+      enter-active-class="transition duration-300 ease-out"
+      enter-from-class="opacity-0"
+      enter-to-class="opacity-100"
+      leave-active-class="transition duration-200 ease-in"
+      leave-from-class="opacity-100"
+      leave-to-class="opacity-0"
+    >
+      <div 
+        v-if="isSuccessTrialModalOpen" 
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4"
+        @click.self="closeSuccessTrialModal"
+      >
+        <div class="relative overflow-hidden w-full max-w-[500px] rounded-[2.2rem] border border-emerald-500/30 bg-[var(--surface)] p-6 md:p-8 shadow-[0_24px_80px_rgba(16,185,129,0.25)] text-center transition">
+          <div class="pointer-events-none absolute -right-20 -top-20 h-44 w-44 rounded-full bg-emerald-500/15 blur-3xl"></div>
+          <div class="pointer-events-none absolute -left-20 -bottom-20 h-44 w-44 rounded-full bg-teal-500/15 blur-3xl"></div>
+          
+          <!-- Success Animation Icon -->
+          <div class="relative mx-auto h-20 w-20 flex items-center justify-center">
+            <div class="absolute inset-0 rounded-full bg-emerald-500/10 border border-emerald-500/30 animate-pulse"></div>
+            <span class="text-5xl animate-bounce">🎉</span>
+          </div>
+
+          <h4 class="mt-5 text-2xl font-black text-[var(--text)]">Kích Hoạt Thành Công!</h4>
+          <p class="text-sm text-[var(--muted)] mt-1 font-semibold">Tài khoản của bạn đã được nâng cấp lên gói Plus</p>
+
+          <!-- Success Details -->
+          <div class="mt-6 rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-4 text-left text-sm font-semibold grid gap-2.5">
+            <div class="flex justify-between">
+              <span class="text-[var(--muted)]">Gói dịch vụ:</span>
+              <span class="font-black text-[var(--primary)]">Plus (Trải nghiệm 7 ngày)</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-[var(--muted)]">Lượt AI nhận thêm:</span>
+              <span class="font-black text-emerald-400">+20 lượt dùng</span>
+            </div>
+            <div class="flex justify-between flex-wrap gap-2">
+              <span class="text-[var(--muted)]">Thời hạn dùng thử đến:</span>
+              <span class="font-black text-[var(--text)]">{{ formatTrialExpiry(currentUser?.vip_expires_at) }}</span>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="mt-6">
+            <button 
+              @click="closeSuccessTrialModal"
+              class="h-12 w-full flex items-center justify-center font-black rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-[0_16px_36px_rgba(16,185,129,0.25)] transition hover:-translate-y-0.5 active:scale-[0.98]"
+            >
+              Bắt Đầu Khám Phá Ngay 🚀
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
   </section>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { currentUserStorage, paymentsApi } from '@/services/api'
+import { currentUserStorage, paymentsApi, authApi } from '@/services/api'
 
 const router = useRouter()
 const route = useRoute()
 const currentUser = ref(currentUserStorage.get())
 const historyList = ref([])
 
+const showPlusTrial = computed(() => {
+  return !currentUser.value || (currentUser.value.role === 'free' && !currentUser.value.trial_used_at)
+})
+
 const isPaymentModalOpen = ref(false)
 const selectedPlan = ref(null)
 const isProcessing = ref(false)
 const errorMessage = ref('')
 
+const pollingInterval = ref(null)
+const isWaitingForPayment = ref(false)
+const paymentOrderCode = ref(null)
+const checkoutUrl = ref('')
+const isActivatingTrial = ref(false)
+
+const isConfirmTrialModalOpen = ref(false)
+const isSuccessTrialModalOpen = ref(false)
+const trialErrorMessage = ref('')
+
+const isCurrentlyInTrial = computed(() => {
+  if (!currentUser.value || !currentUser.value.vip_expires_at) return false
+  return new Date(currentUser.value.vip_expires_at) > new Date()
+})
+
+const formatTrialExpiry = (expiryStr) => {
+  if (!expiryStr) return ''
+  return new Date(expiryStr).toLocaleString('vi-VN', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+const activateFreeTrial = () => {
+  if (!currentUser.value) {
+    router.push({ path: '/register', query: { redirect: '/upgrade' } })
+    return
+  }
+  isConfirmTrialModalOpen.value = true
+  trialErrorMessage.value = ''
+}
+
+const closeConfirmTrialModal = () => {
+  if (isActivatingTrial.value) return
+  isConfirmTrialModalOpen.value = false
+  trialErrorMessage.value = ''
+}
+
+const submitActivateTrial = async () => {
+  isActivatingTrial.value = true
+  trialErrorMessage.value = ''
+  try {
+    const res = await paymentsApi.activateTrial()
+    if (res.success && res.user) {
+      currentUserStorage.set(res.user)
+      currentUser.value = res.user
+      isConfirmTrialModalOpen.value = false
+      isSuccessTrialModalOpen.value = true
+      loadHistory()
+    } else {
+      trialErrorMessage.value = res.message || 'Không thể kích hoạt dùng thử.'
+    }
+  } catch (error) {
+    trialErrorMessage.value = error.message || 'Không thể kích hoạt dùng thử.'
+  } finally {
+    isActivatingTrial.value = false
+  }
+}
+
+const closeSuccessTrialModal = () => {
+  isSuccessTrialModalOpen.value = false
+}
+
 const plans = [
   {
-    id: 'vip_1m',
-    name: 'VIP 1 Tháng',
+    id: 'plus_1m',
+    name: 'Gói Plus (Cơ Bản)',
     price: 50000,
     priceLabel: '50.000đ',
     period: 'Thời hạn 30 ngày',
     icon: '⚡',
-    desc: 'Thử nghiệm dịch vụ với chi phí cực thấp.',
+    desc: 'Tăng cường hiệu năng học tập với các tính năng cơ bản.',
     quota: 100,
     btnText: 'Nâng cấp ngay',
     popular: false,
     features: [
       'Dùng AI sinh đề (+100 lượt)',
-      'Tải tài liệu PDF/Ảnh OCR',
-      'Mở khóa Quiz Private',
-      'Tạo phòng Realtime nhóm'
+      'Scan tài liệu OCR (10 lượt/tháng)',
+      'Mở khóa Quiz Riêng tư',
+      'Tạo phòng Realtime nhóm (max 20 người)',
+      'Tạo phòng Homework (max 5 phòng)'
     ]
   },
   {
-    id: 'vip_3m',
-    name: 'VIP 3 Tháng',
+    id: 'pro_1m',
+    name: 'Gói Pro (Chuyên Nghiệp)',
     price: 120000,
     priceLabel: '120.000đ',
-    period: 'Thời hạn 90 ngày',
+    period: 'Thời hạn 30 ngày',
     icon: '🚀',
-    desc: 'Lựa chọn tiết kiệm 20%, đầy đủ quyền lợi.',
+    desc: 'Lựa chọn tốt nhất cho giáo viên và người tạo nội dung.',
     quota: 350,
-    btnText: 'Mua gói ưu chuộng',
+    btnText: 'Mua gói phổ biến',
     popular: true,
     features: [
       'Dùng AI sinh đề (+350 lượt)',
-      'Tải tài liệu PDF/Ảnh OCR',
-      'Mở khóa Quiz Private',
-      'Tạo phòng Realtime lớn',
-      'Hỗ trợ xuất đề ra PDF/Excel'
+      'Scan tài liệu OCR (50 lượt/tháng)',
+      'Mở khóa Quiz Riêng tư',
+      'Tạo phòng Realtime lớn (max 100 người)',
+      'Tạo phòng Homework (max 20 phòng)',
+      'Hỗ trợ xuất đề ra PDF/Excel',
+      'Badge Pro nổi bật'
     ]
   },
   {
-    id: 'vip_1y',
-    name: 'VIP 1 Năm',
-    price: 400000,
-    priceLabel: '400.000đ',
-    period: 'Thời hạn 365 ngày',
+    id: 'ultra_1m',
+    name: 'Gói Ultra (Tối Thượng)',
+    price: 250000,
+    priceLabel: '250.000đ',
+    period: 'Thời hạn 30 ngày',
     icon: '👑',
-    desc: 'Lựa chọn tối ưu tiết kiệm 33% cho Creator.',
+    desc: 'Tối đa hóa sức mạnh với quyền lợi không giới hạn.',
     quota: 1500,
-    btnText: 'Sở hữu VIP trọn năm',
+    btnText: 'Sở hữu gói tối thượng',
     popular: false,
     features: [
       'Dùng AI sinh đề (+1500 lượt)',
-      'Tải tài liệu PDF/Ảnh OCR',
-      'Mở khóa Quiz Private',
-      'Tạo phòng Realtime cực đại',
+      'Scan tài liệu OCR không giới hạn',
+      'Mở khóa Quiz Riêng tư',
+      'Tạo phòng Realtime cực đại (max 500 người)',
+      'Tạo phòng Homework không giới hạn',
       'Hỗ trợ xuất đề PDF/Excel',
-      'Badge VIP lấp lánh cạnh tên'
+      'Badge Ultra lấp lánh cạnh tên'
     ]
   }
 ]
 
-onMounted(() => {
+onMounted(async () => {
   if (currentUser.value) {
     loadHistory()
+    try {
+      const latestUser = await authApi.me()
+      currentUserStorage.set(latestUser)
+      currentUser.value = latestUser
+    } catch (error) {
+      console.error('Failed to sync user state on mount:', error)
+    }
     
     // Tự động mở modal thanh toán nếu có plan truyền qua URL query
     if (route.query.plan) {
@@ -377,10 +777,75 @@ const closeCheckout = () => {
   selectedPlan.value = null
 }
 
+const startPolling = (orderCode, newWindow) => {
+  if (pollingInterval.value) {
+    clearInterval(pollingInterval.value)
+  }
+
+  pollingInterval.value = setInterval(async () => {
+    try {
+      const res = await paymentsApi.checkStatus(orderCode)
+      if (res.success) {
+        if (res.status === 'success') {
+          clearInterval(pollingInterval.value)
+          pollingInterval.value = null
+          
+          if (newWindow && !newWindow.closed) {
+            newWindow.close()
+          }
+
+          isWaitingForPayment.value = false
+          
+          if (res.user) {
+            currentUserStorage.set(res.user)
+            currentUser.value = res.user
+          }
+
+          router.push({
+            path: '/payment-result',
+            query: {
+              orderCode: orderCode,
+              status: 'success'
+            }
+          })
+        } else if (res.status === 'failed') {
+          clearInterval(pollingInterval.value)
+          pollingInterval.value = null
+          
+          if (newWindow && !newWindow.closed) {
+            newWindow.close()
+          }
+
+          isWaitingForPayment.value = false
+          errorMessage.value = 'Giao dịch thanh toán đã bị hủy hoặc thất bại.'
+          isPaymentModalOpen.value = true
+        }
+      }
+    } catch (error) {
+      console.error('Lỗi khi kiểm tra trạng thái thanh toán:', error)
+    }
+  }, 3000)
+}
+
+const cancelWaitingForPayment = () => {
+  if (pollingInterval.value) {
+    clearInterval(pollingInterval.value)
+    pollingInterval.value = null
+  }
+  isWaitingForPayment.value = false
+  paymentOrderCode.value = null
+  checkoutUrl.value = ''
+}
+
 const handlePayment = async (provider) => {
   if (!selectedPlan.value) return
   isProcessing.value = true
   errorMessage.value = ''
+
+  let newWindow = null
+  if (provider === 'payos') {
+    newWindow = window.open('about:blank', '_blank')
+  }
 
   try {
     const res = await paymentsApi.create({
@@ -389,24 +854,48 @@ const handlePayment = async (provider) => {
     })
 
     if (res.success && res.payUrl) {
-      // Chuyển hướng trình duyệt sang cổng thanh toán Sandbox MoMo
-      window.location.href = res.payUrl
+      if (provider === 'payos') {
+        if (newWindow) {
+          newWindow.location.href = res.payUrl
+        }
+        checkoutUrl.value = res.payUrl
+        paymentOrderCode.value = res.order_code
+        isWaitingForPayment.value = true
+        isPaymentModalOpen.value = false
+        isProcessing.value = false
+        startPolling(res.order_code, newWindow)
+      } else {
+        if (newWindow) {
+          newWindow.close()
+        }
+        window.location.href = res.payUrl
+      }
     } else {
       throw new Error(res.message || 'Không khởi tạo được URL thanh toán.')
     }
   } catch (error) {
+    if (newWindow) {
+      newWindow.close()
+    }
     errorMessage.value = error.message
     isProcessing.value = false
   }
 }
 
+onUnmounted(() => {
+  if (pollingInterval.value) {
+    clearInterval(pollingInterval.value)
+  }
+})
+
 // Helpers
 const getPlanNameByAmount = (amount) => {
   const parsed = Number(amount)
-  if (parsed === 50000) return 'Gói VIP 1 Tháng'
-  if (parsed === 120000) return 'Gói VIP 3 Tháng'
-  if (parsed === 400000) return 'Gói VIP 1 Năm'
-  return 'Gói VIP Tùy Chọn'
+  if (parsed === 0) return 'Dùng thử Plus (7 ngày)'
+  if (parsed === 50000) return 'Gói Plus'
+  if (parsed === 120000) return 'Gói Pro'
+  if (parsed === 250000) return 'Gói Ultra'
+  return 'Gói nâng cấp'
 }
 
 const formatPrice = (value) => {

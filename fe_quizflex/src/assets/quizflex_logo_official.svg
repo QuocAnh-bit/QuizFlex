@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 50" width="200" height="50">
+  <defs>
+    <!-- Gradient chuyển sắc chuẩn xác từ main.css -->
+    <linearGradient id="quizflex-logo-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#9b2cff" />
+      <stop offset="50%" stop-color="#cf30ff" />
+      <stop offset="100%" stop-color="#ff7a45" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Biểu tượng chữ Q bo tròn (rounded-2xl) -->
+  <rect x="5" y="5" width="40" height="40" rx="12" fill="url(#quizflex-logo-gradient)" />
+  
+  <!-- Chữ Q màu trắng in đậm căn giữa -->
+  <text x="25" y="34" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="24" font-weight="900" fill="#ffffff" text-anchor="middle">Q</text>
+  
+  <!-- Chữ QuizFlex thương hiệu -->
+  <text x="56" y="32" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="20" font-weight="900" fill="#f8f7ff" letter-spacing="-0.04em">QuizFlex</text>
+</svg>

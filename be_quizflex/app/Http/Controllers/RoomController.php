@@ -349,7 +349,8 @@ class RoomController extends Controller
 
     private function canCreateRoom($user): bool
     {
-        return in_array(strtolower((string) ($user->role ?? 'user')), ['admin', 'vip'], true);
+        $tier = $user->getSubscriptionTier();
+        return in_array($tier, ['plus', 'pro', 'ultra', 'admin'], true);
     }
 
     private function canViewRoom($user, Room $room): bool
