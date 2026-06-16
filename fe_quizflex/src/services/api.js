@@ -445,6 +445,98 @@ export const attemptsApi = {
   },
 };
 
+export const adminDashboardApi = {
+  async overview() {
+    const { data } = await api.get("/admin/dashboard/overview");
+    return unwrap(data);
+  },
+};
+
+export const adminRoomApi = {
+  async getHomeworkRooms(params = {}) {
+    const { data } = await api.get("/admin/rooms/homework", { params });
+    return unwrap(data);
+  },
+
+  async getHomeworkRoomsTrash(params = {}) {
+    const { data } = await api.get("/admin/rooms/homework/trash", { params });
+    return unwrap(data);
+  },
+
+  async getHomeworkRoomDetail(id) {
+    const { data } = await api.get(`/admin/rooms/homework/${id}`);
+    return unwrap(data);
+  },
+
+  async closeHomeworkRoom(id) {
+    const { data } = await api.patch(`/admin/rooms/homework/${id}/close`);
+    return unwrap(data);
+  },
+
+  async reopenHomeworkRoom(id) {
+    const { data } = await api.patch(`/admin/rooms/homework/${id}/open`);
+    return unwrap(data);
+  },
+
+  async softDeleteHomeworkRoom(id) {
+    const { data } = await api.delete(`/admin/rooms/homework/${id}`);
+    return data;
+  },
+
+  async restoreHomeworkRoom(id) {
+    const { data } = await api.patch(`/admin/rooms/homework/${id}/restore`);
+    return unwrap(data);
+  },
+
+  async removeHomeworkRoomMember(roomId, memberId) {
+    const { data } = await api.delete(`/admin/rooms/homework/${roomId}/members/${memberId}`);
+    return unwrap(data);
+  },
+
+  async getLiveRooms(params = {}) {
+    const { data } = await api.get("/admin/rooms/live", { params });
+    return unwrap(data);
+  },
+
+  async getLiveRoomsTrash(params = {}) {
+    const { data } = await api.get("/admin/rooms/live/trash", { params });
+    return unwrap(data);
+  },
+
+  async getLiveRoomDetail(id) {
+    const { data } = await api.get(`/admin/rooms/live/${id}`);
+    return unwrap(data);
+  },
+
+  async closeLiveRoom(id) {
+    const { data } = await api.patch(`/admin/rooms/live/${id}/close`);
+    return unwrap(data);
+  },
+
+  async softDeleteLiveRoom(id) {
+    const { data } = await api.delete(`/admin/rooms/live/${id}`);
+    return data;
+  },
+
+  async restoreLiveRoom(id) {
+    const { data } = await api.patch(`/admin/rooms/live/${id}/restore`);
+    return unwrap(data);
+  },
+};
+
+export const adminRoomsApi = {
+  listHomework: adminRoomApi.getHomeworkRooms,
+  getHomework: adminRoomApi.getHomeworkRoomDetail,
+  closeHomework: adminRoomApi.closeHomeworkRoom,
+  reopenHomework: adminRoomApi.reopenHomeworkRoom,
+  softDeleteHomework: adminRoomApi.softDeleteHomeworkRoom,
+  removeHomeworkMember: adminRoomApi.removeHomeworkRoomMember,
+  listLive: adminRoomApi.getLiveRooms,
+  getLive: adminRoomApi.getLiveRoomDetail,
+  closeLive: adminRoomApi.closeLiveRoom,
+  softDeleteLive: adminRoomApi.softDeleteLiveRoom,
+};
+
 export const homeworkApi = {
   async getHomeworkRooms(params = {}) {
     const { data } = await api.get('/rooms', { params })
@@ -469,6 +561,27 @@ export const homeworkApi = {
   async getRoomMembers(roomId) {
     const { data } = await api.get(`/rooms/${roomId}/members`)
     return unwrapCollection(data)
+  },
+
+  async removeRoomMember(roomId, memberId) {
+    const { data } = await api.delete(`/rooms/${roomId}/members/${memberId}`)
+    return unwrap(data)
+  },
+
+  async getAllowedMembers(roomId) {
+    const { data } = await api.get(`/homework-rooms/${roomId}/allowed-members`)
+    return unwrapCollection(data)
+  },
+
+  async addAllowedMembers(roomId, emails) {
+    const payload = Array.isArray(emails) ? { emails } : { email: emails }
+    const { data } = await api.post(`/homework-rooms/${roomId}/allowed-members`, payload)
+    return unwrapCollection(data)
+  },
+
+  async removeAllowedMember(roomId, allowedMemberId) {
+    const { data } = await api.delete(`/homework-rooms/${roomId}/allowed-members/${allowedMemberId}`)
+    return data
   },
 
   async getRoomAssignments(roomId) {

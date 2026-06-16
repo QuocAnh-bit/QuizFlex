@@ -20,15 +20,14 @@ class RoomAssignmentController extends Controller
     public function __construct(
         private readonly QuestionOrderService $questionOrderService,
         private readonly QuizGradingService $gradingService,
-    ) {
-    }
+    ) {}
 
     public function index(Request $request, Room $room)
     {
         if (!$this->canViewRoom($request->user(), $room)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Ban khong co quyen xem bai giao trong phong nay.',
+                'message' => 'Bạn không có quyền xem bài giao trong phòng này.',
             ], 403);
         }
 
@@ -41,8 +40,8 @@ class RoomAssignmentController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Danh sach bai duoc giao',
-            'data' => $assignments->map(fn (RoomAssignment $assignment) => $this->formatAssignment($assignment, $request->user())),
+            'message' => 'Danh sách bài tập.',
+            'data' => $assignments->map(fn(RoomAssignment $assignment) => $this->formatAssignment($assignment, $request->user())),
         ]);
     }
 
@@ -52,7 +51,7 @@ class RoomAssignmentController extends Controller
         if (!$this->canManageRoom($user, $room)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Chi chu phong hoac admin moi duoc giao bai.',
+                'message' => 'Chỉ chủ phòng mới được giao bài.',
             ], 403);
         }
 
@@ -86,7 +85,7 @@ class RoomAssignmentController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Giao bai thanh cong',
+            'message' => 'Giao bài thành công.',
             'data' => $this->formatAssignment($assignment, $user),
         ], 201);
     }
@@ -98,13 +97,13 @@ class RoomAssignmentController extends Controller
         if (!$this->canViewRoom($request->user(), $assignment->room)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Ban khong co quyen xem bai giao nay.',
+                'message' => 'Bạn không có quyền xem bài tập này.',
             ], 403);
         }
 
         return response()->json([
             'success' => true,
-            'message' => 'Chi tiet bai duoc giao',
+            'message' => 'Chi tiết bài tập.',
             'data' => $this->formatAssignment($assignment, $request->user(), true),
         ]);
     }
@@ -121,14 +120,14 @@ class RoomAssignmentController extends Controller
         if ($this->isRoomOwner($assignment->room, $user->id)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Chủ room không thể làm bài trong room của mình.',
+                'message' => 'Chủ phòng không thể làm bài trong phòng của mình.',
             ], 403);
         }
 
         if (!$this->isActiveMember($assignment->room, $user->id)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Ban chua la thanh vien cua phong nay.',
+                'message' => 'Bạn chưa là thành viên của phòng này.',
             ], 403);
         }
 
@@ -150,7 +149,7 @@ class RoomAssignmentController extends Controller
             if ($attemptCount >= (int) $assignment->max_attempts) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Ban da het so lan lam bai nay.',
+                    'message' => 'Bạn đã hết số lần làm bài này.',
                 ], 422);
             }
 
@@ -162,7 +161,7 @@ class RoomAssignmentController extends Controller
                 'mode' => 'homework',
                 'attempt_number' => $attemptCount + 1,
                 'score' => 0,
-                'total_points' => $assignment->quiz->questions->sum(fn (Question $question) => (int) ($question->points ?? 0)),
+                'total_points' => $assignment->quiz->questions->sum(fn(Question $question) => (int) ($question->points ?? 0)),
                 'time_spent_seconds' => null,
                 'answers_snapshot' => [],
                 'question_order' => $this->questionOrderService->makeForQuiz($assignment->quiz),
@@ -173,7 +172,7 @@ class RoomAssignmentController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Bat dau lam bai duoc giao',
+            'message' => 'Bắt đầu làm bài.',
             'data' => [
                 'attempt' => $this->formatAttempt($attempt),
                 'assignment' => $this->formatAssignment($assignment, $user),
@@ -280,7 +279,7 @@ class RoomAssignmentController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Danh sach luot lam bai duoc giao',
-            'data' => $query->get()->map(fn (QuizAttempt $attempt) => $this->formatAttemptSummary($attempt)),
+            'data' => $query->get()->map(fn(QuizAttempt $attempt) => $this->formatAttemptSummary($attempt)),
         ]);
     }
 
@@ -417,9 +416,9 @@ class RoomAssignmentController extends Controller
         $myAttempts = $this->isRoomOwner($assignment->room, $user->id)
             ? collect()
             : QuizAttempt::where('assignment_id', $assignment->id)
-                ->where('user_id', $user->id)
-                ->latest('started_at')
-                ->get();
+            ->where('user_id', $user->id)
+            ->latest('started_at')
+            ->get();
 
         $data['my_attempts_count'] = $myAttempts->count();
         $data['my_latest_attempt'] = $myAttempts->first() ? $this->formatAttempt($myAttempts->first()) : null;
@@ -499,13 +498,13 @@ class RoomAssignmentController extends Controller
             'title' => $quiz->title,
             'description' => $quiz->description,
             'time_limit_seconds' => $quiz->time_limit_seconds,
-            'questions' => $questions->map(fn (Question $question) => [
+            'questions' => $questions->map(fn(Question $question) => [
                 'id' => $question->id,
                 'content' => $question->content,
                 'text' => $question->content,
                 'type' => $question->type,
                 'points' => $question->points,
-                'answers' => $question->answers->map(fn ($answer, int $index) => [
+                'answers' => $question->answers->map(fn($answer, int $index) => [
                     'id' => $answer->id,
                     'content' => $answer->content,
                     'text' => $answer->content,

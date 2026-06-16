@@ -254,10 +254,6 @@ const homeworkNav = computed(() => {
       label: 'Room Homework',
       to: '/homework-rooms',
     },
-    {
-      label: 'Tạo room',
-      to: '/homework-rooms/create',
-    },
   ]
 })
 
