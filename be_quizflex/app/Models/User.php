@@ -11,7 +11,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use PHPOpenSourceSaver\JWTAuth\Contracts\JWTSubject;
 
-#[Fillable(['name', 'email', 'password', 'role', 'avatar', 'ai_quota_remaining', 'vip_expires_at'])]
+#[Fillable(['name', 'email', 'password', 'role', 'avatar', 'ai_quota_remaining', 'vip_expires_at', 'trial_used_at'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements JWTSubject
 {
@@ -54,7 +54,31 @@ class User extends Authenticatable implements JWTSubject
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'vip_expires_at' => 'datetime',
+            'trial_used_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Lấy cấp độ subscription thực tế của người dùng (tính toán động theo ngày hết hạn).
+     */
+    public function getSubscriptionTier(): string
+    {
+        if (strtolower($this->role) === 'admin') {
+            return 'admin';
+        }
+
+        if ($this->vip_expires_at && \Carbon\Carbon::parse($this->vip_expires_at)->isFuture()) {
+            $role = strtolower($this->role);
+            return $role === 'free' ? 'plus' : $role;
+        }
+
+        // Hết hạn VIP: tự động cập nhật role cột trong CSDL về FREE
+        if (in_array(strtoupper($this->role), ['PLUS', 'PRO', 'ULTRA'])) {
+            $this->role = 'FREE';
+            $this->save();
+        }
+
+        return 'free';
     }
 
     /**

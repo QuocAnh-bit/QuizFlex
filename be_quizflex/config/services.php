@@ -38,6 +38,12 @@ return [
         'ipn_url' => env('MOMO_IPN_URL', 'http://localhost:8000/api/payments/webhook/momo'),
     ],
 
+    'payos' => [
+        'client_id' => env('PAYOS_CLIENT_ID'),
+        'api_key' => env('PAYOS_API_KEY'),
+        'checksum_key' => env('PAYOS_CHECKSUM_KEY'),
+    ],
+
     'deepseek' => [
         'api_key' => env('DEEPSEEK_API_KEY'),
         'base_uri' => env('DEEPSEEK_BASE_URI', 'https://api.deepseek.com'),
@@ -46,6 +52,11 @@ return [
         'connect_timeout' => (int) env('DEEPSEEK_CONNECT_TIMEOUT', 30),
         'ssl_verify' => filter_var(env('DEEPSEEK_SSL_VERIFY', true), FILTER_VALIDATE_BOOL),
         'ca_bundle' => env('DEEPSEEK_CA_BUNDLE'),
+    ],
+
+    'mistral' => [
+        'api_key' => env('MISTRAL_API_KEY'),
+        'ocr_model' => env('MISTRAL_OCR_MODEL', 'mistral-ocr-latest'),
     ],
 
     'openrouter' => [

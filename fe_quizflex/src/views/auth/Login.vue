@@ -83,7 +83,10 @@
                   </div>
                   <span v-if="errors.password" class="text-xs font-bold text-rose-400 mt-1">{{ errors.password }}</span>
                 </label>
-                <button type="submit" class="btn-primary w-full py-3.5 text-sm font-black shadow-md">Đăng nhập</button>
+                <button type="submit" :disabled="isSubmitting" class="btn-primary w-full py-3.5 text-sm font-black shadow-md flex items-center justify-center gap-2">
+                  <span v-if="isSubmitting" class="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"></span>
+                  {{ isSubmitting ? 'Đang đăng nhập...' : 'Đăng nhập' }}
+                </button>
                 
                 <!-- Tùy chọn đăng nhập bằng Google nhanh (Luôn có sẵn dưới dạng phụ) -->
                 <div class="relative flex items-center justify-center my-1.5">
@@ -145,7 +148,10 @@
                 <label class="grid gap-2 text-sm font-black text-[var(--text)]">Email<div class="flex items-center gap-3 rounded-2xl border bg-[var(--input-bg)] px-4 py-3 transition focus-within:border-[var(--border-strong)]" :class="errors.email ? 'border-rose-500/50' : 'border-[var(--border)]'"><span class="text-sm font-black text-[var(--primary)]">✦</span><input v-model="form.email" class="w-full bg-transparent text-sm font-semibold text-[var(--text)] outline-none placeholder:text-[var(--muted)]" type="email" placeholder="you@example.com" autocomplete="email" /></div><span v-if="errors.email" class="text-xs font-bold text-rose-400">{{ errors.email }}</span></label>
                 <label class="grid gap-2 text-sm font-black text-[var(--text)]">Mật khẩu<div class="flex items-center gap-3 rounded-2xl border bg-[var(--input-bg)] px-4 py-3 transition focus-within:border-[var(--border-strong)]" :class="errors.password ? 'border-rose-500/50' : 'border-[var(--border)]'"><span class="text-sm font-black text-[var(--primary)]">#</span><input v-model="form.password" class="w-full bg-transparent text-sm font-semibold text-[var(--text)] outline-none placeholder:text-[var(--muted)]" :type="isPasswordVisible ? 'text' : 'password'" placeholder="••••••••" autocomplete="current-password" /><button type="button" class="rounded-full px-3 py-1 text-xs font-black text-[var(--primary)] transition hover:bg-[var(--chip-active)]" @click="isPasswordVisible = !isPasswordVisible">{{ isPasswordVisible ? 'Ẩn' : 'Hiện' }}</button></div><span v-if="errors.password" class="text-xs font-bold text-rose-400">{{ errors.password }}</span></label>
                 <div class="flex flex-wrap items-center justify-between gap-3 text-sm"><label class="flex cursor-pointer items-center gap-3 font-bold text-[var(--muted)]"><input v-model="form.remember" type="checkbox" class="h-4 w-4 accent-[var(--primary)]" />Ghi nhớ</label><router-link to="/forgot-password" class="font-black text-[var(--primary)]">Quên mật khẩu?</router-link></div>
-                <button type="submit" class="btn-primary w-full">Đăng nhập</button>
+                <button type="submit" :disabled="isSubmitting" class="btn-primary w-full flex items-center justify-center gap-2">
+                  <span v-if="isSubmitting" class="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"></span>
+                  {{ isSubmitting ? 'Đang đăng nhập...' : 'Đăng nhập' }}
+                </button>
 
                 <div class="relative flex items-center justify-center my-2">
                   <div class="absolute inset-0 flex items-center">
@@ -191,6 +197,7 @@ const route = useRoute()
 const router = useRouter()
 const isPasswordVisible = ref(false)
 const successMessage = ref('')
+const isSubmitting = ref(false)
 const form = reactive({ email: '', password: '', remember: true })
 const errors = reactive({ email: '', password: '' })
 
@@ -213,6 +220,7 @@ const handleQuickLoginPassword = async () => {
     return
   }
 
+  isSubmitting.value = true
   try {
     const user = await authApi.login({ email: lastUser.value.email, password: quickPassword.value })
     successMessage.value = 'Đăng nhập thành công.'
@@ -221,16 +229,18 @@ const handleQuickLoginPassword = async () => {
     let targetPath = getDefaultRouteForRole(user.role)
     setTimeout(() => {
       router.push(targetPath)
-    }, 1000)
+    }, 400)
   } catch (error) {
     errors.password = error.message
+  } finally {
+    isSubmitting.value = false
   }
 }
 
 onMounted(async () => {
   const state = history.state
 
-  // Kiểm tra thông tin tài khoản đăng nhập nhanh trong localStorage
+  // Kiểm tra thông tin tài khoản đăng nhập nhanh trong localStorage và lấy tài khoản đăng nhập gần nhất
   const savedUser = localStorage.getItem('quizflex_last_user')
   // Bỏ qua đăng nhập nhanh nếu URL có token hoặc tham số rõ ràng
   const hasAuthParams = route.query.token || route.query.error_message || route.query.email || (state && state.email)
@@ -270,7 +280,7 @@ onMounted(async () => {
 
       setTimeout(() => {
         router.push('/')
-      }, 1200)
+      }, 400)
     } catch (err) {
       successMessage.value = ''
       errors.password = 'Không thể lấy thông tin đăng nhập Google.'
@@ -293,7 +303,7 @@ onMounted(async () => {
     successMessage.value = 'Đăng ký thành công! Đang tự động đăng nhập...'
     setTimeout(() => {
       handleLogin()
-    }, 800)
+    }, 400)
   }
 })
 
@@ -308,6 +318,7 @@ const safeRedirect = (value) => {
 const handleLogin = async () => {
   successMessage.value = ''
   if (!validate()) return
+  isSubmitting.value = true
   try {
     const user = await authApi.login({ email: form.email, password: form.password })
     successMessage.value = 'Đăng nhập thành công.'
@@ -322,21 +333,39 @@ const handleLogin = async () => {
 
     setTimeout(() => {
       router.push({ path: targetPath, query })
-    }, 1000)
+    }, 400)
   } catch (error) {
     successMessage.value = ''
     errors.password = error.message
+  } finally {
+    isSubmitting.value = false
   }
 }
 
 const loginWithGoogle = () => {
   // URL redirect của Backend cho Google SSO
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api'
-  // Chuyển hướng người dùng qua Backend để chạy Socialite
-  window.location.href = `${apiBaseUrl.replace('/api', '')}/auth/google/redirect`
+  let backendUrl = ''
+  
+  if (apiBaseUrl.startsWith('http')) {
+    backendUrl = apiBaseUrl.replace(/\/api$/, '')
+  } else {
+    // Relative path fallback (e.g. /api)
+    backendUrl = `${window.location.protocol}//${window.location.hostname}:8000`
+  }
+  
+  // Đồng bộ hóa giữa localhost và 127.0.0.1 dựa trên tên miền hiện tại của trình duyệt
+  if (window.location.hostname === 'localhost' && backendUrl.includes('127.0.0.1')) {
+    backendUrl = backendUrl.replace('127.0.0.1', 'localhost')
+  } else if (window.location.hostname === '127.0.0.1' && backendUrl.includes('localhost')) {
+    backendUrl = backendUrl.replace('localhost', '127.0.0.1')
+  }
+  
+  window.location.href = `${backendUrl}/auth/google/redirect`
 }
 
 const goToRegister = () => {
-  router.push({ path: '/register', state: { email: form.email || lastUser.value?.email || '' } })
+  const query = route.query.redirect ? { redirect: route.query.redirect } : {}
+  router.push({ path: '/register', query, state: { email: form.email || lastUser.value?.email || '' } })
 }
 </script>

@@ -24,6 +24,7 @@ const props = defineProps({
 
 const statusMap = {
   active: { text: 'Active', className: 'border-emerald-500/25 bg-emerald-500/10 text-emerald-400', dotClass: 'bg-emerald-400' },
+  open: { text: 'Active', className: 'border-emerald-500/25 bg-emerald-500/10 text-emerald-400', dotClass: 'bg-emerald-400' },
   joined: { text: 'Joined', className: 'border-emerald-500/25 bg-emerald-500/10 text-emerald-400', dotClass: 'bg-emerald-400' },
   published: { text: 'Published', className: 'border-emerald-500/25 bg-emerald-500/10 text-emerald-400', dotClass: 'bg-emerald-400' },
   completed: { text: 'Completed', className: 'border-emerald-500/25 bg-emerald-500/10 text-emerald-400', dotClass: 'bg-emerald-400' },

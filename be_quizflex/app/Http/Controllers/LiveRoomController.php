@@ -21,17 +21,16 @@ use Illuminate\Support\Str;
 
 class LiveRoomController extends Controller
 {
-    public function __construct(private readonly QuestionOrderService $questionOrderService)
-    {
-    }
+    public function __construct(private readonly QuestionOrderService $questionOrderService) {}
 
     public function store(Request $request)
     {
         $user = $request->user();
-        if (strtolower((string) ($user->role ?? 'user')) !== 'vip') {
+        $tier = $user->getSubscriptionTier();
+        if (!in_array($tier, ['plus', 'pro', 'ultra', 'admin'], true)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Chi tai khoan VIP moi duoc tao live room.',
+                'message' => 'Tính năng tạo phòng trực tuyến yêu cầu nâng cấp gói Plus trở lên.',
             ], 403);
         }
 
@@ -500,7 +499,7 @@ class LiveRoomController extends Controller
             return false;
         }
 
-        if ($players->contains(fn (LiveRoomPlayer $player) => is_null($player->finished_at))) {
+        if ($players->contains(fn(LiveRoomPlayer $player) => is_null($player->finished_at))) {
             return false;
         }
 
@@ -564,7 +563,7 @@ class LiveRoomController extends Controller
     private function normalizedQuestionOrder(LiveRoom $liveRoom): array
     {
         return collect($liveRoom->question_order ?? [])
-            ->map(fn ($id) => (int) $id)
+            ->map(fn($id) => (int) $id)
             ->filter()
             ->values()
             ->all();
@@ -587,7 +586,7 @@ class LiveRoomController extends Controller
                 'text' => $question->content,
                 'type' => $question->type,
                 'points' => $question->points,
-                'answers' => $question->answers->map(fn (Answer $answer, int $index) => [
+                'answers' => $question->answers->map(fn(Answer $answer, int $index) => [
                     'id' => $answer->id,
                     'content' => $answer->content,
                     'text' => $answer->content,
@@ -652,7 +651,7 @@ class LiveRoomController extends Controller
             ->orderBy('joined_at')
             ->get()
             ->values()
-            ->map(fn (LiveRoomPlayer $player, int $index) => [
+            ->map(fn(LiveRoomPlayer $player, int $index) => [
                 'rank' => $index + 1,
                 'user_id' => $player->user_id,
                 'user' => $player->user,
@@ -675,7 +674,7 @@ class LiveRoomController extends Controller
             ->with('user:id,name,email')
             ->orderBy('joined_at')
             ->get()
-            ->map(fn (LiveRoomPlayer $player) => [
+            ->map(fn(LiveRoomPlayer $player) => [
                 'user_id' => $player->user_id,
                 'user' => $player->user,
                 'score' => (int) $player->score,
@@ -725,8 +724,8 @@ class LiveRoomController extends Controller
 
         if ($includePlayers) {
             $data['players'] = $liveRoom->players
-                ->filter(fn (LiveRoomPlayer $player) => (int) $player->user_id !== (int) $liveRoom->host_id)
-                ->map(fn (LiveRoomPlayer $player) => $this->formatPlayer($player, $liveRoom))
+                ->filter(fn(LiveRoomPlayer $player) => (int) $player->user_id !== (int) $liveRoom->host_id)
+                ->map(fn(LiveRoomPlayer $player) => $this->formatPlayer($player, $liveRoom))
                 ->values();
             $data['monitor'] = $this->monitorData($liveRoom);
         }

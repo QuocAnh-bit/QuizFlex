@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Room extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'owner_id',
@@ -19,6 +20,7 @@ class Room extends Model
         'code',
         'status',
         'max_players',
+        'join_policy',
         'started_at',
         'ended_at',
     ];
@@ -51,5 +53,10 @@ class Room extends Model
     public function assignments()
     {
         return $this->hasMany(RoomAssignment::class);
+    }
+
+    public function allowedMembers()
+    {
+        return $this->hasMany(RoomAllowedMember::class);
     }
 }

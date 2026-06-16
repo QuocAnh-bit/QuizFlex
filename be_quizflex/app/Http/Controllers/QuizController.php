@@ -86,7 +86,7 @@ class QuizController extends Controller
         } else {
             // Default or visibility = 'all':
             // - ADMIN: sees all quizzes.
-            // - USER/VIP/GUEST: sees public published quizzes OR their own quizzes.
+            // - FREE/PLUS/PRO/ULTRA/GUEST: sees public published quizzes OR their own quizzes.
             // - When mine/owner=me is requested, keep the owner-only filter above.
             if (!$mineOnly && !$isAdmin) {
                 $query->where(function ($q) use ($user) {
@@ -138,11 +138,12 @@ class QuizController extends Controller
         }
 
         Gate::forUser($user)->authorize('view', $quiz);
-
+        // chỉ lấy id và name của người tạo quiz, Trong mỗi question, lấy tiếp answers
         $quiz->load(['user:id,name', 'questions.answers'])
             ->loadCount(['questions', 'attempts'])
-            ->loadAvg(['attempts as avg_score' => fn($q) => $q->where('status', 'completed')], 'score');
 
+            ->loadAvg(['attempts as avg_score' => fn($q) => $q->where('status', 'completed')], 'score');
+        // tính điểm trung bình
         return response()->json([
             'success' => true,
             'message' => 'Chi tiết quiz',
@@ -312,14 +313,6 @@ class QuizController extends Controller
 
         $category = $data['category'] ?? $currentQuiz?->category ?? 'General';
 
-        $status = $data['status']
-            ?? $currentQuiz?->status
-            ?? ($isPublic ? 'published' : 'draft');
-
-        if ($isPublic) {
-            $status = 'published';
-        }
-
         return [
             'user_id' => $userId,
             'title' => $data['title'] ?? $currentQuiz?->title ?? 'Untitled quiz',
@@ -327,7 +320,7 @@ class QuizController extends Controller
             'category' => $category,
             'tag' => array_key_exists('tag', $data) ? $data['tag'] : $currentQuiz?->tag,
             'difficulty' => $this->normalizeDifficulty($data['difficulty'] ?? $currentQuiz?->difficulty ?? 'medium'),
-            'status' => $status,
+            'status' => $data['status'] ?? $currentQuiz?->status ?? ($isPublic ? 'published' : 'draft'),
             'is_public' => $isPublic,
             'room_code' => $roomCode,
             'time_limit_seconds' => $this->resolveTimeLimitSeconds($data, $currentQuiz),

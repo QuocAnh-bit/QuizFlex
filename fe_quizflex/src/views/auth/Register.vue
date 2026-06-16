@@ -45,7 +45,7 @@
                       <span class="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--primary-2)] text-xs font-black text-white">U</span>
                       <div>
                         <b class="block text-sm font-black text-[var(--text)]">Tài khoản người dùng</b>
-                        <span class="mt-2 block text-xs font-semibold leading-5 text-[var(--muted)]">Sau khi đăng ký, bạn có thể nâng cấp VIP trong phần thanh toán.</span>
+                        <span class="mt-2 block text-xs font-semibold leading-5 text-[var(--muted)]">Sau khi đăng ký, bạn có thể dùng thử hoặc nâng cấp gói dịch vụ.</span>
                       </div>
                     </div>
                   </div>
@@ -73,11 +73,14 @@
                   </label>
                   <span v-if="errors.acceptTerms" class="text-xs font-bold text-rose-400">{{ errors.acceptTerms }}</span>
                   
-                  <button type="submit" class="btn-primary w-full">Tạo tài khoản</button>
+                  <button type="submit" :disabled="isSubmitting" class="btn-primary w-full flex items-center justify-center gap-2">
+                    <span v-if="isSubmitting" class="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"></span>
+                    {{ isSubmitting ? 'Đang tạo tài khoản...' : 'Tạo tài khoản' }}
+                  </button>
                   <div v-if="successMessage" class="rounded-2xl border border-emerald-500/25 bg-emerald-500/10 p-4 text-sm font-bold text-emerald-400">{{ successMessage }}</div>
                 </form>
                 
-                <p class="mt-7 text-center text-sm font-semibold text-[var(--muted)]">Đã có tài khoản? <router-link class="font-black text-[var(--primary)]" to="/login">Đăng nhập</router-link></p>
+                <p class="mt-7 text-center text-sm font-semibold text-[var(--muted)]">Đã có tài khoản? <router-link class="font-black text-[var(--primary)]" :to="{ path: '/login', query: route.query.redirect ? { redirect: route.query.redirect } : {} }">Đăng nhập</router-link></p>
               </div>
 
               <!-- PHẦN 2: MÀN HÌNH NHẬP MÃ XÁC THỰC OTP -->
@@ -111,7 +114,10 @@
                     <span v-if="otpError" class="text-xs font-bold text-rose-400 mt-1">{{ otpError }}</span>
                   </div>
 
-                  <button type="submit" class="btn-primary w-full py-4 text-base font-bold shadow-[var(--shadow-soft)]">Kích hoạt tài khoản</button>
+                  <button type="submit" :disabled="isVerifyingOtp" class="btn-primary w-full py-4 text-base font-bold shadow-[var(--shadow-soft)] flex items-center justify-center gap-2">
+                    <span v-if="isVerifyingOtp" class="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"></span>
+                    {{ isVerifyingOtp ? 'Đang kích hoạt...' : 'Kích hoạt tài khoản' }}
+                  </button>
                   
                   <!-- Nút gửi lại mã với đồng hồ đếm ngược -->
                   <button type="button" class="btn-secondary w-full py-4 text-sm font-semibold" :disabled="otpCountdown > 0" @click="handleResendOtp">
@@ -167,6 +173,7 @@ const FieldInput = defineComponent({
 
 const isPasswordVisible = ref(false)
 const successMessage = ref('')
+const isSubmitting = ref(false)
 const form = reactive({ fullName: '', username: '', email: '', password: '', acceptTerms: true })
 const errors = reactive({ fullName: '', username: '', email: '', password: '', acceptTerms: '' })
 
@@ -177,6 +184,7 @@ const otpInputs = ref([])
 const otpError = ref('')
 const otpCountdown = ref(0)
 let countdownInterval = null
+const isVerifyingOtp = ref(false)
 
 onMounted(() => {
   const state = history.state
@@ -217,13 +225,14 @@ const validate = () => {
 const handleRegister = async () => {
   successMessage.value = ''
   if (!validate()) return
+  isSubmitting.value = true
   try {
     await authApi.register({
       name: form.fullName,
       username: form.username,
       email: form.email,
       password: form.password,
-      role: 'USER',
+      role: 'FREE',
     })
     successMessage.value = 'Đăng ký thành công! Vui lòng nhập mã OTP để kích hoạt.'
     
@@ -235,11 +244,13 @@ const handleRegister = async () => {
       // Tự động focus ô số đầu tiên
       await nextTick()
       if (otpInputs.value[0]) otpInputs.value[0].focus()
-    }, 1200)
+    }, 400) // Giảm delay từ 1200ms xuống 400ms để mượt mà hơn
 
   } catch (error) {
     successMessage.value = ''
     errors.email = error.message
+  } finally {
+    isSubmitting.value = false
   }
 }
 
@@ -290,6 +301,7 @@ const handleVerifyOtp = async () => {
     return
   }
 
+  isVerifyingOtp.value = true
   try {
     await authApi.verifyOtp({
       email: form.email,
@@ -302,12 +314,15 @@ const handleVerifyOtp = async () => {
     setTimeout(() => {
       router.push({
         path: '/login',
+        query: route.query.redirect ? { redirect: route.query.redirect } : {},
         state: { email: form.email, password: form.password }
       })
-    }, 1500)
+    }, 400) // Giảm delay từ 1500ms xuống 400ms
 
   } catch (error) {
     otpError.value = error.message
+  } finally {
+    isVerifyingOtp.value = false
   }
 }
 

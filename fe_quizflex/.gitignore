@@ -42,3 +42,14 @@ __screenshots__/
 *.timestamp-*-*.mjs
 
 env
+
+# Laravel auto generated
+be_quizflex/vendor/
+be_quizflex/storage/logs/*
+!be_quizflex/storage/logs/.gitignore
+be_quizflex/bootstrap/cache/*
+!be_quizflex/bootstrap/cache/.gitignore
+
+# Frontend generated
+fe_quizflex/node_modules/
+fe_quizflex/dist/
