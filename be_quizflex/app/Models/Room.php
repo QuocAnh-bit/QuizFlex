@@ -19,6 +19,7 @@ class Room extends Model
         'code',
         'status',
         'max_players',
+        'join_policy',
         'started_at',
         'ended_at',
     ];
@@ -51,5 +52,10 @@ class Room extends Model
     public function assignments()
     {
         return $this->hasMany(RoomAssignment::class);
+    }
+
+    public function allowedMembers()
+    {
+        return $this->hasMany(RoomAllowedMember::class);
     }
 }

@@ -43,6 +43,43 @@
         </div>
       </article>
 
+      <article v-if="canManageAllowedMembers" class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-card)]">
+        <div class="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Allowed Emails</p>
+            <h2 class="mt-1 text-2xl font-black tracking-[-0.04em] text-[var(--text)]">Danh sách email được phép tham gia</h2>
+            <p class="mt-2 text-sm font-bold leading-6 text-[var(--muted)]">Danh sách này chỉ được kiểm tra khi room dùng chế độ whitelist email.</p>
+          </div>
+          <span class="rounded-full border border-[var(--border)] bg-[var(--surface-soft)] px-3 py-1 text-xs font-black text-[var(--muted)]">{{ allowedMembers.length }}</span>
+        </div>
+
+        <form class="mt-5 grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto]" @submit.prevent="addAllowedMembers">
+          <textarea
+            v-model="allowedEmailText"
+            class="field min-h-24 resize-y"
+            placeholder="student1@example.com&#10;student2@example.com, student3@example.com"
+          ></textarea>
+          <button class="btn-primary self-start" type="submit" :disabled="isSavingAllowedMembers">{{ isSavingAllowedMembers ? 'Đang thêm...' : 'Thêm email' }}</button>
+        </form>
+
+        <div v-if="allowedMembersMessage" class="mt-4 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm font-bold text-emerald-300">{{ allowedMembersMessage }}</div>
+        <div v-if="allowedMembersError" class="mt-4 rounded-2xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm font-bold text-rose-300">{{ allowedMembersError }}</div>
+
+        <div v-if="allowedMembers.length" class="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          <article v-for="allowedMember in allowedMembers" :key="allowedMember.id" class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-4">
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <h3 class="break-words text-sm font-black text-[var(--text)]">{{ allowedMember.email }}</h3>
+                <p class="mt-1 text-xs font-bold text-[var(--muted)]">{{ allowedMember.joined_at ? `Đã tham gia: ${formatDateTime(allowedMember.joined_at)}` : 'Chưa tham gia' }}</p>
+              </div>
+              <button class="btn-ghost shrink-0 px-3 py-2 text-xs" type="button" @click="removeAllowedMember(allowedMember.id)">Xóa</button>
+            </div>
+          </article>
+        </div>
+
+        <div v-else class="mt-5 rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-5 text-sm font-bold text-[var(--muted)]">Chưa có email nào trong danh sách.</div>
+      </article>
+
       <div class="grid gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
         <article class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-card)]">
           <div class="flex items-center justify-between gap-3">
@@ -139,12 +176,24 @@ const currentUser = currentUserStorage.get()
 const room = ref(null)
 const members = ref([])
 const assignments = ref([])
+const allowedMembers = ref([])
+const allowedEmailText = ref('')
 const isLoading = ref(false)
+const isSavingAllowedMembers = ref(false)
 const errorMessage = ref('')
+const allowedMembersError = ref('')
+const allowedMembersMessage = ref('')
 
 const canManageRoom = computed(() => currentUser?.role === 'admin' || Number(room.value?.owner_id) === Number(currentUser?.id))
+const canManageAllowedMembers = computed(() => room.value?.type === 'homework' && Number(room.value?.owner_id) === Number(currentUser?.id))
 const filteredMembers = computed(() => members.value.filter((member) => Number(member.user_id) !== Number(room.value?.owner_id)))
 const memberCount = computed(() => room.value?.members_count ?? filteredMembers.value.length)
+
+const parseAllowedEmails = () =>
+  allowedEmailText.value
+    .split(/[,\n;]/)
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean)
 
 const formatDate = (value) => {
   if (!value) return '-'
@@ -159,6 +208,7 @@ const formatDateTime = (value) => {
 const loadRoomDetail = async () => {
   isLoading.value = true
   errorMessage.value = ''
+  allowedMembersError.value = ''
 
   try {
     const [roomData, membersData, assignmentsData] = await Promise.all([
@@ -170,10 +220,51 @@ const loadRoomDetail = async () => {
     room.value = roomData
     members.value = membersData
     assignments.value = assignmentsData
+    allowedMembers.value = roomData?.type === 'homework' && Number(roomData.owner_id) === Number(currentUser?.id)
+      ? await homeworkApi.getAllowedMembers(roomId.value)
+      : []
   } catch (error) {
     errorMessage.value = `Không tải được chi tiết room: ${error.message}`
   } finally {
     isLoading.value = false
+  }
+}
+
+const addAllowedMembers = async () => {
+  allowedMembersError.value = ''
+  allowedMembersMessage.value = ''
+
+  const emails = parseAllowedEmails()
+  if (!emails.length) {
+    allowedMembersError.value = 'Bạn cần nhập ít nhất một email.'
+    return
+  }
+
+  isSavingAllowedMembers.value = true
+  try {
+    await homeworkApi.addAllowedMembers(roomId.value, emails)
+    allowedMembers.value = await homeworkApi.getAllowedMembers(roomId.value)
+    allowedEmailText.value = ''
+    allowedMembersMessage.value = 'Đã cập nhật danh sách email.'
+  } catch (error) {
+    allowedMembersError.value = `Không thêm được email: ${error.message}`
+  } finally {
+    isSavingAllowedMembers.value = false
+  }
+}
+
+const removeAllowedMember = async (allowedMemberId) => {
+  allowedMembersError.value = ''
+  allowedMembersMessage.value = ''
+
+  if (!window.confirm('Xóa email này khỏi danh sách được phép tham gia?')) return
+
+  try {
+    await homeworkApi.removeAllowedMember(roomId.value, allowedMemberId)
+    allowedMembers.value = allowedMembers.value.filter((member) => Number(member.id) !== Number(allowedMemberId))
+    allowedMembersMessage.value = 'Đã xóa email khỏi danh sách.'
+  } catch (error) {
+    allowedMembersError.value = `Không xóa được email: ${error.message}`
   }
 }
 

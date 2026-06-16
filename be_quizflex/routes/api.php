@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AnswerController;
+use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\OcrController;
 use App\Http\Controllers\QuestionController;
@@ -65,6 +66,7 @@ Route::middleware('auth:api')->group(function () {
 
     // Admin Only
     Route::middleware('role:admin')->group(function () {
+        Route::get('/admin/dashboard/overview', [AdminDashboardController::class, 'overview']);
         Route::apiResource('users', UserController::class);
     });
 
@@ -104,6 +106,9 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/rooms/{room}', [RoomController::class, 'show']);
         Route::post('/rooms/{room}/join', [RoomController::class, 'joinRoom']);
         Route::get('/rooms/{room}/members', [RoomController::class, 'members']);
+        Route::get('/homework-rooms/{room}/allowed-members', [RoomController::class, 'allowedMembers']);
+        Route::post('/homework-rooms/{room}/allowed-members', [RoomController::class, 'storeAllowedMembers']);
+        Route::delete('/homework-rooms/{room}/allowed-members/{allowedMember}', [RoomController::class, 'destroyAllowedMember']);
 
         Route::get('/rooms/{room}/assignments', [RoomAssignmentController::class, 'index']);
         Route::post('/rooms/{room}/assignments', [RoomAssignmentController::class, 'store']);

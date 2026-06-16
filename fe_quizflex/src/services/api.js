@@ -445,6 +445,13 @@ export const attemptsApi = {
   },
 };
 
+export const adminDashboardApi = {
+  async overview() {
+    const { data } = await api.get("/admin/dashboard/overview");
+    return unwrap(data);
+  },
+};
+
 export const homeworkApi = {
   async getHomeworkRooms(params = {}) {
     const { data } = await api.get('/rooms', { params })
@@ -469,6 +476,22 @@ export const homeworkApi = {
   async getRoomMembers(roomId) {
     const { data } = await api.get(`/rooms/${roomId}/members`)
     return unwrapCollection(data)
+  },
+
+  async getAllowedMembers(roomId) {
+    const { data } = await api.get(`/homework-rooms/${roomId}/allowed-members`)
+    return unwrapCollection(data)
+  },
+
+  async addAllowedMembers(roomId, emails) {
+    const payload = Array.isArray(emails) ? { emails } : { email: emails }
+    const { data } = await api.post(`/homework-rooms/${roomId}/allowed-members`, payload)
+    return unwrapCollection(data)
+  },
+
+  async removeAllowedMember(roomId, allowedMemberId) {
+    const { data } = await api.delete(`/homework-rooms/${roomId}/allowed-members/${allowedMemberId}`)
+    return data
   },
 
   async getRoomAssignments(roomId) {

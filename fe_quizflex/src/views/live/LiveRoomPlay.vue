@@ -149,7 +149,7 @@ const loadCurrentQuestion = async (force = false) => {
     }
   } catch (error) {
     const message = error.message || ''
-    if (message.includes('chua trong trang thai dang choi') || message.includes('chưa trong trạng thái')) {
+    if (message.includes('Chưa trong trạng thái đang chơi') || message.includes('chưa trong trạng thái')) {
       roomStatus.value = 'waiting'
       question.value = { id: 0, question: '', answers: [] }
       errorMessage.value = ''
@@ -201,7 +201,7 @@ const handleRoomFinished = async (event) => {
   markRealtime()
   roomStatus.value = event?.status || 'finished'
   question.value = { id: 0, question: '', answers: [] }
-  answerMessage.value = event?.message || 'Live room da ket thuc.'
+  answerMessage.value = event?.message || 'Live room đã kết thúc.'
   progress.value = {
     ...progress.value,
     player_finished: true,
