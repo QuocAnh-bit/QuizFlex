@@ -249,21 +249,21 @@ class RoomController extends Controller
         if (!$this->canManageRoomMembers($request->user(), $room)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Ban khong co quyen xoa thanh vien khoi phong nay.',
+                'message' => 'Bạn không có quyền xóa thành viên khỏi phòng này.',
             ], 403);
         }
 
         if ((int) $member->room_id !== (int) $room->id) {
             return response()->json([
                 'success' => false,
-                'message' => 'Thanh vien nay khong thuoc phong hien tai.',
+                'message' => 'Thành viên này không thuộc phòng hiện tại.',
             ], 404);
         }
 
         if ((int) $member->user_id === (int) $room->owner_id || $member->role === 'owner') {
             return response()->json([
                 'success' => false,
-                'message' => 'Khong the xoa chu phong khoi phong.',
+                'message' => 'Không thể xóa chủ phòng.',
             ], 422);
         }
 
@@ -271,7 +271,7 @@ class RoomController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Da xoa thanh vien khoi phong.',
+            'message' => 'Đã xóa thành viên khỏi phòng.',
             'data' => [
                 'id' => $member->id,
                 'room_id' => $member->room_id,

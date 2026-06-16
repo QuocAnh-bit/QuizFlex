@@ -43,7 +43,7 @@
         </div>
       </article>
 
-      <article v-if="canManageAllowedMembers" class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-card)]">
+      <article v-if="shouldShowAllowedMembers" class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-card)]">
         <div class="flex flex-wrap items-start justify-between gap-3">
           <div>
             <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Allowed Emails</p>
@@ -196,6 +196,7 @@ const allowedMembersMessage = ref('')
 
 const canManageRoom = computed(() => currentUser?.role === 'admin' || Number(room.value?.owner_id) === Number(currentUser?.id))
 const canManageAllowedMembers = computed(() => room.value?.type === 'homework' && Number(room.value?.owner_id) === Number(currentUser?.id))
+const shouldShowAllowedMembers = computed(() => canManageAllowedMembers.value && room.value?.join_policy === 'email_whitelist')
 const filteredMembers = computed(() => members.value.filter((member) => Number(member.user_id) !== Number(room.value?.owner_id)))
 const memberCount = computed(() => room.value?.members_count ?? filteredMembers.value.length)
 
