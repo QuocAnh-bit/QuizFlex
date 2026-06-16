@@ -799,10 +799,20 @@
 
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import draggable from "vuedraggable";
 import "mathlive";
 import "mathlive/static.css";
 import { importOcrQuiz, ocrApi } from "@/services/api";
+
+const route = useRoute();
+const router = useRouter();
+
+const questionBase = computed(() =>
+  route.path.startsWith("/dashboard")
+    ? "/dashboard/questions"
+    : "/admin/questions"
+);
 
 const fileInput = ref(null);
 const fileName = ref("");
@@ -1422,6 +1432,7 @@ const saveQuestions = async () => {
     isDirty.value = false;
 
     alert("Lưu bộ đề thành công");
+    router.push(questionBase.value);
 
     console.log("Quiz đã lưu:", data);
   } catch (error) {

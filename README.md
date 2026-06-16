@@ -58,8 +58,7 @@ Ví dụ:
 require 'vendor/autoload.php';
 
 use thiagoalessio\TesseractOCR\TesseractOCR;
-
-$text = (new TesseractOCR('image.png'))
+`11xt = (new TesseractOCR('image.png'))
     ->lang('vie')
     ->run();
 
