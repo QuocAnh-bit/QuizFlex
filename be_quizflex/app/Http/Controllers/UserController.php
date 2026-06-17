@@ -24,7 +24,14 @@ class UserController extends Controller
         }
 
         if ($request->filled('role') && $request->query('role') !== 'all') {
-            $query->where('role', strtoupper((string) $request->query('role')));
+            $role = strtoupper((string) $request->query('role'));
+            if ($role === 'VIP') {
+                $query->whereIn('role', ['PLUS', 'PRO', 'ULTRA']);
+            } elseif ($role === 'USER') {
+                $query->whereIn('role', ['FREE', 'GUEST']);
+            } else {
+                $query->where('role', $role);
+            }
         }
 
         $perPage = min(max((int) $request->query('per_page', 50), 1), 100);
@@ -50,6 +57,13 @@ class UserController extends Controller
         ]);
 
         $role = strtoupper($data['role'] ?? 'FREE');
+
+        if ($role === 'ADMIN' && User::where('role', 'ADMIN')->whereNull('deleted_at')->exists()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Đã có admin khác. Không thể tạo admin mới.',
+            ], 422);
+        }
 
         $user = User::create([
             'name' => $data['name'],
@@ -95,6 +109,18 @@ class UserController extends Controller
         if (isset($payload['role'])) {
             $payload['role'] = strtoupper($payload['role']);
 
+            if (strtoupper($user->role) === 'ADMIN' && $payload['role'] !== 'ADMIN') {
+                $payload['role'] = 'ADMIN';
+            }
+
+            $isBecomingAdmin = $payload['role'] === 'ADMIN' && strtoupper($user->role) !== 'ADMIN';
+            if ($isBecomingAdmin && $this->anotherAdminExists($user->id)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Đã có admin khác. Không thể chuyển user này thành admin.',
+                ], 422);
+            }
+
             if (!array_key_exists('ai_quota_remaining', $payload)) {
                 $payload['ai_quota_remaining'] = $this->defaultAiQuotaForRole($payload['role']);
             }
@@ -123,11 +149,91 @@ class UserController extends Controller
 
     public function destroy(User $user)
     {
+        if (strtoupper($user->role) === 'ADMIN') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không thể xóa tài khoản admin.',
+            ], 403);
+        }
+
         $user->delete();
 
         return response()->json([
             'success' => true,
             'message' => 'Đã xóa người dùng',
+        ]);
+    }
+
+    public function trashed(Request $request)
+    {
+        $query = User::onlyTrashed()->withCount(['quizzes', 'attempts'])->latest('deleted_at');
+
+        if ($request->filled('search')) {
+            $keyword = trim((string) $request->query('search'));
+            $query->where(function ($q) use ($keyword) {
+                $q->where('name', 'like', "%{$keyword}%")
+                    ->orWhere('email', 'like', "%{$keyword}%");
+            });
+        }
+
+        if ($request->filled('role') && $request->query('role') !== 'all') {
+            $role = strtoupper((string) $request->query('role'));
+            if ($role === 'VIP') {
+                $query->whereIn('role', ['PLUS', 'PRO', 'ULTRA']);
+            } elseif ($role === 'USER') {
+                $query->whereIn('role', ['FREE', 'GUEST']);
+            } else {
+                $query->where('role', $role);
+            }
+        }
+
+        $perPage = min(max((int) $request->query('per_page', 50), 1), 100);
+        $users = $query->paginate($perPage)->through(fn (User $user) => $this->formatUser($user));
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Danh sách người dùng đã xóa',
+            'data' => $users,
+        ]);
+    }
+
+    public function restore(int $id)
+    {
+        $user = User::onlyTrashed()->findOrFail($id);
+
+        if (strtoupper($user->role) === 'ADMIN' && $this->anotherAdminExists($user->id)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không thể khôi phục admin khi đã có admin khác.',
+            ], 403);
+        }
+
+        $user->restore();
+        $user->loadCount(['quizzes', 'attempts']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Đã khôi phục người dùng',
+            'data' => $this->formatUser($user),
+        ]);
+    }
+
+    public function forceDelete(int $id)
+    {
+        $user = User::onlyTrashed()->findOrFail($id);
+
+        if (strtoupper($user->role) === 'ADMIN') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không thể xóa vĩnh viễn admin.',
+            ], 403);
+        }
+
+        $user->forceDelete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Đã xóa vĩnh viễn người dùng',
         ]);
     }
 
@@ -141,6 +247,16 @@ class UserController extends Controller
             'GUEST' => 0,
             default => 5,
         };
+    }
+
+    private function anotherAdminExists(?int $ignoreUserId = null): bool
+    {
+        $query = User::where('role', 'ADMIN')->whereNull('deleted_at');
+        if ($ignoreUserId) {
+            $query->where('id', '!=', $ignoreUserId);
+        }
+
+        return $query->exists();
     }
 
     private function formatUser(User $user): array
@@ -177,6 +293,7 @@ class UserController extends Controller
             'joined_at' => $user->created_at,
             'created_at' => $user->created_at,
             'updated_at' => $user->updated_at,
+            'deleted_at' => $user->deleted_at ? $user->deleted_at->toDateTimeString() : null,
         ];
     }
 
