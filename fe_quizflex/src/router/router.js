@@ -63,6 +63,7 @@ const routes = [
   { path: '/admin/reports', name: 'admin-reports', component: () => import('@/views/admin/Reports.vue'), meta: { layout: 'admin', title: 'Report', requiresAuth: true, roles: adminRoles } },
   { path: '/admin/payments', name: 'admin-payments', component: () => import('@/views/admin/Payments.vue'), meta: { layout: 'admin', title: 'Payment', requiresAuth: true, roles: adminRoles } },
   { path: '/admin/users', name: 'admin-users', component: () => import('@/views/admin/Users.vue'), meta: { layout: 'admin', title: 'User management', requiresAuth: true, roles: adminRoles } },
+  { path: '/admin/users/:id', name: 'admin-user-detail', component: () => import('@/views/admin/UserDetail.vue'), meta: { layout: 'admin', title: 'Chi tiết user', requiresAuth: true, roles: adminRoles } },
   { path: '/admin/settings', name: 'admin-settings', component: () => import('@/views/admin/Settings.vue'), meta: { layout: 'admin', title: 'Settings', requiresAuth: true, roles: adminRoles } },
 
   { path: '/gamification', component: () => import('@/views/user/GamificationStats.vue') },

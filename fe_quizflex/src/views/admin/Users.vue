@@ -101,6 +101,7 @@
                 <td class="px-6 py-4">
                   <div class="flex flex-wrap gap-2">
                     <button class="rounded-full border border-blue-500/30 bg-blue-500/10 px-4 py-2 text-xs font-black text-blue-300" type="button" @click="selectUserForEdit(user)">Sửa</button>
+                    <button class="rounded-full border border-blue-500/30 bg-blue-500/10 px-4 py-2 text-xs font-black text-blue-300" type="button" @click="viewUserDetail(user.id)">Xem</button>
                     <button class="rounded-full border border-rose-500/30 bg-rose-500/10 px-4 py-2 text-xs font-black text-rose-300" type="button" :disabled="user.role === 'admin'" @click="deleteUser(user.id)">Xóa</button>
                   </div>
                 </td>
@@ -221,6 +222,7 @@
 
 <script setup>
 import { onMounted, reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { normalizeUser, usersApi } from '@/services/api'
 
 const search = ref('')
@@ -231,6 +233,7 @@ const viewMode = ref('active')
 const trashSearch = ref('')
 const trashRoleFilter = ref('all')
 const isLoading = ref(false)
+const router = useRouter()
 const isSaving = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
@@ -421,6 +424,10 @@ const deleteUser = (id) => {
       errorMessage.value = `Xóa user thất bại: ${error.message}`
     }
   })
+}
+
+const viewUserDetail = (id) => {
+  router.push({ name: 'admin-user-detail', params: { id } })
 }
 
 const formatDate = (value) => {
