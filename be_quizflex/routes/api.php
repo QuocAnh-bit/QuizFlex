@@ -15,6 +15,8 @@ use App\Http\Controllers\RoomAssignmentController;
 use App\Http\Controllers\RoomController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\HomeworkRoomMemberEvaluationController;
+use App\Http\Controllers\HomeworkSubmissionEvaluationController;
 use App\Services\AI\AIService;
 use App\AI\Prompts\QuizPrompt;
 use App\Http\Controllers\AIController;
@@ -126,6 +128,10 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/homework-rooms/{room}/allowed-members', [RoomController::class, 'allowedMembers']);
         Route::post('/homework-rooms/{room}/allowed-members', [RoomController::class, 'storeAllowedMembers']);
         Route::delete('/homework-rooms/{room}/allowed-members/{allowedMember}', [RoomController::class, 'destroyAllowedMember']);
+        Route::get('/homework-rooms/{room}/members/{user}/evaluation', [HomeworkRoomMemberEvaluationController::class, 'show']);
+        Route::post('/homework-rooms/{room}/members/{user}/evaluation', [HomeworkRoomMemberEvaluationController::class, 'store']);
+        Route::get('/homework-rooms/{room}/submissions/{submission}/evaluation', [HomeworkSubmissionEvaluationController::class, 'show']);
+        Route::post('/homework-rooms/{room}/submissions/{submission}/evaluation', [HomeworkSubmissionEvaluationController::class, 'store']);
 
         Route::get('/rooms/{room}/assignments', [RoomAssignmentController::class, 'index']);
         Route::post('/rooms/{room}/assignments', [RoomAssignmentController::class, 'store']);
