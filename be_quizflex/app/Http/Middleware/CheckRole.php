@@ -21,7 +21,7 @@ class CheckRole
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
         }
 
-        $userRole = strtolower(trim((string) ($user->role ?? 'user')));
+        $userRole = strtolower(trim($user->getSubscriptionTier()));
 
         // Admin automatically bypasses all role checks.
         if ($userRole === 'admin') {

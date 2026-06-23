@@ -16,11 +16,22 @@
             </div>
           </div>
 
-          <nav class="mt-5 grid gap-2 text-sm font-bold">
-            <router-link v-for="item in menu" :key="item.to" :to="item.to" :class="getLinkClass(item)">
-              <span class="grid h-9 w-9 place-items-center rounded-2xl bg-[var(--surface-soft)] text-xs font-black text-[var(--primary)]">{{ item.icon }}</span>
-              <span>{{ item.label }}</span>
-            </router-link>
+          <nav class="mt-5 space-y-4 text-sm font-bold">
+            <div v-for="group in menu" :key="group.label" class="rounded-[1.75rem] border border-[var(--border)] bg-[var(--surface)]">
+              <button type="button" @click="toggleGroup(group.label)" class="flex w-full items-center justify-between gap-3 px-4 py-4 text-left text-sm font-black tracking-[0.1em] text-[var(--primary)]">
+                <span>{{ group.label }}</span>
+                <span :class="['transition-transform duration-300', expandedGroups.includes(group.label) ? 'rotate-180' : 'rotate-0']">▼</span>
+              </button>
+
+              <div :class="['overflow-hidden transition-all duration-300', expandedGroups.includes(group.label) ? 'max-h-[1000px] py-3' : 'max-h-0']">
+                <div class="grid gap-2 px-2">
+                  <router-link v-for="item in group.items" :key="item.to" :to="item.to" :class="[getLinkClass(item), 'group transition-all duration-200']">
+                    <span :class="['grid h-9 w-9 place-items-center rounded-2xl text-xs font-black transition-colors duration-300', isItemActive(item) ? 'bg-[var(--primary)] text-white' : 'bg-[var(--surface-soft)] text-[var(--primary)]', 'group-hover:bg-[var(--primary)]', 'group-hover:text-white']">{{ item.icon }}</span>
+                    <span :class="['transition-colors duration-300', isItemActive(item) ? 'text-[var(--text)]' : 'text-[var(--muted)]', 'group-hover:text-[var(--text)]']">{{ item.label }}</span>
+                  </router-link>
+                </div>
+              </div>
+            </div>
           </nav>
         </div>
       </aside>
@@ -50,32 +61,53 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import BrandLogo from '@/components/common/BrandLogo.vue'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
 
 const route = useRoute()
+const expandedGroups = ref(['Quản lý nội dung'])
 
 const menu = computed(() => [
-  { label: 'Tổng quan', to: '/admin', icon: 'DB' },
-  { label: 'Kho quiz', to: '/admin/questions', icon: 'QZ' },
-  { label: 'Tạo quiz', to: '/admin/questions/create', icon: '+' },
-  { label: 'AI Generator', to: '/admin/questions/ai', icon: 'AI' },
-  { label: 'OCR Upload', to: '/admin/questions/ocr', icon: 'OC' },
-  { label: 'Room', to: '/admin/rooms', icon: 'RT' },
-  { label: 'Report', to: '/admin/reports', icon: 'RP' },
-  { label: 'Payment', to: '/admin/payments', icon: '$' },
-  { label: 'Users', to: '/admin/users', icon: 'US' },
-  { label: 'Settings', to: '/admin/settings', icon: 'ST' },
+  {
+    label: 'Quản lý nội dung',
+    items: [
+      { label: 'Tổng quan', to: '/admin', icon: 'DB' },
+      { label: 'Kho quiz', to: '/admin/questions', icon: 'QZ' },
+      { label: 'Tạo quiz', to: '/admin/questions/create', icon: '+' },
+      { label: 'AI Generator', to: '/admin/questions/ai', icon: 'AI' },
+      { label: 'OCR Upload', to: '/admin/questions/ocr', icon: 'OC' },
+      { label: 'Room', to: '/admin/rooms', icon: 'RT' },
+    ],
+  },
+  {
+    label: 'Phân tích & chăm sóc',
+    items: [
+      { label: 'Report', to: '/admin/reports', icon: 'RP' },
+      { label: 'Payment', to: '/admin/payments', icon: '$' },
+      { label: 'Users', to: '/admin/users', icon: 'US' },
+      { label: 'Settings', to: '/admin/settings', icon: 'ST' },
+    ],
+  },
 ])
 
 const pageTitle = computed(() => route.meta.title || 'Dashboard')
 
+const toggleGroup = (groupLabel) => {
+  if (expandedGroups.value.includes(groupLabel)) {
+    expandedGroups.value = expandedGroups.value.filter((label) => label !== groupLabel)
+  } else {
+    expandedGroups.value.push(groupLabel)
+  }
+}
+
+const isItemActive = (item) => route.path === item.to || (item.to === '/admin/questions' && route.path === '/admin/questions')
+
 const getLinkClass = (item) => {
-  const active = route.path === item.to || (item.to === '/admin/questions' && route.path === '/admin/questions')
+  const active = isItemActive(item)
   const base = ['flex', 'items-center', 'gap-3', 'rounded-2xl', 'border', 'px-3', 'py-3', 'transition', 'duration-300', 'hover:-translate-y-0.5']
   if (!active) return [...base, 'border-transparent', 'text-[var(--muted)]', 'hover:border-[var(--border)]', 'hover:bg-[var(--surface)]', 'hover:text-[var(--text)]']
-  return [...base, 'border-[var(--border-strong)]', 'bg-[var(--chip-active)]', 'text-[var(--text)]', 'shadow-[0_14px_34px_rgba(155,44,255,0.14)]']
+  return [...base, 'border-[var(--border-strong)]', 'bg-[var(--surface)]', 'text-[var(--text)]']
 }
 </script>

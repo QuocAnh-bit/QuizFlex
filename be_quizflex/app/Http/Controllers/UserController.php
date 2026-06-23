@@ -43,13 +43,13 @@ class UserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:6', 'max:255'],
-            'role' => ['nullable', Rule::in(['GUEST', 'USER', 'VIP', 'ADMIN', 'guest', 'user', 'vip', 'admin'])],
+            'role' => ['nullable', Rule::in(['GUEST', 'FREE', 'PLUS', 'PRO', 'ULTRA', 'ADMIN', 'guest', 'free', 'plus', 'pro', 'ultra', 'admin'])],
             'avatar' => ['nullable', 'string', 'max:255'],
             'ai_quota_remaining' => ['nullable', 'integer', 'min:0'],
             'vip_expires_at' => ['nullable', 'date'],
         ]);
 
-        $role = strtoupper($data['role'] ?? 'USER');
+        $role = strtoupper($data['role'] ?? 'FREE');
 
         $user = User::create([
             'name' => $data['name'],
@@ -58,7 +58,7 @@ class UserController extends Controller
             'role' => $role,
             'avatar' => $data['avatar'] ?? null,
             'ai_quota_remaining' => $data['ai_quota_remaining'] ?? $this->defaultAiQuotaForRole($role),
-            'vip_expires_at' => $data['vip_expires_at'] ?? ($role === 'VIP' ? now()->addMonth() : null),
+            'vip_expires_at' => $data['vip_expires_at'] ?? (in_array($role, ['PLUS', 'PRO', 'ULTRA']) ? now()->addMonth() : null),
         ]);
 
         return response()->json([
@@ -85,7 +85,7 @@ class UserController extends Controller
             'name' => ['sometimes', 'string', 'max:255'],
             'email' => ['sometimes', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
             'password' => ['nullable', 'string', 'min:6', 'max:255'],
-            'role' => ['sometimes', Rule::in(['GUEST', 'USER', 'VIP', 'ADMIN', 'guest', 'user', 'vip', 'admin'])],
+            'role' => ['sometimes', Rule::in(['GUEST', 'FREE', 'PLUS', 'PRO', 'ULTRA', 'ADMIN', 'guest', 'free', 'plus', 'pro', 'ultra', 'admin'])],
             'avatar' => ['nullable', 'string', 'max:255'],
             'ai_quota_remaining' => ['nullable', 'integer', 'min:0'],
             'vip_expires_at' => ['nullable', 'date'],
@@ -99,11 +99,11 @@ class UserController extends Controller
                 $payload['ai_quota_remaining'] = $this->defaultAiQuotaForRole($payload['role']);
             }
 
-            if ($payload['role'] === 'VIP' && !array_key_exists('vip_expires_at', $payload) && !$user->vip_expires_at) {
+            if (in_array($payload['role'], ['PLUS', 'PRO', 'ULTRA']) && !array_key_exists('vip_expires_at', $payload) && !$user->vip_expires_at) {
                 $payload['vip_expires_at'] = now()->addMonth();
             }
 
-            if ($payload['role'] !== 'VIP' && $payload['role'] !== 'ADMIN' && !array_key_exists('vip_expires_at', $payload)) {
+            if (!in_array($payload['role'], ['PLUS', 'PRO', 'ULTRA']) && $payload['role'] !== 'ADMIN' && !array_key_exists('vip_expires_at', $payload)) {
                 $payload['vip_expires_at'] = null;
             }
         }
@@ -135,7 +135,9 @@ class UserController extends Controller
     {
         return match (strtoupper($role)) {
             'ADMIN' => 9999,
-            'VIP' => 500,
+            'ULTRA' => 1500,
+            'PRO' => 350,
+            'PLUS' => 100,
             'GUEST' => 0,
             default => 5,
         };
@@ -143,20 +145,32 @@ class UserController extends Controller
 
     private function formatUser(User $user): array
     {
+        $tier = $user->getSubscriptionTier();
+        
+        $isTrial = false;
+        if ($user->trial_used_at && $user->vip_expires_at) {
+            $trialExpiry = \Carbon\Carbon::parse($user->trial_used_at)->addDays(7);
+            $isTrial = $trialExpiry->isFuture() && \Carbon\Carbon::parse($user->vip_expires_at)->lte($trialExpiry);
+        }
+
+        $roleLabel = match ($tier) {
+            'admin' => 'Admin',
+            'plus' => $isTrial ? 'Plus (Dùng thử)' : 'Plus',
+            'pro' => 'Pro',
+            'ultra' => 'Ultra',
+            default => 'Free',
+        };
+
         return [
             'id' => $user->id,
             'name' => $user->name,
             'email' => $user->email,
-            'role' => strtolower($user->role ?? 'user'),
-            'role_label' => match (strtoupper($user->role ?? 'USER')) {
-                'ADMIN' => 'Admin',
-                'VIP' => 'VIP',
-                'GUEST' => 'Guest',
-                default => 'Thường',
-            },
+            'role' => $tier,
+            'role_label' => $roleLabel,
             'avatar' => $this->resolveAvatarForResponse($user->avatar),
             'ai_quota_remaining' => $user->ai_quota_remaining,
-            'vip_expires_at' => $user->vip_expires_at,
+            'vip_expires_at' => $user->vip_expires_at ? $user->vip_expires_at->toDateTimeString() : null,
+            'trial_used_at' => $user->trial_used_at ? $user->trial_used_at->toDateTimeString() : null,
             'quizzes_count' => $user->quizzes_count ?? $user->quizzes()->count(),
             'attempts_count' => $user->attempts_count ?? $user->attempts()->count(),
             'status' => 'active',

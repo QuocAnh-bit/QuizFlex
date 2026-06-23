@@ -125,10 +125,17 @@ const settings = ref({
 })
 
 const user = computed(() => currentUserStorage.get())
+const ocrLimit = computed(() => {
+  const role = String(user.value?.role || 'free').toLowerCase()
+  if (['admin', 'ultra'].includes(role)) return 'Không giới hạn'
+  if (role === 'pro') return '50 lượt/tháng'
+  if (role === 'plus') return '10 lượt/tháng'
+  return 'Yêu cầu gói Plus'
+})
 const quotaStats = computed(() => [
   { label: 'Role', value: user.value?.role_label || user.value?.role || 'Guest' },
   { label: 'AI còn lại', value: user.value?.ai_quota_remaining ?? 0 },
-  { label: 'OCR còn lại', value: user.value?.role === 'vip' ? 120 : 3 },
+  { label: 'OCR hạn mức', value: ocrLimit.value },
 ])
 
 const isGenerating = ref(false)

@@ -18,6 +18,37 @@ class OcrController extends Controller
             'image' => ['required', 'file', 'mimes:jpg,jpeg,png,bmp,tif,tiff,webp,pdf'],
         ]);
 
+        $user = auth('api')->user();
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
+        $tier = $user->getSubscriptionTier();
+
+        if ($tier === 'free') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tính năng scan tài liệu OCR yêu cầu nâng cấp gói Plus trở lên.'
+            ], 403);
+        }
+
+        if ($tier !== 'admin' && $tier !== 'ultra') {
+            $startOfMonth = now()->startOfMonth();
+            $scanCount = \App\Models\AiLog::where('user_id', $user->id)
+                ->where('action_type', 'ocr_upload')
+                ->where('created_at', '>=', $startOfMonth)
+                ->count();
+
+            $limit = $tier === 'pro' ? 50 : 10;
+
+            if ($scanCount >= $limit) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Bạn đã đạt giới hạn lượt scan OCR trong tháng này ({$limit} lượt). Vui lòng nâng cấp lên gói cao hơn!"
+                ], 403);
+            }
+        }
+
         try {
             $file = $request->file('image');
 
@@ -189,6 +220,13 @@ class OcrController extends Controller
 
                 $data = $service->parseQuiz($prompt);
             }
+
+            \App\Models\AiLog::create([
+                'user_id' => $user->id,
+                'action_type' => 'ocr_upload',
+                'status' => 'success',
+                'questions_generated' => count($data['questions'] ?? []),
+            ]);
 
             return response()->json([
                 'success' => true,

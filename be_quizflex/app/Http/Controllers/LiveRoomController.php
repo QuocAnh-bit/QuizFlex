@@ -26,10 +26,11 @@ class LiveRoomController extends Controller
     public function store(Request $request)
     {
         $user = $request->user();
-        if (strtolower((string) ($user->role ?? 'user')) !== 'vip') {
+        $tier = $user->getSubscriptionTier();
+        if (!in_array($tier, ['plus', 'pro', 'ultra', 'admin'], true)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Chi tai khoan VIP moi duoc tao live room.',
+                'message' => 'Tính năng tạo phòng trực tuyến yêu cầu nâng cấp gói Plus trở lên.',
             ], 403);
         }
 

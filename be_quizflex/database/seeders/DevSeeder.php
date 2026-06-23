@@ -21,10 +21,10 @@ class DevSeeder extends Seeder
             ],
             [
                 'id' => 2,
-                'name' => 'VIP User',
-                'email' => 'vip@test.com',
+                'name' => 'Pro User',
+                'email' => 'pro@test.com',
                 'password' => Hash::make('password'),
-                'role' => 'vip',
+                'role' => 'pro',
                 'vip_expires_at' => now()->addYear(),
                 'ai_quota_remaining' => 50,
             ],
@@ -33,7 +33,7 @@ class DevSeeder extends Seeder
                 'name' => 'Học sinh A',
                 'email' => 'student_a@test.com',
                 'password' => Hash::make('password'),
-                'role' => 'user',
+                'role' => 'free',
                 'ai_quota_remaining' => 5,
             ],
             [
@@ -41,7 +41,7 @@ class DevSeeder extends Seeder
                 'name' => 'Học sinh B',
                 'email' => 'student_b@test.com',
                 'password' => Hash::make('password'),
-                'role' => 'user',
+                'role' => 'free',
                 'ai_quota_remaining' => 5,
             ],
         ];

@@ -53,3 +53,25 @@ be_quizflex/bootstrap/cache/*
 # Frontend generated
 fe_quizflex/node_modules/
 fe_quizflex/dist/
+
+
+# Env
+.env
+.env.*
+
+# Vendor
+vendor/
+
+# Logs
+storage/logs/*
+!storage/logs/.gitignore
+
+# Cache
+bootstrap/cache/*
+!bootstrap/cache/.gitignore
+
+# Node
+node_modules/
+
+# Build
+dist/
