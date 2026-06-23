@@ -64,6 +64,12 @@ const routes = [
   { path: '/admin/users', name: 'admin-users', component: () => import('@/views/admin/Users.vue'), meta: { layout: 'admin', title: 'User management', requiresAuth: true, roles: adminRoles } },
   { path: '/admin/settings', name: 'admin-settings', component: () => import('@/views/admin/Settings.vue'), meta: { layout: 'admin', title: 'Settings', requiresAuth: true, roles: adminRoles } },
 
+  // Admin Quiz Management
+  { path: '/admin/quizzes', name: 'admin-quizzes', component: () => import('@/views/admin/quizzes/QuizList.vue'), meta: { layout: 'admin', title: 'Quản lý Quiz', requiresAuth: true, roles: adminRoles } },
+  { path: '/admin/quizzes-trash', name: 'admin-quizzes-trash', component: () => import('@/views/admin/quizzes/QuizzesTrash.vue'), meta: { layout: 'admin', title: 'Thùng rác Quiz', requiresAuth: true, roles: adminRoles } },
+  { path: '/admin/quizzes/:id', name: 'admin-quiz-detail', component: () => import('@/views/admin/quizzes/QuizDetail.vue'), meta: { layout: 'admin', title: 'Chi tiết Quiz', requiresAuth: true, roles: adminRoles } },
+  { path: '/admin/quizzes/:id/edit', name: 'admin-quiz-edit', component: () => import('@/views/admin/quizzes/QuizEdit.vue'), meta: { layout: 'admin', title: 'Sửa Quiz', requiresAuth: true, roles: adminRoles } },
+
   { path: '/gamification', component: () => import('@/views/user/GamificationStats.vue') },
   { path: '/leaderboard', component: () => import('@/views/user/Leaderboard.vue') },
   { path: '/:pathMatch(.*)*', name: 'not-found', redirect: '/' },

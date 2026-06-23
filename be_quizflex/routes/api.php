@@ -84,6 +84,13 @@ Route::middleware('auth:api')->group(function () {
         Route::patch('/admin/rooms/live/{id}/restore', [AdminRoomController::class, 'restoreLive']);
         Route::get('/admin/rooms/live/{liveRoom}', [AdminRoomController::class, 'liveShow'])->withTrashed();
         Route::apiResource('users', UserController::class);
+
+        // Quản lý quiz cho admin
+        Route::get('/admin/quizzes/trash', [QuizController::class, 'trash']);
+        Route::get('/admin/quizzes', [QuizController::class, 'adminIndex']);
+        Route::get('/admin/quizzes/{id}', [QuizController::class, 'adminShow']);
+        Route::post('/admin/quizzes/{id}/restore', [QuizController::class, 'restore']);
+        Route::delete('/admin/quizzes/{id}/force-delete', [QuizController::class, 'forceDelete']);
     });
 
     Route::middleware('role:free,plus,pro,ultra,admin')->group(function () {

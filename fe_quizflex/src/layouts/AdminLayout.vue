@@ -80,6 +80,7 @@ const activeLiveRoomCount = ref(0)
 
 const mainMenu = computed(() => [
   { label: 'Tổng quan', to: '/admin', icon: 'DB' },
+  { label: 'Quản lý Quiz', to: '/admin/quizzes', icon: 'QL' },
   { label: 'Kho quiz', to: '/admin/questions', icon: 'QZ' },
   { label: 'Tạo quiz', to: '/admin/questions/create', icon: '+' },
   { label: 'AI Generator', to: '/admin/questions/ai', icon: 'AI' },
