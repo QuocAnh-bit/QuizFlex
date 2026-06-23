@@ -89,6 +89,7 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/admin/quizzes/trash', [QuizController::class, 'trash']);
         Route::get('/admin/quizzes', [QuizController::class, 'adminIndex']);
         Route::get('/admin/quizzes/{id}', [QuizController::class, 'adminShow']);
+        Route::delete('/admin/quizzes/{quiz}', [QuizController::class, 'destroy']);
         Route::post('/admin/quizzes/{id}/restore', [QuizController::class, 'restore']);
         Route::delete('/admin/quizzes/{id}/force-delete', [QuizController::class, 'forceDelete']);
     });

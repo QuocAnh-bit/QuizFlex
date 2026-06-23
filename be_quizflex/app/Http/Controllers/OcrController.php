@@ -210,7 +210,7 @@ class OcrController extends Controller
                 //                 'C' => '$x + C$',
                 //                 'D' => '$2x^2 + C$',
                 //             ],
-                //             'correct_answer' => 'A',
+                //             'correct_answer' => 'A',F
                 //         ],
                 //     ],
                 // ];
@@ -235,10 +235,21 @@ class OcrController extends Controller
                 'quizOrc' => $data,
             ]);
         } catch (\Throwable $e) {
+            $msg = $e->getMessage();
+
+            // Dịch lỗi rỗng chữ của Tesseract sang tiếng Việt
+            if (str_contains($msg, 'did not produce any output')) {
+                $msg = 'Không tìm thấy văn bản nào trong tài liệu. Vui lòng kiểm tra và đảm bảo ảnh chụp rõ nét, có chứa chữ và không bị lật ngược.';
+            }
+            // Dịch lỗi thiếu thư viện Imagick/Ghostscript khi cắt PDF
+            elseif (str_contains($msg, 'imagick') || str_contains($msg, 'pdf-to-image') || str_contains($msg, 'Ghostscript')) {
+                $msg = 'Hệ thống Laravel thiếu thư viện chuyển đổi PDF sang ảnh (Imagick/Ghostscript). Vui lòng upload trực tiếp bằng file ảnh (PNG, JPG, JPEG) thay vì file PDF scan.';
+            }
+
             return response()->json([
                 'success' => false,
-                'message' => 'OCR failed',
-                'error' => $e->getMessage(),
+                'message' => $msg,
+                'error' => $msg,
             ], 500);
         }
     }
