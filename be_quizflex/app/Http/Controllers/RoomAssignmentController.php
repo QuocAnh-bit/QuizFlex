@@ -266,7 +266,7 @@ class RoomAssignmentController extends Controller
         }
 
         $query = QuizAttempt::query()
-            ->with(['user:id,name,email', 'quiz:id,title'])
+            ->with(['user:id,name,email', 'quiz:id,title', 'evaluation'])
             ->where('assignment_id', $assignment->id)
             ->latest('started_at');
 
@@ -486,6 +486,12 @@ class RoomAssignmentController extends Controller
             'submitted_at' => $attempt->submitted_at,
             'user' => $attempt->user ?? null,
             'quiz' => $attempt->quiz ?? null,
+            'evaluation' => $attempt->evaluation ? [
+                'id' => $attempt->evaluation->id,
+                'comment' => $attempt->evaluation->comment,
+                'created_at' => $attempt->evaluation->created_at,
+                'updated_at' => $attempt->evaluation->updated_at,
+            ] : null,
         ];
     }
 

@@ -28,7 +28,7 @@ class QuizAttemptController extends Controller
         $user = $request->user();
 
         $query = QuizAttempt::query()
-            ->with(['quiz:id,title,category,is_public,room_code,time_limit_seconds', 'user:id,name'])
+            ->with(['quiz:id,title,category,is_public,room_code,time_limit_seconds', 'user:id,name', 'evaluation'])
             ->latest('started_at');
 
         if (strtolower((string) ($user->role ?? 'user')) !== 'admin') {
@@ -63,7 +63,7 @@ class QuizAttemptController extends Controller
             ], 403);
         }
 
-        $quizAttempt->load(['quiz.questions.answers', 'user:id,name']);
+        $quizAttempt->load(['quiz.questions.answers', 'user:id,name', 'evaluation']);
         $data = $this->formatAttempt($quizAttempt, true);
 
         if ($quizAttempt->status === 'in_progress' && $quizAttempt->quiz) {
@@ -454,6 +454,8 @@ class QuizAttemptController extends Controller
             'submitted_at' => $attempt->submitted_at ?? null,
             'mode' => $attempt->mode ?? 'practice',
             'question_order' => $attempt->question_order ?? [],
+            'evaluation_comment' => $attempt->evaluation->comment ?? null,
+            'evaluation_comment_updated_at' => $attempt->evaluation ? $attempt->evaluation->updated_at->toIso8601String() : null,
         ];
 
         if ($includeSnapshot) {

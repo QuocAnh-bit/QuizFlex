@@ -101,14 +101,24 @@
               </div>
               <div class="mt-3 flex items-center justify-between">
                 <StatusBadge :value="member.status || 'active'" />
-                <button
-                  v-if="canManageRoom"
-                  class="btn-ghost px-3 py-1.5 text-xs text-rose-400 hover:bg-rose-500/10"
-                  type="button"
-                  @click="removeMember(member)"
-                >
-                  Xóa
-                </button>
+                <div class="flex gap-2">
+                  <button
+                    v-if="canManageRoom || Number(member.user_id) === Number(currentUser?.id)"
+                    class="btn-ghost px-3 py-1.5 text-xs text-[var(--primary)] hover:bg-[var(--primary)]/10"
+                    type="button"
+                    @click="openMemberDetail(member)"
+                  >
+                    Chi tiết
+                  </button>
+                  <button
+                    v-if="canManageRoom"
+                    class="btn-ghost px-3 py-1.5 text-xs text-rose-400 hover:bg-rose-500/10"
+                    type="button"
+                    @click="removeMember(member)"
+                  >
+                    Xóa
+                  </button>
+                </div>
               </div>
             </article>
           </div>
@@ -169,6 +179,128 @@
           </div>
         </article>
       </div>
+
+      <!-- Modal Chi tiết thành viên -->
+      <div v-if="selectedMember" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity">
+        <div class="relative w-full max-w-lg rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-card)] transition-all">
+          <div class="flex items-center justify-between pb-4 border-b border-[var(--border)]">
+            <h3 class="text-xl font-black text-[var(--text)]">Chi tiết thành viên</h3>
+            <button @click="closeMemberDetail" class="text-[var(--muted)] hover:text-[var(--text)] text-2xl font-bold">&times;</button>
+          </div>
+
+          <div class="mt-5 space-y-6 max-h-[70vh] overflow-y-auto pr-1">
+            <div class="flex items-center gap-3">
+              <div class="h-12 w-12 rounded-full bg-[var(--primary)]/10 flex items-center justify-center font-black text-[var(--primary)] text-lg">
+                {{ selectedMember.user?.name ? selectedMember.user.name.charAt(0).toUpperCase() : 'M' }}
+              </div>
+              <div class="min-w-0">
+                <h4 class="font-black text-[var(--text)] truncate">{{ selectedMember.user?.name || `User #${selectedMember.user_id}` }}</h4>
+                <p class="text-xs font-bold text-[var(--muted)] truncate">{{ selectedMember.user?.email || 'Chưa có email' }}</p>
+              </div>
+            </div>
+
+            <div>
+              <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)] mb-3">Thông tin học tập</p>
+              <div class="grid grid-cols-2 gap-3">
+                <div class="rounded-xl border border-[var(--border)] bg-[var(--surface-soft)] p-3">
+                  <p class="text-[10px] font-bold text-[var(--muted)] uppercase">Ngày tham gia</p>
+                  <p class="mt-1 text-sm font-black text-[var(--text)]">{{ formatDateTime(selectedMember.joined_at) }}</p>
+                </div>
+                <div class="rounded-xl border border-[var(--border)] bg-[var(--surface-soft)] p-3">
+                  <p class="text-[10px] font-bold text-[var(--muted)] uppercase">Bài được giao</p>
+                  <p class="mt-1 text-sm font-black text-[var(--text)]">{{ selectedMember.assigned ?? 0 }}</p>
+                </div>
+                <div class="rounded-xl border border-[var(--border)] bg-[var(--surface-soft)] p-3">
+                  <p class="text-[10px] font-bold text-[var(--muted)] uppercase">Đã hoàn thành</p>
+                  <p class="mt-1 text-sm font-black text-[var(--text)]">{{ selectedMember.completed ?? 0 }}</p>
+                </div>
+                <div class="rounded-xl border border-[var(--border)] bg-[var(--surface-soft)] p-3">
+                  <p class="text-[10px] font-bold text-[var(--muted)] uppercase">Tỷ lệ hoàn thành</p>
+                  <p class="mt-1 text-sm font-black text-[var(--text)]">{{ selectedMember.completion_rate ?? 0 }}%</p>
+                </div>
+                <div class="rounded-xl border border-[var(--border)] bg-[var(--surface-soft)] p-3 col-span-2">
+                  <p class="text-[10px] font-bold text-[var(--muted)] uppercase">Điểm trung bình</p>
+                  <p class="mt-1 text-lg font-black text-[var(--primary)]">{{ selectedMember.average_score ?? 0 }}/10</p>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)] mb-3">Đánh giá thành viên</p>
+              
+              <div v-if="isLoadingEvaluation" class="py-4 text-center text-xs font-bold text-[var(--muted)]">
+                Đang tải đánh giá...
+              </div>
+
+              <div v-else>
+                <!-- Nhận xét theo từng bài (Lịch sử nhận xét) -->
+                <div class="border-b border-[var(--border)] pb-4 mb-4">
+                  <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)] mb-3">Lịch sử nhận xét bài nộp</p>
+                  <div 
+                    v-if="evaluationData?.submission_evaluations && evaluationData.submission_evaluations.length"
+                    class="space-y-3 max-h-48 overflow-y-auto pr-1"
+                  >
+                    <div 
+                      v-for="subEval in evaluationData.submission_evaluations" 
+                      :key="subEval.id"
+                      class="rounded-xl border border-[var(--border)] bg-[var(--surface-soft)] p-3 text-xs"
+                    >
+                      <div class="flex items-start justify-between gap-2">
+                        <span class="font-black text-[var(--text)] truncate max-w-[200px]" :title="subEval.assignment_name">
+                          {{ subEval.assignment_name }}
+                        </span>
+                        <span class="shrink-0 font-bold text-[var(--muted)]">
+                          Điểm: <strong class="text-[var(--text)]">{{ subEval.score }}</strong>
+                        </span>
+                      </div>
+                      <p class="mt-1 text-[10px] text-[var(--muted)]">{{ formatDateTime(subEval.submitted_at) }}</p>
+                      <p class="mt-2 font-medium leading-relaxed" :class="subEval.comment ? 'text-[var(--text)] italic' : 'text-[var(--muted)]'">
+                        {{ subEval.comment ? `"${subEval.comment}"` : 'Chưa có nhận xét bài nộp.' }}
+                      </p>
+                    </div>
+                  </div>
+                  <div v-else class="rounded-xl border border-[var(--border)] bg-[var(--surface-soft)] p-3 text-center text-xs font-bold text-[var(--muted)]">
+                    Chưa có bài nộp nào trong room này.
+                  </div>
+                </div>
+
+                <div v-if="canManageRoom" class="space-y-4">
+                  <div>
+                    <label class="block text-xs font-bold text-[var(--muted)] mb-1 uppercase">Nhận xét của chủ phòng</label>
+                    <textarea 
+                      v-model="evaluationForm.comment"
+                      class="field min-h-20 w-full resize-y text-sm"
+                      placeholder="Nhập nhận xét thành viên (Ví dụ: Làm bài đầy đủ và nghiêm túc...)"
+                    ></textarea>
+                  </div>
+                </div>
+
+                <div v-else class="space-y-3 rounded-xl border border-[var(--border)] bg-[var(--surface-soft)] p-4">
+                  <div>
+                    <p class="text-[10px] font-bold text-[var(--muted)] uppercase">Nhận xét</p>
+                    <p class="mt-1 text-sm font-bold leading-relaxed text-[var(--text)] italic">
+                      "{{ evaluationData?.comment || 'Chưa có nhận xét nào.' }}"
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-6 flex items-center justify-end gap-3 pt-4 border-t border-[var(--border)]">
+            <button @click="closeMemberDetail" class="btn-ghost" type="button">Đóng</button>
+            <button 
+              v-if="canManageRoom && !isLoadingEvaluation" 
+              @click="saveEvaluation" 
+              class="btn-primary" 
+              type="button"
+              :disabled="isSavingEvaluation"
+            >
+              {{ isSavingEvaluation ? 'Đang lưu...' : (evaluationData ? 'Cập nhật đánh giá' : 'Lưu đánh giá') }}
+            </button>
+          </div>
+        </div>
+      </div>
     </template>
   </section>
 </template>
@@ -194,7 +326,58 @@ const errorMessage = ref('')
 const allowedMembersError = ref('')
 const allowedMembersMessage = ref('')
 
+// Evaluation state variables
+const selectedMember = ref(null)
+const isLoadingEvaluation = ref(false)
+const isSavingEvaluation = ref(false)
+const evaluationData = ref(null)
+const evaluationForm = ref({
+  comment: '',
+})
+
 const canManageRoom = computed(() => currentUser?.role === 'admin' || Number(room.value?.owner_id) === Number(currentUser?.id))
+
+const openMemberDetail = async (member) => {
+  selectedMember.value = member
+  isLoadingEvaluation.value = true
+  evaluationData.value = null
+  evaluationForm.value.comment = ''
+
+  try {
+    const data = await homeworkApi.getMemberEvaluation(roomId.value, member.user_id)
+    evaluationData.value = data
+    if (data) {
+      evaluationForm.value.comment = data.comment || ''
+    }
+  } catch (error) {
+    console.error('Không tải được đánh giá:', error)
+  } finally {
+    isLoadingEvaluation.value = false
+  }
+}
+
+const closeMemberDetail = () => {
+  selectedMember.value = null
+}
+
+const saveEvaluation = async () => {
+  if (!selectedMember.value) return
+
+  isSavingEvaluation.value = true
+  try {
+    const data = await homeworkApi.saveMemberEvaluation(roomId.value, selectedMember.value.user_id, {
+      comment: evaluationForm.value.comment,
+    })
+    evaluationData.value = data
+    
+    // update statistics locally in list if owner changes evaluation, though stats themselves come from assignments/attempts
+    alert('Đã lưu đánh giá thành công.')
+  } catch (error) {
+    alert(`Không lưu được đánh giá: ${error.message}`)
+  } finally {
+    isSavingEvaluation.value = false
+  }
+}
 const canManageAllowedMembers = computed(() => room.value?.type === 'homework' && Number(room.value?.owner_id) === Number(currentUser?.id))
 const shouldShowAllowedMembers = computed(() => canManageAllowedMembers.value && room.value?.join_policy === 'email_whitelist')
 const filteredMembers = computed(() => members.value.filter((member) => Number(member.user_id) !== Number(room.value?.owner_id)))

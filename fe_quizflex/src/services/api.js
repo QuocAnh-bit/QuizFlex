@@ -568,6 +568,26 @@ export const homeworkApi = {
     return unwrap(data)
   },
 
+  async getMemberEvaluation(roomId, userId) {
+    const { data } = await api.get(`/homework-rooms/${roomId}/members/${userId}/evaluation`)
+    return unwrap(data)
+  },
+
+  async saveMemberEvaluation(roomId, userId, payload) {
+    const { data } = await api.post(`/homework-rooms/${roomId}/members/${userId}/evaluation`, payload)
+    return unwrap(data)
+  },
+
+  async getSubmissionEvaluation(roomId, submissionId) {
+    const { data } = await api.get(`/homework-rooms/${roomId}/submissions/${submissionId}/evaluation`)
+    return unwrap(data)
+  },
+
+  async saveSubmissionEvaluation(roomId, submissionId, payload) {
+    const { data } = await api.post(`/homework-rooms/${roomId}/submissions/${submissionId}/evaluation`, payload)
+    return unwrap(data)
+  },
+
   async getAllowedMembers(roomId) {
     const { data } = await api.get(`/homework-rooms/${roomId}/allowed-members`)
     return unwrapCollection(data)

@@ -141,7 +141,6 @@ class QuizController extends Controller
         // chỉ lấy id và name của người tạo quiz, Trong mỗi question, lấy tiếp answers
         $quiz->load(['user:id,name', 'questions.answers'])
             ->loadCount(['questions', 'attempts'])
-
             ->loadAvg(['attempts as avg_score' => fn($q) => $q->where('status', 'completed')], 'score');
         // tính điểm trung bình
         return response()->json([
@@ -299,6 +298,7 @@ class QuizController extends Controller
 
         if ($visibility === 'public') {
             $isPublic = true;
+            $data['status'] = 'published';
             $roomCode = null;
         }
 
@@ -442,15 +442,11 @@ class QuizController extends Controller
 
     private function resolveOptionalApiUser(): ?User
     {
-        if (!auth('api')->parser()->hasToken()) {
-            return null;
-        }
-
         try {
             return auth('api')->user();
         } catch (TokenExpiredException $exception) {
             throw $exception;
-        } catch (\Throwable) {
+        } catch (\Throwable $exception) {
             return null;
         }
     }

@@ -6,17 +6,27 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Run the migrations.
+     */
     public function up(): void
     {
         Schema::table('quizzes', function (Blueprint $table) {
-            $table->foreign(['user_id'], 'fk_quizzes_user_id')->references(['id'])->on('users')->onUpdate('cascade')->onDelete('cascade');
+            if (!Schema::hasColumn('quizzes', 'is_ai_generated')) {
+                $table->boolean('is_ai_generated')->default(false)->after('user_id');
+            }
         });
     }
 
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
         Schema::table('quizzes', function (Blueprint $table) {
-            $table->dropForeign('fk_quizzes_user_id');
+            if (Schema::hasColumn('quizzes', 'is_ai_generated')) {
+                $table->dropColumn(['is_ai_generated']);
+            }
         });
     }
 };

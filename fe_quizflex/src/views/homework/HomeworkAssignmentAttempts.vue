@@ -38,19 +38,20 @@
       </div>
 
       <div v-if="attempts.length" class="mt-5 overflow-hidden rounded-[1.5rem] border border-[var(--border)]">
-        <div class="hidden grid-cols-[minmax(220px,1.4fr)_120px_140px_130px_160px_160px] gap-3 border-b border-[var(--border)] bg-[var(--surface-soft)] px-4 py-3 text-xs font-black uppercase tracking-[0.16em] text-[var(--muted)] lg:grid">
+        <div class="hidden grid-cols-[minmax(220px,1.4fr)_110px_110px_120px_150px_150px_120px] gap-3 border-b border-[var(--border)] bg-[var(--surface-soft)] px-4 py-3 text-xs font-black uppercase tracking-[0.16em] text-[var(--muted)] lg:grid">
           <span>Người làm</span>
           <span>Trạng thái</span>
           <span>Điểm</span>
           <span>Số câu đúng</span>
           <span>Bắt đầu</span>
           <span>Nộp bài</span>
+          <span>Đánh giá</span>
         </div>
 
         <article
           v-for="attempt in attempts"
           :key="attempt.id"
-          class="grid gap-3 border-b border-[var(--border)] px-4 py-4 last:border-b-0 lg:grid-cols-[minmax(220px,1.4fr)_120px_140px_130px_160px_160px] lg:items-center"
+          class="grid gap-3 border-b border-[var(--border)] px-4 py-4 last:border-b-0 lg:grid-cols-[minmax(220px,1.4fr)_110px_110px_120px_150px_150px_120px] lg:items-center"
         >
           <div>
             <h3 class="font-black text-[var(--text)]">{{ attempt.user?.name || `User #${attempt.user_id}` }}</h3>
@@ -61,6 +62,17 @@
           <p class="text-sm font-black text-[var(--text)]">{{ formatCorrectCount(attempt) }}</p>
           <p class="text-sm font-bold text-[var(--muted)]">{{ formatDateTime(attempt.started_at) }}</p>
           <p class="text-sm font-bold text-[var(--muted)]">{{ formatDateTime(attempt.submitted_at || attempt.finished_at) }}</p>
+          <div>
+            <button
+              class="btn-ghost px-3 py-1.5 text-xs flex items-center gap-1"
+              :class="attempt.evaluation ? 'text-emerald-400 hover:bg-emerald-500/10' : 'text-[var(--primary)] hover:bg-[var(--primary)]/10'"
+              type="button"
+              @click="openEvaluation(attempt)"
+            >
+              <span>Đánh giá</span>
+              <span v-if="attempt.evaluation" title="Đã có nhận xét">💬</span>
+            </button>
+          </div>
         </article>
       </div>
 
@@ -70,6 +82,68 @@
         <p class="mt-3 text-sm leading-7 text-[var(--muted)]">Khi thành viên bắt đầu hoặc nộp bài, dữ liệu sẽ xuất hiện tại đây.</p>
       </div>
     </article>
+
+    <!-- Modal Đánh giá bài làm -->
+    <div v-if="selectedAttempt" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity">
+      <div class="relative w-full max-w-lg rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-card)]">
+        <div class="flex items-center justify-between pb-4 border-b border-[var(--border)]">
+          <h3 class="text-xl font-black text-[var(--text)]">Đánh giá bài làm</h3>
+          <button @click="closeEvaluation" class="text-[var(--muted)] hover:text-[var(--text)] text-2xl font-bold">&times;</button>
+        </div>
+
+        <div class="mt-5 space-y-6 max-h-[70vh] overflow-y-auto pr-1">
+          <div class="space-y-2 rounded-xl border border-[var(--border)] bg-[var(--surface-soft)] p-4 text-sm leading-relaxed">
+            <p class="font-bold text-[var(--text)]">Học viên: <span class="font-black text-[var(--primary)]">{{ selectedAttempt.user?.name || `User #${selectedAttempt.user_id}` }}</span></p>
+            <p class="text-[var(--muted)]">Email: <span class="font-bold text-[var(--text)]">{{ selectedAttempt.user?.email || '-' }}</span></p>
+            <p class="text-[var(--muted)]">Điểm số: <span class="font-black text-[var(--text)]">{{ formatScore(selectedAttempt) }} ({{ formatCorrectCount(selectedAttempt) }} câu đúng)</span></p>
+            <p class="text-[var(--muted)]">Thời gian nộp: <span class="font-bold text-[var(--text)]">{{ formatDateTime(selectedAttempt.submitted_at || selectedAttempt.finished_at) }}</span></p>
+          </div>
+
+          <div>
+            <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)] mb-3">Nhận xét bài làm</p>
+            
+            <div v-if="isLoadingEvaluation" class="py-4 text-center text-xs font-bold text-[var(--muted)]">
+              Đang tải nhận xét...
+            </div>
+
+            <div v-else>
+              <div v-if="canManageRoom" class="space-y-4">
+                <div>
+                  <label class="block text-xs font-bold text-[var(--muted)] mb-1 uppercase">Nhận xét của giáo viên</label>
+                  <textarea 
+                    v-model="evaluationForm.comment"
+                    class="field min-h-24 w-full resize-y text-sm"
+                    placeholder="Nhập nhận xét cho bài làm này (Ví dụ: Trình bày tốt, làm bài nghiêm túc...)"
+                  ></textarea>
+                </div>
+              </div>
+
+              <div v-else class="space-y-3 rounded-xl border border-[var(--border)] bg-[var(--surface-soft)] p-4">
+                <div>
+                  <p class="text-[10px] font-bold text-[var(--muted)] uppercase">Nhận xét</p>
+                  <p class="mt-1 text-sm font-bold leading-relaxed text-[var(--text)] italic">
+                    "{{ evaluationData?.comment || 'Chưa có nhận xét nào cho bài làm này.' }}"
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-6 flex items-center justify-end gap-3 pt-4 border-t border-[var(--border)]">
+          <button @click="closeEvaluation" class="btn-ghost" type="button">Đóng</button>
+          <button 
+            v-if="canManageRoom && !isLoadingEvaluation" 
+            @click="saveEvaluation" 
+            class="btn-primary" 
+            type="button"
+            :disabled="isSavingEvaluation"
+          >
+            {{ isSavingEvaluation ? 'Đang lưu...' : (evaluationData ? 'Cập nhật nhận xét' : 'Lưu nhận xét') }}
+          </button>
+        </div>
+      </div>
+    </div>
   </section>
 </template>
 
@@ -77,15 +151,28 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import StatusBadge from '@/components/common/StatusBadge.vue'
-import { homeworkApi } from '@/services/api'
+import { currentUserStorage, homeworkApi } from '@/services/api'
 
 const route = useRoute()
 const roomId = computed(() => route.params.roomId)
 const assignmentId = computed(() => route.params.assignmentId)
 
+const room = ref(null)
 const attempts = ref([])
 const isLoading = ref(false)
 const errorMessage = ref('')
+
+const currentUser = currentUserStorage.get()
+const canManageRoom = computed(() => currentUser?.role === 'admin' || Number(room.value?.owner_id) === Number(currentUser?.id))
+
+// Evaluation modal state
+const selectedAttempt = ref(null)
+const isLoadingEvaluation = ref(false)
+const isSavingEvaluation = ref(false)
+const evaluationData = ref(null)
+const evaluationForm = ref({
+  comment: '',
+})
 
 const formatDateTime = (value) => {
   if (!value) return '-'
@@ -109,11 +196,63 @@ const loadAttempts = async () => {
   errorMessage.value = ''
 
   try {
-    attempts.value = await homeworkApi.getRoomAssignmentAttempts(assignmentId.value)
+    const [roomData, attemptsData] = await Promise.all([
+      homeworkApi.getHomeworkRoom(roomId.value),
+      homeworkApi.getRoomAssignmentAttempts(assignmentId.value)
+    ])
+    room.value = roomData
+    attempts.value = attemptsData
   } catch (error) {
     errorMessage.value = error.message || 'Bạn không có quyền xem danh sách bài nộp.'
   } finally {
     isLoading.value = false
+  }
+}
+
+const openEvaluation = async (attempt) => {
+  selectedAttempt.value = attempt
+  isLoadingEvaluation.value = true
+  evaluationData.value = null
+  evaluationForm.value.comment = ''
+
+  try {
+    const data = await homeworkApi.getSubmissionEvaluation(roomId.value, attempt.id)
+    evaluationData.value = data
+    if (data) {
+      evaluationForm.value.comment = data.comment || ''
+    }
+  } catch (error) {
+    console.error('Không tải được nhận xét:', error)
+  } finally {
+    isLoadingEvaluation.value = false
+  }
+}
+
+const closeEvaluation = () => {
+  selectedAttempt.value = null
+}
+
+const saveEvaluation = async () => {
+  if (!selectedAttempt.value) return
+
+  isSavingEvaluation.value = true
+  try {
+    const data = await homeworkApi.saveSubmissionEvaluation(roomId.value, selectedAttempt.value.id, {
+      comment: evaluationForm.value.comment,
+    })
+    evaluationData.value = data
+
+    // Update locally
+    const idx = attempts.value.findIndex(a => a.id === selectedAttempt.value.id)
+    if (idx !== -1) {
+      attempts.value[idx].evaluation = data
+    }
+
+    alert('Đã lưu nhận xét bài nộp thành công.')
+  } catch (error) {
+    alert(`Không lưu được nhận xét: ${error.message}`)
+  } finally {
+    isSavingEvaluation.value = false
   }
 }
 

@@ -60,4 +60,9 @@ class QuizAttempt extends Model
     {
         return $this->belongsTo(RoomAssignment::class, 'assignment_id');
     }
+
+    public function evaluation()
+    {
+        return $this->hasOne(RoomSubmissionEvaluation::class, 'submission_id');
+    }
 }
