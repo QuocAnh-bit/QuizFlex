@@ -13,7 +13,7 @@
       <form class="grid gap-4 lg:grid-cols-[1fr_1fr_150px_160px_auto]" @submit.prevent="createUser">
         <input v-model="newUser.name" class="field" placeholder="Tên user" />
         <input v-model="newUser.email" class="field" type="email" placeholder="email@example.com" />
-        <select v-model="newUser.role" class="field"><option value="USER">User</option><option value="VIP">VIP</option><option value="ADMIN">Admin</option></select>
+        <select v-model="newUser.role" class="field"><option value="FREE">Free</option><option value="PLUS">Plus</option><option value="PRO">Pro</option><option value="ULTRA">Ultra</option><option value="ADMIN">Admin</option></select>
         <input v-model="newUser.password" class="field" type="password" placeholder="Mật khẩu" />
         <button class="btn-primary" type="submit" :disabled="isSaving">Tạo user</button>
       </form>
@@ -22,7 +22,7 @@
     <article class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow-card)] backdrop-blur-2xl">
       <div class="grid gap-4 lg:grid-cols-[1fr_180px_auto]">
         <div class="flex items-center gap-3 rounded-2xl border border-[var(--border)] bg-[var(--input-bg)] px-4 py-3 focus-within:border-[var(--border-strong)]"><span>🔍</span><input v-model="search" class="w-full bg-transparent text-sm font-semibold text-[var(--text)] outline-none placeholder:text-[var(--muted)]" placeholder="Tìm user theo tên hoặc email" @keyup.enter="loadUsers" /></div>
-        <select v-model="roleFilter" class="field" @change="loadUsers"><option value="all">Tất cả role</option><option value="ADMIN">Admin</option><option value="VIP">VIP</option><option value="USER">Thường</option><option value="GUEST">Guest</option></select>
+        <select v-model="roleFilter" class="field" @change="loadUsers"><option value="all">Tất cả role</option><option value="ADMIN">Admin</option><option value="FREE">Free</option><option value="PLUS">Plus</option><option value="PRO">Pro</option><option value="ULTRA">Ultra</option><option value="GUEST">Guest</option></select>
         <button class="btn-ghost" type="button" @click="loadUsers">Tìm kiếm</button>
       </div>
     </article>
@@ -38,7 +38,7 @@
       <div class="grid divide-y divide-[var(--border)]">
         <div v-for="user in users" :key="user.id" class="grid gap-4 p-5 transition hover:bg-[var(--surface-soft)] lg:grid-cols-[1.35fr_0.6fr_0.6fr_0.6fr_0.75fr] lg:items-center">
           <div><b class="text-[var(--text)]">{{ user.name }}</b><p class="mt-1 text-sm text-[var(--muted)]">{{ user.email }} • joined {{ user.joinedAt }}</p></div>
-          <select v-model="user.role" class="field" @change="updateRole(user)"><option value="admin">Admin</option><option value="vip">VIP</option><option value="user">Thường</option><option value="guest">Guest</option></select>
+          <select v-model="user.role" class="field" @change="updateRole(user)"><option value="admin">Admin</option><option value="plus">Plus</option><option value="pro">Pro</option><option value="ultra">Ultra</option><option value="free">Free</option><option value="guest">Guest</option></select>
           <b class="text-[var(--text)]">{{ user.quizzesCount }}</b>
           <b class="text-[var(--text)]">{{ user.attemptsCount }}</b>
           <div class="flex flex-wrap gap-2"><button class="rounded-full border border-rose-500/30 bg-rose-500/10 px-4 py-2 text-xs font-black text-rose-300" type="button" @click="deleteUser(user.id)">Xóa</button></div>
@@ -60,7 +60,7 @@ const isSaving = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
 
-const newUser = reactive({ name: '', email: '', password: '', role: 'USER' })
+const newUser = reactive({ name: '', email: '', password: '', role: 'FREE' })
 
 const loadUsers = async () => {
   isLoading.value = true
@@ -95,7 +95,7 @@ const createUser = async () => {
     newUser.name = ''
     newUser.email = ''
     newUser.password = ''
-    newUser.role = 'USER'
+    newUser.role = 'FREE'
     await loadUsers()
   } catch (error) {
     errorMessage.value = `Tạo user thất bại: ${error.message}`

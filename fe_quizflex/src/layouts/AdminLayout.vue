@@ -11,32 +11,20 @@
             <BrandLogo to="/admin" />
           </div>
 
-          <nav class="mt-5 grid gap-2 text-sm font-bold">
-            <router-link v-for="item in mainMenu" :key="item.to" :to="item.to" :class="getLinkClass(item)">
-              <span class="grid h-9 w-9 place-items-center rounded-2xl bg-[var(--surface-soft)] text-xs font-black text-[var(--primary)]">{{ item.icon }}</span>
-              <span>{{ item.label }}</span>
-            </router-link>
+          <nav class="mt-5 space-y-4 text-sm font-bold">
+            <div v-for="group in menu" :key="group.label" class="rounded-[1.75rem] border border-[var(--border)] bg-[var(--surface)]">
+              <button type="button" @click="toggleGroup(group.label)" class="flex w-full items-center justify-between gap-3 px-4 py-4 text-left text-sm font-black tracking-[0.1em] text-[var(--primary)]">
+                <span>{{ group.label }}</span>
+                <span :class="['transition-transform duration-300', expandedGroups.includes(group.label) ? 'rotate-180' : 'rotate-0']">▼</span>
+              </button>
 
-            <div class="mt-4 border-t border-[var(--border)] pt-4">
-              <p class="px-3 text-[11px] font-black uppercase tracking-[0.22em] text-[var(--muted)]">PHÒNG HỌC</p>
-              <div class="mt-2 grid gap-2">
-                <router-link v-for="item in roomMenu" :key="item.label" :to="item.to" :class="getLinkClass(item)">
-                  <span class="grid h-9 w-9 place-items-center rounded-2xl bg-[var(--surface-soft)] text-[var(--primary)]">
-                    <NavIcon :name="item.icon" />
-                  </span>
-                  <span class="min-w-0 flex-1 truncate">{{ item.label }}</span>
-                  <span
-                    v-if="item.badge !== null"
-                    class="rounded-full border border-[var(--border-strong)] bg-[var(--chip-active)] px-2 py-0.5 text-[11px] font-black text-[var(--primary)]"
-                  >
-                    {{ item.badge }}
-                  </span>
-                  <span
-                    v-if="item.live"
-                    class="h-2.5 w-2.5 rounded-full bg-[var(--danger)] shadow-[0_0_14px_var(--danger)]"
-                    title="Có live room đang diễn ra"
-                  ></span>
-                </router-link>
+              <div :class="['overflow-hidden transition-all duration-300', expandedGroups.includes(group.label) ? 'max-h-[1000px] py-3' : 'max-h-0']">
+                <div class="grid gap-2 px-2">
+                  <router-link v-for="item in group.items" :key="item.to" :to="item.to" :class="[getLinkClass(item), 'group transition-all duration-200']">
+                    <span :class="['grid h-9 w-9 place-items-center rounded-2xl text-xs font-black transition-colors duration-300', isItemActive(item) ? 'bg-[var(--primary)] text-white' : 'bg-[var(--surface-soft)] text-[var(--primary)]', 'group-hover:bg-[var(--primary)]', 'group-hover:text-white']">{{ item.icon }}</span>
+                    <span :class="['transition-colors duration-300', isItemActive(item) ? 'text-[var(--text)]' : 'text-[var(--muted)]', 'group-hover:text-[var(--text)]']">{{ item.label }}</span>
+                  </router-link>
+                </div>
               </div>
             </div>
           </nav>
@@ -68,28 +56,46 @@
 </template>
 
 <script setup>
-import { computed, defineComponent, h, onMounted, ref } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import BrandLogo from '@/components/common/BrandLogo.vue'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
 import { adminRoomApi } from '@/services/api'
 
 const route = useRoute()
+const expandedGroups = ref(['Quản lý nội dung'])
 const homeworkRoomCount = ref(0)
 const activeLiveRoomCount = ref(0)
 
-const mainMenu = computed(() => [
-  { label: 'Tổng quan', to: '/admin', icon: 'DB' },
-  { label: 'Kho quiz', to: '/admin/questions', icon: 'QZ' },
-  { label: 'Tạo quiz', to: '/admin/questions/create', icon: '+' },
-  { label: 'AI Generator', to: '/admin/questions/ai', icon: 'AI' },
-  { label: 'OCR Upload', to: '/admin/questions/ocr', icon: 'OC' },
-  { label: 'Report', to: '/admin/reports', icon: 'RP' },
-  { label: 'Payment', to: '/admin/payments', icon: '$' },
-  { label: 'Users', to: '/admin/users', icon: 'US' },
-  { label: 'Settings', to: '/admin/settings', icon: 'ST' },
+const menu = computed(() => [
+  {
+    label: 'Quản lý nội dung',
+    items: [
+      { label: 'Tổng quan', to: '/admin', icon: 'DB' },
+      { label: 'Kho quiz', to: '/admin/questions', icon: 'QZ' },
+      { label: 'Tạo quiz', to: '/admin/questions/create', icon: '+' },
+      { label: 'AI Generator', to: '/admin/questions/ai', icon: 'AI' },
+      { label: 'OCR Upload', to: '/admin/questions/ocr', icon: 'OC' },
+    ],
+  },
+   {
+    label: 'Phòng học',
+    items: [
+      { label: 'Homework rooms', to: '/admin/rooms/homework', icon: 'HW' },
+      { label: 'Live rooms', to: '/admin/rooms/live', icon: 'LR' },
+    ],
+  },
+  {
+    label: 'Phân tích & chăm sóc',
+    items: [
+      { label: 'Report', to: '/admin/reports', icon: 'RP' },
+      { label: 'Payment', to: '/admin/payments', icon: '$' },
+      { label: 'Users', to: '/admin/users', icon: 'US' },
+      { label: 'Settings', to: '/admin/settings', icon: 'ST' },
+    ],
+  },
 ])
-
+/*
 const roomMenu = computed(() => [
   {
     label: 'Homework rooms',
@@ -105,47 +111,24 @@ const roomMenu = computed(() => [
     live: activeLiveRoomCount.value > 0,
   },
 ])
-
+*/
 const pageTitle = computed(() => route.meta.title || 'Dashboard')
 
-const NavIcon = defineComponent({
-  props: { name: { type: String, required: true } },
-  setup(props) {
-    return () => {
-      const common = {
-        class: 'h-4 w-4',
-        viewBox: '0 0 24 24',
-        fill: 'none',
-        stroke: 'currentColor',
-        'stroke-width': '2',
-        'stroke-linecap': 'round',
-        'stroke-linejoin': 'round',
-      }
+const toggleGroup = (groupLabel) => {
+  if (expandedGroups.value.includes(groupLabel)) {
+    expandedGroups.value = expandedGroups.value.filter((label) => label !== groupLabel)
+  } else {
+    expandedGroups.value.push(groupLabel)
+  }
+}
 
-      if (props.name === 'broadcast') {
-        return h('svg', common, [
-          h('path', { d: 'M4.9 19.1a10 10 0 0 1 0-14.2' }),
-          h('path', { d: 'M7.8 16.2a6 6 0 0 1 0-8.4' }),
-          h('circle', { cx: '12', cy: '12', r: '2' }),
-          h('path', { d: 'M16.2 7.8a6 6 0 0 1 0 8.4' }),
-          h('path', { d: 'M19.1 4.9a10 10 0 0 1 0 14.2' }),
-        ])
-      }
-
-      return h('svg', common, [
-        h('path', { d: 'M3 10.5 12 3l9 7.5' }),
-        h('path', { d: 'M5 10v10h14V10' }),
-        h('path', { d: 'M9 20v-6h6v6' }),
-      ])
-    }
-  },
-})
+const isItemActive = (item) => route.path === item.to || (item.to === '/admin/questions' && route.path === '/admin/questions')
 
 const getLinkClass = (item) => {
-  const active = route.path === item.to || (item.to === '/admin/questions' && route.path === '/admin/questions')
+  const active = isItemActive(item)
   const base = ['flex', 'items-center', 'gap-3', 'rounded-2xl', 'border', 'px-3', 'py-3', 'transition', 'duration-300', 'hover:-translate-y-0.5']
   if (!active) return [...base, 'border-transparent', 'text-[var(--muted)]', 'hover:border-[var(--border)]', 'hover:bg-[var(--surface)]', 'hover:text-[var(--text)]']
-  return [...base, 'border-[var(--border-strong)]', 'bg-[var(--chip-active)]', 'text-[var(--text)]', 'shadow-[0_14px_34px_rgba(155,44,255,0.14)]']
+  return [...base, 'border-[var(--border-strong)]', 'bg-[var(--surface)]', 'text-[var(--text)]']
 }
 
 const loadRoomBadges = async () => {

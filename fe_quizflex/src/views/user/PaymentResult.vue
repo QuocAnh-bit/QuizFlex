@@ -21,9 +21,9 @@
 
         <div class="grid gap-2">
           <span class="text-xs font-black uppercase tracking-[0.2em] text-emerald-400">Giao dịch thành công</span>
-          <h2 class="text-3xl md:text-4xl font-black text-[var(--text)] tracking-tight">Chào Mừng Bạn Đến Với VIP!</h2>
+          <h2 class="text-3xl md:text-4xl font-black text-[var(--text)] tracking-tight">Chào Mừng Bạn Đến Với Gói Nâng Cấp!</h2>
           <p class="text-sm font-semibold text-[var(--muted)] leading-relaxed">
-            Hệ thống đã ghi nhận thanh toán và nâng cấp tài khoản của bạn thành công. Quyền lợi VIP đã được kích hoạt ngay lập tức!
+            Hệ thống đã ghi nhận thanh toán và nâng cấp tài khoản của bạn thành công. Quyền lợi gói dịch vụ nâng cấp đã được kích hoạt ngay lập tức!
           </p>
         </div>
 
@@ -48,7 +48,7 @@
             <span class="font-black text-[var(--primary)]">{{ resultData.user?.ai_quota_remaining }} lượt sử dụng</span>
           </div>
           <div class="flex items-center justify-between" v-if="resultData.user?.vip_expires_at">
-            <span class="text-[var(--muted)]">Hạn định VIP:</span>
+            <span class="text-[var(--muted)]">Hạn định gói nâng cấp:</span>
             <span class="text-[var(--text)]">{{ formatDate(resultData.user?.vip_expires_at) }}</span>
           </div>
         </div>
@@ -130,13 +130,36 @@ onMounted(() => {
 })
 
 const verifyTransaction = async () => {
-  // Capture all redirect query parameters sent from MoMo sandbox
   const queryParams = route.query
   
+  // Case 1: PayOS redirect (contains orderCode) or custom success redirect
+  if (queryParams.orderCode) {
+    try {
+      const res = await paymentsApi.checkStatus(queryParams.orderCode)
+      if (res.success && res.status === 'success') {
+        isSuccess.value = true
+        resultData.value = res
+        if (res.user) {
+          currentUserStorage.set(res.user)
+        }
+      } else {
+        isSuccess.value = false
+        errorMsg.value = `Giao dịch #${queryParams.orderCode} có trạng thái: ${res.status || 'Chưa hoàn tất'}`
+      }
+    } catch (error) {
+      isSuccess.value = false
+      errorMsg.value = error.message || 'Không thể kiểm tra trạng thái giao dịch PayOS.'
+    } finally {
+      isLoading.value = false
+    }
+    return
+  }
+
+  // Case 2: MoMo redirect (contains orderId and signature)
   if (!queryParams.orderId || !queryParams.signature) {
     isLoading.value = false
     isSuccess.value = false
-    errorMsg.value = 'Không tìm thấy thông tin xác minh giao dịch (Thiếu orderId hoặc chữ ký).'
+    errorMsg.value = 'Không tìm thấy thông tin xác minh giao dịch (Thiếu mã đơn hàng).'
     return
   }
 
@@ -149,7 +172,7 @@ const verifyTransaction = async () => {
       resultData.value = res
       
       // 2. Tự động đồng bộ tài khoản mới trong localStorage của Client
-      // Điều này tự động thay đổi Avatar, Quota và Role VIP ngay lập tức mà không cần reload!
+      // Điều này tự động thay đổi Avatar, Quota và Role ngay lập tức mà không cần reload!
       if (res.user) {
         currentUserStorage.set(res.user)
       }

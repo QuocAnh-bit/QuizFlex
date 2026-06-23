@@ -1,8 +1,8 @@
 import axios from "axios";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
-const AUTH_ROLES = ["admin", "vip", "user"];
-const USER_ROLES = ["vip", "user"];
+const AUTH_ROLES = ["admin", "plus", "pro", "ultra", "free"];
+const USER_ROLES = ["admin", "plus", "pro", "ultra", "free"];
 const ADMIN_ROLES = ["admin"];
 
 const api = axios.create({
@@ -20,14 +20,16 @@ export const normalizeRole = (role) => {
   const value = String(role || "guest")
     .trim()
     .toLowerCase();
-  return ["admin", "vip", "user", "guest"].includes(value) ? value : "guest";
+  return ["admin", "plus", "pro", "ultra", "free", "guest"].includes(value) ? value : "guest";
 };
 
 export const roleLabel = (role) =>
   ({
     admin: "Admin",
-    vip: "VIP",
-    user: "Thường",
+    plus: "Plus",
+    pro: "Pro",
+    ultra: "Ultra",
+    free: "Free",
     guest: "Guest",
   })[normalizeRole(role)];
 
@@ -386,6 +388,7 @@ export const quizzesApi = {
   },
 
   async get(id) {
+    // hàm này sẽ thực hiện cuộc gọi api lên server backend và đóng gói dữ liệu dưới dạng json
     const { data } = await api.get(`/quizzes/${id}`);
     return unwrap(data);
   },
@@ -751,11 +754,11 @@ export const normalizeQuizCard = (quiz) => ({
 
 export const normalizeUser = (user) => ({
   ...user,
-  role: String(user.role || "user").toLowerCase(),
+  role: String(user.role || "free").toLowerCase(),
   roleLabel:
     user.role_label ||
-    { admin: "Admin", vip: "VIP", user: "Thường", guest: "Guest" }[
-      String(user.role || "user").toLowerCase()
+    { admin: "Admin", plus: "Plus", pro: "Pro", ultra: "Ultra", free: "Free", guest: "Guest" }[
+      String(user.role || "free").toLowerCase()
     ] ||
     user.role,
   joinedAt:
@@ -830,6 +833,16 @@ export const paymentsApi = {
 
   async callback(params) {
     const { data } = await api.get("/payments/callback", { params });
+    return data;
+  },
+
+  async checkStatus(orderCode) {
+    const { data } = await api.get(`/payments/check-status/${orderCode}`);
+    return data;
+  },
+
+  async activateTrial() {
+    const { data } = await api.post("/payments/activate-trial");
     return data;
   },
 
