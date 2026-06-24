@@ -1,8 +1,8 @@
 import axios from "axios";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
-const AUTH_ROLES = ["admin", "vip", "user"];
-const USER_ROLES = ["vip", "user"];
+const AUTH_ROLES = ["admin", "plus", "pro", "ultra", "free"];
+const USER_ROLES = ["admin", "plus", "pro", "ultra", "free"];
 const ADMIN_ROLES = ["admin"];
 
 const api = axios.create({
@@ -20,14 +20,16 @@ export const normalizeRole = (role) => {
   const value = String(role || "guest")
     .trim()
     .toLowerCase();
-  return ["admin", "vip", "user", "guest"].includes(value) ? value : "guest";
+  return ["admin", "plus", "pro", "ultra", "free", "guest"].includes(value) ? value : "guest";
 };
 
 export const roleLabel = (role) =>
   ({
     admin: "Admin",
-    vip: "VIP",
-    user: "Thường",
+    plus: "Plus",
+    pro: "Pro",
+    ultra: "Ultra",
+    free: "Free",
     guest: "Guest",
   })[normalizeRole(role)];
 
@@ -386,6 +388,7 @@ export const quizzesApi = {
   },
 
   async get(id) {
+    // hàm này sẽ thực hiện cuộc gọi api lên server backend và đóng gói dữ liệu dưới dạng json
     const { data } = await api.get(`/quizzes/${id}`);
     return unwrap(data);
   },
@@ -449,6 +452,91 @@ export const adminDashboardApi = {
   },
 };
 
+export const adminRoomApi = {
+  async getHomeworkRooms(params = {}) {
+    const { data } = await api.get("/admin/rooms/homework", { params });
+    return unwrap(data);
+  },
+
+  async getHomeworkRoomsTrash(params = {}) {
+    const { data } = await api.get("/admin/rooms/homework/trash", { params });
+    return unwrap(data);
+  },
+
+  async getHomeworkRoomDetail(id) {
+    const { data } = await api.get(`/admin/rooms/homework/${id}`);
+    return unwrap(data);
+  },
+
+  async closeHomeworkRoom(id) {
+    const { data } = await api.patch(`/admin/rooms/homework/${id}/close`);
+    return unwrap(data);
+  },
+
+  async reopenHomeworkRoom(id) {
+    const { data } = await api.patch(`/admin/rooms/homework/${id}/open`);
+    return unwrap(data);
+  },
+
+  async softDeleteHomeworkRoom(id) {
+    const { data } = await api.delete(`/admin/rooms/homework/${id}`);
+    return data;
+  },
+
+  async restoreHomeworkRoom(id) {
+    const { data } = await api.patch(`/admin/rooms/homework/${id}/restore`);
+    return unwrap(data);
+  },
+
+  async removeHomeworkRoomMember(roomId, memberId) {
+    const { data } = await api.delete(`/admin/rooms/homework/${roomId}/members/${memberId}`);
+    return unwrap(data);
+  },
+
+  async getLiveRooms(params = {}) {
+    const { data } = await api.get("/admin/rooms/live", { params });
+    return unwrap(data);
+  },
+
+  async getLiveRoomsTrash(params = {}) {
+    const { data } = await api.get("/admin/rooms/live/trash", { params });
+    return unwrap(data);
+  },
+
+  async getLiveRoomDetail(id) {
+    const { data } = await api.get(`/admin/rooms/live/${id}`);
+    return unwrap(data);
+  },
+
+  async closeLiveRoom(id) {
+    const { data } = await api.patch(`/admin/rooms/live/${id}/close`);
+    return unwrap(data);
+  },
+
+  async softDeleteLiveRoom(id) {
+    const { data } = await api.delete(`/admin/rooms/live/${id}`);
+    return data;
+  },
+
+  async restoreLiveRoom(id) {
+    const { data } = await api.patch(`/admin/rooms/live/${id}/restore`);
+    return unwrap(data);
+  },
+};
+
+export const adminRoomsApi = {
+  listHomework: adminRoomApi.getHomeworkRooms,
+  getHomework: adminRoomApi.getHomeworkRoomDetail,
+  closeHomework: adminRoomApi.closeHomeworkRoom,
+  reopenHomework: adminRoomApi.reopenHomeworkRoom,
+  softDeleteHomework: adminRoomApi.softDeleteHomeworkRoom,
+  removeHomeworkMember: adminRoomApi.removeHomeworkRoomMember,
+  listLive: adminRoomApi.getLiveRooms,
+  getLive: adminRoomApi.getLiveRoomDetail,
+  closeLive: adminRoomApi.closeLiveRoom,
+  softDeleteLive: adminRoomApi.softDeleteLiveRoom,
+};
+
 export const homeworkApi = {
   async getHomeworkRooms(params = {}) {
     const { data } = await api.get('/rooms', { params })
@@ -473,6 +561,31 @@ export const homeworkApi = {
   async getRoomMembers(roomId) {
     const { data } = await api.get(`/rooms/${roomId}/members`)
     return unwrapCollection(data)
+  },
+
+  async removeRoomMember(roomId, memberId) {
+    const { data } = await api.delete(`/rooms/${roomId}/members/${memberId}`)
+    return unwrap(data)
+  },
+
+  async getMemberEvaluation(roomId, userId) {
+    const { data } = await api.get(`/homework-rooms/${roomId}/members/${userId}/evaluation`)
+    return unwrap(data)
+  },
+
+  async saveMemberEvaluation(roomId, userId, payload) {
+    const { data } = await api.post(`/homework-rooms/${roomId}/members/${userId}/evaluation`, payload)
+    return unwrap(data)
+  },
+
+  async getSubmissionEvaluation(roomId, submissionId) {
+    const { data } = await api.get(`/homework-rooms/${roomId}/submissions/${submissionId}/evaluation`)
+    return unwrap(data)
+  },
+
+  async saveSubmissionEvaluation(roomId, submissionId, payload) {
+    const { data } = await api.post(`/homework-rooms/${roomId}/submissions/${submissionId}/evaluation`, payload)
+    return unwrap(data)
   },
 
   async getAllowedMembers(roomId) {
@@ -661,11 +774,11 @@ export const normalizeQuizCard = (quiz) => ({
 
 export const normalizeUser = (user) => ({
   ...user,
-  role: String(user.role || "user").toLowerCase(),
+  role: String(user.role || "free").toLowerCase(),
   roleLabel:
     user.role_label ||
-    { admin: "Admin", vip: "VIP", user: "Thường", guest: "Guest" }[
-      String(user.role || "user").toLowerCase()
+    { admin: "Admin", plus: "Plus", pro: "Pro", ultra: "Ultra", free: "Free", guest: "Guest" }[
+      String(user.role || "free").toLowerCase()
     ] ||
     user.role,
   joinedAt:
@@ -740,6 +853,16 @@ export const paymentsApi = {
 
   async callback(params) {
     const { data } = await api.get("/payments/callback", { params });
+    return data;
+  },
+
+  async checkStatus(orderCode) {
+    const { data } = await api.get(`/payments/check-status/${orderCode}`);
+    return data;
+  },
+
+  async activateTrial() {
+    const { data } = await api.post("/payments/activate-trial");
     return data;
   },
 

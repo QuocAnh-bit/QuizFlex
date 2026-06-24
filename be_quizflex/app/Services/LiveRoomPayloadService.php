@@ -70,7 +70,7 @@ class LiveRoomPayloadService
             ->with('user:id,name')
             ->orderBy('joined_at')
             ->get()
-            ->map(fn (LiveRoomPlayer $player) => $this->playerSummary($player, $liveRoom, $answeredCounts[$player->user_id] ?? 0))
+            ->map(fn(LiveRoomPlayer $player) => $this->playerSummary($player, $liveRoom, $answeredCounts[$player->user_id] ?? 0))
             ->values()
             ->all();
     }
@@ -110,7 +110,7 @@ class LiveRoomPayloadService
             'text' => $question->content,
             'type' => $question->type,
             'points' => $question->points,
-            'answers' => $question->answers->map(fn (Answer $answer, int $answerIndex) => [
+            'answers' => $question->answers->map(fn(Answer $answer, int $answerIndex) => [
                 'id' => $answer->id,
                 'content' => $answer->content,
                 'text' => $answer->content,
@@ -132,7 +132,7 @@ class LiveRoomPayloadService
     private function questionOrder(LiveRoom $liveRoom): array
     {
         return collect($liveRoom->question_order ?? [])
-            ->map(fn ($id) => (int) $id)
+            ->map(fn($id) => (int) $id)
             ->filter()
             ->values()
             ->all();
@@ -152,7 +152,7 @@ class LiveRoomPayloadService
             ->where('live_room_id', $liveRoom->id)
             ->groupBy('user_id')
             ->pluck('total', 'user_id')
-            ->map(fn ($total) => (int) $total)
+            ->map(fn($total) => (int) $total)
             ->all();
     }
 }

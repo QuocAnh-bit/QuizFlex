@@ -3,9 +3,9 @@
     <div class="relative overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-soft)] backdrop-blur-2xl">
       <div class="relative z-10">
         <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Payment</p>
-        <h1 class="mt-2 text-4xl font-black tracking-[-0.06em] text-[var(--text)]">Gói VIP & thanh toán</h1>
+        <h1 class="mt-2 text-4xl font-black tracking-[-0.06em] text-[var(--text)]">Gói dịch vụ & thanh toán</h1>
         <p class="mt-3 max-w-2xl text-sm leading-7 text-[var(--muted)]">
-          Admin xem được toàn bộ giao dịch. Người dùng thường và VIP chỉ xem được giao dịch của chính họ ở trang nâng cấp.
+          Admin xem được toàn bộ giao dịch. Người dùng chỉ xem được giao dịch của chính họ ở trang nâng cấp.
         </p>
       </div>
     </div>
@@ -106,9 +106,9 @@ import { onMounted, ref } from 'vue'
 import { paymentsApi } from '@/services/api'
 
 const paymentPlans = [
-  { id: 'vip_1m', name: 'VIP 1 Tháng', price: '50.000đ', period: '30 ngày', popular: false, features: ['+100 lượt AI', 'OCR PDF/Ảnh', 'Mở khóa Quiz Private'] },
-  { id: 'vip_3m', name: 'VIP 3 Tháng', price: '120.000đ', period: '90 ngày', popular: true, features: ['+350 lượt AI', 'OCR PDF/Ảnh', 'Tạo phòng Realtime lớn'] },
-  { id: 'vip_1y', name: 'VIP 1 Năm', price: '400.000đ', period: '365 ngày', popular: false, features: ['+1500 lượt AI', 'OCR PDF/Ảnh', 'Hỗ trợ xuất đề PDF/Excel'] },
+  { id: 'plus_1m', name: 'Gói Plus', price: '50.000đ', period: '30 ngày', popular: false, features: ['+100 lượt AI', 'OCR PDF/Ảnh', 'Tạo phòng Realtime'] },
+  { id: 'pro_1m', name: 'Gói Pro', price: '120.000đ', period: '30 ngày', popular: true, features: ['+350 lượt AI', 'OCR PDF/Ảnh', 'Tạo phòng Realtime lớn'] },
+  { id: 'ultra_1m', name: 'Gói Ultra', price: '250.000đ', period: '30 ngày', popular: false, features: ['+1500 lượt AI', 'OCR PDF/Ảnh', 'Không giới hạn tính năng'] },
 ]
 
 const paymentHistory = ref([])
@@ -136,10 +136,11 @@ const loadPayments = async () => {
 
 const getPlanNameByAmount = (amount) => {
   const parsed = Number(amount)
-  if (parsed === 50000) return 'VIP 1 Tháng'
-  if (parsed === 120000) return 'VIP 3 Tháng'
-  if (parsed === 400000) return 'VIP 1 Năm'
-  return 'Gói VIP tùy chỉnh'
+  if (parsed === 0) return 'Dùng thử Plus (7 ngày)'
+  if (parsed === 50000) return 'Gói Plus'
+  if (parsed === 120000) return 'Gói Pro'
+  if (parsed === 250000) return 'Gói Ultra'
+  return 'Gói tùy chỉnh'
 }
 
 const formatPrice = (value) => new Intl.NumberFormat('vi-VN', {

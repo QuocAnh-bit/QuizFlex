@@ -5,7 +5,7 @@
       <h1 class="text-5xl font-black leading-[0.92] tracking-[-0.08em] text-[var(--text)] sm:text-6xl">
         Tạo quiz nhanh hơn. <span class="gradient-text">Chơi quiz cuốn hơn.</span>
       </h1>
-      <p class="mt-7 max-w-2xl text-lg font-medium leading-8 text-[var(--muted)]">Landing, catalog quiz, join room, dashboard VIP/Admin, tạo quiz thủ công, OCR và report. Phần quiz chính đã nối backend, cuối cùng dữ liệu cũng bớt sống đời giả lập.</p>
+      <p class="mt-7 max-w-2xl text-lg font-medium leading-8 text-[var(--muted)]">Landing, catalog quiz, join room, dashboard User/Admin, tạo quiz thủ công, OCR và report. Phần quiz chính đã nối backend, cuối cùng dữ liệu cũng bớt sống đời giả lập.</p>
       <div class="mt-8 flex flex-wrap gap-3">
         <router-link class="btn-primary" :to="firstQuizLink">Làm thử quiz</router-link>
         <router-link class="btn-ghost" to="/join-room">Join room</router-link>

@@ -15,15 +15,15 @@
       <router-link v-if="canCreateLiveRoom" class="group rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-card)] transition hover:-translate-y-1 hover:border-[var(--border-strong)]" to="/live-rooms/create">
         <span class="rounded-full bg-[var(--chip-active)] px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-[var(--primary)]">Host</span>
         <h2 class="mt-5 text-2xl font-black tracking-[-0.04em] text-[var(--text)]">Tạo live room</h2>
-        <p class="mt-3 text-sm leading-7 text-[var(--muted)]">Dành cho tài khoản VIP tạo phòng, chia sẻ mã, start và theo dõi tiến độ người chơi.</p>
+        <p class="mt-3 text-sm leading-7 text-[var(--muted)]">Dành cho tài khoản Plus/Pro/Ultra/Admin tạo phòng, chia sẻ mã, start và theo dõi tiến độ người chơi.</p>
         <span class="btn-primary mt-6 inline-flex">Tạo live room</span>
       </router-link>
 
       <article v-else class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-card)]">
         <span class="rounded-full bg-[var(--chip-active)] px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-[var(--primary)]">Host</span>
         <h2 class="mt-5 text-2xl font-black tracking-[-0.04em] text-[var(--text)]">Tạo live room</h2>
-        <p class="mt-3 text-sm leading-7 text-[var(--muted)]">Tài khoản VIP mới có thể tạo live room. Bạn vẫn có thể tham gia live room bằng mã.</p>
-        <router-link class="btn-ghost mt-6 inline-flex" to="/upgrade">Nâng cấp VIP</router-link>
+        <p class="mt-3 text-sm leading-7 text-[var(--muted)]">Tài khoản Plus/Pro/Ultra mới có thể tạo live room. Bạn vẫn có thể tham gia live room bằng mã.</p>
+        <router-link class="btn-ghost mt-6 inline-flex" to="/upgrade">Nâng cấp tài khoản</router-link>
       </article>
 
       <router-link class="group rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-card)] transition hover:-translate-y-1 hover:border-[var(--border-strong)]" to="/live-rooms/join">
@@ -41,5 +41,8 @@ import { computed } from 'vue'
 import { currentUserStorage } from '@/services/api'
 
 const currentUser = currentUserStorage.get()
-const canCreateLiveRoom = computed(() => String(currentUser?.role || 'user').toLowerCase() === 'vip')
+const canCreateLiveRoom = computed(() => {
+  const role = String(currentUser?.role || 'free').toLowerCase()
+  return ['admin', 'plus', 'pro', 'ultra'].includes(role)
+})
 </script>

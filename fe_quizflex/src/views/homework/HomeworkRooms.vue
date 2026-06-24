@@ -49,7 +49,7 @@
     <article v-if="!isLoading && !rooms.length && !errorMessage" class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-10 text-center shadow-[var(--shadow-card)]">
       <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Empty</p>
       <h2 class="mt-2 text-3xl font-black tracking-[-0.05em] text-[var(--text)]">Chưa có room homework</h2>
-      <p class="mx-auto mt-3 max-w-xl text-sm leading-7 text-[var(--muted)]">Tạo room mới nếu bạn là VIP, hoặc tham gia room bằng mã được chia sẻ.</p>
+      <p class="mx-auto mt-3 max-w-xl text-sm leading-7 text-[var(--muted)]">Tạo room mới hoặc tham gia room bằng mã được chia sẻ.</p>
       <div class="mt-6 flex justify-center gap-3">
         <router-link class="btn-ghost" to="/homework-rooms/join">Tham gia bằng mã</router-link>
         <router-link class="btn-primary" to="/homework-rooms/create">Tạo room</router-link>

@@ -204,7 +204,7 @@ class RoomController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Tham gia phong thanh cong',
+            'message' => 'Tham gia phòng thành công',
             'data' => [
                 'room' => $this->formatRoom($room),
                 'member' => $member,
@@ -217,7 +217,7 @@ class RoomController extends Controller
         if (!$this->canViewRoom($request->user(), $room)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Ban khong co quyen xem thanh vien phong nay.',
+                'message' => 'Bạn không có quyền xem thành viên phòng này.',
             ], 403);
         }
 
@@ -229,18 +229,84 @@ class RoomController extends Controller
             ->latest('joined_at')
             ->get();
 
+        $assignedCount = \App\Models\RoomAssignment::where('room_id', $room->id)
+            ->whereIn('status', ['published', 'closed'])
+            ->count();
+
+        $attemptsGrouped = \App\Models\QuizAttempt::where('room_id', $room->id)
+            ->whereIn('status', ['completed', 'expired'])
+            ->whereNotNull('assignment_id')
+            ->get()
+            ->groupBy('user_id');
+
         return response()->json([
             'success' => true,
-            'message' => 'Danh sach thanh vien',
-            'data' => $members->map(fn (RoomMember $member) => [
+            'message' => 'Danh sách thành viên.',
+            'data' => $members->map(function (RoomMember $member) use ($assignedCount, $attemptsGrouped) {
+                $userAttempts = $attemptsGrouped->get($member->user_id, collect());
+                $completed = $userAttempts->pluck('assignment_id')->unique()->count();
+                
+                $bestScores = [];
+                foreach ($userAttempts as $attempt) {
+                    $score10 = $attempt->total_points > 0 ? ($attempt->score / $attempt->total_points) * 10 : 0;
+                    $assignmentId = $attempt->assignment_id;
+                    if (!isset($bestScores[$assignmentId]) || $score10 > $bestScores[$assignmentId]) {
+                        $bestScores[$assignmentId] = $score10;
+                    }
+                }
+                $averageScore = count($bestScores) > 0 ? round(array_sum($bestScores) / count($bestScores), 2) : 0.0;
+
+                return [
+                    'id' => $member->id,
+                    'room_id' => $member->room_id,
+                    'user_id' => $member->user_id,
+                    'role' => $member->role,
+                    'status' => $member->status,
+                    'joined_at' => $member->joined_at,
+                    'user' => $member->user,
+                    'assigned' => $assignedCount,
+                    'completed' => $completed,
+                    'completion_rate' => $assignedCount > 0 ? (int) round(($completed / $assignedCount) * 100) : 0,
+                    'average_score' => $averageScore,
+                ];
+            }),
+        ]);
+    }
+
+    public function destroyMember(Request $request, Room $room, RoomMember $member)
+    {
+        if (!$this->canManageRoomMembers($request->user(), $room)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn không có quyền xóa thành viên khỏi phòng này.',
+            ], 403);
+        }
+
+        if ((int) $member->room_id !== (int) $room->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Thành viên này không thuộc phòng hiện tại.',
+            ], 404);
+        }
+
+        if ((int) $member->user_id === (int) $room->owner_id || $member->role === 'owner') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không thể xóa chủ phòng.',
+            ], 422);
+        }
+
+        $member->forceFill(['status' => 'removed'])->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Đã xóa thành viên khỏi phòng.',
+            'data' => [
                 'id' => $member->id,
                 'room_id' => $member->room_id,
                 'user_id' => $member->user_id,
-                'role' => $member->role,
                 'status' => $member->status,
-                'joined_at' => $member->joined_at,
-                'user' => $member->user,
-            ]),
+            ],
         ]);
     }
 
@@ -249,7 +315,7 @@ class RoomController extends Controller
         if (!$this->canManageAllowedMembers($request->user(), $room)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Ban khong co quyen quan ly danh sach email phong nay.',
+                'message' => 'Bạn không có quyền quản lý danh sách email phòng này.',
             ], 403);
         }
 
@@ -261,7 +327,7 @@ class RoomController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Danh sach email duoc phep tham gia',
+            'message' => 'Danh sách email được phép tham gia phòng.',
             'data' => $allowedMembers->map(fn (RoomAllowedMember $allowedMember) => $this->formatAllowedMember($allowedMember)),
         ]);
     }
@@ -272,7 +338,7 @@ class RoomController extends Controller
         if (!$this->canManageAllowedMembers($user, $room)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Ban khong co quyen quan ly danh sach email phong nay.',
+                'message' => 'Bạn không có quyền quản lý danh sách email phòng này.',
             ], 403);
         }
 
@@ -296,7 +362,7 @@ class RoomController extends Controller
         if (empty($emails)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Vui long nhap it nhat mot email hop le.',
+                'message' => 'Vui lòng nhập ít nhất 1 email hợp lệ.',
             ], 422);
         }
 
@@ -318,7 +384,7 @@ class RoomController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Cap nhat danh sach email thanh cong',
+            'message' => 'Cập nhật danh sách email được phép tham gia phòng thành công.',
             'data' => collect($allowedMembers)->map(fn (RoomAllowedMember $allowedMember) => $this->formatAllowedMember($allowedMember))->values(),
         ]);
     }
@@ -328,14 +394,14 @@ class RoomController extends Controller
         if (!$this->canManageAllowedMembers($request->user(), $room)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Ban khong co quyen quan ly danh sach email phong nay.',
+                'message' => 'Bạn không có quyền quản lý danh sách email phòng này.',
             ], 403);
         }
 
         if ((int) $allowedMember->room_id !== (int) $room->id) {
             return response()->json([
                 'success' => false,
-                'message' => 'Email nay khong thuoc phong hien tai.',
+                'message' => 'Email này không thuộc phòng hiện tại.',
             ], 404);
         }
 
@@ -343,14 +409,28 @@ class RoomController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Da xoa email khoi danh sach duoc phep tham gia',
+            'message' => 'Đã xóa email khỏi danh sách được phép tham gia.',
         ]);
     }
 
     private function canCreateRoom($user): bool
-    {
-        return in_array(strtolower((string) ($user->role ?? 'user')), ['admin', 'vip'], true);
+{
+    if ($this->isAdmin($user)) {
+        return true;
     }
+
+    if (!method_exists($user, 'getSubscriptionTier')) {
+        return false;
+    }
+
+    $tier = strtolower((string) $user->getSubscriptionTier());
+
+    return in_array(
+        $tier,
+        ['plus', 'pro', 'ultra'],
+        true
+    );
+}
 
     private function canViewRoom($user, Room $room): bool
     {
@@ -372,6 +452,12 @@ class RoomController extends Controller
     private function isAdmin($user): bool
     {
         return strtolower((string) ($user->role ?? 'user')) === 'admin';
+    }
+
+    private function canManageRoomMembers($user, Room $room): bool
+    {
+        return $room->type === 'homework'
+            && ($this->isAdmin($user) || (int) $room->owner_id === (int) $user->id);
     }
 
     private function canManageAllowedMembers($user, Room $room): bool
@@ -430,7 +516,7 @@ class RoomController extends Controller
             'description' => $room->description,
             'type' => $room->type,
             'code' => $room->code,
-            'status' => $room->status,
+            'status' => $room->status === 'active' ? 'open' : $room->status,
             'max_players' => $room->max_players,
             'join_policy' => $room->join_policy ?: 'open',
             'owner' => $room->owner,
@@ -441,8 +527,46 @@ class RoomController extends Controller
         ];
 
         if ($includeRelations) {
+            $assignedCount = \App\Models\RoomAssignment::where('room_id', $room->id)
+                ->whereIn('status', ['published', 'closed'])
+                ->count();
+
+            $attemptsGrouped = \App\Models\QuizAttempt::where('room_id', $room->id)
+                ->whereIn('status', ['completed', 'expired'])
+                ->whereNotNull('assignment_id')
+                ->get()
+                ->groupBy('user_id');
+
             $data['members'] = $room->members
                 ->filter(fn (RoomMember $member) => (int) $member->user_id !== (int) $room->owner_id && $member->status === 'active')
+                ->map(function (RoomMember $member) use ($assignedCount, $attemptsGrouped) {
+                    $userAttempts = $attemptsGrouped->get($member->user_id, collect());
+                    $completed = $userAttempts->pluck('assignment_id')->unique()->count();
+                    
+                    $bestScores = [];
+                    foreach ($userAttempts as $attempt) {
+                        $score10 = $attempt->total_points > 0 ? ($attempt->score / $attempt->total_points) * 10 : 0;
+                        $assignmentId = $attempt->assignment_id;
+                        if (!isset($bestScores[$assignmentId]) || $score10 > $bestScores[$assignmentId]) {
+                            $bestScores[$assignmentId] = $score10;
+                        }
+                    }
+                    $averageScore = count($bestScores) > 0 ? round(array_sum($bestScores) / count($bestScores), 2) : 0.0;
+
+                    return [
+                        'id' => $member->id,
+                        'room_id' => $member->room_id,
+                        'user_id' => $member->user_id,
+                        'role' => $member->role,
+                        'status' => $member->status,
+                        'joined_at' => $member->joined_at,
+                        'user' => $member->user,
+                        'assigned' => $assignedCount,
+                        'completed' => $completed,
+                        'completion_rate' => $assignedCount > 0 ? (int) round(($completed / $assignedCount) * 100) : 0,
+                        'average_score' => $averageScore,
+                    ];
+                })
                 ->values();
             $data['assignments'] = $room->assignments;
         }

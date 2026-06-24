@@ -8,6 +8,12 @@
   </section>
 </template>
 <script setup>
-const limits = [{ role: 'Admin', ai: 'Unlimited', ocr: 'Unlimited' }, { role: 'VIP', ai: '500 lượt/tháng', ocr: '120 lượt/tháng' }, { role: 'Thường', ai: '10 lượt/tháng', ocr: '3 lượt/tháng' }]
+const limits = [
+  { role: 'Admin', ai: 'Unlimited', ocr: 'Unlimited' },
+  { role: 'Ultra', ai: '1500 lượt/tháng', ocr: 'Không giới hạn' },
+  { role: 'Pro', ai: '350 lượt/tháng', ocr: '50 lượt/tháng' },
+  { role: 'Plus', ai: '100 lượt/tháng', ocr: '10 lượt/tháng' },
+  { role: 'Free (Thường)', ai: '10 lượt/tháng', ocr: 'Yêu cầu gói Plus' }
+]
 const visibility = ['Public', 'Private', 'Group']
 </script>
