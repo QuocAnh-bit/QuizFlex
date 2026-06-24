@@ -329,6 +329,21 @@ export const usersApi = {
     const { data } = await api.delete(`/users/${id}`);
     return data;
   },
+
+  async trash(params = {}) {
+    const { data } = await api.get('/users/trashed', { params });
+    return unwrapCollection(data);
+  },
+
+  async restore(id) {
+    const { data } = await api.patch(`/users/${id}/restore`);
+    return unwrap(data);
+  },
+
+  async forceDelete(id) {
+    const { data } = await api.delete(`/users/${id}/force`);
+    return data;
+  },
 };
 
 const isBrowserFile = (value) =>

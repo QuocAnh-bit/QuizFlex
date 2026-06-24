@@ -9,6 +9,11 @@
         <div class="sticky top-5">
           <div class="rounded-[1.75rem] border border-[var(--border)] bg-[var(--surface)] p-4 shadow-[var(--shadow-card)]">
             <BrandLogo to="/admin" />
+            <div class="mt-5 rounded-3xl border border-[var(--border-strong)] bg-[var(--chip-active)] p-4">
+              <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Admin Console</p>
+              <h3 class="mt-1 text-2xl font-black tracking-[-0.05em] text-[var(--text)]">Admin Dashboard</h3>
+              <p class="mt-2 text-xs font-bold leading-5 text-[var(--muted)]">Quản lý hệ thống, quiz, người dùng, báo cáo và thanh toán.</p>
+            </div>
           </div>
 
           <nav class="mt-5 space-y-4 text-sm font-bold">
@@ -56,16 +61,22 @@
 </template>
 
 <script setup>
+<<<<<<< HEAD
 import { computed, ref, onMounted } from 'vue'
+=======
+import { computed, ref } from 'vue'
+>>>>>>> origin/thangdev
 import { useRoute } from 'vue-router'
 import BrandLogo from '@/components/common/BrandLogo.vue'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
-import { adminRoomApi } from '@/services/api'
 
 const route = useRoute()
 const expandedGroups = ref(['Quản lý nội dung'])
+<<<<<<< HEAD
 const homeworkRoomCount = ref(0)
 const activeLiveRoomCount = ref(0)
+=======
+>>>>>>> origin/thangdev
 
 const menu = computed(() => [
   {
@@ -96,7 +107,7 @@ const menu = computed(() => [
     ],
   },
 ])
-])
+
 /*
 const roomMenu = computed(() => [
   {
@@ -132,21 +143,4 @@ const getLinkClass = (item) => {
   if (!active) return [...base, 'border-transparent', 'text-[var(--muted)]', 'hover:border-[var(--border)]', 'hover:bg-[var(--surface)]', 'hover:text-[var(--text)]']
   return [...base, 'border-[var(--border-strong)]', 'bg-[var(--surface)]', 'text-[var(--text)]']
 }
-
-const loadRoomBadges = async () => {
-  try {
-    const [homework, live] = await Promise.all([
-      adminRoomApi.getHomeworkRooms({ per_page: 5 }),
-      adminRoomApi.getLiveRooms({ status: 'playing', per_page: 5 }),
-    ])
-
-    homeworkRoomCount.value = Number(homework?.meta?.total ?? homework?.items?.length ?? 0)
-    activeLiveRoomCount.value = Number(live?.meta?.total ?? live?.items?.length ?? 0)
-  } catch {
-    homeworkRoomCount.value = 0
-    activeLiveRoomCount.value = 0
-  }
-}
-
-onMounted(loadRoomBadges)
 </script>

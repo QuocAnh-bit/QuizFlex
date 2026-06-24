@@ -78,6 +78,17 @@ const routes = [
     },
   },
   {
+    path: "/analytics",
+    name: "analytics",
+    component: () => import("@/views/user/Analytics.vue"),
+    meta: {
+      layout: "user",
+      title: "Phân tích năng lực",
+      requiresAuth: true,
+      roles: workspaceRoles,
+    },
+  },
+  {
     path: "/results/:id",
     name: "attempt-result",
     component: () => import("@/views/user/AttemptResult.vue"),
@@ -461,6 +472,17 @@ const routes = [
     meta: {
       layout: "admin",
       title: "User management",
+      requiresAuth: true,
+      roles: adminRoles,
+    },
+  },
+  {
+    path: "/admin/users/:id",
+    name: "admin-user-detail",
+    component: () => import("@/views/admin/UserDetail.vue"),
+    meta: {
+      layout: "admin",
+      title: "Chi tiết user",
       requiresAuth: true,
       roles: adminRoles,
     },

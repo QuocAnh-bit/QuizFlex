@@ -18,7 +18,7 @@ class RoomController extends Controller
         $query = Room::query()
             ->with(['owner:id,name,email'])
             ->withCount([
-                'members as members_count' => fn($memberQuery) => $memberQuery
+                'members as members_count' => fn ($memberQuery) => $memberQuery
                     ->where('status', 'active')
                     ->whereColumn('room_members.user_id', '!=', 'rooms.owner_id'),
                 'assignments as assignments_count',
@@ -39,7 +39,7 @@ class RoomController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Danh sách phòng',
-            'data' => $query->get()->map(fn(Room $room) => $this->formatRoom($room)),
+            'data' => $query->get()->map(fn (Room $room) => $this->formatRoom($room)),
         ]);
     }
 
@@ -49,9 +49,13 @@ class RoomController extends Controller
         if (!$this->canCreateRoom($user)) {
             return response()->json([
                 'success' => false,
+<<<<<<< HEAD
                 'message' => 'Tính năng tạo phòng yêu cầu tài khoản nâng cấp (Plus/Pro/Ultra).',
+=======
+                'message' => 'Tính năng tạo phòng yêu cầu tài khoản VIP.',
+>>>>>>> origin/thangdev
             ], 403);
-        }
+        }   
 
         $allowedEmailsInput = $request->input('allowed_emails', []);
         $request->merge([
@@ -116,13 +120,13 @@ class RoomController extends Controller
 
         $room->load([
             'owner:id,name,email',
-            'members' => fn($query) => $query
+            'members' => fn ($query) => $query
                 ->where('user_id', '!=', $room->owner_id)
                 ->where('status', 'active')
                 ->with('user:id,name,email,role'),
             'assignments.quiz:id,title,description,time_limit_seconds',
         ])->loadCount([
-            'members as members_count' => fn($query) => $query
+            'members as members_count' => fn ($query) => $query
                 ->where('status', 'active')
                 ->where('user_id', '!=', $room->owner_id),
             'assignments as assignments_count',
@@ -204,7 +208,7 @@ class RoomController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Tham gia phòng thành công',
+            'message' => 'Tham gia phong thanh cong',
             'data' => [
                 'room' => $this->formatRoom($room),
                 'member' => $member,
@@ -217,7 +221,7 @@ class RoomController extends Controller
         if (!$this->canViewRoom($request->user(), $room)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Bạn không có quyền xem thành viên phòng này.',
+                'message' => 'Ban khong co quyen xem thanh vien phong nay.',
             ], 403);
         }
 
@@ -241,6 +245,7 @@ class RoomController extends Controller
 
         return response()->json([
             'success' => true,
+<<<<<<< HEAD
             'message' => 'Danh sách thành viên.',
             'data' => $members->map(function (RoomMember $member) use ($assignedCount, $attemptsGrouped) {
                 $userAttempts = $attemptsGrouped->get($member->user_id, collect());
@@ -270,43 +275,18 @@ class RoomController extends Controller
                     'average_score' => $averageScore,
                 ];
             }),
-        ]);
-    }
-
-    public function destroyMember(Request $request, Room $room, RoomMember $member)
-    {
-        if (!$this->canManageRoomMembers($request->user(), $room)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Bạn không có quyền xóa thành viên khỏi phòng này.',
-            ], 403);
-        }
-
-        if ((int) $member->room_id !== (int) $room->id) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Thành viên này không thuộc phòng hiện tại.',
-            ], 404);
-        }
-
-        if ((int) $member->user_id === (int) $room->owner_id || $member->role === 'owner') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Không thể xóa chủ phòng.',
-            ], 422);
-        }
-
-        $member->forceFill(['status' => 'removed'])->save();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Đã xóa thành viên khỏi phòng.',
-            'data' => [
+=======
+            'message' => 'Danh sach thanh vien',
+            'data' => $members->map(fn (RoomMember $member) => [
                 'id' => $member->id,
                 'room_id' => $member->room_id,
                 'user_id' => $member->user_id,
+                'role' => $member->role,
                 'status' => $member->status,
-            ],
+                'joined_at' => $member->joined_at,
+                'user' => $member->user,
+            ]),
+>>>>>>> origin/thangdev
         ]);
     }
 
@@ -315,7 +295,7 @@ class RoomController extends Controller
         if (!$this->canManageAllowedMembers($request->user(), $room)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Bạn không có quyền quản lý danh sách email phòng này.',
+                'message' => 'Ban khong co quyen quan ly danh sach email phong nay.',
             ], 403);
         }
 
@@ -327,8 +307,8 @@ class RoomController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Danh sách email được phép tham gia phòng.',
-            'data' => $allowedMembers->map(fn(RoomAllowedMember $allowedMember) => $this->formatAllowedMember($allowedMember)),
+            'message' => 'Danh sach email duoc phep tham gia',
+            'data' => $allowedMembers->map(fn (RoomAllowedMember $allowedMember) => $this->formatAllowedMember($allowedMember)),
         ]);
     }
 
@@ -338,7 +318,7 @@ class RoomController extends Controller
         if (!$this->canManageAllowedMembers($user, $room)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Bạn không có quyền quản lý danh sách email phòng này.',
+                'message' => 'Ban khong co quyen quan ly danh sach email phong nay.',
             ], 403);
         }
 
@@ -362,7 +342,7 @@ class RoomController extends Controller
         if (empty($emails)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Vui lòng nhập ít nhất 1 email hợp lệ.',
+                'message' => 'Vui long nhap it nhat mot email hop le.',
             ], 422);
         }
 
@@ -384,8 +364,8 @@ class RoomController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Cập nhật danh sách email được phép tham gia phòng thành công.',
-            'data' => collect($allowedMembers)->map(fn(RoomAllowedMember $allowedMember) => $this->formatAllowedMember($allowedMember))->values(),
+            'message' => 'Cap nhat danh sach email thanh cong',
+            'data' => collect($allowedMembers)->map(fn (RoomAllowedMember $allowedMember) => $this->formatAllowedMember($allowedMember))->values(),
         ]);
     }
 
@@ -394,14 +374,14 @@ class RoomController extends Controller
         if (!$this->canManageAllowedMembers($request->user(), $room)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Bạn không có quyền quản lý danh sách email phòng này.',
+                'message' => 'Ban khong co quyen quan ly danh sach email phong nay.',
             ], 403);
         }
 
         if ((int) $allowedMember->room_id !== (int) $room->id) {
             return response()->json([
                 'success' => false,
-                'message' => 'Email này không thuộc phòng hiện tại.',
+                'message' => 'Email nay khong thuoc phong hien tai.',
             ], 404);
         }
 
@@ -409,7 +389,7 @@ class RoomController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Đã xóa email khỏi danh sách được phép tham gia.',
+            'message' => 'Da xoa email khoi danh sach duoc phep tham gia',
         ]);
     }
 
@@ -454,12 +434,6 @@ class RoomController extends Controller
         return strtolower((string) ($user->role ?? 'user')) === 'admin';
     }
 
-    private function canManageRoomMembers($user, Room $room): bool
-    {
-        return $room->type === 'homework'
-            && ($this->isAdmin($user) || (int) $room->owner_id === (int) $user->id);
-    }
-
     private function canManageAllowedMembers($user, Room $room): bool
     {
         return $room->type === 'homework' && (int) $room->owner_id === (int) $user->id;
@@ -478,7 +452,7 @@ class RoomController extends Controller
     private function normalizeEmailList(array $emails): array
     {
         return collect($emails)
-            ->map(fn($email) => $this->normalizeEmail($email))
+            ->map(fn ($email) => $this->normalizeEmail($email))
             ->filter()
             ->unique()
             ->values()
@@ -499,7 +473,7 @@ class RoomController extends Controller
         $membersCount = $room->members_count ?? null;
         if ($membersCount === null && $room->relationLoaded('members')) {
             $membersCount = $room->members
-                ->filter(fn(RoomMember $member) => (int) $member->user_id !== (int) $room->owner_id && $member->status === 'active')
+                ->filter(fn (RoomMember $member) => (int) $member->user_id !== (int) $room->owner_id && $member->status === 'active')
                 ->count();
         }
         if ($membersCount === null) {
@@ -516,7 +490,7 @@ class RoomController extends Controller
             'description' => $room->description,
             'type' => $room->type,
             'code' => $room->code,
-            'status' => $room->status === 'active' ? 'open' : $room->status,
+            'status' => $room->status,
             'max_players' => $room->max_players,
             'join_policy' => $room->join_policy ?: 'open',
             'owner' => $room->owner,
@@ -539,6 +513,7 @@ class RoomController extends Controller
 
             $data['members'] = $room->members
                 ->filter(fn (RoomMember $member) => (int) $member->user_id !== (int) $room->owner_id && $member->status === 'active')
+<<<<<<< HEAD
                 ->map(function (RoomMember $member) use ($assignedCount, $attemptsGrouped) {
                     $userAttempts = $attemptsGrouped->get($member->user_id, collect());
                     $completed = $userAttempts->pluck('assignment_id')->unique()->count();
@@ -567,6 +542,8 @@ class RoomController extends Controller
                         'average_score' => $averageScore,
                     ];
                 })
+=======
+>>>>>>> origin/thangdev
                 ->values();
             $data['assignments'] = $room->assignments;
         }
