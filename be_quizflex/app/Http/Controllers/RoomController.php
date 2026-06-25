@@ -49,11 +49,7 @@ class RoomController extends Controller
         if (!$this->canCreateRoom($user)) {
             return response()->json([
                 'success' => false,
-<<<<<<< HEAD
                 'message' => 'Tính năng tạo phòng yêu cầu tài khoản nâng cấp (Plus/Pro/Ultra).',
-=======
-                'message' => 'Tính năng tạo phòng yêu cầu tài khoản VIP.',
->>>>>>> origin/thangdev
             ], 403);
         }   
 
@@ -245,7 +241,6 @@ class RoomController extends Controller
 
         return response()->json([
             'success' => true,
-<<<<<<< HEAD
             'message' => 'Danh sách thành viên.',
             'data' => $members->map(function (RoomMember $member) use ($assignedCount, $attemptsGrouped) {
                 $userAttempts = $attemptsGrouped->get($member->user_id, collect());
@@ -275,18 +270,6 @@ class RoomController extends Controller
                     'average_score' => $averageScore,
                 ];
             }),
-=======
-            'message' => 'Danh sach thanh vien',
-            'data' => $members->map(fn (RoomMember $member) => [
-                'id' => $member->id,
-                'room_id' => $member->room_id,
-                'user_id' => $member->user_id,
-                'role' => $member->role,
-                'status' => $member->status,
-                'joined_at' => $member->joined_at,
-                'user' => $member->user,
-            ]),
->>>>>>> origin/thangdev
         ]);
     }
 
@@ -513,7 +496,6 @@ class RoomController extends Controller
 
             $data['members'] = $room->members
                 ->filter(fn (RoomMember $member) => (int) $member->user_id !== (int) $room->owner_id && $member->status === 'active')
-<<<<<<< HEAD
                 ->map(function (RoomMember $member) use ($assignedCount, $attemptsGrouped) {
                     $userAttempts = $attemptsGrouped->get($member->user_id, collect());
                     $completed = $userAttempts->pluck('assignment_id')->unique()->count();
@@ -542,8 +524,6 @@ class RoomController extends Controller
                         'average_score' => $averageScore,
                     ];
                 })
-=======
->>>>>>> origin/thangdev
                 ->values();
             $data['assignments'] = $room->assignments;
         }

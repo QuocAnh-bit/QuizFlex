@@ -61,22 +61,15 @@
 </template>
 
 <script setup>
-<<<<<<< HEAD
 import { computed, ref, onMounted } from 'vue'
-=======
-import { computed, ref } from 'vue'
->>>>>>> origin/thangdev
 import { useRoute } from 'vue-router'
 import BrandLogo from '@/components/common/BrandLogo.vue'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
 
 const route = useRoute()
 const expandedGroups = ref(['Quản lý nội dung'])
-<<<<<<< HEAD
 const homeworkRoomCount = ref(0)
 const activeLiveRoomCount = ref(0)
-=======
->>>>>>> origin/thangdev
 
 const menu = computed(() => [
   {

@@ -29,8 +29,8 @@ class PayOSService
         $orderCode = intval($payment->order_code);
         $amount = intval($payment->amount);
         $description = "QuizFlex " . $planId; // Keep it clean and ASCII only
-        
-        // Limit description to 25 chars for PayOS compatibility if needed
+
+        // Giới hạn mô tả ở 25 ký tự để đảm bảo tương thích với PayOS nếu cần.
         $description = substr($description, 0, 25);
 
         $cancelUrl = config('services.momo.redirect_url'); // Reusing the redirect URL for cancel
@@ -39,10 +39,10 @@ class PayOSService
         // 1. Prepare data for signature
         $dataToSign = [
             'amount' => $amount,
-            'cancelUrl' => $cancelUrl,
+            'cancelUrl' => $cancelUrl, // link quay về khi hủy
             'description' => $description,
             'orderCode' => $orderCode,
-            'returnUrl' => $returnUrl,
+            'returnUrl' => $returnUrl, // link quay về sau thanh toán
         ];
 
         // 2. Compute signature
@@ -55,7 +55,7 @@ class PayOSService
 
         Log::info('PayOS payment request payload', ['payload' => $payload]);
 
-        // 4. Send request to PayOS API
+        // Gửi request HTTP POST sang Endpoint của PayOS để lấy checkoutUrl vì link này chứa QR để user quét
         $response = Http::withHeaders([
             'x-client-id' => $this->clientId,
             'x-api-key' => $this->apiKey,
@@ -80,8 +80,8 @@ class PayOSService
     }
 
     /**
-     * Get payment link details to verify status
-     */
+     * Get payment link details to verify status */
+    // Hàm `getPaymentDetails` gửi request GET sang PayOS để lấy trạng thái thực tế.
     public function getPaymentDetails(string $orderCode)
     {
         $response = Http::withHeaders([
@@ -99,7 +99,6 @@ class PayOSService
             ]);
             throw new \Exception("PayOS trả về lỗi: " . ($resData['desc'] ?? 'Không thể kết nối cổng thanh toán.'));
         }
-
         return $resData['data'];
     }
 
