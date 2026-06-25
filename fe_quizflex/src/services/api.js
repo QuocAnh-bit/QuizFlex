@@ -329,6 +329,21 @@ export const usersApi = {
     const { data } = await api.delete(`/users/${id}`);
     return data;
   },
+
+  async trash(params = {}) {
+    const { data } = await api.get('/users/trashed', { params });
+    return unwrapCollection(data);
+  },
+
+  async restore(id) {
+    const { data } = await api.patch(`/users/${id}/restore`);
+    return unwrap(data);
+  },
+
+  async forceDelete(id) {
+    const { data } = await api.delete(`/users/${id}/force`);
+    return data;
+  },
 };
 
 const isBrowserFile = (value) =>
@@ -452,6 +467,91 @@ export const adminDashboardApi = {
   },
 };
 
+export const adminRoomApi = {
+  async getHomeworkRooms(params = {}) {
+    const { data } = await api.get("/admin/rooms/homework", { params });
+    return unwrap(data);
+  },
+
+  async getHomeworkRoomsTrash(params = {}) {
+    const { data } = await api.get("/admin/rooms/homework/trash", { params });
+    return unwrap(data);
+  },
+
+  async getHomeworkRoomDetail(id) {
+    const { data } = await api.get(`/admin/rooms/homework/${id}`);
+    return unwrap(data);
+  },
+
+  async closeHomeworkRoom(id) {
+    const { data } = await api.patch(`/admin/rooms/homework/${id}/close`);
+    return unwrap(data);
+  },
+
+  async reopenHomeworkRoom(id) {
+    const { data } = await api.patch(`/admin/rooms/homework/${id}/open`);
+    return unwrap(data);
+  },
+
+  async softDeleteHomeworkRoom(id) {
+    const { data } = await api.delete(`/admin/rooms/homework/${id}`);
+    return data;
+  },
+
+  async restoreHomeworkRoom(id) {
+    const { data } = await api.patch(`/admin/rooms/homework/${id}/restore`);
+    return unwrap(data);
+  },
+
+  async removeHomeworkRoomMember(roomId, memberId) {
+    const { data } = await api.delete(`/admin/rooms/homework/${roomId}/members/${memberId}`);
+    return unwrap(data);
+  },
+
+  async getLiveRooms(params = {}) {
+    const { data } = await api.get("/admin/rooms/live", { params });
+    return unwrap(data);
+  },
+
+  async getLiveRoomsTrash(params = {}) {
+    const { data } = await api.get("/admin/rooms/live/trash", { params });
+    return unwrap(data);
+  },
+
+  async getLiveRoomDetail(id) {
+    const { data } = await api.get(`/admin/rooms/live/${id}`);
+    return unwrap(data);
+  },
+
+  async closeLiveRoom(id) {
+    const { data } = await api.patch(`/admin/rooms/live/${id}/close`);
+    return unwrap(data);
+  },
+
+  async softDeleteLiveRoom(id) {
+    const { data } = await api.delete(`/admin/rooms/live/${id}`);
+    return data;
+  },
+
+  async restoreLiveRoom(id) {
+    const { data } = await api.patch(`/admin/rooms/live/${id}/restore`);
+    return unwrap(data);
+  },
+};
+
+export const adminRoomsApi = {
+  listHomework: adminRoomApi.getHomeworkRooms,
+  getHomework: adminRoomApi.getHomeworkRoomDetail,
+  closeHomework: adminRoomApi.closeHomeworkRoom,
+  reopenHomework: adminRoomApi.reopenHomeworkRoom,
+  softDeleteHomework: adminRoomApi.softDeleteHomeworkRoom,
+  removeHomeworkMember: adminRoomApi.removeHomeworkRoomMember,
+  listLive: adminRoomApi.getLiveRooms,
+  getLive: adminRoomApi.getLiveRoomDetail,
+  closeLive: adminRoomApi.closeLiveRoom,
+  softDeleteLive: adminRoomApi.softDeleteLiveRoom,
+};
+
 export const homeworkApi = {
   async getHomeworkRooms(params = {}) {
     const { data } = await api.get('/rooms', { params })
@@ -476,6 +576,31 @@ export const homeworkApi = {
   async getRoomMembers(roomId) {
     const { data } = await api.get(`/rooms/${roomId}/members`)
     return unwrapCollection(data)
+  },
+
+  async removeRoomMember(roomId, memberId) {
+    const { data } = await api.delete(`/rooms/${roomId}/members/${memberId}`)
+    return unwrap(data)
+  },
+
+  async getMemberEvaluation(roomId, userId) {
+    const { data } = await api.get(`/homework-rooms/${roomId}/members/${userId}/evaluation`)
+    return unwrap(data)
+  },
+
+  async saveMemberEvaluation(roomId, userId, payload) {
+    const { data } = await api.post(`/homework-rooms/${roomId}/members/${userId}/evaluation`, payload)
+    return unwrap(data)
+  },
+
+  async getSubmissionEvaluation(roomId, submissionId) {
+    const { data } = await api.get(`/homework-rooms/${roomId}/submissions/${submissionId}/evaluation`)
+    return unwrap(data)
+  },
+
+  async saveSubmissionEvaluation(roomId, submissionId, payload) {
+    const { data } = await api.post(`/homework-rooms/${roomId}/submissions/${submissionId}/evaluation`, payload)
+    return unwrap(data)
   },
 
   async getAllowedMembers(roomId) {

@@ -2,8 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Payment;
+use App\Models\Quiz;
+use App\Models\QuizAttempt;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 
@@ -24,7 +29,14 @@ class UserController extends Controller
         }
 
         if ($request->filled('role') && $request->query('role') !== 'all') {
-            $query->where('role', strtoupper((string) $request->query('role')));
+            $role = strtoupper((string) $request->query('role'));
+            if ($role === 'VIP') {
+                $query->whereIn('role', ['PLUS', 'PRO', 'ULTRA']);
+            } elseif ($role === 'USER') {
+                $query->whereIn('role', ['FREE', 'GUEST']);
+            } else {
+                $query->where('role', $role);
+            }
         }
 
         $perPage = min(max((int) $request->query('per_page', 50), 1), 100);
@@ -51,6 +63,13 @@ class UserController extends Controller
 
         $role = strtoupper($data['role'] ?? 'FREE');
 
+        if ($role === 'ADMIN' && User::where('role', 'ADMIN')->whereNull('deleted_at')->exists()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Đã có admin khác. Không thể tạo admin mới.',
+            ], 422);
+        }
+
         $user = User::create([
             'name' => $data['name'],
             'email' => $data['email'],
@@ -75,7 +94,7 @@ class UserController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Chi tiết người dùng',
-            'data' => $this->formatUser($user),
+            'data' => $this->formatUserDetail($user),
         ]);
     }
 
@@ -94,6 +113,18 @@ class UserController extends Controller
         $payload = collect($data)->except('password')->all();
         if (isset($payload['role'])) {
             $payload['role'] = strtoupper($payload['role']);
+
+            if (strtoupper($user->role) === 'ADMIN' && $payload['role'] !== 'ADMIN') {
+                $payload['role'] = 'ADMIN';
+            }
+
+            $isBecomingAdmin = $payload['role'] === 'ADMIN' && strtoupper($user->role) !== 'ADMIN';
+            if ($isBecomingAdmin && $this->anotherAdminExists($user->id)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Đã có admin khác. Không thể chuyển user này thành admin.',
+                ], 422);
+            }
 
             if (!array_key_exists('ai_quota_remaining', $payload)) {
                 $payload['ai_quota_remaining'] = $this->defaultAiQuotaForRole($payload['role']);
@@ -123,11 +154,91 @@ class UserController extends Controller
 
     public function destroy(User $user)
     {
+        if (strtoupper($user->role) === 'ADMIN') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không thể xóa tài khoản admin.',
+            ], 403);
+        }
+
         $user->delete();
 
         return response()->json([
             'success' => true,
             'message' => 'Đã xóa người dùng',
+        ]);
+    }
+
+    public function trashed(Request $request)
+    {
+        $query = User::onlyTrashed()->withCount(['quizzes', 'attempts'])->latest('deleted_at');
+
+        if ($request->filled('search')) {
+            $keyword = trim((string) $request->query('search'));
+            $query->where(function ($q) use ($keyword) {
+                $q->where('name', 'like', "%{$keyword}%")
+                    ->orWhere('email', 'like', "%{$keyword}%");
+            });
+        }
+
+        if ($request->filled('role') && $request->query('role') !== 'all') {
+            $role = strtoupper((string) $request->query('role'));
+            if ($role === 'VIP') {
+                $query->whereIn('role', ['PLUS', 'PRO', 'ULTRA']);
+            } elseif ($role === 'USER') {
+                $query->whereIn('role', ['FREE', 'GUEST']);
+            } else {
+                $query->where('role', $role);
+            }
+        }
+
+        $perPage = min(max((int) $request->query('per_page', 50), 1), 100);
+        $users = $query->paginate($perPage)->through(fn (User $user) => $this->formatUser($user));
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Danh sách người dùng đã xóa',
+            'data' => $users,
+        ]);
+    }
+
+    public function restore(int $id)
+    {
+        $user = User::onlyTrashed()->findOrFail($id);
+
+        if (strtoupper($user->role) === 'ADMIN' && $this->anotherAdminExists($user->id)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không thể khôi phục admin khi đã có admin khác.',
+            ], 403);
+        }
+
+        $user->restore();
+        $user->loadCount(['quizzes', 'attempts']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Đã khôi phục người dùng',
+            'data' => $this->formatUser($user),
+        ]);
+    }
+
+    public function forceDelete(int $id)
+    {
+        $user = User::onlyTrashed()->findOrFail($id);
+
+        if (strtoupper($user->role) === 'ADMIN') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không thể xóa vĩnh viễn admin.',
+            ], 403);
+        }
+
+        $user->forceDelete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Đã xóa vĩnh viễn người dùng',
         ]);
     }
 
@@ -141,6 +252,16 @@ class UserController extends Controller
             'GUEST' => 0,
             default => 5,
         };
+    }
+
+    private function anotherAdminExists(?int $ignoreUserId = null): bool
+    {
+        $query = User::where('role', 'ADMIN')->whereNull('deleted_at');
+        if ($ignoreUserId) {
+            $query->where('id', '!=', $ignoreUserId);
+        }
+
+        return $query->exists();
     }
 
     private function formatUser(User $user): array
@@ -177,7 +298,107 @@ class UserController extends Controller
             'joined_at' => $user->created_at,
             'created_at' => $user->created_at,
             'updated_at' => $user->updated_at,
+            'deleted_at' => $user->deleted_at ? $user->deleted_at->toDateTimeString() : null,
         ];
+    }
+
+    private function formatUserDetail(User $user): array
+    {
+        $user->load('payments');
+
+        $userData = $this->formatUser($user);
+
+        $payments = Payment::where('user_id', $user->id)
+            ->orderByDesc('created_at')
+            ->get();
+
+        $successPayments = $payments->where('status', 'success');
+
+        $paidMonths = $successPayments
+            ->filter(fn ($payment) => $payment->paid_at)
+            ->map(fn ($payment) => Carbon::parse($payment->paid_at)->format('Y-m'))
+            ->unique()
+            ->values()
+            ->all();
+
+        $paymentMonths = $payments
+            ->filter(fn ($payment) => $payment->paid_at)
+            ->map(fn ($payment) => Carbon::parse($payment->paid_at)->format('Y-m'))
+            ->unique()
+            ->values()
+            ->all();
+
+        $totalPaid = (float) $successPayments->sum('amount');
+
+        $quizIds = Quiz::where('user_id', $user->id)->pluck('id')->all();
+
+        $quizScores = QuizAttempt::query()
+            ->select('quiz_id', DB::raw('AVG(CASE WHEN total_points > 0 THEN score * 100 / total_points ELSE 0 END) as avg_score'))
+            ->where('status', 'completed')
+            ->whereIn('quiz_id', $quizIds)
+            ->groupBy('quiz_id')
+            ->pluck('avg_score', 'quiz_id')
+            ->all();
+
+        $quizzes = Quiz::where('user_id', $user->id)
+            ->withCount('questions')
+            ->withCount('attempts')
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(fn (Quiz $quiz) => [
+                'id' => $quiz->id,
+                'title' => $quiz->title,
+                'status' => $quiz->status,
+                'questions_count' => $quiz->questions_count,
+                'attempts_count' => $quiz->attempts_count,
+                'avg_score' => round((float) ($quizScores[$quiz->id] ?? 0), 2),
+                'created_at' => $quiz->created_at?->toDateTimeString(),
+            ])
+            ->all();
+
+        $attempts = QuizAttempt::with('quiz:id,title')
+            ->where('user_id', $user->id)
+            ->orderByDesc('finished_at')
+            ->take(20)
+            ->get()
+            ->map(fn (QuizAttempt $attempt) => [
+                'id' => $attempt->id,
+                'quiz_id' => $attempt->quiz_id,
+                'quiz_title' => $attempt->quiz?->title,
+                'score' => $attempt->score,
+                'total_points' => $attempt->total_points,
+                'percent' => $attempt->total_points > 0 ? round($attempt->score * 100 / $attempt->total_points, 2) : 0,
+                'status' => $attempt->status,
+                'started_at' => $attempt->started_at?->toDateTimeString(),
+                'finished_at' => $attempt->finished_at?->toDateTimeString(),
+            ])
+            ->all();
+
+        $paymentHistory = $payments->map(fn (Payment $payment) => [
+            'id' => $payment->id,
+            'order_code' => $payment->order_code,
+            'provider' => $payment->provider,
+            'status' => $payment->status,
+            'amount' => (float) $payment->amount,
+            'transaction_id' => $payment->transaction_id,
+            'paid_at' => $payment->paid_at?->toDateTimeString(),
+            'created_at' => $payment->created_at?->toDateTimeString(),
+        ])->all();
+
+        $userData['vip_status'] = $this->isVipActive($user) ? 'Đang VIP' : 'Không VIP';
+        $userData['vip_months_purchased'] = $paidMonths;
+        $userData['payment_months'] = $paymentMonths;
+        $userData['total_paid'] = $totalPaid;
+        $userData['quizzes'] = $quizzes;
+        $userData['attempt_history'] = $attempts;
+        $userData['payment_history'] = $paymentHistory;
+
+        return $userData;
+    }
+
+    private function isVipActive(User $user): bool
+    {
+        return $user->vip_expires_at && Carbon::parse($user->vip_expires_at)->isFuture();
     }
 
     private function resolveAvatarForResponse(?string $avatar): ?string

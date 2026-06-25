@@ -49,7 +49,7 @@ class RoomController extends Controller
         if (!$this->canCreateRoom($user)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Tính năng tạo phòng yêu cầu tài khoản VIP.',
+                'message' => 'Tính năng tạo phòng yêu cầu tài khoản nâng cấp (Plus/Pro/Ultra).',
             ], 403);
         }   
 
@@ -229,18 +229,47 @@ class RoomController extends Controller
             ->latest('joined_at')
             ->get();
 
+        $assignedCount = \App\Models\RoomAssignment::where('room_id', $room->id)
+            ->whereIn('status', ['published', 'closed'])
+            ->count();
+
+        $attemptsGrouped = \App\Models\QuizAttempt::where('room_id', $room->id)
+            ->whereIn('status', ['completed', 'expired'])
+            ->whereNotNull('assignment_id')
+            ->get()
+            ->groupBy('user_id');
+
         return response()->json([
             'success' => true,
-            'message' => 'Danh sach thanh vien',
-            'data' => $members->map(fn (RoomMember $member) => [
-                'id' => $member->id,
-                'room_id' => $member->room_id,
-                'user_id' => $member->user_id,
-                'role' => $member->role,
-                'status' => $member->status,
-                'joined_at' => $member->joined_at,
-                'user' => $member->user,
-            ]),
+            'message' => 'Danh sách thành viên.',
+            'data' => $members->map(function (RoomMember $member) use ($assignedCount, $attemptsGrouped) {
+                $userAttempts = $attemptsGrouped->get($member->user_id, collect());
+                $completed = $userAttempts->pluck('assignment_id')->unique()->count();
+                
+                $bestScores = [];
+                foreach ($userAttempts as $attempt) {
+                    $score10 = $attempt->total_points > 0 ? ($attempt->score / $attempt->total_points) * 10 : 0;
+                    $assignmentId = $attempt->assignment_id;
+                    if (!isset($bestScores[$assignmentId]) || $score10 > $bestScores[$assignmentId]) {
+                        $bestScores[$assignmentId] = $score10;
+                    }
+                }
+                $averageScore = count($bestScores) > 0 ? round(array_sum($bestScores) / count($bestScores), 2) : 0.0;
+
+                return [
+                    'id' => $member->id,
+                    'room_id' => $member->room_id,
+                    'user_id' => $member->user_id,
+                    'role' => $member->role,
+                    'status' => $member->status,
+                    'joined_at' => $member->joined_at,
+                    'user' => $member->user,
+                    'assigned' => $assignedCount,
+                    'completed' => $completed,
+                    'completion_rate' => $assignedCount > 0 ? (int) round(($completed / $assignedCount) * 100) : 0,
+                    'average_score' => $averageScore,
+                ];
+            }),
         ]);
     }
 
@@ -348,10 +377,23 @@ class RoomController extends Controller
     }
 
     private function canCreateRoom($user): bool
-    {
-        $tier = $user->getSubscriptionTier();
-        return in_array($tier, ['plus', 'pro', 'ultra', 'admin'], true);
+{
+    if ($this->isAdmin($user)) {
+        return true;
     }
+
+    if (!method_exists($user, 'getSubscriptionTier')) {
+        return false;
+    }
+
+    $tier = strtolower((string) $user->getSubscriptionTier());
+
+    return in_array(
+        $tier,
+        ['plus', 'pro', 'ultra'],
+        true
+    );
+}
 
     private function canViewRoom($user, Room $room): bool
     {
@@ -442,8 +484,46 @@ class RoomController extends Controller
         ];
 
         if ($includeRelations) {
+            $assignedCount = \App\Models\RoomAssignment::where('room_id', $room->id)
+                ->whereIn('status', ['published', 'closed'])
+                ->count();
+
+            $attemptsGrouped = \App\Models\QuizAttempt::where('room_id', $room->id)
+                ->whereIn('status', ['completed', 'expired'])
+                ->whereNotNull('assignment_id')
+                ->get()
+                ->groupBy('user_id');
+
             $data['members'] = $room->members
                 ->filter(fn (RoomMember $member) => (int) $member->user_id !== (int) $room->owner_id && $member->status === 'active')
+                ->map(function (RoomMember $member) use ($assignedCount, $attemptsGrouped) {
+                    $userAttempts = $attemptsGrouped->get($member->user_id, collect());
+                    $completed = $userAttempts->pluck('assignment_id')->unique()->count();
+                    
+                    $bestScores = [];
+                    foreach ($userAttempts as $attempt) {
+                        $score10 = $attempt->total_points > 0 ? ($attempt->score / $attempt->total_points) * 10 : 0;
+                        $assignmentId = $attempt->assignment_id;
+                        if (!isset($bestScores[$assignmentId]) || $score10 > $bestScores[$assignmentId]) {
+                            $bestScores[$assignmentId] = $score10;
+                        }
+                    }
+                    $averageScore = count($bestScores) > 0 ? round(array_sum($bestScores) / count($bestScores), 2) : 0.0;
+
+                    return [
+                        'id' => $member->id,
+                        'room_id' => $member->room_id,
+                        'user_id' => $member->user_id,
+                        'role' => $member->role,
+                        'status' => $member->status,
+                        'joined_at' => $member->joined_at,
+                        'user' => $member->user,
+                        'assigned' => $assignedCount,
+                        'completed' => $completed,
+                        'completion_rate' => $assignedCount > 0 ? (int) round(($completed / $assignedCount) * 100) : 0,
+                        'average_score' => $averageScore,
+                    ];
+                })
                 ->values();
             $data['assignments'] = $room->assignments;
         }

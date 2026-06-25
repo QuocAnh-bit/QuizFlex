@@ -789,18 +789,22 @@ const startPolling = (orderCode, newWindow) => {
         if (res.status === 'success') {
           clearInterval(pollingInterval.value)
           pollingInterval.value = null
+          // Xóa bộ đếm thời gian để chấm dứt các request Polling lặp lại gửi lên server.
           
           if (newWindow && !newWindow.closed) {
             newWindow.close()
           }
+          // Tự động đóng tab quét mã QR PayOS đang mở trên trình duyệt của người dùng.
 
           isWaitingForPayment.value = false
+          //đóng trạng thái chờ thanh toán.
           
           if (res.user) {
             currentUserStorage.set(res.user)
             currentUser.value = res.user
           }
 
+          // chuyển user sang trang kết quả và báo thanh toán thành công
           router.push({
             path: '/payment-result',
             query: {
@@ -816,7 +820,7 @@ const startPolling = (orderCode, newWindow) => {
             newWindow.close()
           }
 
-          isWaitingForPayment.value = false
+          isWaitingForFt.value = false
           errorMessage.value = 'Giao dịch thanh toán đã bị hủy hoặc thất bại.'
           isPaymentModalOpen.value = true
         }
@@ -858,11 +862,13 @@ const handlePayment = async (provider) => {
         if (newWindow) {
           newWindow.location.href = res.payUrl
         }
+        // xử lý reponse 
         checkoutUrl.value = res.payUrl
         paymentOrderCode.value = res.order_code
         isWaitingForPayment.value = true
         isPaymentModalOpen.value = false
         isProcessing.value = false
+        // Gọi hàm `startPolling` để kích hoạt vòng lặp kiểm tra trạng thái thanh toán tự động.
         startPolling(res.order_code, newWindow)
       } else {
         if (newWindow) {

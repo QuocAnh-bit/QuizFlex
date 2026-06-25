@@ -250,13 +250,13 @@ const markAnswer = (isMastered) => {
   // sẽ lấy câu hỏi và đáp án từ currentCard
   
   if (isMastered) {
-    // Add to mastered if not already there, remove from weak
+    // Thêm vào danh sách đã thành thạo nếu chưa có, loại bỏ khỏi danh sách còn yếu.
     if (!masteredQuestions.value.includes(originalQuestion.id)) {
       masteredQuestions.value.push(originalQuestion.id)
     }
     needReviewQuestions.value = needReviewQuestions.value.filter(id => id !== originalQuestion.id)
   } else {
-    // Add to need-review if not already there, remove from mastered
+    // Thêm vào danh sách cần xem lại nếu chưa có, và loại bỏ khỏi danh sách đã nắm vững.
     if (!needReviewQuestions.value.includes(originalQuestion.id)) {
       needReviewQuestions.value.push(originalQuestion.id)
     }
@@ -298,7 +298,7 @@ const restartOnlyWeak = () => {
 }
 
 const loadQuizDetails = async () => {
-  // hàm bất đồng bộ async, vì nó phải gọi API trên backend
+  // hàm bất đồng bộ async, vì nó phải gọi API lấy dữ liệu quiz
   isLoading.value = true
   errorMessage.value = ''
   
@@ -312,6 +312,7 @@ const loadQuizDetails = async () => {
       category: normalizedQuiz.category,
       difficulty: normalizedQuiz.difficulty,
     }
+    //chuyển đổi các thuộc tính từ phong cách của backend sang định dạng sử dụng của frontend
     
     const rawQuestions = rawData.questions || []
     questions.value = rawQuestions.map(q => normalizeQuestion(q))

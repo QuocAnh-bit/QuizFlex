@@ -14,6 +14,17 @@
           <div class="rounded-3xl border border-[var(--border)] bg-[var(--surface-soft)] p-5"><p class="text-sm font-bold text-[var(--muted)]">Trạng thái</p><b class="mt-2 block text-2xl font-black text-[var(--text)]">{{ attempt.status }}</b></div>
         </div>
 
+        <!-- Khối nhận xét của chủ phòng / Phản hồi từ giảng viên -->
+        <div v-if="attempt.evaluation_comment" class="mt-6 rounded-3xl border border-[var(--border)] bg-[var(--surface-soft)] p-5">
+          <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)] mb-2">Phản hồi từ giảng viên</p>
+          <p class="text-sm font-medium leading-relaxed text-[var(--text)] italic">
+            "{{ attempt.evaluation_comment }}"
+          </p>
+          <p v-if="attempt.evaluation_comment_updated_at" class="mt-2 text-[10px] font-bold text-[var(--muted)]">
+            Cập nhật lúc: {{ formatDateTime(attempt.evaluation_comment_updated_at) }}
+          </p>
+        </div>
+
         <div class="mt-8 grid gap-4">
           <article v-for="(item, index) in attempt.answers_snapshot" :key="item.question_id" class="rounded-[1.5rem] border p-4" :class="item.is_correct ? 'border-emerald-500/30 bg-emerald-500/10' : 'border-rose-500/30 bg-rose-500/10'">
             <div class="flex flex-wrap items-start justify-between gap-3">
@@ -50,6 +61,11 @@
 import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { attemptsApi, formatSeconds } from '@/services/api'
+
+const formatDateTime = (value) => {
+  if (!value) return ''
+  return new Date(value).toLocaleString('vi-VN')
+}
 
 const route = useRoute()
 const attempt = ref(null)
