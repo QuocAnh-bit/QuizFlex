@@ -20,6 +20,7 @@ class AiJob extends Model
         'visibility',
         'questions_generated',
         'status',
+        'current_step', // <--- THÊM DÒNG NÀY VÀO
         'quiz_id',
         'response_json',
         'error_message',
