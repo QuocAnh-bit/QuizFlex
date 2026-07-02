@@ -55,6 +55,50 @@
               {{ statusLabel }}
             </span>
           </div>
+          <!-- KHU VỰC HIỂN THỊ TIẾN ĐỘ NGẦM (CHỈ HIỆN KHI ĐANG CHẠY) -->
+          <div v-if="isGenerating || isPolling" class="mt-6 rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface-soft)] p-6">
+            <h3 class="text-xs font-black uppercase tracking-[0.16em] text-[var(--text)] mb-5">Tiến trình xử lý AI</h3>
+
+            <!-- Thanh Progress Bar -->
+            <div class="w-full bg-[var(--surface)] rounded-full h-1.5 mb-6 overflow-hidden border border-[var(--border)]">
+              <div class="bg-[var(--primary)] h-1.5 transition-all duration-500 ease-out" :style="{ width: progressPercentage + '%' }"></div>
+            </div>
+
+            <!-- Danh sách các bước Timeline -->
+            <div class="space-y-5 relative before:absolute before:inset-0 before:left-[15px] before:bg-[var(--border)] before:w-[1px]">
+              <!-- Bước 1 -->
+              <div class="flex items-start space-x-4 relative">
+                <div :class="getStepClass('validate_prompt')" class="w-8 h-8 rounded-full flex items-center justify-center z-10 font-bold border-2 text-xs transition-colors duration-300">1</div>
+                <div class="flex-1 pt-1.5">
+                  <p class="text-sm transition-colors duration-300" :class="getTextClass('validate_prompt')">Kiểm tra và tối ưu câu lệnh</p>
+                  <span v-if="currentStep === 'validate_prompt'" class="text-xs text-[var(--primary)] mt-1 block">Đang phân tích...</span>
+                </div>
+              </div>
+              <!-- Bước 2 -->
+              <div class="flex items-start space-x-4 relative">
+                <div :class="getStepClass('calling_ai_api')" class="w-8 h-8 rounded-full flex items-center justify-center z-10 font-bold border-2 text-xs transition-colors duration-300">2</div>
+                <div class="flex-1 pt-1.5">
+                  <p class="text-sm transition-colors duration-300" :class="getTextClass('calling_ai_api')">Gửi dữ liệu và chờ AI phản hồi</p>
+                  <span v-if="currentStep === 'calling_ai_api'" class="text-xs text-[var(--primary)] mt-1 block">AI đang suy nghĩ (Có thể mất 10-20s)...</span>
+                </div>
+              </div>
+              <!-- Bước 3 -->
+              <div class="flex items-start space-x-4 relative">
+                <div :class="getStepClass('parsing_ai_response')" class="w-8 h-8 rounded-full flex items-center justify-center z-10 font-bold border-2 text-xs transition-colors duration-300">3</div>
+                <div class="flex-1 pt-1.5">
+                  <p class="text-sm transition-colors duration-300" :class="getTextClass('parsing_ai_response')">Bóc tách dữ liệu câu hỏi</p>
+                </div>
+              </div>
+              <!-- Bước 4 -->
+              <div class="flex items-start space-x-4 relative">
+                <div :class="getStepClass('saving_to_database')" class="w-8 h-8 rounded-full flex items-center justify-center z-10 font-bold border-2 text-xs transition-colors duration-300">4</div>
+                <div class="flex-1 pt-1.5">
+                  <p class="text-sm transition-colors duration-300" :class="getTextClass('saving_to_database')">Đồng bộ đáp án vào hệ thống</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- KẾT THÚC KHU VỰC HIỂN THỊ TIẾN ĐỘ -->
         </div>
 
         <div v-if="errorMessage" class="mt-5 rounded-2xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm font-bold text-rose-300">
@@ -144,6 +188,7 @@ const errorMessage = ref('')
 const successMessage = ref('')
 const jobId = ref('')
 const jobStatus = ref('')
+const currentStep = ref('') // <-- Thêm biến này
 const generatedQuiz = ref(null)
 let pollTimer = null
 
@@ -159,6 +204,42 @@ const actionLabel = computed(() => {
   if (isPolling.value) return 'AI đang tạo quiz...'
   return 'Tạo quiz bằng AI'
 })
+
+// --- BẮT ĐẦU ĐOẠN CODE TIMELINE ---
+const progressPercentage = computed(() => {
+  if (jobStatus.value === 'failed') return 100
+  switch (currentStep.value) {
+    case 'validate_prompt': return 15
+    case 'calling_ai_api': return 45
+    case 'parsing_ai_response': return 75
+    case 'saving_to_database': return 90
+    case 'completed': return 100
+    default: return 0
+  }
+})
+
+const getStepClass = (stepName) => {
+  const steps = ['validate_prompt', 'calling_ai_api', 'parsing_ai_response', 'saving_to_database', 'completed']
+  const currentIndex = steps.indexOf(currentStep.value)
+  const targetIndex = steps.indexOf(stepName)
+
+  if (jobStatus.value === 'failed' && currentIndex === targetIndex) {
+    return 'border-rose-500 bg-rose-500/20 text-rose-300'
+  }
+  if (currentStep.value === 'completed' || targetIndex < currentIndex) {
+    return 'border-emerald-500 bg-emerald-500/20 text-emerald-400'
+  }
+  if (currentStep.value === stepName) {
+    return 'border-[var(--primary)] bg-[var(--primary)]/20 text-[var(--primary)] shadow-[0_0_15px_var(--primary)] animate-pulse'
+  }
+  return 'border-[var(--border)] bg-[var(--surface-soft)] text-[var(--muted)]'
+}
+
+const getTextClass = (stepName) => {
+  if (currentStep.value === stepName) return 'text-[var(--primary)] font-bold'
+  return 'text-[var(--muted)]'
+}
+// --- KẾT THÚC ĐOẠN CODE TIMELINE ---
 
 const isInvalidPromptMessage = (message = '') =>
   message.includes('Prompt chưa rõ nội dung') ||
@@ -180,6 +261,7 @@ const pollJob = async () => {
   try {
     const job = await aiApi.getJob(jobId.value)
     jobStatus.value = job.status
+    currentStep.value = job.current_step || '' // <-- Thêm dòng này
 
     if (job.status === 'completed' && job.quiz_id) {
       generatedQuiz.value = job.quiz_full || job.quiz || null
@@ -201,7 +283,7 @@ const pollJob = async () => {
       return
     }
 
-    pollTimer = setTimeout(pollJob, 2500)
+    pollTimer = setTimeout(pollJob, 500)
   } catch (error) {
     errorMessage.value = `Không lấy được trạng thái AI job: ${error.message}`
     isPolling.value = false
@@ -215,6 +297,7 @@ const generateQuiz = async () => {
     return
   }
 
+  currentStep.value = 'validate_prompt' // <-- Thêm dòng này
   isGenerating.value = true
   errorMessage.value = ''
   successMessage.value = ''

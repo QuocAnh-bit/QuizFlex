@@ -678,53 +678,53 @@ PROMPT;
     }
 
 
-    public function generateQuiz(string $prompt, int $count = 10): array
-    {
-        $fullPrompt = $this->buildGenerateQuizPrompt($prompt, $count);
-        $result = $this->requestJsonPayload($fullPrompt);
+    // public function generateQuiz(string $prompt, int $count = 10): array
+    // {
+    //     $fullPrompt = $this->buildGenerateQuizPrompt($prompt, $count);
+    //     $result = $this->requestJsonPayload($fullPrompt);
 
-        if (!$this->isGeneratedQuizValid($result['payload'])) {
-            throw new RuntimeException('AI quiz JSON structure invalid.');
-        }
+    //     if (!$this->isGeneratedQuizValid($result['payload'])) {
+    //         throw new RuntimeException('AI quiz JSON structure invalid.');
+    //     }
 
-        $normalized = $this->normalizeGeneratedQuiz($result['payload'], $count);
-        $normalized['meta'] = ['tokens_used' => $result['tokens_used']];
+    //     $normalized = $this->normalizeGeneratedQuiz($result['payload'], $count);
+    //     $normalized['meta'] = ['tokens_used' => $result['tokens_used']];
 
-        return $normalized;
-    }
+    //     return $normalized;
+    // }
 
-    private function buildGenerateQuizPrompt(string $prompt, int $count): string
-    {
-        return <<<PROMPT
-You are a quiz generator. Generate exactly {$count} quiz questions based on the request below.
+//     private function buildGenerateQuizPrompt(string $prompt, int $count): string
+//     {
+//         return <<<PROMPT
+// You are a quiz generator. Generate exactly {$count} quiz questions based on the request below.
 
-Rules:
-- Return ONLY valid JSON, no markdown, no explanation.
-- Each question must have exactly 4 answer options.
-- Exactly 1 answer must be correct (is_correct: true), others false.
-- Questions and answers must match the language specified in the request.
-- Generate a short quiz title.
+// Rules:
+// - Return ONLY valid JSON, no markdown, no explanation.
+// - Each question must have exactly 4 answer options.
+// - Exactly 1 answer must be correct (is_correct: true), others false.
+// - Questions and answers must match the language specified in the request.
+// - Generate a short quiz title.
 
-JSON format:
-{
-  "title": "...",
-  "questions": [
-    {
-      "content": "Question text here",
-      "answers": [
-        { "content": "Option A", "is_correct": true },
-        { "content": "Option B", "is_correct": false },
-        { "content": "Option C", "is_correct": false },
-        { "content": "Option D", "is_correct": false }
-      ]
-    }
-  ]
-}
+// JSON format:
+// {
+//   "title": "...",
+//   "questions": [
+//     {
+//       "content": "Question text here",
+//       "answers": [
+//         { "content": "Option A", "is_correct": true },
+//         { "content": "Option B", "is_correct": false },
+//         { "content": "Option C", "is_correct": false },
+//         { "content": "Option D", "is_correct": false }
+//       ]
+//     }
+//   ]
+// }
 
-Request:
-{$prompt}
-PROMPT;
-    }
+// Request:
+// {$prompt}
+// PROMPT;
+//     }
 
     public function parseQuiz(string $prompt): array
     {
