@@ -9,7 +9,13 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('quizzes', function (Blueprint $table) {
-            $table->foreign(['user_id'], 'fk_quizzes_user_id')->references(['id'])->on('users')->onUpdate('cascade')->onDelete('cascade');
+            $table->foreign(['user_id'], 'fk_quizzes_user_id')
+                ->references(['id'])
+                ->on('users')
+                ->onUpdate('cascade')
+                ->onDelete('cascade');
+
+            $table->boolean('is_ai_generated')->default(false)->after('user_id');
         });
     }
 
@@ -17,6 +23,7 @@ return new class extends Migration
     {
         Schema::table('quizzes', function (Blueprint $table) {
             $table->dropForeign('fk_quizzes_user_id');
+            $table->dropColumn('is_ai_generated');
         });
     }
 };
