@@ -165,4 +165,31 @@ class OcrController extends Controller
             'data' => $quiz,
         ], 201);
     }
+
+    public function suggest(Request $request, AIService $service)
+    {
+        $data = $request->validate([
+            'action' => 'required|string',
+            'quiz' => 'required|array',
+            'selected_question_ids' => 'nullable|array',
+            'selected_questions' => 'nullable|array',
+            'options' => 'nullable|array',
+            'local_report' => 'nullable|array',
+        ]);
+
+        $needSelected = ['similar', 'harder', 'advanced', 'better_options'];
+
+        if (
+            in_array($data['action'], $needSelected, true)
+            && empty($data['selected_questions'])
+        ) {
+            return response()->json([
+                'message' => 'Vui lòng chọn ít nhất 1 câu hỏi.'
+            ], 422);
+        }
+
+        $result = $service->suggestQuiz($data);
+
+        return response()->json($result);
+    }
 }
