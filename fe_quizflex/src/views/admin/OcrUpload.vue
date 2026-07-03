@@ -24,7 +24,7 @@
           quiz.
         </p>
 
-        <div
+        <!-- <div
           class="mt-6 grid gap-3 rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface-soft)] p-4"
         >
           <p
@@ -67,7 +67,79 @@
             Đề toán sẽ yêu cầu AI bọc công thức bằng $...$ để editor tự render
             MathLive.
           </p>
-        </div>
+        </div> -->
+        <div
+  class="mt-6 grid gap-4 rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface-soft)] p-4"
+>
+  <p class="text-xs font-black uppercase tracking-[0.18em] text-[var(--muted)]">
+    Cấu hình xử lý tài liệu
+  </p>
+
+  <div class="grid gap-4 sm:grid-cols-2">
+    <!-- Cột 1: Chọn loại định dạng -->
+    <div class="flex flex-col gap-2">
+      <span class="text-xs font-bold text-[var(--text)]">Định dạng nội dung:</span>
+      <div class="flex gap-2">
+        <button
+          type="button"
+          class="flex-1 rounded-full py-2 text-xs font-black transition"
+          :class="ocrMode === 'normal' ? 'bg-[var(--primary)] text-white' : 'bg-[var(--surface)] text-[var(--muted)]'"
+          @click="ocrMode = 'normal'"
+        >
+          Chữ thuần túy
+        </button>
+        <button
+          type="button"
+          class="flex-1 rounded-full py-2 text-xs font-black transition"
+          :class="ocrMode === 'math' ? 'bg-[var(--primary)] text-white' : 'bg-[var(--surface)] text-[var(--muted)]'"
+          @click="ocrMode = 'math'"
+        >
+          Có công thức Toán
+        </button>
+      </div>
+    </div>
+
+    <!-- Cột 2: Chọn mục đích xử lý -->
+    <div class="flex flex-col gap-2">
+      <span class="text-xs font-bold text-[var(--text)]">Mục đích tải lên:</span>
+      <div class="flex gap-2">
+        <button
+          type="button"
+          class="flex-1 rounded-full py-2 text-xs font-black transition"
+          :class="apiMode === 'extract' ? 'bg-[var(--primary)] text-white' : 'bg-[var(--surface)] text-[var(--muted)]'"
+          @click="apiMode = 'extract'"
+        >
+          Trích xuất đề gốc
+        </button>
+        <button
+          type="button"
+          class="flex-1 rounded-full py-2 text-xs font-black transition"
+          :class="apiMode === 'generate' ? 'bg-[var(--primary)] text-white' : 'bg-[var(--surface)] text-[var(--muted)]'"
+          @click="apiMode = 'generate'"
+        >
+          AI tự tạo câu hỏi mới
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ô nhập số lượng câu hỏi (Chỉ hiện khi chọn AI tạo đề mới) -->
+  <div 
+    v-if="apiMode === 'generate'" 
+    class="flex items-center gap-3 border-t border-[var(--border)] pt-3 animate-fade-in"
+  >
+    <label class="text-xs font-black uppercase text-[var(--muted)]">
+      Số câu hỏi AI cần tạo:
+    </label>
+    <input
+      v-model.number="generateCount"
+      type="number"
+      min="1"
+      max="30"
+      class="w-20 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-2 text-center text-sm font-bold text-[var(--text)] outline-none"
+    />
+  </div>
+</div>
 
         <label
           :class="[
@@ -824,6 +896,8 @@ const progressTimer = ref(null);
 
 const currentView = ref("upload");
 const ocrMode = ref("normal");
+const apiMode = ref("extract"); // 'extract' (bóc tách đề gốc CV1) hoặc 'generate' (sáng tạo đề mới CV2)
+const generateCount = ref(5);    // Số lượng câu hỏi mặc định muốn sinh ra
 const questions = ref([]);
 const questionImageInputs = ref([]);
 const showReadyMessage = ref(false);
@@ -1302,7 +1376,11 @@ const handleFile = async (event) => {
   try {
     startFakeProgress();
 
-    const result = await ocrApi.scan(file, ocrMode.value);
+    // const result = await ocrApi.scan(file, ocrMode.value);
+    const result = await ocrApi.scan(file, ocrMode.value, {
+      mode: apiMode.value,
+      count: generateCount.value
+    });
 
     stopFakeProgress();
 

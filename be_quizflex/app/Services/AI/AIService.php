@@ -772,4 +772,52 @@ PROMPT;
             return $this->sendChatCompletion($payload);
         }
     }
+    /**
+     * CV2: AI tự phân tích nội dung (context) và tự tạo câu hỏi + đáp án liên quan
+     */
+    public function generateQuestionsFromContext(string $context, int $count = 5): array
+    {
+        $count = max(1, min(50, $count));
+        
+        $prompt = <<<PROMPT
+    Dựa HOÀN TOÀN và BÁM SÁT vào nội dung văn bản hoặc bài toán dưới đây, hãy tự phân tích tư duy và tạo ra đúng {$count} câu hỏi trắc nghiệm liên quan trực tiếp đến đúng nội dung đó (tự biên soạn câu hỏi và các phương án trả lời phù hợp dựa trên ngữ cảnh).
+
+    Nội dung văn bản / tài liệu ngữ cảnh:
+    {$context}
+
+    QUY TẮC BẮT BUỘC:
+    - Trả về một đối tượng JSON có key duy nhất là "questions".
+    - "questions" phải là một mảng chứa danh sách các câu hỏi.
+    - Mỗi câu hỏi bắt buộc gồm 3 thuộc tính: "question", "options", "correct_answer".
+    - "options" bắt buộc là một object chứa đúng 4 key: "A", "B", "C", "D".
+    - "correct_answer" bắt buộc là một trong bốn ký tự viết hoa: "A", "B", "C", "D".
+    - Chỉ trả về chuỗi JSON thuần túy, KHÔNG bọc trong markdown ```json, không giải thích gì thêm.
+
+    CẤU TRÚC ĐỊNH DẠNG MẪU BẮT BUỘC:
+    {
+    "questions": [
+        {
+        "question": "Nội dung câu hỏi tự biên soạn dựa trên tài liệu trên?",
+        "options": {
+            "A": "Nội dung đáp án A",
+            "B": "Nội dung đáp án B",
+            "C": "Nội dung đáp án C",
+            "D": "Nội dung đáp án D"
+        },
+        "correct_answer": "A"
+        }
+    ]
+    }
+    PROMPT;
+
+        // Tận dụng hàm requestJsonPayload có sẵn của hệ thống để gọi API DeepSeek/OpenRouter
+        $result = $this->requestJsonPayload($prompt);
+
+        // Kiểm tra tính hợp lệ cấu trúc JSON trả về (hàm isParsedQuizValid đã có sẵn trong file của bạn)
+        if (!$this->isParsedQuizValid($result['payload'])) {
+            throw new \RuntimeException('Cấu trúc JSON câu hỏi tạo từ ngữ cảnh không hợp lệ.');
+        }
+
+        return $result['payload'];
+    }
 }

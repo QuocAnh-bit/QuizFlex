@@ -41,11 +41,10 @@ class GenerateQuizJob implements ShouldQueue
 
         $job->update([
             'status' => 'processing',
-            'current_step' => 'validate_prompt', // <-- Thêm dòng này
+            'current_step' => 'validate_prompt',
             'error_message' => null,
             'started_at' => $job->started_at ?? now(),
         ]);
-        sleep(1); // 💡 THÊM VÀO ĐÂY: Dừng 1s để sáng đèn ô 1
 
         $promptValidation = app(PromptQualityValidator::class)
             ->validate((string) $job->prompt);
@@ -56,16 +55,14 @@ class GenerateQuizJob implements ShouldQueue
             );
         }
 
-        $job->update(['current_step' => 'calling_ai_api']); // <-- Thêm dòng này
-        sleep(2); // 💡 THÊM VÀO ĐÂY: Dừng 2s để sáng đèn ô 2 (giả vờ AI đang nghĩ lâu)
+        $job->update(['current_step' => 'calling_ai_api']);
 
         $generatedQuiz = $aiService->generateQuiz(
             $this->buildPromptFromJob($job),
             $job->requested_count
         );
 
-        $job->update(['current_step' => 'parsing_ai_response']); // <-- Thêm dòng này
-        sleep(1); // 💡 THÊM VÀO ĐÂY: Dừng 1s để sáng đèn ô 3
+        $job->update(['current_step' => 'parsing_ai_response']);
 
         if (
             !is_array($generatedQuiz) ||
@@ -75,8 +72,7 @@ class GenerateQuizJob implements ShouldQueue
             throw new \RuntimeException('AI trả về dữ liệu không hợp lệ.');
         }
 
-        $job->update(['current_step' => 'saving_to_database']); // <-- Thêm dòng này
-        sleep(1); // 💡 THÊM VÀO ĐÂY: Dừng 1s để sáng đèn ô 4
+        $job->update(['current_step' => 'saving_to_database']);
         
         DB::transaction(function () use ($job, $generatedQuiz) {
             $user = User::query()->lockForUpdate()->findOrFail($job->user_id);
@@ -104,7 +100,7 @@ class GenerateQuizJob implements ShouldQueue
                 'quiz_id' => $quiz->id,
                 'questions_generated' => count($generatedQuiz['questions']),
                 'status' => 'completed',
-                'current_step' => 'completed', // <-- Thêm dòng này
+                'current_step' => 'completed',
                 'response_json' => $generatedQuiz,
                 'finished_at' => now(),
             ]);
@@ -145,7 +141,7 @@ class GenerateQuizJob implements ShouldQueue
         $job->update([
             'ai_log_id' => $logId,
             'status' => 'failed',
-            'current_step' => 'failed', // <-- Thêm dòng này
+            'current_step' => 'failed',
             'error_message' => $exception->getMessage(),
             'finished_at' => now(),
         ]);

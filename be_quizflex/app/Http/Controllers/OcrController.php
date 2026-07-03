@@ -104,13 +104,26 @@ class OcrController extends Controller
             }
             $service = app(AIService::class);
 
-            if ($request->mode === 'math') {
+            // 1. Kiểm tra luồng tạo câu hỏi mới từ ngữ cảnh trước
+            // Đọc từ tham số 'ai_mode' do Frontend truyền lên
+            if ($request->input('ai_mode') === 'generate' || $request->boolean('generate_from_context')) {
+                
+                // Mặc định lấy số lượng câu hỏi từ options.count (FE truyền lên), nếu không có thì để là 5
+                $count = $request->input('count', 5); 
+                
+                // Gọi hàm CV2 tự biên soạn câu hỏi
+                $data = $service->generateQuestionsFromContext($text, $count);
+            }
+            // 2. Nếu không phải luồng tự tạo câu hỏi mới, kiểm tra định dạng nội dung
+            elseif ($request->mode === 'math') {
 
                 $data = $service->mistralOcrToQuizJson(
                     $file->getRealPath(),
                     $file->getClientOriginalExtension()
                 );
-            } else {
+            }
+            // 3. Luồng mặc định: Tài liệu ĐÃ CÓ SẴN câu hỏi chữ thuần túy, AI chỉ định dạng lại
+            else {
 
                 $prompt = QuizPrompt::textToQuizJson($text);
 

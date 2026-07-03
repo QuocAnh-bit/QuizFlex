@@ -708,10 +708,20 @@ export const liveRoomApi = {
 }
 
 export const ocrApi = {
-  async scan(file, mode) {
+  async scan(file, ocrMode, options = {}) {
     const formData = new FormData();
     formData.append("image", file);
-    formData.append("mode", mode);
+    
+    // Giữ nguyên key 'mode' đang dùng ở Backend để phân biệt text/math
+    formData.append("mode", ocrMode); 
+
+    // Gửi thêm cấu hình CV2 (bóc tách/sáng tạo và số câu hỏi) lên Backend
+    if (options.mode) {
+      formData.append("ai_mode", options.mode); 
+    }
+    if (options.count) {
+      formData.append("count", options.count);
+    }
 
     const { data } = await api.post("/ocr/scan", formData, {
       headers: { "Content-Type": "multipart/form-data" },
