@@ -530,4 +530,162 @@ class QuizController extends Controller
             default => 'Vừa',
         };
     }
+
+    // =========================
+    // 3.1 QUẢN LÝ QUIZ - ADMIN
+    // =========================
+
+    // Danh sách quiz
+    public function adminIndex(Request $request)
+    {
+        $query = Quiz::query()
+            ->with('user:id,name')
+            ->withCount(['questions', 'attempts'])
+            ->latest();
+
+        // Tìm kiếm quiz
+        if ($request->filled('search')) {
+            $keyword = trim((string) $request->search);
+
+            $query->where(function ($q) use ($keyword) {
+                $q->where('title', 'like', "%{$keyword}%")
+                    ->orWhere('category', 'like', "%{$keyword}%");
+            });
+        }
+
+        // Tìm kiếm người tạo
+        if ($request->filled('creator')) {
+            $query->whereHas('user', function ($q) use ($request) {
+                $q->where(
+                    'name',
+                    'like',
+                    '%' . $request->creator . '%'
+                );
+            });
+        }
+
+        // Lọc độ khó
+        if ($request->filled('difficulty')) {
+            $query->where(
+                'difficulty',
+                $request->difficulty
+            );
+        }
+
+        // Lọc public/private
+        if ($request->filled('visibility')) {
+            if ($request->visibility === 'public') {
+                $query->where('is_public', true);
+            }
+            if ($request->visibility === 'private') {
+                $query->where('is_public', false);
+            }
+        }
+
+        // Lọc quiz sinh bởi AI
+        if ($request->filled('ai_generated')) {
+            $query->where(
+                'is_ai_generated',
+                (bool)$request->ai_generated
+            );
+        }
+
+        $quizzes = $query
+            ->paginate(10)
+            ->through(function ($quiz) {
+                return [
+                    'id' => $quiz->id,
+                    'title' => $quiz->title,
+                    'category' => $quiz->category,
+                    'difficulty' => $quiz->difficulty,
+                    'difficulty_label' => $this->difficultyLabel($quiz->difficulty),
+                    'questions_count' => $quiz->questions_count,
+                    'attempts_count' => $quiz->attempts_count,
+                    'avg_score' => round(
+                        $quiz->attempts()->avg('score') ?? 0,
+                        1
+                    ),
+                    'is_public' => (bool)$quiz->is_public,
+                    'author' => $quiz->user?->name ?? 'Chưa có',
+                    'created_at' => $quiz->created_at,
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Danh sách quiz',
+            'data' => $quizzes,
+        ]);
+    }
+
+    // Chi tiết quiz
+    public function adminShow($id)
+    {
+        $quiz = Quiz::with([
+            'user:id,name,email',
+            'questions.answers',
+            'attempts.user:id,name'
+        ])
+        ->withCount([
+            'questions',
+            'attempts'
+        ])
+        ->findOrFail($id);
+
+        $averageScore = round(
+            $quiz->attempts()->avg('score') ?? 0,
+            2
+        );
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'quiz' => $quiz,
+                'average_score' => $averageScore,
+                'is_ai_generated' => (bool)$quiz->is_ai_generated,
+            ]
+        ]);
+    }
+
+    // Thùng rác
+    public function trash()
+    {
+        $quizzes = Quiz::onlyTrashed()
+            ->with('user:id,name')
+            ->latest()
+            ->paginate(10);
+
+        return response()->json([
+            'success' => true,
+            'data' => $quizzes
+        ]);
+    }
+
+    // Khôi phục quiz
+    public function restore($id)
+    {
+        $quiz = Quiz::onlyTrashed()
+            ->findOrFail($id);
+
+        $quiz->restore();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Khôi phục quiz thành công'
+        ]);
+    }
+
+    // Xóa vĩnh viễn
+    public function forceDelete($id)
+    {
+        $quiz = Quiz::onlyTrashed()
+            ->findOrFail($id);
+
+        $quiz->forceDelete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Xóa vĩnh viễn quiz thành công'
+        ]);
+    }
 }

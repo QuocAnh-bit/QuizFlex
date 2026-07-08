@@ -7,8 +7,8 @@ import {
   tokenStorage,
 } from "@/services/api";
 
-const workspaceRoles = ["admin", "vip", "user"];
-const userDashboardRoles = ["admin", "vip", "user"];
+const workspaceRoles = ["admin", "free", "plus", "pro", "ultra"];
+const userDashboardRoles = ["admin", "free", "plus", "pro", "ultra"];
 const adminRoles = ["admin"];
 
 const routes = [
@@ -58,7 +58,7 @@ const routes = [
     path: "/upgrade",
     name: "upgrade",
     component: () => import("@/views/user/Upgrade.vue"),
-    meta: { layout: "user", title: "Nâng cấp VIP" },
+    meta: { layout: "user", title: "Nâng cấp tài khoản" },
   },
   {
     path: "/payment-result",
@@ -73,6 +73,17 @@ const routes = [
     meta: {
       layout: "user",
       title: "Kết quả của tôi",
+      requiresAuth: true,
+      roles: workspaceRoles,
+    },
+  },
+  {
+    path: "/analytics",
+    name: "analytics",
+    component: () => import("@/views/user/Analytics.vue"),
+    meta: {
+      layout: "user",
+      title: "Phân tích năng lực",
       requiresAuth: true,
       roles: workspaceRoles,
     },
@@ -282,7 +293,7 @@ const routes = [
   {
     path: "/dashboard/questions/create",
     name: "user-question-create",
-    component: () => import("@/views/admin/CreateQuiz.vue"),
+    component: () => import("@/views/admin/QuizEditorCombined.vue"),
     meta: {
       layout: "user",
       title: "Tạo quiz",
@@ -293,7 +304,7 @@ const routes = [
   {
     path: "/dashboard/questions/edit/:id",
     name: "user-question-edit",
-    component: () => import("@/views/admin/CreateQuiz.vue"),
+    component: () => import("@/views/admin/QuizEditorCombined.vue"),
     meta: {
       layout: "user",
       title: "Sửa quiz",
@@ -360,7 +371,7 @@ const routes = [
   {
     path: "/admin/questions/create",
     name: "admin-question-create",
-    component: () => import("@/views/admin/CreateQuiz.vue"),
+    component: () => import("@/views/admin/QuizEditorCombined.vue"),
     meta: {
       layout: "admin",
       title: "Tạo quiz admin",
@@ -371,7 +382,7 @@ const routes = [
   {
     path: "/admin/questions/edit/:id",
     name: "admin-question-edit",
-    component: () => import("@/views/admin/CreateQuiz.vue"),
+    component: () => import("@/views/admin/QuizEditorCombined.vue"),
     meta: {
       layout: "admin",
       title: "Sửa quiz admin",
@@ -412,6 +423,26 @@ const routes = [
       roles: adminRoles,
     },
   },
+  { path: '/admin/rooms/homework',
+    name: 'admin-homework-rooms', 
+    component: () => import('@/views/admin/AdminHomeworkRooms.vue'), 
+    meta: { 
+      layout: 'admin', 
+      title: 'Homework Rooms', 
+      requiresAuth: true, 
+      roles: adminRoles, 
+    },
+  },
+  { path: '/admin/rooms/live', 
+    name: 'admin-live-rooms', 
+    component: () => import('@/views/admin/AdminLiveRooms.vue'), 
+    meta: { 
+      layout: 'admin', 
+      title: 'Live Rooms', 
+      requiresAuth: true, 
+      roles: adminRoles, 
+    }, 
+  },
   {
     path: "/admin/reports",
     name: "admin-reports",
@@ -446,6 +477,17 @@ const routes = [
     },
   },
   {
+    path: "/admin/users/:id",
+    name: "admin-user-detail",
+    component: () => import("@/views/admin/UserDetail.vue"),
+    meta: {
+      layout: "admin",
+      title: "Chi tiết user",
+      requiresAuth: true,
+      roles: adminRoles,
+    },
+  },
+  {
     path: "/admin/settings",
     name: "admin-settings",
     component: () => import("@/views/admin/Settings.vue"),
@@ -457,16 +499,15 @@ const routes = [
     },
   },
 
-  { path: "/:pathMatch(.*)*", name: "not-found", redirect: "/" },
+  // Admin Quiz Management
+  { path: '/admin/quizzes', name: 'admin-quizzes', component: () => import('@/views/admin/quizzes/QuizList.vue'), meta: { layout: 'admin', title: 'Quản lý Quiz', requiresAuth: true, roles: adminRoles } },
+  { path: '/admin/quizzes-trash', name: 'admin-quizzes-trash', component: () => import('@/views/admin/quizzes/QuizzesTrash.vue'), meta: { layout: 'admin', title: 'Thùng rác Quiz', requiresAuth: true, roles: adminRoles } },
+  { path: '/admin/quizzes/:id', name: 'admin-quiz-detail', component: () => import('@/views/admin/quizzes/QuizDetail.vue'), meta: { layout: 'admin', title: 'Chi tiết Quiz', requiresAuth: true, roles: adminRoles } },
+  { path: '/admin/quizzes/:id/edit', name: 'admin-quiz-edit', component: () => import('@/views/admin/quizzes/QuizEdit.vue'), meta: { layout: 'admin', title: 'Sửa Quiz', requiresAuth: true, roles: adminRoles } },
 
-  {
-    path: "/gamification",
-    component: () => import("@/views/user/GamificationStats.vue"),
-  },
-  {
-    path: "/leaderboard",
-    component: () => import("@/views/user/Leaderboard.vue"),
-  },
+  { path: '/gamification', component: () => import('@/views/user/GamificationStats.vue') },
+  { path: '/leaderboard', component: () => import('@/views/user/Leaderboard.vue') },
+  { path: '/:pathMatch(.*)*', name: 'not-found', redirect: '/' },
 ];
 
 const router = createRouter({

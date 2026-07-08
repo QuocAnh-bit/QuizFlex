@@ -9,6 +9,7 @@ use App\Models\Question;
 use App\Models\Quiz;
 use App\Models\User;
 use App\Services\AI\AIService;
+use App\Services\AI\PromptQualityValidator;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -26,9 +27,7 @@ class GenerateQuizJob implements ShouldQueue
 
     public array $backoff = [30, 120];
 
-    public function __construct(public string $jobUuid)
-    {
-    }
+    public function __construct(public string $jobUuid) {}
 
     public function handle(AIService $aiService): void
     {
@@ -46,10 +45,27 @@ class GenerateQuizJob implements ShouldQueue
             'started_at' => $job->started_at ?? now(),
         ]);
 
+        $promptValidation = app(PromptQualityValidator::class)
+            ->validate((string) $job->prompt);
+
+        if (!$promptValidation['valid']) {
+            throw new \RuntimeException(
+                $promptValidation['message']
+            );
+        }
+
         $generatedQuiz = $aiService->generateQuiz(
             $this->buildPromptFromJob($job),
             $job->requested_count
         );
+
+        if (
+            !is_array($generatedQuiz) ||
+            !isset($generatedQuiz['questions']) ||
+            !is_array($generatedQuiz['questions'])
+        ) {
+            throw new \RuntimeException('AI trả về dữ liệu không hợp lệ.');
+        }
 
         DB::transaction(function () use ($job, $generatedQuiz) {
             $user = User::query()->lockForUpdate()->findOrFail($job->user_id);
@@ -144,7 +160,7 @@ class GenerateQuizJob implements ShouldQueue
 
         foreach ($questions as $questionIndex => $questionData) {
             $correctAnswers = collect($questionData['answers'])
-                ->filter(fn (array $answer): bool => !empty($answer['is_correct']))
+                ->filter(fn(array $answer): bool => !empty($answer['is_correct']))
                 ->count();
 
             $question = Question::create([

@@ -52,6 +52,72 @@ class AIService
         ]);
     }
 
+    public function generateQuiz(string $prompt, int $count = 10): array
+    {
+        $count = max(1, min(50, $count));
+        $lastException = null;
+
+        for ($attempt = 1; $attempt <= 2; $attempt++) {
+            try {
+                $result = $this->requestJsonPayload($this->buildPrompt($prompt, $count));
+
+                if (!$this->isGeneratedQuizValid($result['payload'])) {
+                    throw new RuntimeException('AI JSON structure invalid.');
+                }
+
+                $quiz = $this->normalizeGeneratedQuiz($result['payload'], $count);
+                $quiz['meta'] = [
+                    'tokens_used' => $result['tokens_used'],
+                    'raw_json' => $result['raw_json'],
+                    'requested_count' => $count,
+                    'actual_count' => count($quiz['questions']),
+                    'provider' => $this->usesOpenRouter ? 'openrouter' : 'deepseek',
+                    'model' => $this->model,
+                ];
+
+                return $quiz;
+            } catch (Throwable $exception) {
+                $lastException = $exception;
+            }
+        }
+
+        throw new RuntimeException($lastException?->getMessage() ?: 'AI generation failed.');
+    }
+
+    private function buildPrompt(string $prompt, int $count): string
+    {
+        return <<<PROMPT
+Create exactly {$count} multiple-choice quiz questions for the topic below.
+
+Topic:
+{$prompt}
+
+Rules:
+- Return JSON only
+- No markdown
+- No explanation
+- Each question must have exactly 4 answers
+- Exactly 1 answer must have "is_correct": true
+- Keep the language consistent with the topic request
+
+JSON format:
+{
+  "title": "Quiz title",
+  "questions": [
+    {
+      "content": "Question text",
+      "answers": [
+        { "content": "Answer A", "is_correct": true },
+        { "content": "Answer B", "is_correct": false },
+        { "content": "Answer C", "is_correct": false },
+        { "content": "Answer D", "is_correct": false }
+      ]
+    }
+  ]
+}
+PROMPT;
+    }
+
 
 
 
@@ -349,19 +415,25 @@ class AIService
         }
 
         $base64 = base64_encode($content);
-        $dataUrl = "data:{$mimeType};base64,{$base64}";
 
         $mistral = new Mistral($apiKey);
 
         try {
-            $ocrResponse = $mistral->ocr()->processUrl(
-                url: $dataUrl,
+            $ocrResponse = $mistral->ocr()->processBase64(
+                base64: $base64,
+                mimeType: $mimeType,
                 model: config('services.mistral.ocr_model', 'mistral-ocr-latest'),
                 includeImageBase64: false,
             );
 
             $ocrDto = $ocrResponse->dtoOrFail();
         } catch (\Throwable $e) {
+            if (method_exists($e, 'getResponse') && $e->getResponse()) {
+                $responseBody = (string) $e->getResponse()->getBody();
+                $decoded = json_decode($responseBody, true);
+                $message = $decoded['message'] ?? $decoded['error']['message'] ?? $e->getMessage();
+                throw new RuntimeException('Mistral OCR thất bại: ' . $message);
+            }
             throw new RuntimeException('Mistral OCR thất bại: ' . $e->getMessage());
         }
 
@@ -605,6 +677,54 @@ PROMPT;
         ];
     }
 
+
+    public function generateQuiz(string $prompt, int $count = 10): array
+    {
+        $fullPrompt = $this->buildGenerateQuizPrompt($prompt, $count);
+        $result = $this->requestJsonPayload($fullPrompt);
+
+        if (!$this->isGeneratedQuizValid($result['payload'])) {
+            throw new RuntimeException('AI quiz JSON structure invalid.');
+        }
+
+        $normalized = $this->normalizeGeneratedQuiz($result['payload'], $count);
+        $normalized['meta'] = ['tokens_used' => $result['tokens_used']];
+
+        return $normalized;
+    }
+
+    private function buildGenerateQuizPrompt(string $prompt, int $count): string
+    {
+        return <<<PROMPT
+You are a quiz generator. Generate exactly {$count} quiz questions based on the request below.
+
+Rules:
+- Return ONLY valid JSON, no markdown, no explanation.
+- Each question must have exactly 4 answer options.
+- Exactly 1 answer must be correct (is_correct: true), others false.
+- Questions and answers must match the language specified in the request.
+- Generate a short quiz title.
+
+JSON format:
+{
+  "title": "...",
+  "questions": [
+    {
+      "content": "Question text here",
+      "answers": [
+        { "content": "Option A", "is_correct": true },
+        { "content": "Option B", "is_correct": false },
+        { "content": "Option C", "is_correct": false },
+        { "content": "Option D", "is_correct": false }
+      ]
+    }
+  ]
+}
+
+Request:
+{$prompt}
+PROMPT;
+    }
 
     public function parseQuiz(string $prompt): array
     {

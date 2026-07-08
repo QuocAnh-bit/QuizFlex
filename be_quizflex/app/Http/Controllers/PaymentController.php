@@ -25,11 +25,12 @@ class PaymentController extends Controller
      */
     public function create(Request $request)
     {
+        // lấy thông tin đối tượng user hiện tại qua token xác thực JWT
         $user = auth('api')->user();
         if (!$user) {
             return response()->json(['message' => 'Bạn cần đăng nhập để thực hiện thanh toán.'], 401);
         }
-
+        // Xác thực tính hợp lệ của tham số gửi lên.
         $validator = Validator::make($request->all(), [
             'plan_id' => 'required|string|in:plus_1m,pro_1m,ultra_1m',
             'provider' => 'required|string|in:momo,vnpay,payos',
@@ -54,16 +55,19 @@ class PaymentController extends Controller
                     'order_code' => $result['order_code']
                 ]);
             } elseif ($provider === 'payos') {
+                // nhà cung cấp
                 $plans = $this->paymentService->getPlans();
+                // lấy danh sách các gói trong hệ thống
                 if (!isset($plans[$planId])) {
                     throw new \Exception("Gói nạp không hợp lệ.");
                 }
                 $plan = $plans[$planId];
                 $amount = $plan['amount'];
-                
-                // PayOS requires an integer orderCode. Let's use a time-based user identifier code.
+
+                // PayOS yêu cầu mã đơn hàng (orderCode) dạng số nguyên, Mỗi giao dịch phải có mã riêng
                 $orderCode = time() . $user->id;
 
+                // tạo hóa đơn nội bộ và lưu dữ liệu vào bảng payment
                 $payment = Payment::create([
                     'user_id' => $user->id,
                     'order_code' => $orderCode,
@@ -72,6 +76,7 @@ class PaymentController extends Controller
                     'status' => 'pending',
                 ]);
 
+                // Gọi lớp nghiệp vụ kết nối PayOS, chuyển giao Model hóa đơn mới tạo và ID gói cước để tạo liên kết thanh toán.
                 $result = $this->payOSService->createPaymentLink($payment, $planId);
                 return response()->json([
                     'success' => true,
@@ -228,14 +233,14 @@ class PaymentController extends Controller
         }
 
         try {
-            // Query PayOS API to get status
+            // Hàm getPaymentDetails gửi request GET sang PayOS để lấy trạng thái thực tế
             $details = $this->payOSService->getPaymentDetails($orderCode);
             $payosStatus = $details['status'] ?? 'PENDING';
 
             if ($payosStatus === 'PAID' && $payment->status === 'pending') {
                 $transId = $details['transactions'][0]['reference'] ?? 'payos_' . time();
                 $this->paymentService->processSuccessPayment($payment, $transId, $details);
-
+                // payos trả về paid controller lập tức gọi processSuccessPayment để thực hiện cập nhật db nạp tiền
                 // Refresh model
                 $payment->refresh();
             } elseif (in_array($payosStatus, ['CANCELLED', 'EXPIRED']) && $payment->status === 'pending') {

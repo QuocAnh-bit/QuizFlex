@@ -1329,7 +1329,8 @@ const handleFile = async (event) => {
   } catch (error) {
     stopFakeProgress();
 
-    errorMessage.value = `OCR thất bại: ${error.message}`;
+    const responseError = error.response?.data?.error || error.response?.data?.message || error.message;
+    errorMessage.value = `OCR thất bại: ${responseError}`;
     progress.value = 0;
 
     if (fileInput.value) {

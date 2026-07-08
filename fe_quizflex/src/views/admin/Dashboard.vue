@@ -66,25 +66,22 @@
         </div>
 
         <div class="mt-6 rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface-soft)] p-4">
-          <div class="flex h-72 items-end gap-2 overflow-x-auto pb-2">
-            <div
-              v-for="item in chartRows"
-              :key="item.period"
-              class="flex min-w-[58px] flex-1 flex-col items-center justify-end gap-2"
-            >
-              <div class="flex h-52 w-full items-end rounded-xl bg-[var(--surface)] px-2 py-2">
-                <div
-                  class="w-full rounded-lg bg-gradient-to-t from-[var(--primary)] to-[var(--accent)] transition-all"
-                  :style="{ height: `${barHeight(item.revenue)}%` }"
-                  :title="`${item.period}: ${formatCurrency(item.revenue)}`"
-                ></div>
-              </div>
-              <span class="max-w-[70px] truncate text-center text-[11px] font-bold text-[var(--muted)]">{{ item.period }}</span>
-            </div>
-            <div v-if="!isLoading && chartRows.length === 0" class="grid h-52 w-full place-items-center text-sm font-bold text-[var(--muted)]">
-              Chưa có doanh thu thành công để vẽ biểu đồ.
-            </div>
+          <div v-if="isLoading" class="grid h-72 w-full place-items-center text-sm text-[var(--muted)]">
+            Đang tải biểu đồ...
           </div>
+
+          <div v-else-if="chartRows.length === 0" class="grid h-72 w-full place-items-center text-sm font-bold text-[var(--muted)]">
+            Chưa có doanh thu thành công để vẽ biểu đồ.
+          </div>
+
+          <VueApexCharts 
+            v-else 
+            class="w-full"
+            type="bar" 
+            height="300" 
+            :options="chartOptions" 
+            :series="series" 
+          />
         </div>
       </article>
 
@@ -166,6 +163,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { adminDashboardApi } from '@/services/api'
+import VueApexCharts from 'vue3-apexcharts'
 
 const dashboard = ref({
   system: {},
@@ -192,7 +190,7 @@ const systemCards = computed(() => [
   { label: 'Tổng room', value: formatNumber(system.value.total_rooms), hint: `${formatNumber(system.value.total_homework_rooms)} homework, ${formatNumber(system.value.total_live_rooms)} live` },
   { label: 'Lượt làm bài', value: formatNumber(system.value.total_attempts), hint: 'Bảng quiz_attempts' },
   { label: 'Tổng câu hỏi', value: formatNumber(system.value.total_questions), hint: 'Bảng questions' },
-  { label: 'User VIP', value: formatNumber(system.value.total_vip_users), hint: 'Role VIP hoặc còn hạn VIP' },
+  { label: 'User nâng cấp', value: formatNumber(system.value.total_vip_users), hint: 'Gói Plus, Pro, Ultra hoặc còn hạn VIP' },
   { label: 'Giao dịch', value: formatNumber(system.value.total_transactions), hint: 'Bảng payments' },
   { label: 'Doanh thu', value: formatCurrency(system.value.total_revenue), hint: 'Giao dịch thành công' },
 ])
@@ -218,7 +216,42 @@ const chartRows = computed(() => {
   return revenue.value.revenue_by_day || []
 })
 
-const maxChartRevenue = computed(() => Math.max(...chartRows.value.map((item) => Number(item.revenue || 0)), 0))
+const series = computed(() => [{
+  name: 'Doanh thu',
+  data: chartRows.value.map(item => item.revenue)
+}])
+
+const chartOptions = computed(() => ({
+  chart: {
+    type: 'bar',
+    background: 'transparent',
+    toolbar: { show: false }
+  },
+  colors: ['#a855f7'], 
+  plotOptions: {
+    bar: {
+      borderRadius: 4, 
+      columnWidth: '40%',
+    }
+  },
+  theme: { mode: 'dark' },
+  xaxis: {
+    categories: chartRows.value.map(item => item.period),
+    labels: { style: { colors: '#9ca3af' } }
+  },
+  yaxis: {
+    labels: {
+      formatter: (value) => new Intl.NumberFormat('vi-VN').format(value) + ' đ',
+      style: { colors: '#9ca3af' }
+    }
+  },
+  tooltip: {
+    theme: 'dark',
+    y: {
+      formatter: (value) => new Intl.NumberFormat('vi-VN').format(value) + ' đ'
+    }
+  }
+}))
 
 const quizTypeCards = computed(() => [
   { label: 'Public', value: formatNumber(quiz.value.public_quizzes) },
@@ -279,11 +312,6 @@ const loadDashboard = async () => {
   }
 }
 
-const barHeight = (value) => {
-  const max = maxChartRevenue.value
-  if (!max) return 0
-  return Math.max(6, Math.round(Number(value || 0) * 100 / max))
-}
 
 const formatNumber = (value) => new Intl.NumberFormat('vi-VN').format(Number(value || 0))
 

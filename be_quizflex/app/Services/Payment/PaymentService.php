@@ -251,7 +251,7 @@ class PaymentService
     }
 
     /**
-     * Process successful payment logic and upgrade user to VIP
+     * Xử lý logic thanh toán thành công và nâng hạng người dùng lên VIP.
      */
     public function processSuccessPayment(Payment $payment, string $transactionId, array $rawResponse)
     {
@@ -260,7 +260,7 @@ class PaymentService
             return $payment;
         }
 
-        // 1. Cập nhật bản ghi giao dịch thành công
+        // 1. Cập nhật bản ghi giao dịch thành công, chuyển status thành success
         $payment->update([
             'status' => 'success',
             'transaction_id' => $transactionId,

@@ -61,24 +61,33 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import BrandLogo from '@/components/common/BrandLogo.vue'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
 
 const route = useRoute()
 const expandedGroups = ref(['Quản lý nội dung'])
+const homeworkRoomCount = ref(0)
+const activeLiveRoomCount = ref(0)
 
 const menu = computed(() => [
   {
     label: 'Quản lý nội dung',
     items: [
       { label: 'Tổng quan', to: '/admin', icon: 'DB' },
+      { label: 'Quản lý Quiz', to: '/admin/quizzes', icon: 'QL' },
       { label: 'Kho quiz', to: '/admin/questions', icon: 'QZ' },
       { label: 'Tạo quiz', to: '/admin/questions/create', icon: '+' },
       { label: 'AI Generator', to: '/admin/questions/ai', icon: 'AI' },
       { label: 'OCR Upload', to: '/admin/questions/ocr', icon: 'OC' },
-      { label: 'Room', to: '/admin/rooms', icon: 'RT' },
+    ],
+  },
+  {
+    label: 'Phòng học',
+    items: [
+      { label: 'Homework rooms', to: '/admin/rooms/homework', icon: 'HW' },
+      { label: 'Live rooms', to: '/admin/rooms/live', icon: 'LR' },
     ],
   },
   {
@@ -92,6 +101,23 @@ const menu = computed(() => [
   },
 ])
 
+/*
+const roomMenu = computed(() => [
+  {
+    label: 'Homework rooms',
+    to: '/admin/rooms/homework',
+    icon: 'home',
+    badge: homeworkRoomCount.value,
+  },
+  {
+    label: 'Live rooms',
+    to: '/admin/rooms/live',
+    icon: 'broadcast',
+    badge: null,
+    live: activeLiveRoomCount.value > 0,
+  },
+])
+*/
 const pageTitle = computed(() => route.meta.title || 'Dashboard')
 
 const toggleGroup = (groupLabel) => {
