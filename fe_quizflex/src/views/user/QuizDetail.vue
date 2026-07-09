@@ -35,6 +35,12 @@
           </router-link>
           <router-link class="btn-ghost" :to="`/dashboard/questions/edit/${quiz.id}`">Sửa quiz</router-link>
           <router-link class="btn-ghost" to="/quizzes">Quay lại danh sách</router-link>
+          <button 
+            class="inline-flex h-11 items-center justify-center rounded-full border border-rose-500/30 bg-rose-500/5 px-5 text-sm font-black text-rose-400 transition duration-300 hover:border-rose-500/60 hover:bg-rose-500/10 active:scale-95"
+            @click="isReportModalOpen = true"
+          >
+            🚩 Báo lỗi quiz
+          </button>
         </div>
       </div>
 
@@ -54,6 +60,12 @@
         </div>
       </article>
     </aside>
+    <ReportModal 
+      v-if="quiz"
+      :is-open="isReportModalOpen" 
+      :quiz-id="quiz.id" 
+      @close="isReportModalOpen = false" 
+    />
   </section>
 </template>
 
@@ -62,11 +74,15 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import VisibilityBadge from '@/components/common/VisibilityBadge.vue'
 import { normalizeQuestion, normalizeQuizCard, quizzesApi } from '@/services/api'
+import ReportModal from '@/components/common/ReportModal.vue'
 
 const route = useRoute()
 const quiz = ref(null)
 const isLoading = ref(false)
 const errorMessage = ref('')
+
+// Thêm dòng này bên dưới các ref có sẵn để kiểm soát ẩn hiện modal
+const isReportModalOpen = ref(false)
 
 const questions = computed(() => (quiz.value?.rawQuestions || []).map(normalizeQuestion))
 
