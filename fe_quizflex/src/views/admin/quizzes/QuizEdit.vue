@@ -373,12 +373,12 @@ onMounted(fetchQuiz)
             >
               Danh sách câu hỏi
             </h2>
-<!-- <button
+<button
   class="btn-primary"
   @click="addQuestion"
 >
   ➕ Thêm câu hỏi
-</button> -->
+</button>
 </div>
           </div>
 
