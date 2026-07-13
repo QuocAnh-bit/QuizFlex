@@ -707,6 +707,13 @@ export const liveRoomApi = {
   },
 }
 
+export const gamificationApi = {
+  async getLeaderboard() {
+    const { data } = await api.get("/leaderboard");
+    return unwrapCollection(data);
+  },
+};
+
 export const ocrApi = {
   async scan(file, mode) {
     const formData = new FormData();
@@ -883,6 +890,11 @@ export const paymentsApi = {
 
   async history() {
     const { data } = await api.get("/payments/history");
+    return data;
+  },
+
+  async getUpgradeCosts() {
+    const { data } = await api.get("/payments/upgrade-costs");
     return data;
   },
 };

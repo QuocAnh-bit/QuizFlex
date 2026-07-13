@@ -72,12 +72,48 @@
           </thead>
           <tbody class="divide-y divide-[var(--border)]">
             <tr v-for="item in selectedUser.history" :key="item.id" class="hover:bg-[var(--surface-soft)]/50">
-              <td class="py-5 font-mono text-xs text-[var(--muted)]">{{ item.order_code }}</td>
-              <td class="py-5 px-6 font-bold">{{ item.plan_name || getPlanNameByAmount(item.amount) }}</td>
-              <td class="py-5 px-6 text-xs font-black uppercase tracking-wider text-[var(--primary)]">{{ item.provider || 'N/A' }}</td>
-              <td class="py-5 px-6 font-black">{{ formatPrice(item.amount) }}</td>
-              <td class="py-5 px-6">
-                <span :class="getStatusBadgeClass(item.status)" class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">
+              <td class="py-4 px-4 font-mono text-xs text-[var(--text)]">{{ item.order_code }}</td>
+              <td class="py-4 px-4 text-[var(--text)]">
+                <div class="flex items-center gap-2">
+                  <span class="font-bold">{{ item.plan_name }}</span>
+                  <span 
+                    v-if="item.is_upgrade" 
+                    class="bg-purple-500/20 text-purple-400 text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded border border-purple-500/20"
+                  >
+                    Nâng cấp
+                  </span>
+                </div>
+              </td>
+              <td class="py-4 px-4 text-xs font-bold uppercase text-[var(--muted)]">
+                <span class="inline-flex items-center gap-1 rounded bg-fuchsia-500/10 text-fuchsia-400 px-2 py-0.5" v-if="item.provider === 'momo'">
+                  MoMo
+                </span>
+                <span class="inline-flex items-center gap-1 rounded bg-emerald-500/10 text-emerald-400 px-2 py-0.5" v-else-if="item.provider === 'payos'">
+                  VietQR (PayOS)
+                </span>
+                <span class="inline-flex items-center gap-1 rounded bg-purple-500/10 text-purple-400 px-2 py-0.5" v-else-if="item.provider === 'trial'">
+                  Dùng thử
+                </span>
+                <span class="inline-flex items-center gap-1 rounded bg-blue-500/10 text-blue-400 px-2 py-0.5" v-else>
+                  VNPay
+                </span>
+              </td>
+              <td class="py-4 px-4 text-[var(--text)]">
+                <div class="flex flex-col">
+                  <span class="font-black text-sm">{{ formatPrice(item.amount) }}</span>
+                  <span 
+                    v-if="item.is_upgrade && item.discount_amount > 0" 
+                    class="text-[10px] text-[var(--muted)] font-semibold"
+                  >
+                    (Gốc: {{ formatPrice(item.original_amount) }} | -{{ formatPrice(item.discount_amount) }})
+                  </span>
+                </div>
+              </td>
+              <td class="py-4 px-4 text-xs">
+                <span
+                  class="inline-flex items-center gap-1 px-3 py-1 rounded-full font-black uppercase text-[10px]"
+                  :class="getStatusBadgeClass(item.status)"
+                >
                   {{ getStatusText(item.status) }}
                 </span>
               </td>

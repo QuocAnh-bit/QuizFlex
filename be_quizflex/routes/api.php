@@ -62,6 +62,7 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/ai/generate-quiz', [AIController::class, 'generate']);
     Route::post('/ocr/scan', [OcrController::class, 'scan']);
     Route::post('/payments/activate-trial', [PaymentController::class, 'activateTrial']);
+    Route::get('/payments/upgrade-costs', [PaymentController::class, 'getUpgradeCosts']);
     Route::get('/ai/jobs/{jobId}', [AIController::class, 'status'])->whereUuid('jobId');
     Route::get('/ai/quiz-status/{jobId}', [AIController::class, 'status'])->whereUuid('jobId');
     Route::get('/ai/logs/{id}', [AIController::class, 'show']);

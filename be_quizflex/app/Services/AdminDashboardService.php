@@ -106,7 +106,7 @@ class AdminDashboardService
             ->groupBy('period')
             ->orderBy('period')
             ->get()
-            ->map(fn ($row) => [
+            ->map(fn($row) => [
                 'period' => $row->period,
                 'revenue' => (float) $row->revenue,
                 'transactions' => (int) $row->transactions,
@@ -127,7 +127,7 @@ class AdminDashboardService
             ->groupBy('period')
             ->orderBy('period')
             ->get()
-            ->map(fn ($row) => [
+            ->map(fn($row) => [
                 'period' => $row->period,
                 'revenue' => (float) $row->revenue,
                 'transactions' => (int) $row->transactions,
@@ -145,7 +145,7 @@ class AdminDashboardService
             ->groupBy('period')
             ->orderBy('period')
             ->get()
-            ->map(fn ($row) => [
+            ->map(fn($row) => [
                 'period' => (string) $row->period,
                 'revenue' => (float) $row->revenue,
                 'transactions' => (int) $row->transactions,
@@ -165,7 +165,7 @@ class AdminDashboardService
             ->orderByDesc('total_paid')
             ->limit(10)
             ->get()
-            ->map(fn ($row) => [
+            ->map(fn($row) => [
                 'user_id' => (int) $row->id,
                 'name' => $row->name,
                 'email' => $row->email,
