@@ -563,8 +563,18 @@ export const homeworkApi = {
     return unwrap(data)
   },
 
+  async updateHomeworkRoom(roomId, payload) {
+    const { data } = await api.patch(`/rooms/${roomId}`, payload)
+    return unwrap(data)
+  },
+
   async joinHomeworkRoom(code) {
     const { data } = await api.post('/rooms/join', { code })
+    return unwrap(data)
+  },
+
+  async leaveHomeworkRoom(roomId) {
+    const { data } = await api.post(`/rooms/${roomId}/leave`)
     return unwrap(data)
   },
 
