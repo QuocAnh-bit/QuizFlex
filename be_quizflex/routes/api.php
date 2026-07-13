@@ -141,7 +141,9 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/rooms', [RoomController::class, 'store']);
         Route::post('/rooms/join', [RoomController::class, 'joinByCode']);
         Route::get('/rooms/{room}', [RoomController::class, 'show']);
+        Route::patch('/rooms/{room}', [RoomController::class, 'update']);
         Route::post('/rooms/{room}/join', [RoomController::class, 'joinRoom']);
+        Route::post('/rooms/{room}/leave', [RoomController::class, 'leave']);
         Route::get('/rooms/{room}/members', [RoomController::class, 'members']);
         Route::delete('/rooms/{room}/members/{member}', [RoomController::class, 'destroyMember']);
         Route::get('/homework-rooms/{room}/allowed-members', [RoomController::class, 'allowedMembers']);

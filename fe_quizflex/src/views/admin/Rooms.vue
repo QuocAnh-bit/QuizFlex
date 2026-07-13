@@ -132,7 +132,7 @@
                         Mở phòng
                       </button>
                       <button class="rounded-xl px-3 py-2 text-left text-xs font-black text-rose-300 hover:bg-rose-500/10 disabled:opacity-50" type="button" :disabled="roomActionLoading === `homework:${room.id}` || String(room.status).toLowerCase() === 'removed'" @click="softDeleteHomeworkRoom(room)">
-                        Xóa mềm phòng
+                        Xóa phòng
                       </button>
                     </div>
                   </details>
@@ -236,7 +236,7 @@
                         Đóng/Kết thúc phòng
                       </button>
                       <button class="rounded-xl px-3 py-2 text-left text-xs font-black text-rose-300 hover:bg-rose-500/10 disabled:opacity-50" type="button" :disabled="roomActionLoading === `live:${room.id}` || String(room.status).toLowerCase() === 'removed'" @click="softDeleteLiveRoom(room)">
-                        Xóa mềm phòng
+                        Xóa phòng
                       </button>
                     </div>
                   </details>
