@@ -678,20 +678,20 @@ PROMPT;
     }
 
 
-    public function generateQuiz(string $prompt, int $count = 10): array
-    {
-        $fullPrompt = $this->buildGenerateQuizPrompt($prompt, $count);
-        $result = $this->requestJsonPayload($fullPrompt);
+    // public function generateQuiz(string $prompt, int $count = 10): array
+    // {
+    //     $fullPrompt = $this->buildGenerateQuizPrompt($prompt, $count);
+    //     $result = $this->requestJsonPayload($fullPrompt);
 
-        if (!$this->isGeneratedQuizValid($result['payload'])) {
-            throw new RuntimeException('AI quiz JSON structure invalid.');
-        }
+    //     if (!$this->isGeneratedQuizValid($result['payload'])) {
+    //         throw new RuntimeException('AI quiz JSON structure invalid.');
+    //     }
 
-        $normalized = $this->normalizeGeneratedQuiz($result['payload'], $count);
-        $normalized['meta'] = ['tokens_used' => $result['tokens_used']];
+    //     $normalized = $this->normalizeGeneratedQuiz($result['payload'], $count);
+    //     $normalized['meta'] = ['tokens_used' => $result['tokens_used']];
 
-        return $normalized;
-    }
+    //     return $normalized;
+    // }
 
     private function buildGenerateQuizPrompt(string $prompt, int $count): string
     {
