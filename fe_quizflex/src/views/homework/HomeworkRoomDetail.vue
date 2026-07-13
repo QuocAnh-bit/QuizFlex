@@ -2,7 +2,18 @@
   <section class="grid gap-6 py-8">
     <div class="flex flex-wrap items-center justify-between gap-3">
       <router-link class="btn-ghost" to="/homework-rooms">Quay lại danh sách</router-link>
-      <router-link v-if="canManageRoom" class="btn-primary" :to="`/homework-rooms/${roomId}/assignments/create`">Giao quiz</router-link>
+      <div class="flex items-center gap-2">
+        <router-link v-if="canManageRoom" class="btn-primary" :to="`/homework-rooms/${roomId}/assignments/create`">Giao quiz</router-link>
+        <button 
+          v-else-if="room" 
+          class="btn-ghost text-rose-400 hover:bg-rose-500/10 hover:text-rose-300"
+          type="button" 
+          :disabled="isLeavingRoom" 
+          @click="leaveRoom"
+        >
+          {{ isLeavingRoom ? 'Đang rời phòng...' : 'Rời phòng' }}
+        </button>
+      </div>
     </div>
 
     <div v-if="isLoading" class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-10 text-center text-sm font-bold text-[var(--muted)]">Đang tải chi tiết room...</div>
@@ -40,6 +51,50 @@
             <p class="text-xs font-bold text-[var(--muted)]">Ngày tạo</p>
             <p class="mt-1 text-lg font-black text-[var(--text)]">{{ formatDate(room.created_at) }}</p>
           </div>
+        </div>
+      </article>
+
+      <!-- Room Settings (Only for room owner/admin) -->
+      <article v-if="canManageRoom" class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-card)]">
+        <div>
+          <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Room Settings</p>
+          <h2 class="mt-1 text-2xl font-black tracking-[-0.04em] text-[var(--text)]">Cấu hình phòng</h2>
+          <p class="mt-2 text-sm font-bold leading-6 text-[var(--muted)]">Chỉnh sửa thông tin phòng và chính sách tham gia.</p>
+        </div>
+
+        <form class="mt-6 grid gap-5" @submit.prevent="updateRoomSettings">
+          <div class="grid gap-5 md:grid-cols-2">
+            <label class="grid gap-2">
+              <span class="text-sm font-black text-[var(--text)]">Tên room</span>
+              <input v-model.trim="settingsForm.name" class="field" maxlength="255" placeholder="Tên room" />
+            </label>
+
+            <label class="grid gap-2">
+              <span class="text-sm font-black text-[var(--text)]">Quyền tham gia</span>
+              <select v-model="settingsForm.join_policy" class="field">
+                <option value="open">Công khai (Ai có mã phòng đều có thể tham gia)</option>
+                <option value="email_whitelist">Giới hạn (Chỉ email trong danh sách mới được tham gia)</option>
+              </select>
+            </label>
+          </div>
+
+          <label class="grid gap-2">
+            <span class="text-sm font-black text-[var(--text)]">Mô tả</span>
+            <textarea v-model.trim="settingsForm.description" class="field min-h-20 resize-y" placeholder="Mô tả ngắn của phòng"></textarea>
+          </label>
+
+          <div class="flex justify-end gap-3">
+            <button class="btn-primary" type="submit" :disabled="isUpdatingSettings">
+              {{ isUpdatingSettings ? 'Đang lưu...' : 'Lưu cấu hình' }}
+            </button>
+          </div>
+        </form>
+
+        <div v-if="settingsSuccessMessage" class="mt-4 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm font-bold text-emerald-300">
+          {{ settingsSuccessMessage }}
+        </div>
+        <div v-if="settingsErrorMessage" class="mt-4 rounded-2xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm font-bold text-rose-300">
+          {{ settingsErrorMessage }}
         </div>
       </article>
 
@@ -307,15 +362,17 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import { currentUserStorage, homeworkApi } from '@/services/api'
 
 const route = useRoute()
+const router = useRouter()
 const roomId = computed(() => route.params.roomId)
 const currentUser = currentUserStorage.get()
 
 const room = ref(null)
+const isLeavingRoom = ref(false)
 const members = ref([])
 const assignments = ref([])
 const allowedMembers = ref([])
@@ -334,6 +391,16 @@ const evaluationData = ref(null)
 const evaluationForm = ref({
   comment: '',
 })
+
+// Room settings state variables
+const settingsForm = ref({
+  name: '',
+  description: '',
+  join_policy: 'open',
+})
+const isUpdatingSettings = ref(false)
+const settingsSuccessMessage = ref('')
+const settingsErrorMessage = ref('')
 
 const canManageRoom = computed(() => currentUser?.role === 'admin' || Number(room.value?.owner_id) === Number(currentUser?.id))
 
@@ -412,6 +479,10 @@ const loadRoomDetail = async () => {
     ])
 
     room.value = roomData
+    settingsForm.value.name = roomData.name || ''
+    settingsForm.value.description = roomData.description || ''
+    settingsForm.value.join_policy = roomData.join_policy || 'open'
+
     members.value = membersData
     assignments.value = assignmentsData
     allowedMembers.value = roomData?.type === 'homework' && Number(roomData.owner_id) === Number(currentUser?.id)
@@ -421,6 +492,35 @@ const loadRoomDetail = async () => {
     errorMessage.value = `Không tải được chi tiết room: ${error.message}`
   } finally {
     isLoading.value = false
+  }
+}
+
+const updateRoomSettings = async () => {
+  settingsErrorMessage.value = ''
+  settingsSuccessMessage.value = ''
+
+  if (!settingsForm.value.name) {
+    settingsErrorMessage.value = 'Tên room không được để trống.'
+    return
+  }
+
+  isUpdatingSettings.value = true
+  try {
+    const updatedRoom = await homeworkApi.updateHomeworkRoom(roomId.value, {
+      name: settingsForm.value.name,
+      description: settingsForm.value.description || null,
+      join_policy: settingsForm.value.join_policy,
+    })
+    room.value = updatedRoom
+    settingsSuccessMessage.value = 'Cập nhật cấu hình phòng thành công.'
+    
+    if (updatedRoom.join_policy === 'email_whitelist' && !allowedMembers.value.length) {
+      allowedMembers.value = await homeworkApi.getAllowedMembers(roomId.value)
+    }
+  } catch (error) {
+    settingsErrorMessage.value = `Lỗi cập nhật cấu hình: ${error.message}`
+  } finally {
+    isUpdatingSettings.value = false
   }
 }
 
@@ -469,6 +569,21 @@ const removeMember = async (member) => {
     members.value = members.value.filter((m) => Number(m.id) !== Number(member.id))
   } catch (error) {
     errorMessage.value = `Không xóa được thành viên: ${error.message}`
+  }
+}
+
+const leaveRoom = async () => {
+  if (!window.confirm('Bạn có chắc chắn muốn rời khỏi phòng Homework này?')) return
+
+  isLeavingRoom.value = true
+  try {
+    await homeworkApi.leaveHomeworkRoom(roomId.value)
+    alert('Đã rời phòng thành công.')
+    router.push('/homework-rooms')
+  } catch (error) {
+    alert(`Không rời được phòng: ${error.message}`)
+  } finally {
+    isLeavingRoom.value = false
   }
 }
 
