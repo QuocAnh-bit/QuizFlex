@@ -29,11 +29,11 @@
       <div class="podium-card second">
         <div class="rank-badge silver">2</div>
         <div class="avatar silver">
-          {{ leaderboard[1]?.name?.charAt(0).toUpperCase() || 'A' }}
+          {{ leaderboard[1]?.name?.charAt(0).toUpperCase() || '-' }}
         </div>
-        <h3>{{ leaderboard[1]?.name || 'Alice' }}</h3>
-        <span class="level">Level {{ leaderboard[1]?.level || 2 }}</span>
-        <div class="xp">🏆 {{ leaderboard[1]?.xp || 48 }} XP</div>
+        <h3>{{ leaderboard[1]?.name || 'Trống' }}</h3>
+        <span class="level" v-if="leaderboard[1]">Level {{ leaderboard[1]?.level }}</span>
+        <div class="xp" v-if="leaderboard[1]">🏆 {{ leaderboard[1]?.xp }} XP</div>
       </div>
 
       <!-- Hạng 1 -->
@@ -41,25 +41,25 @@
         <div class="crown">👑</div>
         <div class="rank-badge gold">1</div>
         <div class="avatar gold">
-          {{ leaderboard[0]?.name?.charAt(0).toUpperCase() || 'N' }}
+          {{ leaderboard[0]?.name?.charAt(0).toUpperCase() || '-' }}
         </div>
         <h2>
-          {{ leaderboard[0]?.name || 'ngô huy' }}
+          {{ leaderboard[0]?.name || 'Trống' }}
           <span v-if="leaderboard[0]?.is_me" class="me-tag">(bạn)</span>
         </h2>
-        <span class="level">Level {{ leaderboard[0]?.level || 1 }}</span>
-        <div class="xp gold-xp">🏆 {{ leaderboard[0]?.xp || 60 }} XP</div>
+        <span class="level" v-if="leaderboard[0]">Level {{ leaderboard[0]?.level }}</span>
+        <div class="xp gold-xp" v-if="leaderboard[0]">🏆 {{ leaderboard[0]?.xp }} XP</div>
       </div>
 
       <!-- Hạng 3 -->
       <div class="podium-card third">
         <div class="rank-badge bronze">3</div>
         <div class="avatar bronze">
-          {{ leaderboard[2]?.name?.charAt(0).toUpperCase() || 'B' }}
+          {{ leaderboard[2]?.name?.charAt(0).toUpperCase() || '-' }}
         </div>
-        <h3>{{ leaderboard[2]?.name || 'Bob' }}</h3>
-        <span class="level">Level {{ leaderboard[2]?.level || 1 }}</span>
-        <div class="xp">🏆 {{ leaderboard[2]?.xp || 36 }} XP</div>
+        <h3>{{ leaderboard[2]?.name || 'Trống' }}</h3>
+        <span class="level" v-if="leaderboard[2]">Level {{ leaderboard[2]?.level }}</span>
+        <div class="xp" v-if="leaderboard[2]">🏆 {{ leaderboard[2]?.xp }} XP</div>
       </div>
     </div>
 
@@ -68,9 +68,9 @@
       <table class="leader-table">
         <thead>
           <tr>
-            <th>#</th>
-            <th>Người chơi</th>
-            <th>XP</th>
+            <th class="rank-col">#</th>
+            <th class="player-col">Người chơi</th>
+            <th class="xp-col">XP</th>
           </tr>
         </thead>
         <tbody>
@@ -80,13 +80,13 @@
             class="leader-row"
             :class="{ me: user.is_me }"
           >
-            <td class="rank-cell">
+            <td class="rank-cell rank-col">
               <span v-if="i === 0" class="medal">🥇</span>
               <span v-else-if="i === 1" class="medal">🥈</span>
               <span v-else-if="i === 2" class="medal">🥉</span>
               <span v-else class="rank-num">#{{ i + 1 }}</span>
             </td>
-            <td class="player-cell">
+            <td class="player-cell player-col">
               <div class="avatar-small">{{ user.name.charAt(0).toUpperCase() }}</div>
               <div class="player-info">
                 <div class="name">
@@ -96,7 +96,7 @@
                 <div class="level">Level {{ user.level }}</div>
               </div>
             </td>
-            <td class="xp-cell">
+            <td class="xp-cell xp-col">
               {{ user.xp }} XP
               <span v-if="user.is_me" class="crown-mini">👑</span>
             </td>
@@ -113,18 +113,26 @@
 
 <script setup>
 import { ref, onMounted } from "vue";
+import { gamificationApi, currentUserStorage } from "@/services/api";
 
 const leaderboard = ref([]);
 const visibleCount = ref(5);
+const isLoading = ref(true);
 
-onMounted(() => {
-  leaderboard.value = [
-    { rank: 1, name: "ngô huy", level: 1, xp: 60, is_me: true },
-    { rank: 2, name: "Alice", level: 2, xp: 48, is_me: false },
-    { rank: 3, name: "Bob", level: 1, xp: 36, is_me: false },
-    { rank: 4, name: "Charlie", level: 1, xp: 28, is_me: false },
-    { rank: 5, name: "David", level: 1, xp: 22, is_me: false },
-  ];
+onMounted(async () => {
+  try {
+    const currentUser = currentUserStorage.get();
+    const data = await gamificationApi.getLeaderboard();
+    
+    leaderboard.value = data.map((item) => ({
+      ...item,
+      is_me: currentUser && Number(item.user_id) === Number(currentUser.id),
+    }));
+  } catch (error) {
+    console.error("Failed to load leaderboard:", error);
+  } finally {
+    isLoading.value = false;
+  }
 });
 </script>
 
@@ -340,6 +348,8 @@ onMounted(() => {
   border-radius: 24px;
   border: 1px solid rgba(255,255,255,0.08);
   overflow: hidden;
+  max-width: 920px;
+  margin: 0 auto;
 }
 
 .leader-table {
@@ -348,17 +358,16 @@ onMounted(() => {
 }
 
 .leader-table th {
-  padding: 20px 24px;
-  text-align: left;
-  font-size: 13px;
+  padding: 22px 32px;
+  font-size: 14px;
   text-transform: uppercase;
-  letter-spacing: 0.6px;
+  letter-spacing: 0.8px;
   color: #a5b4fc;
   border-bottom: 1px solid rgba(255,255,255,0.1);
 }
 
 .leader-table td {
-  padding: 18px 24px;
+  padding: 20px 32px;
   vertical-align: middle;
 }
 
@@ -375,32 +384,53 @@ onMounted(() => {
   border-left: 4px solid #a855f7;
 }
 
+/* Align columns and define widths */
+.rank-col {
+  text-align: center;
+  width: 100px;
+}
+
+.player-col {
+  text-align: left;
+}
+
+.xp-col {
+  text-align: right;
+  width: 180px;
+}
+
+.player-cell {
+  display: flex;
+  align-items: center;
+}
+
 .avatar-small {
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   background: linear-gradient(135deg, #8b5cf6, #6d28d9);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: bold;
-  margin-right: 16px;
-  float: left;
+  margin-right: 18px;
+  flex-shrink: 0;
+  font-size: 18px;
 }
 
 .name {
   font-weight: 700;
-  font-size: 16.5px;
+  font-size: 18px;
 }
 
 .level {
-  font-size: 13.5px;
+  font-size: 14.5px;
   color: #94a3b8;
+  margin-top: 2px;
 }
 
 .xp-cell {
-  text-align: right;
-  font-size: 21px;
+  font-size: 24px;
   font-weight: 800;
   color: #c084fc;
 }

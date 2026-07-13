@@ -295,7 +295,7 @@ const handleVerifyOtp = async () => {
   otpError.value = ''
   successMessage.value = ''
   
-  const fullOtp = otpDigits.value.join('').trim()
+  const fullOtp = otpDigits.value.join('').trim() // ghép 6 ô OTP thành 1 chuỗi
   if (fullOtp.length !== 6) {
     otpError.value = 'Mã OTP yêu cầu đầy đủ 6 chữ số.'
     return

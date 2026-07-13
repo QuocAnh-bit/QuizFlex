@@ -75,6 +75,10 @@ class OcrController extends Controller
 
                 // CASE 3: Nếu PDF không có text => PDF scan => convert sang ảnh OCR
                 if ($text === '') {
+                    if (!class_exists('Imagick')) {
+                        throw new \Exception('Hệ thống Laravel thiếu thư viện chuyển đổi PDF sang ảnh (Imagick/Ghostscript). Vui lòng upload trực tiếp bằng file ảnh (PNG, JPG, JPEG) thay vì file PDF scan.');
+                    }
+
                     $pdfPath = $file->storeAs('ocr', uniqid() . '.pdf', 'public');
                     $fullPdfPath = storage_path('app/public/' . $pdfPath);
 
@@ -138,7 +142,7 @@ class OcrController extends Controller
                 $msg = 'Không tìm thấy văn bản nào trong tài liệu. Vui lòng kiểm tra và đảm bảo ảnh chụp rõ nét, có chứa chữ và không bị lật ngược.';
             }
             // Dịch lỗi thiếu thư viện Imagick/Ghostscript khi cắt PDF
-            elseif (str_contains($msg, 'imagick') || str_contains($msg, 'pdf-to-image') || str_contains($msg, 'Ghostscript')) {
+            elseif (str_contains(strtolower($msg), 'imagick') || str_contains(strtolower($msg), 'pdf-to-image') || str_contains(strtolower($msg), 'ghostscript')) {
                 $msg = 'Hệ thống Laravel thiếu thư viện chuyển đổi PDF sang ảnh (Imagick/Ghostscript). Vui lòng upload trực tiếp bằng file ảnh (PNG, JPG, JPEG) thay vì file PDF scan.';
             }
 

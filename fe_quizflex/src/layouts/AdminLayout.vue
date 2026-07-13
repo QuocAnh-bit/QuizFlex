@@ -81,6 +81,7 @@ const menu = computed(() => [
       { label: 'Tạo quiz', to: '/admin/questions/create', icon: '+' },
       { label: 'AI Generator', to: '/admin/questions/ai', icon: 'AI' },
       { label: 'OCR Upload', to: '/admin/questions/ocr', icon: 'OC' },
+      { label: 'Quản lý báo cáo', to: '/admin/report-tickets', icon: '🚩' },
     ],
   },
   {

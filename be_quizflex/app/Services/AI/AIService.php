@@ -678,6 +678,7 @@ PROMPT;
     }
 
 
+
     // public function generateQuiz(string $prompt, int $count = 10): array
     // {
     //     $fullPrompt = $this->buildGenerateQuizPrompt($prompt, $count);
@@ -725,6 +726,8 @@ Request:
 {$prompt}
 PROMPT;
     }
+
+
 
     public function parseQuiz(string $prompt): array
     {

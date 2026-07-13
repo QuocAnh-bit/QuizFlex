@@ -1,0 +1,20 @@
+*   [33mf92acc8[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mqanhdev[m[33m, [m[1;31morigin/qanhdev[m[33m, [m[1;31morigin/main[m[33m)[m Merge pull request #15 from QuocAnh-bit/khiemdev
+[31m|[m[32m\[m  
+[31m|[m *   [33m98a7c7d[m[33m ([m[1;31morigin/khiemdev[m[33m)[m Merge remote-tracking branch 'origin/trinh-dev' into khiemdev
+[31m|[m [33m|[m[34m\[m  
+[31m|[m * [34m\[m   [33m7ccecdd[m merge nhánh huydev vào khiemdev
+[31m|[m [35m|[m[36m\[m [34m\[m  
+[31m|[m [35m|[m * [34m|[m [33m2813620[m[33m ([m[1;31morigin/huydev[m[33m)[m sửa lại bảng xếp hạng
+* [35m|[m [36m|[m [34m|[m   [33mc0e2ec0[m Merge pull request #14 from QuocAnh-bit/tu_ai-progress-loading
+[1;31m|[m[1;32m\[m [35m\[m [36m\[m [34m\[m  
+[1;31m|[m * [35m|[m [36m|[m [34m|[m [33m9baa091[m[33m ([m[1;31morigin/tu_ai-progress-loading[m[33m)[m Thêm progress tạo quiz bằng AI
+[1;31m|[m[1;31m/[m [35m/[m [36m/[m [34m/[m  
+* [35m|[m [36m|[m [34m|[m   [33mabc9649[m Merge pull request #13 from QuocAnh-bit/trinh-dev
+[1;33m|[m[34m\[m [35m\[m [36m\[m [34m\[m  
+[1;33m|[m [34m|[m [35m|[m[34m_[m[36m|[m[34m/[m  
+[1;33m|[m [34m|[m[34m/[m[35m|[m [36m|[m   
+[1;33m|[m * [35m|[m [36m|[m [33m34ef55b[m[33m ([m[1;31morigin/trinh-dev[m[33m)[m Fix ko xóa được thành viên sau khi merge code
+[1;33m|[m[1;33m/[m [35m/[m [36m/[m  
+* [35m|[m [36m|[m [33mbaecffb[m Merge pull request #11 from QuocAnh-bit/khiemdev
+[1;35m|[m[35m\[m[35m|[m [36m|[m 
+[1;35m|[m * [36m|[m [33m4686db9[m hoàn thiện merge, version 1.2

@@ -72,12 +72,29 @@ const attempt = ref(null)
 const isLoading = ref(false)
 const errorMessage = ref('')
 
+// Hàm xử lý phát âm thanh
+const playEncouragementSound = () => {
+  try {
+    // Trỏ tới file âm thanh nằm trong thư mục public/sounds/
+    const audio = new Audio('/sounds/cheering-sound.mp3')
+    audio.play().catch((err) => {
+      console.warn('Trình duyệt chặn tự động phát âm thanh:', err)
+    })
+  } catch (error) {
+    console.error('Lỗi khi phát âm thanh:', error)
+  }
+}
+
 const loadAttempt = async () => {
   isLoading.value = true
   errorMessage.value = ''
 
   try {
     attempt.value = await attemptsApi.get(route.params.id)
+
+    // Phát âm thanh khi đã tải xong dữ liệu kết quả thành công
+    playEncouragementSound()
+
   } catch (error) {
     errorMessage.value = `Không tải được kết quả: ${error.message}`
   } finally {

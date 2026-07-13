@@ -77,7 +77,7 @@
           <VueApexCharts 
             v-else 
             class="w-full"
-            type="bar" 
+            type="area" 
             height="300" 
             :options="chartOptions" 
             :series="series" 
@@ -216,39 +216,91 @@ const chartRows = computed(() => {
   return revenue.value.revenue_by_day || []
 })
 
+// Tính toán Series cho biểu đồ
 const series = computed(() => [{
   name: 'Doanh thu',
   data: chartRows.value.map(item => item.revenue)
 }])
 
+// Cải tiến Chart Options
 const chartOptions = computed(() => ({
   chart: {
-    type: 'bar',
+    type: 'area',
     background: 'transparent',
-    toolbar: { show: false }
-  },
-  colors: ['#a855f7'], 
-  plotOptions: {
-    bar: {
-      borderRadius: 4, 
-      columnWidth: '40%',
+    toolbar: { 
+      show: true,
+      tools: {
+        download: true,
+        selection: true,
+        zoom: true,
+        zoomin: true,
+        zoomout: true,
+        pan: true,
+        reset: true
+      },
+      theme: 'dark'
+    },
+    zoom: { 
+      enabled: true,
+      type: 'x',
+      autoScaleYaxis: true
     }
   },
+  colors: ['#a855f7'], 
+  fill: {
+    type: 'gradient',
+    gradient: {
+      shadeIntensity: 1,
+      opacityFrom: 0.5,
+      opacityTo: 0.05,
+      stops: [0, 90, 100]
+    }
+  },
+  dataLabels: { enabled: false }, // Tắt số hiện trên chart để đỡ rối
+  stroke: { 
+    curve: 'smooth', // Đường cong mềm mại
+    width: 3 
+  },
   theme: { mode: 'dark' },
+  grid: {
+    borderColor: 'rgba(255, 255, 255, 0.05)', // Lưới nền siêu mờ
+    strokeDashArray: 4, // Đường lưới nét đứt
+  },
   xaxis: {
-    categories: chartRows.value.map(item => item.period),
-    labels: { style: { colors: '#9ca3af' } }
+    categories: chartRows.value.map(item => {
+      // Làm gọn label trục X nếu đang xem theo ngày
+      if (chartMode.value === 'day') {
+        const parts = item.period.split('-');
+        if (parts.length === 3) return `${parts[2]}/${parts[1]}`; // Chuyển YYYY-MM-DD thành DD/MM
+      }
+      return item.period;
+    }),
+    labels: { style: { colors: '#9ca3af' } },
+    axisBorder: { show: false },
+    axisTicks: { show: false }
   },
   yaxis: {
     labels: {
-      formatter: (value) => new Intl.NumberFormat('vi-VN').format(value) + ' đ',
+      formatter: (value) => {
+        // Dùng compact notation để rút gọn số (ví dụ: 10.000.000 đ -> 10 Tr đ)
+        return new Intl.NumberFormat('vi-VN', { 
+          notation: "compact", 
+          compactDisplay: "short",
+          maximumFractionDigits: 1
+        }).format(value) + ' đ'
+      },
       style: { colors: '#9ca3af' }
     }
   },
   tooltip: {
     theme: 'dark',
     y: {
-      formatter: (value) => new Intl.NumberFormat('vi-VN').format(value) + ' đ'
+      formatter: (value, { dataPointIndex }) => {
+        const row = chartRows.value[dataPointIndex];
+        const formattedMoney = new Intl.NumberFormat('vi-VN').format(value) + ' đ';
+        // Thêm số lượng giao dịch vào tooltip từ dữ liệu backend
+        return `${formattedMoney} (từ ${row.transactions} giao dịch)`; 
+      }
     }
   }
 }))

@@ -1,84 +1,114 @@
 <template>
   <section class="grid gap-6">
-    <div class="relative overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-soft)] backdrop-blur-2xl">
+    <!-- Header: Giao diện Đen - Tím hiện đại -->
+    <div class="bg-[var(--surface)] border border-[var(--border)] rounded-[2rem] p-6 shadow-xl backdrop-blur-xl">
+      <!-- Hiệu ứng Glow tím -->
+      <div class="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-violet-600/20 blur-[100px]"></div>
+      
       <div class="relative z-10">
-        <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Payment</p>
-        <h1 class="mt-2 text-4xl font-black tracking-[-0.06em] text-[var(--text)]">Gói dịch vụ & thanh toán</h1>
-        <p class="mt-3 max-w-2xl text-sm leading-7 text-[var(--muted)]">
-          Admin xem được toàn bộ giao dịch. Người dùng chỉ xem được giao dịch của chính họ ở trang nâng cấp.
+        <p class="text-[10px] font-black uppercase tracking-[0.2em] text-violet-500">
+          PAYMENT MANAGEMENT
+        </p>
+        <h1 class="mt-2 text-4xl font-black tracking-tighter text-white">
+          Quản lý Tài chính
+        </h1>
+        <p class="mt-3 max-w-2xl text-sm leading-7 text-neutral-400">
+          Quản lý toàn bộ giao dịch trên hệ thống, theo dõi doanh thu và trạng thái thanh toán của người dùng.
         </p>
       </div>
     </div>
 
-    <div class="grid gap-5 lg:grid-cols-3">
-      <article
-        v-for="plan in paymentPlans"
-        :key="plan.id"
-        class="rounded-[2rem] border p-6 shadow-[var(--shadow-card)]"
-        :class="plan.popular ? 'border-[var(--border-strong)] bg-[var(--chip-active)]' : 'border-[var(--border)] bg-[var(--surface)]'"
-      >
-        <p class="font-black text-[var(--primary)]">{{ plan.name }}</p>
-        <h2 class="mt-4 text-4xl font-black text-[var(--text)]">{{ plan.price }}</h2>
-        <p class="text-sm text-[var(--muted)]">{{ plan.period }}</p>
-        <div class="mt-6 grid gap-3">
-          <span
-            v-for="feature in plan.features"
-            :key="feature"
-            class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-3 text-sm font-bold text-[var(--muted)]"
-          >
-            {{ feature }}
-          </span>
-        </div>
-      </article>
-    </div>
 
-    <article class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-card)]">
-      <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-        <div>
-          <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Payment history</p>
-          <h2 class="mt-2 text-2xl font-black text-[var(--text)]">Tất cả giao dịch</h2>
-          <p class="mt-1 text-sm font-semibold text-[var(--muted)]">Danh sách này chỉ dành cho admin.</p>
-        </div>
-        <button class="btn-ghost" type="button" :disabled="isLoading" @click="loadPayments">
-          {{ isLoading ? 'Đang tải...' : 'Tải lại' }}
+    <div class="bg-[var(--surface)] border border-[var(--border)] rounded-[2rem] p-6 shadow-xl backdrop-blur-xl">
+      
+      <div class="flex items-center justify-between mb-8">
+        <button v-if="selectedUser" @click="selectedUser = null" class="flex items-center gap-2 text-sm font-bold text-[var(--primary)] hover:translate-x-[-5px] transition-all">
+          ← Quay lại danh sách
+        </button>
+        <h2 v-else class="text-xl font-black text-[var(--text)]">Danh sách khách hàng</h2>
+        
+        <button @click="loadPayments" :disabled="isLoading" class="group flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-[var(--surface-soft)] font-bold text-sm border border-[var(--border)] hover:border-[var(--primary)] transition-all">
+          <span :class="{'animate-spin': isLoading}">↻</span>
+          {{ isLoading ? 'Đang tải...' : 'Làm mới' }}
         </button>
       </div>
 
-      <p v-if="errorMessage" class="mt-5 rounded-2xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm font-bold text-rose-300">
-        {{ errorMessage }}
-      </p>
-
-      <div class="mt-6 overflow-x-auto">
-        <table class="w-full border-collapse text-left text-sm font-semibold">
+      <div class="overflow-x-auto">
+        <table v-if="!selectedUser" class="w-full text-left border-collapse">
           <thead>
-            <tr class="border-b border-[var(--border)] text-[var(--muted)]">
-              <th class="pb-3 pr-4 font-black">Người dùng</th>
-              <th class="pb-3 px-4 font-black">Mã giao dịch</th>
-              <th class="pb-3 px-4 font-black">Gói</th>
-              <th class="pb-3 px-4 font-black">Cổng</th>
-              <th class="pb-3 px-4 font-black">Số tiền</th>
-              <th class="pb-3 px-4 font-black">Trạng thái</th>
-              <th class="pb-3 pl-4 font-black">Ngày tạo</th>
+            <tr class="text-[var(--muted)] text-[10px] uppercase tracking-[0.2em]">
+              <th class="pb-6 pl-4">Khách hàng</th>
+              <th class="pb-6 px-6 text-center">Giao dịch thành công</th>
+              <th class="pb-6 px-6">Tổng chi tiêu</th>
+              <th class="pb-6 pr-4 text-right">Thao tác</th>
             </tr>
           </thead>
-          <tbody>
-            <tr v-if="isLoading">
-              <td colspan="7" class="py-10 text-center text-[var(--muted)] font-bold">Đang tải lịch sử giao dịch...</td>
-            </tr>
-            <tr
-              v-for="item in paymentHistory"
-              v-else
-              :key="item.id"
-              class="border-b border-[var(--border)]/50 hover:bg-[var(--surface-soft)]/20 transition"
-            >
-              <td class="py-4 pr-4">
-                <b class="block text-[var(--text)]">{{ item.user_name || 'Không rõ' }}</b>
-                <span class="block text-xs text-[var(--muted)]">{{ item.user_email || 'Chưa có email' }}</span>
+          <tbody class="divide-y divide-[var(--border)]">
+            <tr v-for="user in usersList" :key="user.user_email" class="hover:bg-[var(--surface-soft)]/50 transition-colors group">
+              <td class="py-5 pl-4">
+                <div class="font-black text-[var(--text)] group-hover:text-[var(--primary)] transition-colors">{{ user.user_name || 'Anonymous' }}</div>
+                <div class="text-[11px] text-[var(--muted)] font-mono">{{ user.user_email }}</div>
               </td>
+              <td class="py-5 px-6 text-center font-black text-lg">{{ user.total_transactions }}</td>
+              <td class="py-5 px-6 font-black text-xl text-[var(--primary)]">{{ formatPrice(user.total_amount) }}</td>
+              <td class="py-5 pr-4 text-right">
+                <button @click="selectedUser = user" class="px-5 py-2 bg-black text-white dark:bg-white dark:text-black rounded-xl font-bold text-xs hover:scale-105 transition-transform shadow-lg">
+                  Chi tiết
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <table v-else class="w-full text-left border-collapse">
+          <thead>
+            <tr class="text-[var(--muted)] text-[10px] uppercase tracking-[0.2em]">
+              <th class="pb-6">Mã Giao Dịch</th>
+              <th class="pb-6 px-6">Gói</th>
+              <th class="pb-6 px-6">Kênh</th>
+              <th class="pb-6 px-6">Số tiền</th>
+              <th class="pb-6 px-6">Trạng thái</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-[var(--border)]">
+            <tr v-for="item in selectedUser.history" :key="item.id" class="hover:bg-[var(--surface-soft)]/50">
               <td class="py-4 px-4 font-mono text-xs text-[var(--text)]">{{ item.order_code }}</td>
-              <td class="py-4 px-4 text-[var(--text)]">{{ item.plan_name || getPlanNameByAmount(item.amount) }}</td>
-              <td class="py-4 px-4 text-xs font-bold uppercase text-[var(--muted)]">{{ item.provider }}</td>
-              <td class="py-4 px-4 text-[var(--text)] font-black">{{ formatPrice(item.amount) }}</td>
+              <td class="py-4 px-4 text-[var(--text)]">
+                <div class="flex items-center gap-2">
+                  <span class="font-bold">{{ item.plan_name }}</span>
+                  <span 
+                    v-if="item.is_upgrade" 
+                    class="bg-purple-500/20 text-purple-400 text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded border border-purple-500/20"
+                  >
+                    Nâng cấp
+                  </span>
+                </div>
+              </td>
+              <td class="py-4 px-4 text-xs font-bold uppercase text-[var(--muted)]">
+                <span class="inline-flex items-center gap-1 rounded bg-fuchsia-500/10 text-fuchsia-400 px-2 py-0.5" v-if="item.provider === 'momo'">
+                  MoMo
+                </span>
+                <span class="inline-flex items-center gap-1 rounded bg-emerald-500/10 text-emerald-400 px-2 py-0.5" v-else-if="item.provider === 'payos'">
+                  VietQR (PayOS)
+                </span>
+                <span class="inline-flex items-center gap-1 rounded bg-purple-500/10 text-purple-400 px-2 py-0.5" v-else-if="item.provider === 'trial'">
+                  Dùng thử
+                </span>
+                <span class="inline-flex items-center gap-1 rounded bg-blue-500/10 text-blue-400 px-2 py-0.5" v-else>
+                  VNPay
+                </span>
+              </td>
+              <td class="py-4 px-4 text-[var(--text)]">
+                <div class="flex flex-col">
+                  <span class="font-black text-sm">{{ formatPrice(item.amount) }}</span>
+                  <span 
+                    v-if="item.is_upgrade && item.discount_amount > 0" 
+                    class="text-[10px] text-[var(--muted)] font-semibold"
+                  >
+                    (Gốc: {{ formatPrice(item.original_amount) }} | -{{ formatPrice(item.discount_amount) }})
+                  </span>
+                </div>
+              </td>
               <td class="py-4 px-4 text-xs">
                 <span
                   class="inline-flex items-center gap-1 px-3 py-1 rounded-full font-black uppercase text-[10px]"
@@ -87,17 +117,11 @@
                   {{ getStatusText(item.status) }}
                 </span>
               </td>
-              <td class="py-4 pl-4 text-[var(--muted)] text-xs">{{ formatDate(item.created_at) }}</td>
-            </tr>
-            <tr v-if="!isLoading && paymentHistory.length === 0">
-              <td colspan="7" class="py-10 text-center text-[var(--muted)] font-bold">
-                Chưa có giao dịch nào trên hệ thống.
-              </td>
             </tr>
           </tbody>
         </table>
       </div>
-    </article>
+    </div>
   </section>
 </template>
 
@@ -105,71 +129,47 @@
 import { onMounted, ref } from 'vue'
 import { paymentsApi } from '@/services/api'
 
-const paymentPlans = [
-  { id: 'plus_1m', name: 'Gói Plus', price: '50.000đ', period: '30 ngày', popular: false, features: ['+100 lượt AI', 'OCR PDF/Ảnh', 'Tạo phòng Realtime'] },
-  { id: 'pro_1m', name: 'Gói Pro', price: '120.000đ', period: '30 ngày', popular: true, features: ['+350 lượt AI', 'OCR PDF/Ảnh', 'Tạo phòng Realtime lớn'] },
-  { id: 'ultra_1m', name: 'Gói Ultra', price: '250.000đ', period: '30 ngày', popular: false, features: ['+1500 lượt AI', 'OCR PDF/Ảnh', 'Không giới hạn tính năng'] },
-]
-
-const paymentHistory = ref([])
+const usersList = ref([])
+const selectedUser = ref(null)
 const isLoading = ref(false)
-const errorMessage = ref('')
-
-onMounted(() => {
-  loadPayments()
-})
 
 const loadPayments = async () => {
   isLoading.value = true
-  errorMessage.value = ''
-
   try {
     const res = await paymentsApi.history()
-    paymentHistory.value = Array.isArray(res?.data) ? res.data : []
-  } catch (error) {
-    errorMessage.value = error.message || 'Không tải được lịch sử thanh toán.'
-    paymentHistory.value = []
-  } finally {
-    isLoading.value = false
-  }
+    const rawData = Array.isArray(res?.data) ? res.data : []
+    
+    const userMap = new Map()
+    rawData.forEach(item => {
+      const id = item.user_email || 'unknown'
+      if (!userMap.has(id)) {
+        userMap.set(id, { user_name: item.user_name, user_email: item.user_email, total_transactions: 0, total_amount: 0, history: [] })
+      }
+      const u = userMap.get(id)
+      
+      // Chỉ tính tổng cho các giao dịch thành công
+      if (item.status === 'success') {
+        u.total_transactions += 1
+        u.total_amount += Number(item.amount)
+      }
+      
+      u.history.push(item)
+    })
+    
+    usersList.value = Array.from(userMap.values()).sort((a, b) => b.total_amount - a.total_amount)
+  } catch (e) { console.error(e) } finally { isLoading.value = false }
 }
 
-const getPlanNameByAmount = (amount) => {
-  const parsed = Number(amount)
-  if (parsed === 0) return 'Dùng thử Plus (7 ngày)'
-  if (parsed === 50000) return 'Gói Plus'
-  if (parsed === 120000) return 'Gói Pro'
-  if (parsed === 250000) return 'Gói Ultra'
-  return 'Gói tùy chỉnh'
-}
+const formatPrice = (v) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(Number(v))
+const getPlanNameByAmount = (a) => ({ 50000: 'Gói Plus', 120000: 'Gói Pro', 250000: 'Gói Ultra' }[a] || 'Khác')
+const getStatusText = (s) => ({ pending: 'Chờ xử lý', success: 'Thành công', failed: 'Thất bại', refunded: 'Hoàn tiền' }[s] || s)
 
-const formatPrice = (value) => new Intl.NumberFormat('vi-VN', {
-  style: 'currency',
-  currency: 'VND',
-}).format(Number(value) || 0)
+const getStatusBadgeClass = (s) => ({
+  success: 'bg-emerald-500/10 text-emerald-500',
+  pending: 'bg-amber-500/10 text-amber-500',
+  failed: 'bg-rose-500/10 text-rose-500',
+  refunded: 'bg-slate-500/10 text-slate-500'
+}[s] || 'bg-slate-500/10 text-slate-500')
 
-const formatDate = (dateString) => {
-  if (!dateString) return ''
-  return new Date(dateString).toLocaleDateString('vi-VN', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
-
-const getStatusText = (status) => ({
-  pending: 'Đang xử lý',
-  success: 'Thành công',
-  failed: 'Thất bại',
-  refunded: 'Đã hoàn tiền',
-}[status] || status)
-
-const getStatusBadgeClass = (status) => ({
-  pending: 'bg-amber-500/10 text-amber-500 border border-amber-500/20',
-  success: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20',
-  failed: 'bg-rose-500/10 text-rose-400 border border-rose-500/20',
-  refunded: 'bg-gray-500/10 text-gray-400 border border-gray-500/20',
-}[status] || 'bg-gray-500/10 text-gray-400')
+onMounted(loadPayments)
 </script>

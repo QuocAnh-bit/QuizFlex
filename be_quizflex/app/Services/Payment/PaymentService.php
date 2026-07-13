@@ -37,20 +37,114 @@ class PaymentService
                 'name' => 'Gói Plus',
                 'amount' => 50000,
                 'days' => 30,
-                'quota' => 100
+                'quota' => 100,
+                'tier' => 1
             ],
             'pro_1m' => [
                 'name' => 'Gói Pro',
                 'amount' => 120000,
                 'days' => 30,
-                'quota' => 350
+                'quota' => 350,
+                'tier' => 2
             ],
             'ultra_1m' => [
                 'name' => 'Gói Ultra',
                 'amount' => 250000,
                 'days' => 30,
-                'quota' => 1500
+                'quota' => 1500,
+                'tier' => 3
             ]
+        ];
+    }
+
+    /**
+     * Ánh xạ vai trò (role) người dùng sang ID gói cước tương ứng.
+     */
+    public function getPlanIdFromRole(?string $role): ?string
+    {
+        if (!$role) {
+            return null;
+        }
+        return match (strtoupper($role)) {
+            'PLUS' => 'plus_1m',
+            'PRO' => 'pro_1m',
+            'ULTRA' => 'ultra_1m',
+            default => null,
+        };
+    }
+
+    /**
+     * Tính toán số tiền nâng cấp thực tế (Prorated Upgrade).
+     */
+    public function calculateUpgradeCost(User $user, string $targetPlanId): array
+    {
+        $plans = $this->getPlans();
+        if (!isset($plans[$targetPlanId])) {
+            return ['allowed' => false, 'message' => 'Gói nâng cấp không hợp lệ.', 'amount' => 0];
+        }
+
+        $targetPlan = $plans[$targetPlanId];
+        $currentRole = $user->role;
+        $currentPlanId = $this->getPlanIdFromRole($currentRole);
+
+        // Trường hợp không có gói cũ hoặc gói đã hết hạn
+        if (!$currentPlanId || !$user->vip_expires_at || Carbon::parse($user->vip_expires_at)->isPast()) {
+            return [
+                'allowed' => true,
+                'amount' => $targetPlan['amount'],
+                'unused_value' => 0,
+                'remaining_days' => 0,
+                'message' => 'Đăng ký mới gói cước.'
+            ];
+        }
+
+        $currentPlan = $plans[$currentPlanId];
+
+        // Kiểm tra hạ cấp (downgrade) hoặc mua trùng gói hiện tại
+        if ($targetPlan['tier'] <= $currentPlan['tier']) {
+            return [
+                'allowed' => false,
+                'message' => 'Bạn không thể nâng cấp xuống gói thấp hơn hoặc bằng gói hiện tại.',
+                'amount' => 0
+            ];
+        }
+
+        // Kiểm tra xem gói VIP hiện tại của người dùng có phải là gói dùng thử (TRIAL) hay không
+        $lastPayment = Payment::where('user_id', $user->id)
+            ->where('status', 'success')
+            ->orderBy('paid_at', 'desc')
+            ->first();
+
+        $isTrial = $lastPayment && ($lastPayment->provider === 'trial' || floatval($lastPayment->amount) < 0.01);
+
+        // Tính số ngày sử dụng còn lại của gói cũ dạng số thực (float) để chính xác đến từng giờ
+        $now = Carbon::now();
+        $expiry = Carbon::parse($user->vip_expires_at);
+        $remainingDays = max(0, $now->diffInSeconds($expiry, false) / 86400.0);
+
+        $unusedValue = 0;
+        $message = 'Nâng cấp từ ' . $currentPlan['name'] . ' lên ' . $targetPlan['name'] . '.';
+
+        if ($isTrial) {
+            $message = 'Nâng cấp từ gói Dùng thử lên ' . $targetPlan['name'] . ' (Không áp dụng khấu trừ).';
+        } elseif ($remainingDays > 0) {
+            // Giá trị mỗi ngày = Tổng tiền gói / Tổng ngày của gói
+            $pricePerDay = $currentPlan['amount'] / $currentPlan['days'];
+            $unusedValue = $pricePerDay * $remainingDays;
+        }
+
+        // Làm tròn đồng bộ giá trị khấu trừ cũ về hàng nghìn đồng
+        $unusedValueRounded = round($unusedValue / 1000) * 1000;
+
+        // Số tiền cần đóng nâng cấp = Giá gói mới - Giá trị gói cũ đã làm tròn
+        $upgradeCost = max(0, $targetPlan['amount'] - $unusedValueRounded);
+
+        return [
+            'allowed' => true,
+            'amount' => (int) $upgradeCost,
+            'unused_value' => (int) $unusedValueRounded,
+            'remaining_days' => $remainingDays,
+            'message' => $message
         ];
     }
 
@@ -64,17 +158,23 @@ class PaymentService
             throw new \Exception("Gói nạp không hợp lệ.");
         }
 
-        $plan = $plans[$planId];
-        $amount = $plan['amount'];
+        // Tính toán số tiền thực tế cần thanh toán sau khi khấu trừ nâng cấp
+        $upgradeInfo = $this->calculateUpgradeCost($user, $planId);
+        if (!$upgradeInfo['allowed']) {
+            throw new \Exception($upgradeInfo['message']);
+        }
+
+        $amount = $upgradeInfo['amount'];
         $orderCode = 'QF_' . strtoupper(uniqid()) . '_' . $user->id;
 
-        // 1. Tạo bản ghi pending thanh toán trong CSDL
+        // 1. Tạo bản ghi pending thanh toán trong CSDL với số tiền đã tính toán khấu trừ
         $payment = Payment::create([
             'user_id' => $user->id,
             'order_code' => $orderCode,
             'amount' => $amount,
             'provider' => 'momo',
             'status' => 'pending',
+            'provider_response' => ['target_plan_id' => $planId],
         ]);
 
         // MOCK MODE FOR LOCAL DEVELOPMENT AND TESTING
@@ -260,6 +360,12 @@ class PaymentService
             return $payment;
         }
 
+        // Đọc target_plan_id từ bản ghi cũ trước khi cập nhật đè response mới
+        $targetPlanId = null;
+        if (is_array($payment->provider_response) && isset($payment->provider_response['target_plan_id'])) {
+            $targetPlanId = $payment->provider_response['target_plan_id'];
+        }
+
         // 1. Cập nhật bản ghi giao dịch thành công, chuyển status thành success
         $payment->update([
             'status' => 'success',
@@ -268,16 +374,21 @@ class PaymentService
             'paid_at' => Carbon::now(),
         ]);
 
-        // 2. Tìm gói VIP tương ứng dựa trên số tiền giao dịch
+        // 2. Tìm gói VIP tương ứng
         $plans = $this->getPlans();
         $matchedPlan = null;
 
-        foreach ($plans as $id => $p) {
-            // Cho phép lệch nhẹ khoảng tiền do làm tròn/phí nếu có
-            if (abs($payment->amount - $p['amount']) < 100) {
-                $matchedPlan = $p;
-                $matchedPlan['id'] = $id;
-                break;
+        if ($targetPlanId && isset($plans[$targetPlanId])) {
+            $matchedPlan = $plans[$targetPlanId];
+            $matchedPlan['id'] = $targetPlanId;
+        } else {
+            // Hướng giải quyết phụ nếu không có target_plan_id: khớp theo giá trị số tiền (Backward compatibility)
+            foreach ($plans as $id => $p) {
+                if (abs($payment->amount - $p['amount']) < 100) {
+                    $matchedPlan = $p;
+                    $matchedPlan['id'] = $id;
+                    break;
+                }
             }
         }
 
@@ -294,23 +405,43 @@ class PaymentService
         // 3. Tiến hành nâng cấp và cấp Quota
         $user = $payment->user;
 
-        $days = $matchedPlan['days'];
-        $quota = $matchedPlan['quota'];
-
-        // Cập nhật VIP expires (Tính cộng dồn)
-        $currentExpiry = $user->vip_expires_at;
-        if ($currentExpiry && $currentExpiry->isFuture()) {
-            $newExpiry = $currentExpiry->addDays($days);
-        } else {
-            $newExpiry = Carbon::now()->addDays($days);
-        }
-
         // Ánh xạ gói dịch vụ sang vai trò người dùng (PLUS, PRO, ULTRA)
         $newRole = match ($matchedPlan['id']) {
             'ultra_1m' => 'ULTRA',
             'pro_1m' => 'PRO',
             default => 'PLUS',
         };
+
+        // Kiểm tra xem đây có phải là nâng cấp lên gói cao hơn không
+        $plans = $this->getPlans();
+        $currentPlanId = $this->getPlanIdFromRole($user->role);
+
+        $isUpgrade = false;
+        if ($currentPlanId && isset($plans[$currentPlanId]) && isset($plans[$matchedPlan['id']])) {
+            $currentExpiry = $user->vip_expires_at;
+            // Nếu gói mới có tier cao hơn và gói cũ vẫn đang còn hạn sử dụng
+            if ($plans[$matchedPlan['id']]['tier'] > $plans[$currentPlanId]['tier'] && $currentExpiry && $currentExpiry->isFuture()) {
+                $isUpgrade = true;
+            }
+        }
+
+        $days = $matchedPlan['days'];
+        $quota = $matchedPlan['quota'];
+
+        // Cập nhật VIP expires
+        $currentExpiry = $user->vip_expires_at;
+        if ($isUpgrade) {
+            // Trường hợp NÂNG CẤP: Tiền gói cũ còn dư đã được quy đổi khấu trừ vào tiền thanh toán.
+            // Vì vậy gói cũ bị thu hồi, hạn dùng của gói mới đặt lại là 30 ngày kể từ thời điểm nâng cấp.
+            $newExpiry = Carbon::now()->addDays($days);
+        } else {
+            // Trường hợp MUA MỚI hoặc GIA HẠN cùng gói: Cộng dồn thời gian sử dụng
+            if ($currentExpiry && $currentExpiry->isFuture()) {
+                $newExpiry = $currentExpiry->addDays($days);
+            } else {
+                $newExpiry = Carbon::now()->addDays($days);
+            }
+        }
 
         $user->role = $newRole;
         $user->vip_expires_at = $newExpiry;

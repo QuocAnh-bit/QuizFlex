@@ -707,6 +707,13 @@ export const liveRoomApi = {
   },
 }
 
+export const gamificationApi = {
+  async getLeaderboard() {
+    const { data } = await api.get("/leaderboard");
+    return unwrapCollection(data);
+  },
+};
+
 export const ocrApi = {
   async scan(file, mode) {
     const formData = new FormData();
@@ -885,6 +892,31 @@ export const paymentsApi = {
     const { data } = await api.get("/payments/history");
     return data;
   },
+
+  async getUpgradeCosts() {
+    const { data } = await api.get("/payments/upgrade-costs");
+    return data;
+  },
+};
+
+export const reportApi = {
+  // Dành cho Client: Gửi báo cáo
+  async create(payload) {
+    const { data } = await api.post("/report-tickets", payload);
+    return unwrap(data);
+  },
+  
+  // Dành cho Admin: Lấy danh sách
+  async listAdmin() {
+    const { data } = await api.get("/admin/report-tickets");
+    return unwrapCollection(data);
+  },
+
+  // Dành cho Admin: Cập nhật trạng thái
+  async updateAdminStatus(id, status) {
+    const { data } = await api.put(`/admin/report-tickets/${id}`, { status });
+    return unwrap(data);
+  }
 };
 
 export default api;
