@@ -19,6 +19,7 @@ const showToast = (message, type = 'success') => {
   toast.value.message = message
   toast.value.type = type
   toast.value.isOpen = true
+
   setTimeout(() => {
     toast.value.isOpen = false
   }, 3000)
@@ -30,173 +31,585 @@ const form = ref({
   category: '',
   difficulty: 'medium',
   visibility: 'public',
+  questions: []
 })
 
 const fetchQuiz = async () => {
   try {
     loading.value = true
+
     const res = await api.get(`/admin/quizzes/${route.params.id}`)
+
     const quiz = res.data.data.quiz
+
     form.value = {
       title: quiz.title || '',
       description: quiz.description || '',
       category: quiz.category || '',
       difficulty: quiz.difficulty || 'medium',
       visibility: quiz.is_public ? 'public' : 'private',
+
+      questions: (quiz.questions || []).map(q => ({
+        id: q.id,
+        content: q.content,
+        type: q.type,
+        points: q.points,
+        order: q.order,
+
+        answers: (q.answers || []).map(a => ({
+          id: a.id,
+          content: a.content,
+          is_correct: a.is_correct,
+          order: a.order
+        }))
+      }))
     }
-  } catch (error) {
-    console.error(error)
-    showToast('Không tải được thông tin quiz', 'error')
+
+  } catch (err) {
+    console.error(err)
+    showToast('Không tải được quiz', 'error')
   } finally {
     loading.value = false
   }
 }
+const addQuestion = () => {
+  form.value.questions.push({
+    id: null,
+    content: '',
+    type: 'single_choice',
+    points: 10,
+    order: form.value.questions.length + 1,
+    answers: [
+      {
+        id: null,
+        content: '',
+        is_correct: true,
+        order: 1
+      },
+      {
+        id: null,
+        content: '',
+        is_correct: false,
+        order: 2
+      },
+      {
+        id: null,
+        content: '',
+        is_correct: false,
+        order: 3
+      },
+      {
+        id: null,
+        content: '',
+        is_correct: false,
+        order: 4
+      }
+    ]
+  })
+}
+const removeQuestion = (index) => {
 
-const saveQuiz = async () => {
-  try {
-    saving.value = true
-    await api.put(`/quizzes/${route.params.id}`, {
-      title: form.value.title,
-      description: form.value.description,
-      category: form.value.category,
-      difficulty: form.value.difficulty,
-      visibility: form.value.visibility,
-    })
-    showToast('Cập nhật quiz thành công', 'success')
-    setTimeout(() => {
-      router.push('/admin/quizzes')
-    }, 1500)
-  } catch (error) {
-    console.error(error)
-    showToast('Cập nhật thất bại', 'error')
-  } finally {
-    saving.value = false
-  }
+  form.value.questions.splice(index,1)
+
 }
 
-onMounted(() => {
-  fetchQuiz()
-})
-</script>
+const addAnswer = (question) => {
 
+  question.answers.push({
+
+    id:null,
+
+    content:'',
+
+    is_correct:false,
+
+    order:question.answers.length
+
+  })
+
+}
+
+const removeAnswer = (question,index)=>{
+
+  if(question.answers.length<=2){
+
+    showToast('Câu hỏi phải có ít nhất 2 đáp án','error')
+
+    return
+
+  }
+
+  question.answers.splice(index,1)
+
+}
+
+const setCorrect=(question,answer)=>{
+
+  question.answers.forEach(item=>{
+
+      item.is_correct=false
+
+  })
+
+  answer.is_correct=true
+
+}
+
+const saveQuiz = async () => {
+
+  try{
+
+      saving.value=true
+
+      await api.put(`/quizzes/${route.params.id}`,{
+
+          title:form.value.title,
+
+          description:form.value.description,
+
+          category:form.value.category,
+
+          difficulty:form.value.difficulty,
+
+          visibility:form.value.visibility,
+
+          questions:form.value.questions
+
+      })
+
+      showToast('Cập nhật thành công')
+
+      setTimeout(()=>{
+
+          router.push('/admin/quizzes')
+
+      },1200)
+
+  }
+
+  catch(err){
+
+      console.error(err)
+
+      showToast('Cập nhật thất bại','error')
+
+  }
+
+  finally{
+
+      saving.value=false
+
+  }
+
+}
+
+onMounted(fetchQuiz)
+</script>
 <template>
   <section class="grid gap-6">
+
     <!-- Loading -->
-    <div v-if="loading" class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-10 text-center text-sm font-bold text-[var(--muted)]">
+    <div
+      v-if="loading"
+      class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-10 text-center text-sm font-bold text-[var(--muted)]"
+    >
       Đang tải thông tin quiz...
     </div>
 
-    <div v-else class="max-w-3xl">
+    <div v-else class="max-w-5xl">
+
       <!-- Header -->
-      <div class="relative overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-soft)] backdrop-blur-2xl mb-6">
-        <div class="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-amber-500/10 blur-3xl"></div>
-        <div class="relative z-10 flex flex-col justify-between gap-5 xl:flex-row xl:items-end">
+
+      <div
+        class="relative overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-soft)] backdrop-blur-2xl mb-6"
+      >
+
+        <div
+          class="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-amber-500/10 blur-3xl"
+        ></div>
+
+        <div
+          class="relative z-10 flex flex-col justify-between gap-5 xl:flex-row xl:items-end"
+        >
+
           <div>
-            <p class="text-xs font-black uppercase tracking-[0.2em] text-amber-400">Edit Quiz Metadata</p>
-            <h1 class="mt-2 text-4xl font-black tracking-[-0.06em] text-[var(--text)]">Sửa Quiz</h1>
-            <p class="mt-3 max-w-2xl text-sm leading-7 text-[var(--muted)]">Cập nhật thông tin tiêu đề, mô tả, danh mục, độ khó hoặc chế độ hiển thị của bộ quiz này.</p>
-          </div>
-          <div class="flex flex-wrap gap-3">
-            <RouterLink to="/admin/quizzes" class="btn-ghost">
-              ← Quay lại
-            </RouterLink>
-          </div>
-        </div>
-      </div>
 
-      <!-- Form Card -->
-      <article class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-card)] backdrop-blur-2xl space-y-5">
-        <!-- Tên quiz -->
-        <div>
-          <label class="block text-sm font-bold mb-2 text-[var(--text)]">Tên quiz</label>
-          <div class="flex items-center gap-3 rounded-2xl border border-[var(--border)] bg-[var(--input-bg)] px-4 py-3 transition focus-within:border-[var(--border-strong)]">
-            <input
-              v-model="form.title"
-              type="text"
-              class="w-full bg-transparent text-sm font-semibold text-[var(--text)] outline-none placeholder:text-[var(--muted)]"
-              placeholder="Nhập tên quiz..."
-            />
-          </div>
-        </div>
+            <p
+              class="text-xs font-black uppercase tracking-[0.2em] text-amber-400"
+            >
+              Edit Quiz
+            </p>
 
-        <!-- Mô tả -->
-        <div>
-          <label class="block text-sm font-bold mb-2 text-[var(--text)]">Mô tả</label>
-          <div class="flex items-center gap-3 rounded-2xl border border-[var(--border)] bg-[var(--input-bg)] px-4 py-3 transition focus-within:border-[var(--border-strong)]">
-            <textarea
-              v-model="form.description"
-              rows="3"
-              class="w-full bg-transparent text-sm font-semibold text-[var(--text)] outline-none placeholder:text-[var(--muted)] resize-none"
-              placeholder="Nhập mô tả cho bộ quiz..."
-            />
-          </div>
-        </div>
+            <h1
+              class="mt-2 text-4xl font-black tracking-[-0.06em] text-[var(--text)]"
+            >
+              Sửa Quiz
+            </h1>
 
-        <!-- Danh mục -->
-        <div>
-          <label class="block text-sm font-bold mb-2 text-[var(--text)]">Danh mục</label>
-          <div class="flex items-center gap-3 rounded-2xl border border-[var(--border)] bg-[var(--input-bg)] px-4 py-3 transition focus-within:border-[var(--border-strong)]">
-            <input
-              v-model="form.category"
-              type="text"
-              class="w-full bg-transparent text-sm font-semibold text-[var(--text)] outline-none placeholder:text-[var(--muted)]"
-              placeholder="Nhập danh mục..."
-            />
-          </div>
-        </div>
+            <p
+              class="mt-3 max-w-2xl text-sm leading-7 text-[var(--muted)]"
+            >
+              Bạn có thể sửa thông tin quiz, câu hỏi và đáp án.
+            </p>
 
-        <div class="grid gap-4 sm:grid-cols-2">
-          <!-- Độ khó -->
-          <div>
-            <label class="block text-sm font-bold mb-2 text-[var(--text)]">Độ khó</label>
-            <select v-model="form.difficulty" class="field w-full">
-              <option value="easy">Dễ</option>
-              <option value="medium">Vừa</option>
-              <option value="hard">Khó</option>
-            </select>
           </div>
 
-          <!-- Trạng thái -->
-          <div>
-            <label class="block text-sm font-bold mb-2 text-[var(--text)]">Chế độ hiển thị</label>
-            <select v-model="form.visibility" class="field w-full">
-              <option value="public">🌐 Public</option>
-              <option value="private">🔒 Private</option>
-              <option value="group">👥 Group</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- Buttons -->
-        <div class="flex gap-3 pt-4 border-t border-[var(--border)]">
-          <button
-            @click="saveQuiz"
-            :disabled="saving"
-            class="btn-primary"
-          >
-            {{ saving ? 'Đang lưu...' : '💾 Lưu thay đổi' }}
-          </button>
           <RouterLink
             to="/admin/quizzes"
             class="btn-ghost"
           >
-            Hủy
+            ← Quay lại
           </RouterLink>
+
         </div>
-      </article>
+
+      </div>
+
+      <!-- Card -->
+
+      <article
+        class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-card)] backdrop-blur-2xl space-y-6"
+      >
+
+        <div>
+
+          <label class="block text-sm font-bold mb-2">
+            Tên Quiz
+          </label>
+
+          <input
+            v-model="form.title"
+            class="field w-full"
+          >
+
+        </div>
+
+        <div>
+
+          <label class="block text-sm font-bold mb-2">
+            Mô tả
+          </label>
+
+          <textarea
+            v-model="form.description"
+            rows="3"
+            class="field w-full"
+          >
+          </textarea>
+
+
+        </div>
+
+        <div>
+
+          <label class="block text-sm font-bold mb-2">
+            Danh mục
+          </label>
+
+          <input
+            v-model="form.category"
+            class="field w-full"
+          >
+
+        </div>
+
+        <div class="grid grid-cols-2 gap-5">
+
+          <div>
+
+            <label class="block text-sm font-bold mb-2">
+              Độ khó
+            </label>
+
+            <select
+              v-model="form.difficulty"
+              class="field w-full"
+            >
+              <option value="easy">Dễ</option>
+              <option value="medium">Vừa</option>
+              <option value="hard">Khó</option>
+            </select>
+
+          </div>
+
+          <div>
+
+            <label class="block text-sm font-bold mb-2">
+              Hiển thị
+            </label>
+
+            <select
+              v-model="form.visibility"
+              class="field w-full"
+            >
+              <option value="public">
+                🌐 Public
+              </option>
+
+              <option value="private">
+                🔒 Private
+              </option>
+
+              <option value="group">
+                👥 Group
+              </option>
+
+            </select>
+
+          </div>
+
+        </div>
+
+        <div
+          class="border-t border-[var(--border)] pt-6"
+        >
+
+          <div
+            class="flex items-center justify-between"
+          >
+
+            <h2
+              class="text-2xl font-black"
+            >
+              Danh sách câu hỏi
+            </h2>
+<!-- <button
+  class="btn-primary"
+  @click="addQuestion"
+>
+  ➕ Thêm câu hỏi
+</button> -->
+</div>
+          </div>
+
+          <!-- 1B-2 sẽ bắt đầu từ đây -->
+           <div
+  v-for="(question, qIndex) in form.questions"
+  :key="question.id ?? qIndex"
+  class="mt-6 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 space-y-5"
+>
+
+  <div class="flex items-center justify-between">
+
+    <h3 class="text-lg font-black">
+      Câu {{ qIndex + 1 }}
+    </h3>
+
+    <button
+      class="btn-ghost text-red-500"
+      @click="removeQuestion(qIndex)"
+    >
+      🗑 Xóa
+    </button>
+
+  </div>
+
+  <!-- Nội dung -->
+
+  <div>
+
+    <label class="block text-sm font-bold mb-2">
+      Nội dung câu hỏi
+    </label>
+
+    <textarea
+      v-model="question.content"
+      rows="2"
+      class="field w-full"
+    />
+
+  </div>
+
+  <!-- Điểm -->
+
+  <div class="grid grid-cols-2 gap-4">
+
+    <div>
+
+      <label class="block text-sm font-bold mb-2">
+        Điểm
+      </label>
+
+      <input
+        type="number"
+        min="1"
+        class="field w-full"
+        v-model="question.points"
+      >
+
     </div>
 
-    <!-- Custom Toast Message -->
-    <transition name="slide-up">
-      <div v-if="toast.isOpen" class="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-2xl border px-4 py-3 shadow-lg backdrop-blur-xl transition-all"
-           :class="toast.type === 'success' ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400 shadow-[0_12px_40px_rgba(16,185,129,0.1)]' : 'border-rose-500/30 bg-rose-500/10 text-rose-400 shadow-[0_12px_40px_rgba(244,63,94,0.1)]'">
-        <span class="text-base">{{ toast.type === 'success' ? '✅' : '❌' }}</span>
-        <span class="text-sm font-bold">{{ toast.message }}</span>
-      </div>
-    </transition>
-  </section>
-</template>
+    <div>
 
+      <label class="block text-sm font-bold mb-2">
+        Loại câu hỏi
+      </label>
+
+      <select
+        class="field w-full"
+        v-model="question.type"
+      >
+        <option value="single_choice">
+          Một đáp án
+        </option>
+
+        <option value="multiple_choice">
+          Nhiều đáp án
+        </option>
+
+        <option value="true_false">
+          Đúng / Sai
+        </option>
+
+      </select>
+
+    </div>
+
+  </div>
+
+  <!-- Đáp án -->
+
+  <div>
+
+    <div
+      class="flex items-center justify-between mb-3"
+    >
+
+      <h4 class="font-bold">
+        Đáp án
+      </h4>
+
+      <button
+        class="btn-ghost"
+        @click="addAnswer(question)"
+      >
+        + Thêm đáp án
+      </button>
+
+    </div>
+
+    <div
+
+      v-for="(answer,aIndex) in question.answers"
+
+      :key="answer.id ?? aIndex"
+
+      class="flex items-center gap-3 mb-3"
+
+    >
+
+      <input
+
+        type="radio"
+
+        :name="'correct-'+qIndex"
+
+        :checked="answer.is_correct"
+
+        @change="setCorrect(question,answer)"
+
+      >
+
+      <input
+
+        v-model="answer.content"
+
+        class="field flex-1"
+
+        placeholder="Nhập đáp án..."
+
+      >
+
+      <button
+
+        class="btn-ghost text-red-500"
+
+        @click="removeAnswer(question,aIndex)"
+
+      >
+
+        ✖
+
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+
+<div class="pt-8 border-t border-[var(--border)]">
+
+  <div class="flex gap-3">
+
+    <button
+
+      class="btn-primary"
+
+      :disabled="saving"
+
+      @click="saveQuiz"
+
+    >
+
+      {{ saving ? 'Đang lưu...' : '💾 Lưu thay đổi' }}
+
+    </button>
+
+    <RouterLink
+
+      to="/admin/quizzes"
+
+      class="btn-ghost"
+
+    >
+
+      Hủy
+
+    </RouterLink>
+
+  </div>
+
+</div>
+
+</article>
+
+</div>
+
+<transition name="slide-up">
+
+  <div
+
+    v-if="toast.isOpen"
+
+    class="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-2xl border px-4 py-3 shadow-lg backdrop-blur-xl"
+
+    :class="toast.type==='success'
+      ?'border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
+      :'border-rose-500/30 bg-rose-500/10 text-rose-400'"
+
+  >
+
+    <span>
+
+      {{ toast.type==='success' ? '✅' : '❌' }}
+
+    </span>
+
+    <span class="font-bold">
+
+      {{ toast.message }}
+
+    </span>
+
+  </div>
+
+</transition>
+
+</section>
+
+</template>
+<!-- 
 <style scoped>
 .slide-up-enter-active,
 .slide-up-leave-active {
@@ -206,5 +619,117 @@ onMounted(() => {
 .slide-up-leave-to {
   opacity: 0;
   transform: translateY(20px);
+}
+</style> -->
+
+<style scoped>
+.field{
+  width:100%;
+  border:1px solid var(--border);
+  background:var(--input-bg);
+  border-radius:16px;
+  padding:12px 16px;
+  color:var(--text);
+  font-size:.95rem;
+  font-weight:600;
+  outline:none;
+  transition:.25s;
+}
+
+.field:focus{
+  border-color:var(--border-strong);
+  box-shadow:0 0 0 4px rgba(245,158,11,.12);
+}
+
+textarea.field{
+  resize:vertical;
+  min-height:90px;
+}
+
+.btn-primary{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:.5rem;
+  padding:.8rem 1.3rem;
+  border-radius:16px;
+  font-weight:700;
+  color:#fff;
+  background:linear-gradient(135deg,#f59e0b,#f97316);
+  transition:.25s;
+}
+
+.btn-primary:hover{
+  transform:translateY(-2px);
+  box-shadow:0 14px 28px rgba(245,158,11,.25);
+}
+
+.btn-primary:disabled{
+  opacity:.6;
+  cursor:not-allowed;
+}
+
+.btn-ghost{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:.5rem;
+  padding:.8rem 1.2rem;
+  border-radius:16px;
+  border:1px solid var(--border);
+  background:transparent;
+  color:var(--text);
+  font-weight:700;
+  transition:.25s;
+}
+
+.btn-ghost:hover{
+  background:rgba(255,255,255,.05);
+}
+
+.question-card{
+  border:1px solid var(--border);
+  border-radius:24px;
+  padding:24px;
+  background:var(--surface);
+  transition:.25s;
+}
+
+.question-card:hover{
+  border-color:var(--border-strong);
+  transform:translateY(-2px);
+}
+
+.answer-item{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  margin-bottom:12px;
+}
+
+.answer-item input[type="radio"]{
+  width:18px;
+  height:18px;
+  cursor:pointer;
+}
+
+.slide-up-enter-active,
+.slide-up-leave-active{
+  transition:all .3s cubic-bezier(.16,1,.3,1);
+}
+
+.slide-up-enter-from,
+.slide-up-leave-to{
+  opacity:0;
+  transform:translateY(20px);
+}
+
+@media(max-width:768px){
+
+  .btn-primary,
+  .btn-ghost{
+    width:100%;
+  }
+
 }
 </style>
