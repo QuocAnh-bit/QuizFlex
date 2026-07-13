@@ -20,7 +20,7 @@ use App\Http\Controllers\HomeworkSubmissionEvaluationController;
 use App\Services\AI\AIService;
 use App\AI\Prompts\QuizPrompt;
 use App\Http\Controllers\AIController;
-
+use App\Http\Controllers\ReportTicketController;
 
 Route::get('/test', function () {
     return response()->json([
@@ -89,6 +89,10 @@ Route::middleware('auth:api')->group(function () {
         Route::patch('/users/{id}/restore', [UserController::class, 'restore']);
         Route::delete('/users/{id}/force', [UserController::class, 'forceDelete']);
         Route::apiResource('users', UserController::class);
+        
+        // Quản lý báo cáo vi phạm cho admin
+        Route::get('/admin/report-tickets', [ReportTicketController::class, 'index']);
+        Route::put('/admin/report-tickets/{id}', [ReportTicketController::class, 'update']);
 
         // Quản lý quiz cho admin
         Route::get('/admin/quizzes/trash', [QuizController::class, 'trash']);
@@ -100,6 +104,9 @@ Route::middleware('auth:api')->group(function () {
     });
 
     Route::middleware('role:free,plus,pro,ultra,admin')->group(function () {
+        // Gửi báo cáo vi phạm
+        Route::post('/report-tickets', [ReportTicketController::class, 'store']);
+        
         // Protected Payment Routes
         Route::get('/payments/history', [PaymentController::class, 'history']);
 
