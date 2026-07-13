@@ -149,17 +149,37 @@
           >
             Dùng thử Plus miễn phí 7 ngày
           </button>
-          <button 
-            v-else
-            @click="openCheckout(plan)"
-            class="w-full h-12 flex items-center justify-center font-black rounded-full transition duration-300 active:scale-[0.98]"
-            :class="plan.popular
-              ? 'bg-gradient-to-r from-[var(--primary)] to-[var(--accent)] text-white hover:shadow-[0_16px_36px_rgba(155,44,255,0.3)]'
-              : 'border border-[var(--border-strong)] bg-[var(--surface-soft)] text-[var(--text)] hover:bg-[var(--chip-active)] hover:border-[var(--primary)]/50'
-            "
-          >
-            {{ plan.btnText }}
-          </button>
+          <template v-else>
+            <!-- Nếu đã sở hữu gói hiện tại -->
+            <button 
+              v-if="currentUser && isUserCurrentPlan(plan.id)"
+              disabled
+              class="w-full h-12 flex items-center justify-center font-black rounded-full border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 cursor-not-allowed gap-2"
+            >
+              <span class="inline-block h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              ✓ Đang sử dụng
+            </button>
+            <!-- Nếu là hạ cấp (không được phép) -->
+            <button 
+              v-else-if="currentUser && plan.upgradeInfo && !plan.upgradeInfo.allowed"
+              disabled
+              class="w-full h-12 flex items-center justify-center font-black rounded-full border border-[var(--border)] bg-[var(--surface-soft)] text-[var(--muted)] cursor-not-allowed text-xs px-2 gap-1.5"
+            >
+              🔒 Không thể hạ cấp
+            </button>
+            <!-- Nút mua / nâng cấp hợp lệ -->
+            <button 
+              v-else
+              @click="openCheckout(plan)"
+              class="w-full h-12 flex items-center justify-center font-black rounded-full transition duration-300 active:scale-[0.98]"
+              :class="plan.popular
+                ? 'bg-gradient-to-r from-[var(--primary)] to-[var(--accent)] text-white hover:shadow-[0_16px_36px_rgba(155,44,255,0.3)]'
+                : 'border border-[var(--border-strong)] bg-[var(--surface-soft)] text-[var(--text)] hover:bg-[var(--chip-active)] hover:border-[var(--primary)]/50'
+              "
+            >
+              {{ plan.upgradeInfo && plan.upgradeInfo.unused_value > 0 ? 'Nâng cấp ngay' : plan.btnText }}
+            </button>
+          </template>
         </div>
       </article>
     </div>
@@ -275,9 +295,31 @@
               <span class="text-[var(--muted)]">AI Quota cộng thêm:</span>
               <span class="text-[var(--primary)]">+{{ selectedPlan.quota }} lượt dùng</span>
             </div>
+            
+            <div v-if="selectedPlan.upgradeInfo && selectedPlan.upgradeInfo.unused_value > 0" class="flex items-center justify-between font-bold text-sm">
+              <span class="text-[var(--muted)]">Giá gốc gói mới:</span>
+              <span class="text-[var(--text)] line-through">{{ selectedPlan.priceLabel }}</span>
+            </div>
+            
+            <!-- Khấu trừ chênh lệch hiển thị trong Modal xác nhận -->
+            <div 
+              v-if="selectedPlan.upgradeInfo && selectedPlan.upgradeInfo.unused_value > 0"
+              class="flex flex-col gap-0.5 mt-1 pt-1 border-t border-dashed border-[var(--border)]"
+            >
+              <div class="flex items-center justify-between font-bold text-sm text-emerald-400">
+                <span>Khấu trừ gói cũ:</span>
+                <span>-{{ formatPrice(selectedPlan.upgradeInfo.unused_value) }}</span>
+              </div>
+              <div class="text-right text-[10px] text-[var(--muted)] font-semibold">
+                (Thời gian gói cũ còn lại: {{ formatRemainingTime(selectedPlan.upgradeInfo.remaining_days) }})
+              </div>
+            </div>
+
             <div class="mt-2 pt-2 border-t border-[var(--border)] flex items-center justify-between font-black text-base">
               <span class="text-[var(--text)]">Tổng tiền:</span>
-              <span class="text-[var(--accent)] text-lg">{{ selectedPlan.priceLabel }}</span>
+              <span class="text-[var(--accent)] text-lg">
+                {{ selectedPlan.upgradeInfo ? formatPrice(selectedPlan.upgradeInfo.amount) : selectedPlan.priceLabel }}
+              </span>
             </div>
           </div>
 
@@ -409,7 +451,9 @@
             </div>
             <div class="flex justify-between">
               <span class="text-[var(--muted)]">Số tiền:</span>
-              <span class="font-black text-emerald-400 text-sm">{{ selectedPlan?.priceLabel }}</span>
+              <span class="font-black text-emerald-400 text-sm">
+                {{ selectedPlan?.upgradeInfo ? formatPrice(selectedPlan.upgradeInfo.amount) : selectedPlan?.priceLabel }}
+              </span>
             </div>
             <p class="mt-2 text-[10px] text-[var(--muted)] border-t border-[var(--border)] pt-2 leading-relaxed">
               💡 <b>Sandbox:</b> Click nút <b>"Giả lập thanh toán thành công"</b> trên trang PayOS để hoàn tất kiểm thử mà không tốn tiền thật.
@@ -626,6 +670,18 @@ const formatTrialExpiry = (expiryStr) => {
   })
 }
 
+const formatRemainingTime = (daysFloat) => {
+  if (!daysFloat || daysFloat <= 0) return ''
+  const totalHours = Math.round(daysFloat * 24)
+  const days = Math.floor(totalHours / 24)
+  const hours = totalHours % 24
+  if (days > 0) {
+    if (hours > 0) return `${days} ngày ${hours} giờ`
+    return `${days} ngày`
+  }
+  return `${hours} giờ`
+}
+
 const activateFreeTrial = () => {
   if (!currentUser.value) {
     router.push({ path: '/register', query: { redirect: '/upgrade' } })
@@ -666,7 +722,17 @@ const closeSuccessTrialModal = () => {
   isSuccessTrialModalOpen.value = false
 }
 
-const plans = [
+const isUserCurrentPlan = (planId) => {
+  if (!currentUser.value) return false
+  const role = currentUser.value.role?.toLowerCase()
+  if (role === 'admin') return true
+  if (role === 'plus' && planId === 'plus_1m') return true
+  if (role === 'pro' && planId === 'pro_1m') return true
+  if (role === 'ultra' && planId === 'ultra_1m') return true
+  return false
+}
+
+const plans = ref([
   {
     id: 'plus_1m',
     name: 'Gói Plus (Cơ Bản)',
@@ -678,6 +744,7 @@ const plans = [
     quota: 100,
     btnText: 'Nâng cấp ngay',
     popular: false,
+    upgradeInfo: null,
     features: [
       'Dùng AI sinh đề (+100 lượt)',
       'Scan tài liệu OCR (10 lượt/tháng)',
@@ -697,6 +764,7 @@ const plans = [
     quota: 350,
     btnText: 'Mua gói phổ biến',
     popular: true,
+    upgradeInfo: null,
     features: [
       'Dùng AI sinh đề (+350 lượt)',
       'Scan tài liệu OCR (50 lượt/tháng)',
@@ -718,6 +786,7 @@ const plans = [
     quota: 1500,
     btnText: 'Sở hữu gói tối thượng',
     popular: false,
+    upgradeInfo: null,
     features: [
       'Dùng AI sinh đề (+1500 lượt)',
       'Scan tài liệu OCR không giới hạn',
@@ -728,7 +797,28 @@ const plans = [
       'Badge Ultra lấp lánh cạnh tên'
     ]
   }
-]
+])
+
+const fetchUpgradeCosts = async () => {
+  if (!currentUser.value) return
+  try {
+    const res = await paymentsApi.getUpgradeCosts()
+    if (res.success && res.plans) {
+      plans.value = plans.value.map(plan => {
+        const backendPlan = res.plans[plan.id]
+        if (backendPlan && backendPlan.upgrade_info) {
+          return {
+            ...plan,
+            upgradeInfo: backendPlan.upgrade_info
+          }
+        }
+        return plan
+      })
+    }
+  } catch (error) {
+    console.error('Failed to fetch upgrade costs:', error)
+  }
+}
 
 onMounted(async () => {
   if (currentUser.value) {
@@ -737,13 +827,16 @@ onMounted(async () => {
       const latestUser = await authApi.me()
       currentUserStorage.set(latestUser)
       currentUser.value = latestUser
+      
+      // Lấy chi phí nâng cấp động
+      await fetchUpgradeCosts()
     } catch (error) {
       console.error('Failed to sync user state on mount:', error)
     }
     
     // Tự động mở modal thanh toán nếu có plan truyền qua URL query
     if (route.query.plan) {
-      const matchedPlan = plans.find(p => p.id === route.query.plan)
+      const matchedPlan = plans.value.find(p => p.id === route.query.plan)
       if (matchedPlan) {
         openCheckout(matchedPlan)
       }
@@ -820,7 +913,7 @@ const startPolling = (orderCode, newWindow) => {
             newWindow.close()
           }
 
-          isWaitingForFt.value = false
+          isWaitingForPayment.value = false
           errorMessage.value = 'Giao dịch thanh toán đã bị hủy hoặc thất bại.'
           isPaymentModalOpen.value = true
         }

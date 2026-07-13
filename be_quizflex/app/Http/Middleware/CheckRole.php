@@ -28,8 +28,8 @@ class CheckRole
             return $next($request);
         }
 
-        $allowedRoles = array_map(fn ($role) => strtolower(trim((string) $role)), $roles);
-        
+        $allowedRoles = array_map(fn($role) => strtolower(trim((string) $role)), $roles);
+
         if (!in_array($userRole, $allowedRoles)) {
             return response()->json(['success' => false, 'message' => 'Bạn không có quyền truy cập khu vực này'], 403);
         }

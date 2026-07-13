@@ -412,6 +412,17 @@ const routes = [
       roles: adminRoles,
     },
   },
+{
+    path: "/admin/report-tickets",
+    name: "admin-report-tickets",
+    component: () => import("@/views/admin/ReportManager.vue"),
+    meta: {
+      layout: "admin",
+      title: "Quản lý báo cáo",
+      requiresAuth: true,
+      roles: adminRoles,
+    },
+  },
   {
     path: "/admin/rooms",
     name: "admin-rooms",

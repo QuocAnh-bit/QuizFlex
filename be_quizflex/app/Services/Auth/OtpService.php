@@ -94,7 +94,7 @@ class OtpService
 
         // 5. Sai OTP -> Tăng số lần thử sai lên 1
         $newAttempts = $record->attempts + 1;
-        
+
         if ($newAttempts >= $this->maxAttempts) {
             DB::table('otp_verifications')->where('id', $record->id)->delete();
             return [

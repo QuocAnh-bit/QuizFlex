@@ -32,7 +32,7 @@ class AuthController extends Controller
         // Kiểm tra xem tài khoản đã xác thực email (OTP) chưa
         if ($user->email_verified_at === null) {
             $this->apiGuard()->logout(); // Đăng xuất lập tức để vô hiệu hóa token vừa tạo
-            
+
             // Gửi lại OTP tự động để hỗ trợ người dùng tiếp tục xác thực
             try {
                 $otpService = app(OtpService::class);
@@ -62,10 +62,10 @@ class AuthController extends Controller
 
     public function register(Request $request)
     {
-        $data = $request->validate([
+        $data = $request->validate([ // dữ liệu gốc được gửi lên vd như mật khẩu là 123456 chưa mã hóa
             'name' => ['required', 'string', 'max:255'],
             'username' => ['nullable', 'string', 'min:3', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email'], // email không được trùng trong bảng user
             'password' => ['required', 'string', 'min:6', 'max:255'],
             'role' => ['nullable', Rule::in(['FREE', 'PLUS', 'PRO', 'ULTRA', 'ADMIN', 'free', 'plus', 'pro', 'ultra', 'admin', 'USER', 'user'])],
         ]);
@@ -82,7 +82,7 @@ class AuthController extends Controller
         }
         $storedRole = $this->roleValueForDatabase($role);
 
-        $payload = [
+        $payload = [ // mật khẩu db cần lưu là mật khẩu được mã hóa bởi vì mật khẩu được gửi lên đang ở local nên
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
@@ -105,7 +105,7 @@ class AuthController extends Controller
 
         // Tự động sinh OTP và gửi qua log/mail
         try {
-            $otpService = app(OtpService::class);
+            $otpService = app(OtpService::class); // hệ thống sẽ gọi service để tạo mã OTP
             $otpService->generateOtp($user->email);
         } catch (\Exception $e) {
             // Ghi log lỗi gửi mail ra laravel.log để nhà phát triển biết lý do gửi mail thất bại
@@ -317,7 +317,7 @@ class AuthController extends Controller
     private function formatUser(User $user): array
     {
         $tier = $user->getSubscriptionTier();
-        
+
         $isTrial = false;
         if ($user->trial_used_at && $user->vip_expires_at) {
             $trialExpiry = \Carbon\Carbon::parse($user->trial_used_at)->addDays(7);

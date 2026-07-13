@@ -55,14 +55,12 @@ class PaymentController extends Controller
                     'order_code' => $result['order_code']
                 ]);
             } elseif ($provider === 'payos') {
-                // nhà cung cấp
-                $plans = $this->paymentService->getPlans();
-                // lấy danh sách các gói trong hệ thống
-                if (!isset($plans[$planId])) {
-                    throw new \Exception("Gói nạp không hợp lệ.");
+                // Tính toán số tiền thực tế sau khấu trừ nâng cấp
+                $upgradeInfo = $this->paymentService->calculateUpgradeCost($user, $planId);
+                if (!$upgradeInfo['allowed']) {
+                    throw new \Exception($upgradeInfo['message']);
                 }
-                $plan = $plans[$planId];
-                $amount = $plan['amount'];
+                $amount = $upgradeInfo['amount'];
 
                 // PayOS yêu cầu mã đơn hàng (orderCode) dạng số nguyên, Mỗi giao dịch phải có mã riêng
                 $orderCode = time() . $user->id;
@@ -74,6 +72,7 @@ class PaymentController extends Controller
                     'amount' => $amount,
                     'provider' => 'payos',
                     'status' => 'pending',
+                    'provider_response' => ['target_plan_id' => $planId],
                 ]);
 
                 // Gọi lớp nghiệp vụ kết nối PayOS, chuyển giao Model hóa đơn mới tạo và ID gói cước để tạo liên kết thanh toán.
@@ -278,6 +277,40 @@ class PaymentController extends Controller
     }
 
     /**
+     * Lấy danh sách các gói kèm giá nâng cấp động của người dùng hiện tại
+     */
+    public function getUpgradeCosts()
+    {
+        $user = auth('api')->user();
+        $plans = $this->paymentService->getPlans();
+        
+        $result = [];
+        foreach ($plans as $id => $plan) {
+            $costInfo = [];
+            if ($user) {
+                $costInfo = $this->paymentService->calculateUpgradeCost($user, $id);
+            } else {
+                $costInfo = [
+                    'allowed' => true,
+                    'amount' => $plan['amount'],
+                    'unused_value' => 0,
+                    'remaining_days' => 0,
+                    'message' => 'Đăng ký mới gói cước.'
+                ];
+            }
+            
+            $result[$id] = array_merge($plan, [
+                'upgrade_info' => $costInfo
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'plans' => $result
+        ]);
+    }
+
+    /**
      * Get transaction history.
      * Normal users and VIP users only see their own payments.
      * Admin users see every payment in the system.
@@ -310,6 +343,44 @@ class PaymentController extends Controller
 
     private function formatPaymentForHistory(Payment $payment): array
     {
+        $plans = $this->paymentService->getPlans();
+        
+        // Đọc target_plan_id từ provider_response
+        $targetPlanId = null;
+        if (is_array($payment->provider_response) && isset($payment->provider_response['target_plan_id'])) {
+            $targetPlanId = $payment->provider_response['target_plan_id'];
+        }
+        
+        $planName = 'Gói nâng cấp';
+        $originalAmount = (float) $payment->amount;
+        $discountAmount = 0.0;
+        $isUpgrade = false;
+        
+        if ($targetPlanId && isset($plans[$targetPlanId])) {
+            $plan = $plans[$targetPlanId];
+            $planName = $plan['name'];
+            $originalAmount = (float) $plan['amount'];
+            
+            // Nếu là nâng cấp (số tiền thực trả nhỏ hơn giá gốc gói cước và không phải dùng thử)
+            if ((float) $payment->amount < $originalAmount && $payment->provider !== 'trial') {
+                $discountAmount = $originalAmount - (float) $payment->amount;
+                $isUpgrade = true;
+            }
+        } else {
+            // Hướng giải quyết phụ nếu không có target_plan_id: khớp theo giá trị số tiền
+            foreach ($plans as $id => $p) {
+                if (abs($payment->amount - $p['amount']) < 100) {
+                    $planName = $p['name'];
+                    break;
+                }
+            }
+        }
+        
+        // Nếu là dùng thử 0đ
+        if ($payment->provider === 'trial') {
+            $planName = 'Dùng thử Plus (7 ngày)';
+        }
+
         return [
             'id' => $payment->id,
             'user_id' => $payment->user_id,
@@ -318,7 +389,10 @@ class PaymentController extends Controller
             'user_role' => strtolower((string) ($payment->user?->role ?? 'user')),
             'order_code' => $payment->order_code,
             'amount' => (float) $payment->amount,
-            'plan_name' => $this->resolvePlanName((float) $payment->amount),
+            'original_amount' => $originalAmount,
+            'discount_amount' => $discountAmount,
+            'is_upgrade' => $isUpgrade,
+            'plan_name' => $planName,
             'provider' => $payment->provider,
             'status' => $payment->status,
             'transaction_id' => $payment->transaction_id,
