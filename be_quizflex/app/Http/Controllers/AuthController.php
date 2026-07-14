@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use App\Services\Auth\OtpService;
 use PHPOpenSourceSaver\JWTAuth\JWTGuard;
+use App\Rules\NoProfanity;
 
 class AuthController extends Controller
 {
@@ -63,16 +64,23 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         $data = $request->validate([ // dữ liệu gốc được gửi lên vd như mật khẩu là 123456 chưa mã hóa
-            'name' => ['required', 'string', 'max:255'],
-            'username' => ['nullable', 'string', 'min:3', 'max:255'],
+            'name' => ['required', 'string', 'max:255', new NoProfanity()],
+            'username' => ['nullable', 'string', 'min:3', 'max:255', new NoProfanity()],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'], // email không được trùng trong bảng user
             'password' => ['required', 'string', 'min:6', 'max:255'],
             'role' => ['nullable', Rule::in(['FREE', 'PLUS', 'PRO', 'ULTRA', 'ADMIN', 'free', 'plus', 'pro', 'ultra', 'admin', 'USER', 'user'])],
+        ], 
+        [], 
+        [
+            'name' => 'Họ và tên',
+            'username' => 'Tên người dùng',
+            'email' => 'Địa chỉ email',
+            'password' => 'Mật khẩu',
         ]);
 
         if (Schema::hasColumn('users', 'username')) {
             $request->validate([
-                'username' => ['nullable', 'string', 'min:3', 'max:255', Rule::unique('users', 'username')],
+                'username' => ['nullable', 'string', 'min:3', 'max:255', new NoProfanity(), Rule::unique('users', 'username')],
             ]);
         }
 
@@ -215,9 +223,14 @@ class AuthController extends Controller
         $user = $this->authenticatedUser();
 
         $data = $request->validate([
-            'name' => ['sometimes', 'required', 'string', 'max:255'],
+            'name' => ['sometimes', 'required', 'string', 'max:255', new NoProfanity()],
             'avatar_file' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'remove_avatar' => ['nullable', 'boolean'],
+        ], 
+        [], 
+        [
+            'name' => 'Họ và tên',
+            'avatar_file' => 'Ảnh đại diện',
         ]);
 
         $payload = [];

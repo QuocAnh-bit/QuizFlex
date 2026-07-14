@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use PHPOpenSourceSaver\JWTAuth\Exceptions\TokenExpiredException;
+use App\Rules\NoProfanity;
 
 class QuizController extends Controller
 {
@@ -204,8 +205,9 @@ class QuizController extends Controller
     private function validateQuizPayload(Request $request, bool $isUpdate = false): array
     {
         return $request->validate([
-            'title' => [$isUpdate ? 'sometimes' : 'required', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
+            'title' => [$isUpdate ? 'sometimes' : 'required', 'string', 'max:255', new NoProfanity()],
+            'description' => ['nullable', 'string', new NoProfanity()],
+
             'category' => ['nullable', 'string', 'max:100'],
             'tag' => ['nullable', 'string', 'max:100'],
             'difficulty' => ['nullable', 'string', Rule::in(['easy', 'medium', 'hard', 'Dễ', 'Vừa', 'Khó'])],
@@ -238,6 +240,14 @@ class QuizController extends Controller
             'questions.*.answers.*.key' => ['nullable', 'string', 'max:4'],
             'questions.*.answers.*.is_correct' => ['nullable', 'boolean'],
             'questions.*.answers.*.order' => ['nullable', 'integer', 'min:0'],
+        ],
+        [], // <--- Tham số thứ 2: Để trống mảng thông báo lỗi custom
+        [   // <--- Tham số thứ 3: Khai báo tên tiếng Việt cho các trường
+            'title' => 'Tiêu đề',
+            'description' => 'Mô tả',
+            'category' => 'Danh mục',
+            'tag' => 'Thẻ tag',
+            'cover_file' => 'Ảnh bìa',
         ]);
     }
 

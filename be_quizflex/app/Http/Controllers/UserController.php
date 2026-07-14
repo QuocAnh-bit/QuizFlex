@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use App\Rules\NoProfanity;
 
 class UserController extends Controller
 {
@@ -52,7 +53,7 @@ class UserController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255', new NoProfanity()],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:6', 'max:255'],
             'role' => ['nullable', Rule::in(['GUEST', 'FREE', 'PLUS', 'PRO', 'ULTRA', 'ADMIN', 'guest', 'free', 'plus', 'pro', 'ultra', 'admin'])],
@@ -101,7 +102,7 @@ class UserController extends Controller
     public function update(Request $request, User $user)
     {
         $data = $request->validate([
-            'name' => ['sometimes', 'string', 'max:255'],
+            'name' => ['sometimes', 'string', 'max:255', new NoProfanity()],
             'email' => ['sometimes', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
             'password' => ['nullable', 'string', 'min:6', 'max:255'],
             'role' => ['sometimes', Rule::in(['GUEST', 'FREE', 'PLUS', 'PRO', 'ULTRA', 'ADMIN', 'guest', 'free', 'plus', 'pro', 'ultra', 'admin'])],
