@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ReportTicket;
+use App\Notifications\QuizModerated;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -53,19 +54,30 @@ class ReportTicketController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $request->validate([
-            'status' => 'required|in:resolved,dismissed',
-        ]);
+        $request->validate(['status' => 'required|in:resolved,dismissed']);
 
-        $report = ReportTicket::findOrFail($id);
-        $report->update([
-            'status' => $request->status
-        ]);
+        $report = ReportTicket::with('quiz.user')->findOrFail($id);
+        
+        // Cập nhật trạng thái
+        $report->update(['status' => $request->status]);
+
+        // Gửi thông báo cho chủ quiz
+        if ($report->quiz && $report->quiz->user) {
+            $report->quiz->user->notify(new QuizModerated($report->quiz, $request->status));
+        }
 
         return response()->json([
             'success' => true,
-            'message' => 'Cập nhật trạng thái báo cáo thành công.',
-            'data' => $report
+            'message' => 'Cập nhật thành công và đã gửi thông báo cho chủ quiz.',
+        ]);
+    }
+
+    public function countPending()
+    {
+        $count = ReportTicket::where('status', 'pending')->count();
+        return response()->json([
+            'success' => true,
+            'count' => $count
         ]);
     }
 }

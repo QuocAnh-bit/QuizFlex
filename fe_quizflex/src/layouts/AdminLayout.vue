@@ -28,6 +28,9 @@
                   <router-link v-for="item in group.items" :key="item.to" :to="item.to" :class="[getLinkClass(item), 'group transition-all duration-200']">
                     <span :class="['grid h-9 w-9 place-items-center rounded-2xl text-xs font-black transition-colors duration-300', isItemActive(item) ? 'bg-[var(--primary)] text-white' : 'bg-[var(--surface-soft)] text-[var(--primary)]', 'group-hover:bg-[var(--primary)]', 'group-hover:text-white']">{{ item.icon }}</span>
                     <span :class="['transition-colors duration-300', isItemActive(item) ? 'text-[var(--text)]' : 'text-[var(--muted)]', 'group-hover:text-[var(--text)]']">{{ item.label }}</span>
+                    <span v-if="(item.label === 'Quản lý báo cáo' && reportCount > 0) || (item.label !== 'Quản lý báo cáo' && item.badge > 0)" class="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-[var(--primary)] text-xs font-bold text-white">
+                      {{ item.label === 'Quản lý báo cáo' ? reportCount : item.badge }}
+                    </span>
                   </router-link>
                 </div>
               </div>
@@ -61,8 +64,9 @@
 </template>
 
 <script setup>
-import { computed, ref, onMounted } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
+import axios from 'axios'
 import BrandLogo from '@/components/common/BrandLogo.vue'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
 
@@ -70,6 +74,43 @@ const route = useRoute()
 const expandedGroups = ref(['Quản lý nội dung'])
 const homeworkRoomCount = ref(0)
 const activeLiveRoomCount = ref(0)
+
+const reportCount = ref(0);
+const reportBadge = computed(() => reportCount.value)
+let pollingInterval = null
+
+const fetchReportCount = async () => {
+  try {
+    // 1. Lấy token từ Local Storage đúng với tên bạn vừa tìm thấy
+    const token = localStorage.getItem('quizflex_access_token');
+    
+    // 2. Kẹp token vào header của request
+    const { data } = await axios.get('/api/admin/report-tickets/count', {
+      headers: {
+        Authorization: `Bearer ${token}` // Backend sẽ kiểm tra thẻ này
+      }
+    });
+    
+    // 3. Cập nhật số lượng
+    reportCount.value = data.count || 0;
+  } catch (e) {
+    console.error('Lỗi khi lấy số lượng báo cáo:', e);
+  }
+}
+
+onMounted(() => {
+  fetchReportCount()
+
+  // Cho phép tự động cập nhật ngầm mỗi 10 giây
+  pollingInterval = setInterval(() => {
+    fetchReportCount()
+  }, 10000)
+})
+
+// Dọn dẹp bộ đếm khi Admin rời khỏi trang
+onUnmounted(() => {
+  if (pollingInterval) clearInterval(pollingInterval)
+})
 
 const menu = computed(() => [
   {
@@ -81,7 +122,12 @@ const menu = computed(() => [
       { label: 'Tạo quiz', to: '/admin/questions/create', icon: '+' },
       { label: 'AI Generator', to: '/admin/questions/ai', icon: 'AI' },
       { label: 'OCR Upload', to: '/admin/questions/ocr', icon: 'OC' },
-      { label: 'Quản lý báo cáo', to: '/admin/report-tickets', icon: '🚩' },
+      { 
+        label: 'Quản lý báo cáo', 
+        to: '/admin/report-tickets', 
+        icon: '🚩', 
+        badge: reportBadge.value
+      },
     ],
   },
   {
