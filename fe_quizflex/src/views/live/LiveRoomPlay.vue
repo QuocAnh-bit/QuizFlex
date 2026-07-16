@@ -79,6 +79,12 @@
           </div>
         </div>
         <div v-else class="mt-4 rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-5 text-center text-sm font-bold text-[var(--muted)]">Chưa có leaderboard.</div>
+        <!-- <button
+  class="mt-4 rounded bg-blue-500 px-4 py-2 text-white"
+  @click="audioService.playCorrect()"
+>
+  Test Correct Sound
+</button> -->
       </article>
     </aside>
   </section>
@@ -90,6 +96,7 @@ import { useRoute } from 'vue-router'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import { getEcho } from '@/echo'
 import { liveRoomApi, normalizeQuestion } from '@/services/api'
+import audioService from '@/services/audioService'
 
 const route = useRoute()
 const liveRoomId = computed(() => route.params.liveRoomId)
@@ -170,35 +177,53 @@ const applyLeaderboardPayload = (leaderboardPayload) => {
   return true
 }
 
+// const handleRoomStarted = async (event) => {
+//   realtimeLog('live.room.started', event)
+//   markRealtime()
+// audioService.stopLobby()
+
+// setTimeout(() => {
+//   audioService.playCountdown()
+// }, 3000)
+
+//   roomStatus.value = event?.status || 'playing'
+//   progress.value = {
+//     ...progress.value,
+//     total_questions: event?.total_questions ?? progress.value.total_questions,
+//     player_current_question_index: progress.value.player_current_question_index ?? 0,
+//     current_question_index: progress.value.current_question_index ?? 0,
+//     player_finished: false,
+//     is_finished: false,
+//   }
+//   if (Array.isArray(event?.leaderboard)) {
+//     leaderboard.value = event.leaderboard
+//   }
+
+//   if (event?.current_question) {
+//     question.value = normalizeQuestion(event.current_question)
+//     selectedAnswerId.value = null
+//     errorMessage.value = ''
+//     return
+//   }
+
+//   await loadCurrentQuestion(true)
+// }
 const handleRoomStarted = async (event) => {
-  realtimeLog('live.room.started', event)
-  markRealtime()
-  roomStatus.value = event?.status || 'playing'
-  progress.value = {
-    ...progress.value,
-    total_questions: event?.total_questions ?? progress.value.total_questions,
-    player_current_question_index: progress.value.player_current_question_index ?? 0,
-    current_question_index: progress.value.current_question_index ?? 0,
-    player_finished: false,
-    is_finished: false,
-  }
-  if (Array.isArray(event?.leaderboard)) {
-    leaderboard.value = event.leaderboard
-  }
+    realtimeLog('live.room.started', event)
 
-  if (event?.current_question) {
-    question.value = normalizeQuestion(event.current_question)
-    selectedAnswerId.value = null
-    errorMessage.value = ''
-    return
-  }
+    audioService.stopLobby()
 
-  await loadCurrentQuestion(true)
+    roomStatus.value = event?.status || 'playing'
+
+    await loadCurrentQuestion(true)
 }
 
 const handleRoomFinished = async (event) => {
   realtimeLog('live.room.finished', event)
   markRealtime()
+console.log('Finish event', event)
+  audioService.playFinish()
+
   roomStatus.value = event?.status || 'finished'
   question.value = { id: 0, question: '', answers: [] }
   answerMessage.value = event?.message || 'Live room đã kết thúc.'
@@ -249,6 +274,15 @@ const submitAnswer = async (answerId) => {
 
   try {
     const result = await liveRoomApi.answerLiveQuestion(liveRoomId.value, answerId)
+
+
+// Phát âm thanh
+if (result.is_correct) {
+  audioService.playCorrect()
+} else {
+  audioService.playWrong()
+}
+
     answerMessage.value = result.is_correct ? `Chính xác, +${result.score_awarded} điểm.` : 'Chưa chính xác, +0 điểm.'
     progress.value = {
       ...progress.value,
@@ -261,6 +295,11 @@ const submitAnswer = async (answerId) => {
       is_finished: result.player_finished,
     }
     roomStatus.value = result.room_status || roomStatus.value
+    // Phát nhạc khi người chơi hoàn thành
+if (result.player_finished || result.room_status === 'finished' || !result.has_next_question) {
+  console.log('PLAY FINISH')
+  audioService.playFinish()
+}
     applyLeaderboardPayload(result.leaderboard)
     markRealtime()
 
@@ -276,17 +315,23 @@ const submitAnswer = async (answerId) => {
     isAnswering.value = false
   }
 }
-
 onMounted(async () => {
+  audioService.playLobby()
+
   subscribeToRealtime()
+
   await loadCurrentQuestion(true)
+
   pollTimer = setInterval(loadCurrentQuestion, 10000)
   leaderboardTimer = setInterval(loadLeaderboard, 15000)
 })
-
 onBeforeUnmount(() => {
+
+  audioService.stopAll()
+
   clearInterval(pollTimer)
   clearInterval(leaderboardTimer)
+
   leaveRealtime()
 })
 </script>
