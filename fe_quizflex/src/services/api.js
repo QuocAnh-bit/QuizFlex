@@ -929,4 +929,24 @@ export const reportApi = {
   }
 };
 
+export const notificationApi = {
+  async list() {
+    const { data } = await api.get("/notifications");
+    return {
+      items: unwrapCollection(data),
+      unreadCount: data?.unread_count ?? 0,
+    };
+  },
+
+  async markAsRead(id) {
+    const { data } = await api.put(`/notifications/${id}/read`);
+    return data;
+  },
+
+  async markAllAsRead() {
+    const { data } = await api.put("/notifications/read-all");
+    return data;
+  },
+};
+
 export default api;

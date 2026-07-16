@@ -21,6 +21,7 @@ use App\Services\AI\AIService;
 use App\AI\Prompts\QuizPrompt;
 use App\Http\Controllers\AIController;
 use App\Http\Controllers\ReportTicketController;
+use App\Http\Controllers\NotificationController;
 
 Route::get('/test', function () {
     return response()->json([
@@ -67,6 +68,10 @@ Route::middleware('auth:api')->group(function () {
     Route::get('/ai/quiz-status/{jobId}', [AIController::class, 'status'])->whereUuid('jobId');
     Route::get('/ai/logs/{id}', [AIController::class, 'show']);
 
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::put('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
+    Route::put('/notifications/read-all', [NotificationController::class, 'markAllAsRead']);
+
 
     Route::patch('/admin/rooms/homework/{room}/close', [AdminRoomController::class, 'closeHomework'])->withTrashed();
     Route::patch('/admin/rooms/homework/{room}/open', [AdminRoomController::class, 'openHomework'])->withTrashed();
@@ -90,6 +95,8 @@ Route::middleware('auth:api')->group(function () {
         Route::patch('/users/{id}/restore', [UserController::class, 'restore']);
         Route::delete('/users/{id}/force', [UserController::class, 'forceDelete']);
         Route::apiResource('users', UserController::class);
+
+        Route::get('/admin/report-tickets/count', [ReportTicketController::class, 'countPending']);
         
         // Quản lý báo cáo vi phạm cho admin
         Route::get('/admin/report-tickets', [ReportTicketController::class, 'index']);
