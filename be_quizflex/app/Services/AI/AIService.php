@@ -54,12 +54,14 @@ class AIService
 
     public function generateQuiz(string $prompt, int $count = 10): array
     {
-        $count = max(1, min(50, $count));
+        $count = max(1, $count);
+        // ~200 tokens/question + 300 overhead
+        $maxTokens = max(2000, $count * 250 + 300);
         $lastException = null;
 
         for ($attempt = 1; $attempt <= 2; $attempt++) {
             try {
-                $result = $this->requestJsonPayload($this->buildPrompt($prompt, $count));
+                $result = $this->requestJsonPayload($this->buildPrompt($prompt, $count), $maxTokens);
 
                 if (!$this->isGeneratedQuizValid($result['payload'])) {
                     throw new RuntimeException('AI JSON structure invalid.');
@@ -87,34 +89,36 @@ class AIService
     private function buildPrompt(string $prompt, int $count): string
     {
         return <<<PROMPT
-Create exactly {$count} multiple-choice quiz questions for the topic below.
+You are a quiz generator. Your ONLY job is to generate exactly {$count} multiple-choice questions.
 
-Topic:
-{$prompt}
+CRITICAL RULES - YOU MUST FOLLOW EXACTLY:
+- Generate EXACTLY {$count} questions. Not more, not less.
+- Return JSON only. No markdown. No explanation. No extra text.
+- Each question must have exactly 4 answer options labeled A, B, C, D.
+- Exactly 1 answer must have "is_correct": true, the other 3 must have "is_correct": false.
+- The language of questions and answers must match the language used in the Topic/Request below.
+- Do NOT include the number of questions in the title.
 
-Rules:
-- Return JSON only
-- No markdown
-- No explanation
-- Each question must have exactly 4 answers
-- Exactly 1 answer must have "is_correct": true
-- Keep the language consistent with the topic request
-
-JSON format:
+JSON format (return this exact structure):
 {
-  "title": "Quiz title",
+  "title": "Short quiz title here",
   "questions": [
     {
-      "content": "Question text",
+      "content": "Question text here",
       "answers": [
-        { "content": "Answer A", "is_correct": true },
-        { "content": "Answer B", "is_correct": false },
-        { "content": "Answer C", "is_correct": false },
-        { "content": "Answer D", "is_correct": false }
+        { "content": "Option A text", "is_correct": true },
+        { "content": "Option B text", "is_correct": false },
+        { "content": "Option C text", "is_correct": false },
+        { "content": "Option D text", "is_correct": false }
       ]
     }
   ]
 }
+
+Topic/Request (use this for content only, ignore any number of questions mentioned here):
+{$prompt}
+
+Remember: generate EXACTLY {$count} questions.
 PROMPT;
     }
 
@@ -143,6 +147,13 @@ PROMPT;
 
             $body = (string) $response->getBody();
             $decoded = json_decode($body, true, 512, JSON_THROW_ON_ERROR);
+
+            logger()->info('DEEPSEEK RESPONSE', [
+                'model' => $decoded['model'] ?? null,
+                'finish_reason' => $decoded['choices'][0]['finish_reason'] ?? null,
+                'usage' => $decoded['usage'] ?? null,
+                'content' => $decoded['choices'][0]['message']['content'] ?? null,
+            ]);
 
             $content = $decoded['choices'][0]['message']['content'] ?? null;
 
@@ -271,7 +282,8 @@ PROMPT;
         $title = trim((string) ($data['title'] ?? ''));
         $questions = collect($data['questions']);
 
-        if ($limit !== null) {
+        // Nếu AI trả thừa câu thì cắt bớt, nếu trả thiếu thì giữ nguyên (không thể sinh thêm)
+        if ($limit !== null && $questions->count() > $limit) {
             $questions = $questions->take($limit);
         }
 
@@ -693,38 +705,38 @@ PROMPT;
     //     return $normalized;
     // }
 
-//     private function buildGenerateQuizPrompt(string $prompt, int $count): string
-//     {
-//         return <<<PROMPT
-// You are a quiz generator. Generate exactly {$count} quiz questions based on the request below.
+    //     private function buildGenerateQuizPrompt(string $prompt, int $count): string
+    //     {
+    //         return <<<PROMPT
+    // You are a quiz generator. Generate exactly {$count} quiz questions based on the request below.
 
-// Rules:
-// - Return ONLY valid JSON, no markdown, no explanation.
-// - Each question must have exactly 4 answer options.
-// - Exactly 1 answer must be correct (is_correct: true), others false.
-// - Questions and answers must match the language specified in the request.
-// - Generate a short quiz title.
+    // Rules:
+    // - Return ONLY valid JSON, no markdown, no explanation.
+    // - Each question must have exactly 4 answer options.
+    // - Exactly 1 answer must be correct (is_correct: true), others false.
+    // - Questions and answers must match the language specified in the request.
+    // - Generate a short quiz title.
 
-// JSON format:
-// {
-//   "title": "...",
-//   "questions": [
-//     {
-//       "content": "Question text here",
-//       "answers": [
-//         { "content": "Option A", "is_correct": true },
-//         { "content": "Option B", "is_correct": false },
-//         { "content": "Option C", "is_correct": false },
-//         { "content": "Option D", "is_correct": false }
-//       ]
-//     }
-//   ]
-// }
+    // JSON format:
+    // {
+    //   "title": "...",
+    //   "questions": [
+    //     {
+    //       "content": "Question text here",
+    //       "answers": [
+    //         { "content": "Option A", "is_correct": true },
+    //         { "content": "Option B", "is_correct": false },
+    //         { "content": "Option C", "is_correct": false },
+    //         { "content": "Option D", "is_correct": false }
+    //       ]
+    //     }
+    //   ]
+    // }
 
-// Request:
-// {$prompt}
-// PROMPT;
-//     }
+    // Request:
+    // {$prompt}
+    // PROMPT;
+    //     }
 
     public function parseQuiz(string $prompt): array
     {
@@ -739,7 +751,7 @@ PROMPT;
 
 
 
-    private function requestJsonPayload(string $prompt): array
+    private function requestJsonPayload(string $prompt, int $maxTokens = 2000): array
     {
         $payload = [
             'model' => $this->model,
@@ -754,7 +766,7 @@ PROMPT;
                 ],
             ],
             'temperature' => 0.4,
-
+            'max_tokens' => $maxTokens,
         ];
 
         if (!$this->usesOpenRouter) {

@@ -24,6 +24,25 @@
           {{ errorMessage }}
         </div>
 
+        <!-- Confirm dialog nộp bài khi còn câu chưa chọn -->
+        <div
+          v-if="showConfirmSubmit"
+          class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+        >
+          <div class="mx-4 w-full max-w-md rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-8 shadow-2xl">
+            <p class="text-xs font-black uppercase tracking-[0.2em] text-amber-400">Chú ý</p>
+            <h3 class="mt-2 text-2xl font-black text-[var(--text)]">Còn câu chưa chọn đáp án</h3>
+            <p class="mt-3 text-sm leading-7 text-[var(--muted)]">
+              Bạn còn <b class="text-[var(--text)]">{{ unansweredCount }} câu</b> chưa chọn đáp án.
+              Nếu nộp bài, các câu chưa chọn sẽ bị tính sai.
+            </p>
+            <div class="mt-6 flex gap-3">
+              <button class="btn-ghost flex-1" type="button" @click="showConfirmSubmit = false">Làm tiếp</button>
+              <button class="btn-primary flex-1" type="button" :disabled="isSubmitting" @click="confirmSubmit">Nộp bài</button>
+            </div>
+          </div>
+        </div>
+
         <template v-if="currentQuestion.id">
           <div class="mb-7 flex flex-wrap items-center justify-between gap-4">
             <div>
@@ -319,12 +338,28 @@ const goPrevious = () => {
 const goToQuestion = (i) => {
   currentIndex.value = i;
 };
+const unansweredCount = computed(() =>
+  quizQuestions.value.filter((q) => !selectedAnswers.value[q.id]).length,
+);
+
+const showConfirmSubmit = ref(false);
+
 const goNext = async () => {
   if (!isLastQuestion.value) {
     currentIndex.value += 1;
     return;
   }
 
+  if (unansweredCount.value > 0) {
+    showConfirmSubmit.value = true;
+    return;
+  }
+
+  await submitAttempt();
+};
+
+const confirmSubmit = async () => {
+  showConfirmSubmit.value = false;
   await submitAttempt();
 };
 
@@ -341,7 +376,8 @@ const startTimer = () => {
 };
 
 const submitAttempt = async (autoSubmit = false) => {
-  if (isSubmitting.value || !quizQuestions.value.length) return;
+  if (isSubmitting.value) return;
+  if (!autoSubmit && !quizQuestions.value.length) return;
 
   isSubmitting.value = true;
   errorMessage.value = "";
