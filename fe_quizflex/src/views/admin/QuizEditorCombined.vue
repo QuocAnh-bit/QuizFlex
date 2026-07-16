@@ -1,5 +1,5 @@
 <template>
-  <section class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_400px]">
+  <section class="grid gap-6 2xl:grid-cols-[minmax(0,1fr)_360px]">
     <form
       class="relative overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-soft)] backdrop-blur-2xl"
       @submit.prevent="saveQuiz"
@@ -1366,7 +1366,9 @@ const saveQuiz = async () => {
       ? "Đã cập nhật quiz."
       : "Đã tạo quiz mới.";
 
-    router.push(`${questionBase.value}/edit/${saved.id}`);
+    if (!isEditMode.value) {
+      router.push(`${questionBase.value}/edit/${saved.id}`);
+    }
   } catch (error) {
     errorMessage.value =
       error?.response?.data?.message || `Lưu thất bại: ${error.message}`;

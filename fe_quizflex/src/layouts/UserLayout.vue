@@ -72,6 +72,7 @@
               </router-link>
             </template>
             <template v-else>
+              <NotificationBell />
               <div class="relative user-dropdown-container">
                 <button 
                   @click="isUserDropdownOpen = !isUserDropdownOpen" 
@@ -119,6 +120,8 @@
           <div class="flex shrink-0 items-center gap-2 xl:hidden">
             <ThemeToggle />
             <StreakXpBar />
+
+            <NotificationBell v-if="currentUser" />
 
             <button
               type="button"
@@ -184,6 +187,7 @@ import ThemeToggle from '@/components/common/ThemeToggle.vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import { authApi, currentUserStorage, getDashboardRouteForRole } from '@/services/api'
 import StreakXpBar from '@/components/common/StreakXpBar.vue'
+import NotificationBell from '@/components/common/NotificationBell.vue'
 
 const route = useRoute();
 const router = useRouter();

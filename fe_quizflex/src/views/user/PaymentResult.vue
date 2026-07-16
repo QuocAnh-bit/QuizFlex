@@ -144,7 +144,11 @@ const verifyTransaction = async () => {
         }
       } else {
         isSuccess.value = false
-        errorMsg.value = `Giao dịch #${queryParams.orderCode} có trạng thái: ${res.status || 'Chưa hoàn tất'}`
+        let statusText = res.status
+        if (res.status === 'failed') statusText = 'Thất bại'
+        else if (res.status === 'cancelled') statusText = 'Đã hủy'
+        else if (res.status === 'pending') statusText = 'Đang xử lý'
+        errorMsg.value = `Giao dịch #${queryParams.orderCode} có trạng thái: ${statusText || 'Chưa hoàn tất'}`
       }
     } catch (error) {
       isSuccess.value = false

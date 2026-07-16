@@ -33,7 +33,7 @@
           >
             ⚡ Ôn tập Flashcard
           </router-link>
-          <router-link class="btn-ghost" :to="`/dashboard/questions/edit/${quiz.id}`">Sửa quiz</router-link>
+          <!-- <router-link class="btn-ghost" :to="`/dashboard/questions/edit/${quiz.id}`">Sửa quiz</router-link> -->
           <router-link class="btn-ghost" to="/quizzes">Quay lại danh sách</router-link>
           <button 
             class="inline-flex h-11 items-center justify-center rounded-full border border-rose-500/30 bg-rose-500/5 px-5 text-sm font-black text-rose-400 transition duration-300 hover:border-rose-500/60 hover:bg-rose-500/10 active:scale-95"

@@ -82,7 +82,8 @@ class OtpService
             ];
         }
 
-        // 4. So khớp mã OTP (sử dụng Hash::check để an toàn bảo mật)
+        // 4. So khớp mã OTP người dùng nhập với mã otp lưu trong database
+        // (sử dụng Hash::check để an toàn bảo mật)
         if (Hash::check($otp, $record->otp_code)) {
             // Đúng OTP -> Dọn sạch bảng ghi và báo thành công
             DB::table('otp_verifications')->where('email', $email)->delete();

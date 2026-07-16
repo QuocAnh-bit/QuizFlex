@@ -300,10 +300,7 @@ onMounted(async () => {
   }
   if (state && state.password) {
     form.password = state.password
-    successMessage.value = 'Đăng ký thành công! Đang tự động đăng nhập...'
-    setTimeout(() => {
-      handleLogin()
-    }, 400)
+    successMessage.value = 'Kích hoạt tài khoản thành công! Vui lòng nhấn Đăng nhập để tiếp tục.'
   }
 })
 
