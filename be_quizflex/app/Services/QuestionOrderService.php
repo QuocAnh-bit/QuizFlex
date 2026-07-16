@@ -8,7 +8,7 @@ use App\Models\QuizAttempt;
 
 class QuestionOrderService
 {
-    public function makeForQuiz(Quiz $quiz): array
+   public function makeForQuiz(Quiz $quiz, bool $shuffle = true): array
     {
         $quiz->loadMissing('questions');
 
@@ -18,19 +18,25 @@ class QuestionOrderService
             ->values()
             ->all();
 
-        shuffle($questionIds);
+       if ($shuffle) {
+    shuffle($questionIds);
+}
 
         return $questionIds;
     }
 
-    public function ensureAttemptOrder(QuizAttempt $attempt, Quiz $quiz): QuizAttempt
+   public function ensureAttemptOrder(
+    QuizAttempt $attempt,
+    Quiz $quiz,
+    bool $shuffle = true
+): QuizAttempt
     {
         if (!empty($attempt->question_order) && is_array($attempt->question_order)) {
             return $attempt;
         }
 
         $attempt->forceFill([
-            'question_order' => $this->makeForQuiz($quiz),
+            'question_order' => $this->makeForQuiz($quiz, $shuffle),
         ])->save();
 
         return $attempt->refresh();
