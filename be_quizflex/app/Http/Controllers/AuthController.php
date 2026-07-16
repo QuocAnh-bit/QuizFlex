@@ -97,11 +97,11 @@ class AuthController extends Controller
             $payload['ai_quota_remaining'] = $this->defaultAiQuotaForRole($role);
         }
 
-        if (Schema::hasColumn('users', 'vip_expires_at')) {
+        if (Schema::hasColumn('users', 'vip_expires_at')) { // thời gian hết hạn vip
             $payload['vip_expires_at'] = in_array(strtoupper($role), ['PLUS', 'PRO', 'ULTRA']) ? now()->addMonth() : null;
         }
 
-        $user = User::create($payload);
+        $user = User::create($payload); // ghi xuống database
 
         // Tự động sinh OTP và gửi qua log/mail
         try {
@@ -145,8 +145,8 @@ class AuthController extends Controller
         ]);
 
         try {
-            $otpService = app(OtpService::class);
-            $res = $otpService->verifyOtp($data['email'], $data['otp']);
+            $otpService = app(OtpService::class); // gội otpservice để kiểm tra otp
+            $res = $otpService->verifyOtp($data['email'], $data['otp']); // sau khi get otp từ database, nó sẽ so sánh
 
             if (!$res['status']) {
                 return response()->json([
@@ -159,10 +159,11 @@ class AuthController extends Controller
             $user = User::where('email', $data['email'])->first();
             $token = null;
             if ($user) {
+                // kích hoạt vĩnh viễn tài khoản email đã xác minh
                 $user->email_verified_at = now();
                 $user->save();
 
-                // Tự động đăng nhập và sinh JWT Token
+                // Tự động đăng nhập và sinh JWT Token thông qua JWT-Auth Guard
                 $token = auth('api')->login($user);
             }
 

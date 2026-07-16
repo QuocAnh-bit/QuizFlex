@@ -87,11 +87,10 @@ export const tokenStorage = {
   get() {
     return localStorage.getItem("quizflex_access_token");
   },
-  set(token) {
-    if (!token) return;
+  set(token) { // lưu mã token JWT vào localStorage của trình duyệt
     localStorage.setItem("quizflex_access_token", token);
   },
-  clear() {
+  clear() { // xóa mã token JWT khỏi localStorage
     localStorage.removeItem("quizflex_access_token");
   },
 };
@@ -107,7 +106,7 @@ export const currentUserStorage = {
       return null;
     }
   },
-  set(user) {
+  set(user) { // lưu thông tin user dưới khóa quizflex_current_user
     const normalized = normalizeUserForStorage(user);
     if (!normalized) {
       this.clear();
@@ -134,7 +133,7 @@ export const currentUserStorage = {
 api.interceptors.request.use((config) => {
   const token = tokenStorage.get();
   if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+    config.headers.Authorization = `Bearer ${token}`; // gắn token vào header Authorization của mỗi request
   }
   return config;
 });

@@ -203,6 +203,13 @@ class QuizController extends Controller
     {
         Gate::forUser(auth('api')->user())->authorize('delete', $quiz);
 
+        if ($quiz->trashed()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Quiz đã được xóa mềm trước đó.',
+            ]);
+        }
+
         $ownerId = $quiz->user_id; // Lưu lại ID chủ Quiz trước khi xóa
 
         $quiz->delete();

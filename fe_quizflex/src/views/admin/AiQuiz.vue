@@ -359,37 +359,43 @@ onBeforeUnmount(() => {
   -webkit-appearance: none;
   display: block;
   width: 100%;
-  height: 42px;
-  padding: 0 2.2rem 0 1rem;
-  border: 1px solid #D9D6F3;
-  border-radius: 18px;
-  background-color: #fff;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%237C6FCD' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  height: 46px;
+  padding: 0 2.5rem 0 1rem;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background-color: var(--surface-soft);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239b2cff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 0.75rem center;
-  background-size: 16px;
+  background-position: right 1rem center;
+  background-size: 14px;
   font-size: 0.875rem;
   font-weight: 600;
-  color: var(--text, #1a1a2e);
+  color: var(--text);
   cursor: pointer;
   outline: none;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+  backdrop-filter: blur(12px);
 }
 
 .quiz-select:hover {
-  border-color: #7C6FCD;
+  border-color: var(--border-strong);
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+html[data-theme="light"] .quiz-select:hover {
+  background-color: rgba(95, 50, 160, 0.12);
 }
 
 .quiz-select:focus {
-  border-color: #7C6FCD;
-  box-shadow: 0 0 0 3px rgba(124, 111, 205, 0.15);
+  border-color: var(--border-strong);
+  box-shadow: 0 0 0 3px rgba(155, 44, 255, 0.2);
 }
 
 .quiz-select option {
   font-size: 0.875rem;
   font-weight: 600;
-  padding: 6px 12px;
-  color: var(--text, #1a1a2e);
-  background-color: #fff;
+  padding: 10px 12px;
+  color: var(--text);
+  background-color: var(--bg-2);
 }
 </style>
