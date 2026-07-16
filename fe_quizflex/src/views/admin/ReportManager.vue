@@ -107,11 +107,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue' // Thêm onUnmounted
 import api, { reportApi } from '@/services/api' 
 
 const reports = ref([])
 const isLoading = ref(true)
+let pollingInterval = null // Biến lưu trữ bộ đếm giờ
 
 // Toast & Modal UI State
 const confirmModal = ref({ isOpen: false, title: '', message: '', action: null })
@@ -139,15 +140,16 @@ const triggerConfirmAction = async () => {
 }
 
 // Data Fetching
-const fetchReports = async () => {
-  isLoading.value = true
+// Thêm tham số isBackground để phân biệt tải lần đầu và tải ngầm
+const fetchReports = async (isBackground = false) => {
+  if (!isBackground) isLoading.value = true
   try {
     reports.value = await reportApi.listAdmin()
   } catch (error) {
     console.error("Lỗi khi lấy danh sách báo cáo:", error)
-    showToast('Không thể tải danh sách báo cáo', 'error')
+    if (!isBackground) showToast('Không thể tải danh sách báo cáo', 'error')
   } finally {
-    isLoading.value = false
+    if (!isBackground) isLoading.value = false
   }
 }
 
@@ -169,17 +171,15 @@ const updateStatus = async (id, status) => {
   })
 }
 
-// Xử lý Xóa Quiz trực tiếp từ Report (Yêu cầu của Leader)
+// Xử lý Xóa Quiz trực tiếp từ Report
 const deleteQuiz = (quizId, reportId) => {
   showConfirm(
     'Xác nhận xóa Quiz',
     'Bạn có chắc chắn muốn xóa mềm Quiz vi phạm này không? Khi xóa Quiz, báo cáo này cũng sẽ được đánh dấu là "Đã xử lý".',
     async () => {
       try {
-        // 1. Gọi API xóa Quiz
         await api.delete(`/admin/quizzes/${quizId}`)
         
-        // 2. Tự động đánh dấu Report này là đã giải quyết
         await reportApi.updateAdminStatus(reportId, 'resolved')
         const index = reports.value.findIndex(r => r.id === reportId)
         if (index !== -1) reports.value[index].status = 'resolved'
@@ -213,7 +213,17 @@ const getStatusText = (status) => {
 }
 
 onMounted(() => {
-  fetchReports()
+  fetchReports() // Tải lần đầu có màn hình loading
+  
+  // Thiết lập tự động tải lại ngầm mỗi 10 giây (10000ms)
+  pollingInterval = setInterval(() => {
+    fetchReports(true) // truyền true để không hiện chữ "Đang tải dữ liệu..." 
+  }, 10000)
+})
+
+onUnmounted(() => {
+  // Xóa bộ đếm khi Admin chuyển sang trang khác để tránh lỗi bộ nhớ
+  if (pollingInterval) clearInterval(pollingInterval)
 })
 </script>
 

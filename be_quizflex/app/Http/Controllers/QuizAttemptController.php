@@ -135,7 +135,7 @@ class QuizAttemptController extends Controller
     {
         $data = $request->validate([
             'attempt_id' => ['required', 'integer', 'exists:quiz_attempts,id'],
-            'answers' => ['required', 'array'],
+            'answers' => ['present', 'array'],
         ]);
 
         $user = $request->user();

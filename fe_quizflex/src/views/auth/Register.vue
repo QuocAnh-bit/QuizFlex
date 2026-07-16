@@ -214,7 +214,7 @@ const startCountdown = () => {
 }
 
 const validate = () => { 
-  errors.fullName = form.fullName.trim() ? '' : 'Vui lòng nhập họ tên.'; 
+  errors.fullName = form.fullName.trim() ? '' : 'Vui lòng nhập họ tên.'; // kiểm tra định dạng dữ liệu của người dùng nhập vào
   errors.username = form.username.trim().length >= 3 ? '' : 'Username tối thiểu 3 ký tự.'; 
   errors.email = !form.email ? 'Email không được để trống.' : !/^\S+@\S+\.\S+$/.test(form.email) ? 'Email chưa đúng định dạng.' : ''; 
   errors.password = form.password.length >= 8 ? '' : 'Mật khẩu tối thiểu 8 ký tự.'; 

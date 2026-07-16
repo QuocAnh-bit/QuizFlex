@@ -87,11 +87,10 @@ export const tokenStorage = {
   get() {
     return localStorage.getItem("quizflex_access_token");
   },
-  set(token) {
-    if (!token) return;
+  set(token) { // lưu mã token JWT vào localStorage của trình duyệt
     localStorage.setItem("quizflex_access_token", token);
   },
-  clear() {
+  clear() { // xóa mã token JWT khỏi localStorage
     localStorage.removeItem("quizflex_access_token");
   },
 };
@@ -107,7 +106,7 @@ export const currentUserStorage = {
       return null;
     }
   },
-  set(user) {
+  set(user) { // lưu thông tin user dưới khóa quizflex_current_user
     const normalized = normalizeUserForStorage(user);
     if (!normalized) {
       this.clear();
@@ -134,7 +133,7 @@ export const currentUserStorage = {
 api.interceptors.request.use((config) => {
   const token = tokenStorage.get();
   if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+    config.headers.Authorization = `Bearer ${token}`; // gắn token vào header Authorization của mỗi request
   }
   return config;
 });
@@ -563,8 +562,18 @@ export const homeworkApi = {
     return unwrap(data)
   },
 
+  async updateHomeworkRoom(roomId, payload) {
+    const { data } = await api.patch(`/rooms/${roomId}`, payload)
+    return unwrap(data)
+  },
+
   async joinHomeworkRoom(code) {
     const { data } = await api.post('/rooms/join', { code })
+    return unwrap(data)
+  },
+
+  async leaveHomeworkRoom(roomId) {
+    const { data } = await api.post(`/rooms/${roomId}/leave`)
     return unwrap(data)
   },
 
@@ -917,6 +926,26 @@ export const reportApi = {
     const { data } = await api.put(`/admin/report-tickets/${id}`, { status });
     return unwrap(data);
   }
+};
+
+export const notificationApi = {
+  async list() {
+    const { data } = await api.get("/notifications");
+    return {
+      items: unwrapCollection(data),
+      unreadCount: data?.unread_count ?? 0,
+    };
+  },
+
+  async markAsRead(id) {
+    const { data } = await api.put(`/notifications/${id}/read`);
+    return data;
+  },
+
+  async markAllAsRead() {
+    const { data } = await api.put("/notifications/read-all");
+    return data;
+  },
 };
 
 export default api;

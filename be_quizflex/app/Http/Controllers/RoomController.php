@@ -53,18 +53,11 @@ class RoomController extends Controller
             ], 403);
         }   
 
-        $allowedEmailsInput = $request->input('allowed_emails', []);
-        $request->merge([
-            'allowed_emails' => $this->normalizeEmailList(is_array($allowedEmailsInput) ? $allowedEmailsInput : []),
-        ]);
-
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'max_players' => ['nullable', 'integer', 'min:1', 'max:500'],
             'join_policy' => ['nullable', 'string', Rule::in(['open', 'email_whitelist'])],
-            'allowed_emails' => ['nullable', 'array'],
-            'allowed_emails.*' => ['required', 'email'],
         ]);
 
         $room = DB::transaction(function () use ($data, $user) {
@@ -83,18 +76,6 @@ class RoomController extends Controller
                 'join_policy' => $joinPolicy,
             ]);
 
-            if ($joinPolicy === 'email_whitelist') {
-                foreach ($this->normalizeEmailList($data['allowed_emails'] ?? []) as $email) {
-                    RoomAllowedMember::updateOrCreate(
-                        ['room_id' => $room->id, 'email' => $email],
-                        [
-                            'invited_by' => $user->id,
-                            'status' => 'active',
-                        ]
-                    );
-                }
-            }
-
             return $room->fresh(['owner:id,name,email']);
         });
 
@@ -103,6 +84,32 @@ class RoomController extends Controller
             'message' => 'Tạo phòng thành công',
             'data' => $this->formatRoom($room),
         ], 201);
+    }
+
+    public function update(Request $request, Room $room)
+    {
+        $user = $request->user();
+        if ((int) $room->owner_id !== (int) $user->id && !$this->isAdmin($user)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn không có quyền chỉnh sửa phòng này.',
+            ], 403);
+        }
+
+        $data = $request->validate([
+            'name' => ['sometimes', 'required', 'string', 'max:255'],
+            'description' => ['nullable', 'string'],
+            'join_policy' => ['sometimes', 'required', 'string', Rule::in(['open', 'email_whitelist'])],
+            'max_players' => ['nullable', 'integer', 'min:1', 'max:500'],
+        ]);
+
+        $room->update($data);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Cập nhật cấu hình phòng thành công.',
+            'data' => $this->formatRoom($room->fresh(['owner:id,name,email'])),
+        ]);
     }
 
     public function show(Request $request, Room $room)
@@ -307,6 +314,36 @@ class RoomController extends Controller
                 'user_id' => $member->user_id,
                 'status' => $member->status,
             ],
+        ]);
+    }
+
+    public function leave(Request $request, Room $room)
+    {
+        $user = $request->user();
+        $member = RoomMember::where('room_id', $room->id)
+            ->where('user_id', $user->id)
+            ->where('status', 'active')
+            ->first();
+
+        if (!$member) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn không phải là thành viên hoạt động trong phòng này.',
+            ], 422);
+        }
+
+        if ((int) $room->owner_id === (int) $user->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Chủ phòng không thể rời phòng của chính mình.',
+            ], 422);
+        }
+
+        $member->forceFill(['status' => 'removed'])->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Rời phòng thành công.',
         ]);
     }
 

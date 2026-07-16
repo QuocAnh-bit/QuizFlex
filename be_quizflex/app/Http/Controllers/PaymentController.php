@@ -283,7 +283,7 @@ class PaymentController extends Controller
     {
         $user = auth('api')->user();
         $plans = $this->paymentService->getPlans();
-        
+
         $result = [];
         foreach ($plans as $id => $plan) {
             $costInfo = [];
@@ -298,7 +298,7 @@ class PaymentController extends Controller
                     'message' => 'Đăng ký mới gói cước.'
                 ];
             }
-            
+
             $result[$id] = array_merge($plan, [
                 'upgrade_info' => $costInfo
             ]);
@@ -344,23 +344,23 @@ class PaymentController extends Controller
     private function formatPaymentForHistory(Payment $payment): array
     {
         $plans = $this->paymentService->getPlans();
-        
+
         // Đọc target_plan_id từ provider_response
         $targetPlanId = null;
         if (is_array($payment->provider_response) && isset($payment->provider_response['target_plan_id'])) {
             $targetPlanId = $payment->provider_response['target_plan_id'];
         }
-        
+
         $planName = 'Gói nâng cấp';
         $originalAmount = (float) $payment->amount;
         $discountAmount = 0.0;
         $isUpgrade = false;
-        
+
         if ($targetPlanId && isset($plans[$targetPlanId])) {
             $plan = $plans[$targetPlanId];
             $planName = $plan['name'];
             $originalAmount = (float) $plan['amount'];
-            
+
             // Nếu là nâng cấp (số tiền thực trả nhỏ hơn giá gốc gói cước và không phải dùng thử)
             if ((float) $payment->amount < $originalAmount && $payment->provider !== 'trial') {
                 $discountAmount = $originalAmount - (float) $payment->amount;
@@ -375,7 +375,7 @@ class PaymentController extends Controller
                 }
             }
         }
-        
+
         // Nếu là dùng thử 0đ
         if ($payment->provider === 'trial') {
             $planName = 'Dùng thử Plus (7 ngày)';

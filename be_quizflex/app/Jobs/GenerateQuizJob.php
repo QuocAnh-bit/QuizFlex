@@ -23,9 +23,15 @@ class GenerateQuizJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    private const BATCH_SIZE = 10;
+    private const MAX_RETRIES_PER_BATCH = 3;
+
     public int $tries = 3;
 
     public array $backoff = [30, 120];
+
+    private string $batchTitle = 'AI Generated Quiz';
+    private array $batchMeta = [];
 
     public function __construct(public string $jobUuid) {}
 
@@ -59,19 +65,24 @@ class GenerateQuizJob implements ShouldQueue
         $job->update(['current_step' => 'calling_ai_api']); // <-- Thêm dòng này
         sleep(2); // 💡 THÊM VÀO ĐÂY: Dừng 2s để sáng đèn ô 2 (giả vờ AI đang nghĩ lâu)
 
-        $generatedQuiz = $aiService->generateQuiz(
+        // Gọi AI nhiều lần theo batch, ghép kết quả trước khi lưu
+        $allQuestions = $this->collectAllQuestions(
+            $aiService,
             $this->buildPromptFromJob($job),
-            $job->requested_count
+            (int) $job->requested_count
         );
 
         $job->update(['current_step' => 'parsing_ai_response']); // <-- Thêm dòng này
         sleep(1); // 💡 THÊM VÀO ĐÂY: Dừng 1s để sáng đèn ô 3
 
-        if (
-            !is_array($generatedQuiz) ||
-            !isset($generatedQuiz['questions']) ||
-            !is_array($generatedQuiz['questions'])
-        ) {
+        // Lấy title từ batch đầu tiên (đã được lưu trong collectAllQuestions)
+        $generatedQuiz = [
+            'title' => $this->batchTitle,
+            'questions' => $allQuestions,
+            'meta' => $this->batchMeta,
+        ];
+
+        if (empty($generatedQuiz['questions'])) {
             throw new \RuntimeException('AI trả về dữ liệu không hợp lệ.');
         }
 
@@ -151,6 +162,72 @@ class GenerateQuizJob implements ShouldQueue
         ]);
     }
 
+    /**
+     * Gọi AI nhiều lần theo batch (mỗi lần tối đa BATCH_SIZE câu),
+     * chống trùng nội dung, retry nếu một lần thất bại.
+     * Chỉ trả về mảng questions khi đã đủ số lượng yêu cầu.
+     */
+    private function collectAllQuestions(AIService $aiService, string $prompt, int $requestedCount): array
+    {
+        $allQuestions = [];
+        $seenContents = [];
+
+        while (count($allQuestions) < $requestedCount) {
+            $remaining = $requestedCount - count($allQuestions);
+            $batchCount = min(self::BATCH_SIZE, $remaining);
+
+            $batchResult = null;
+            $lastError = null;
+
+            // Retry tối đa MAX_RETRIES_PER_BATCH lần nếu batch thất bại
+            for ($retry = 1; $retry <= self::MAX_RETRIES_PER_BATCH; $retry++) {
+                try {
+                    $batchResult = $aiService->generateQuiz($prompt, $batchCount);
+                    break;
+                } catch (\Throwable $e) {
+                    $lastError = $e;
+                    if ($retry < self::MAX_RETRIES_PER_BATCH) {
+                        sleep(2);
+                    }
+                }
+            }
+
+            if ($batchResult === null) {
+                throw new \RuntimeException(
+                    'AI batch thất bại sau ' . self::MAX_RETRIES_PER_BATCH . ' lần thử: ' . $lastError?->getMessage()
+                );
+            }
+
+            // Lưu title và meta từ batch đầu tiên
+            if (empty($allQuestions)) {
+                $this->batchTitle = $batchResult['title'] ?? 'AI Generated Quiz';
+                $this->batchMeta = $batchResult['meta'] ?? [];
+            } else {
+                // Cộng dồn tokens_used từ các batch sau
+                $this->batchMeta['tokens_used'] =
+                    ($this->batchMeta['tokens_used'] ?? 0) + ($batchResult['meta']['tokens_used'] ?? 0);
+            }
+
+            // Thêm câu hỏi vào danh sách, bỏ qua câu trùng nội dung
+            foreach ($batchResult['questions'] as $question) {
+                $normalizedContent = mb_strtolower(trim((string) $question['content']));
+
+                if (isset($seenContents[$normalizedContent])) {
+                    continue; // bỏ qua câu trùng
+                }
+
+                $seenContents[$normalizedContent] = true;
+                $allQuestions[] = $question;
+
+                if (count($allQuestions) >= $requestedCount) {
+                    break;
+                }
+            }
+        }
+
+        return $allQuestions;
+    }
+
     private function storeQuiz(AiJob $job, array $generatedQuiz): Quiz
     {
         $questions = $generatedQuiz['questions'];
@@ -211,10 +288,19 @@ class GenerateQuizJob implements ShouldQueue
             default => 'medium',
         };
 
+        // Loại bỏ các cụm từ chỉ số câu hỏi trong prompt của user
+        // để tránh xung đột với số câu đã được xác định từ settings
+        $cleanPrompt = preg_replace(
+            '/\b(tạo|sinh|viết|generate|create)\s+\d+\s+(câu|questions?|câu hỏi)\b/iu',
+            '',
+            (string) $job->prompt
+        );
+        $cleanPrompt = trim((string) preg_replace('/\s{2,}/', ' ', $cleanPrompt));
+
         return trim(implode("\n", [
             "Language: {$language}",
             "Difficulty: {$difficulty}",
-            "Request: {$job->prompt}",
+            "Topic: {$cleanPrompt}",
         ]));
     }
 

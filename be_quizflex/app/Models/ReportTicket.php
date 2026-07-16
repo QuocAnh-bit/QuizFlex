@@ -34,6 +34,6 @@ class ReportTicket extends Model
      */
     public function quiz()
     {
-        return $this->belongsTo(Quiz::class, 'quiz_id');
+        return $this->belongsTo(Quiz::class, 'quiz_id')->withTrashed();
     }
 }

@@ -6,6 +6,7 @@ use App\Models\Answer;
 use App\Models\Question;
 use App\Models\Quiz;
 use App\Models\User;
+use App\Notifications\QuizModerated;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -182,6 +183,15 @@ class QuizController extends Controller
             return $quiz->fresh(['user:id,name', 'questions.answers']);
         });
 
+        // NẾU NGƯỜI SỬA KHÔNG PHẢI LÀ CHỦ QUIZ (LÀ ADMIN) -> GỬI THÔNG BÁO 'edited'
+        $currentUserId = auth('api')->id();
+        if ($currentUserId !== null && $currentUserId !== $quiz->user_id) {
+            $owner = User::find($quiz->user_id);
+            if ($owner) {
+                $owner->notify(new QuizModerated($quiz, 'edited'));
+            }
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Cập nhật quiz thành công',
@@ -193,7 +203,25 @@ class QuizController extends Controller
     {
         Gate::forUser(auth('api')->user())->authorize('delete', $quiz);
 
+        if ($quiz->trashed()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Quiz đã được xóa mềm trước đó.',
+            ]);
+        }
+
+        $ownerId = $quiz->user_id; // Lưu lại ID chủ Quiz trước khi xóa
+
         $quiz->delete();
+
+        // NẾU NGƯỜI XÓA KHÔNG PHẢI LÀ CHỦ QUIZ (LÀ ADMIN) -> GỬI THÔNG BÁO 'deleted'
+        $currentUserId = auth('api')->id();
+        if ($currentUserId !== null && $currentUserId !== $ownerId) {
+            $owner = User::find($ownerId);
+            if ($owner) {
+                $owner->notify(new QuizModerated($quiz, 'deleted')); // Gửi trực tiếp biến $quiz vì nó đã bị Soft Delete nhưng vẫn truy cập được dữ liệu
+            }
+        }
 
         return response()->json([
             'success' => true,
