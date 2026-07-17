@@ -18,24 +18,33 @@
           <textarea v-model="prompt" class="field min-h-44" placeholder="Ví dụ: Tạo 10 câu hỏi toán lớp 10 về hàm số bậc nhất, mức trung bình, 4 đáp án mỗi câu."></textarea>
 
           <div class="grid gap-4 md:grid-cols-4">
-            <select v-model.number="settings.count" class="field">
+            <select v-model.number="settings.count" class="quiz-select">
+              <option :value="5">5 câu</option>
               <option :value="10">10 câu</option>
               <option :value="15">15 câu</option>
               <option :value="20">20 câu</option>
+              <option :value="25">25 câu</option>
+              <option :value="30">30 câu</option>
+              <option :value="35">35 câu</option>
+              <option :value="40">40 câu</option>
+              <option :value="45">45 câu</option>
+              <option :value="50">50 câu</option>
+              <option :value="55">55 câu</option>
+              <option :value="60">60 câu</option>
             </select>
 
-            <select v-model="settings.difficulty" class="field">
+            <select v-model="settings.difficulty" class="quiz-select">
               <option value="easy">Dễ</option>
               <option value="medium">Vừa</option>
               <option value="hard">Khó</option>
             </select>
 
-            <select v-model="settings.language" class="field">
+            <select v-model="settings.language" class="quiz-select">
               <option value="vi">Tiếng Việt</option>
               <option value="en">English</option>
             </select>
 
-            <select v-model="settings.visibility" class="field">
+            <select v-model="settings.visibility" class="quiz-select">
               <option value="private">Private</option>
               <option value="public">Public</option>
               <option value="group">Group</option>
@@ -343,3 +352,50 @@ onBeforeUnmount(() => {
   stopPolling()
 })
 </script>
+
+<style scoped>
+.quiz-select {
+  appearance: none;
+  -webkit-appearance: none;
+  display: block;
+  width: 100%;
+  height: 46px;
+  padding: 0 2.5rem 0 1rem;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background-color: var(--surface-soft);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239b2cff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 14px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+  backdrop-filter: blur(12px);
+}
+
+.quiz-select:hover {
+  border-color: var(--border-strong);
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+html[data-theme="light"] .quiz-select:hover {
+  background-color: rgba(95, 50, 160, 0.12);
+}
+
+.quiz-select:focus {
+  border-color: var(--border-strong);
+  box-shadow: 0 0 0 3px rgba(155, 44, 255, 0.2);
+}
+
+.quiz-select option {
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 10px 12px;
+  color: var(--text);
+  background-color: var(--bg-2);
+}
+</style>

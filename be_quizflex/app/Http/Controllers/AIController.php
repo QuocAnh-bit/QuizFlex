@@ -16,7 +16,7 @@ class AIController extends Controller
     {
         $data = $request->validate([
             'prompt' => ['required', 'string', 'max:5000'],
-            'count' => ['nullable', 'integer', 'min:1', 'max:50'],
+            'count' => ['nullable', 'integer', 'min:1', 'max:60'],
             'difficulty' => ['nullable', 'string', 'in:easy,medium,hard'],
             'language' => ['nullable', 'string', 'in:vi,en'],
             'visibility' => ['nullable', 'string', 'in:private,public,group'],

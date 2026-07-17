@@ -406,79 +406,6 @@
       </div>
     </Transition>
 
-    <!-- Waiting for Payment Modal (Polling State) -->
-    <Transition
-      enter-active-class="transition duration-300 ease-out"
-      enter-from-class="opacity-0"
-      enter-to-class="opacity-100"
-      leave-active-class="transition duration-200 ease-in"
-      leave-from-class="opacity-100"
-      leave-to-class="opacity-0"
-    >
-      <div 
-        v-if="isWaitingForPayment" 
-        class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4"
-      >
-        <div class="relative overflow-hidden w-full max-w-[480px] rounded-[2.2rem] border border-emerald-500/30 bg-[var(--surface)] p-6 md:p-8 shadow-[0_24px_80px_rgba(16,185,129,0.1)] text-center transition">
-          <div class="pointer-events-none absolute -right-20 -top-20 h-44 w-44 rounded-full bg-emerald-500/10 blur-3xl"></div>
-          <div class="pointer-events-none absolute -left-20 -bottom-20 h-44 w-44 rounded-full bg-teal-500/10 blur-3xl"></div>
-
-          <!-- Pulsing QR / Loading Circle -->
-          <div class="relative mx-auto h-24 w-24 flex items-center justify-center">
-            <div class="absolute inset-0 rounded-full border-4 border-emerald-500/20 border-t-emerald-400 animate-spin"></div>
-            <div class="h-16 w-16 rounded-full bg-emerald-500/10 border border-emerald-500/35 flex items-center justify-center text-3xl animate-pulse">
-              📱
-            </div>
-          </div>
-
-          <h4 class="mt-6 text-2xl font-black text-[var(--text)]">Đang Chờ Quét Mã VietQR</h4>
-          <p class="text-sm font-semibold text-[var(--muted)] mt-2 leading-relaxed">
-            Hệ thống đang kiểm tra thanh toán tự động.<br>
-            Vui lòng hoàn tất giao dịch trên trang thanh toán PayOS.
-          </p>
-
-          <!-- Status indicator badge -->
-          <div class="mt-4 inline-flex items-center gap-2 rounded-full bg-emerald-500/10 px-4 py-1.5 text-xs font-black text-emerald-400 border border-emerald-500/20 uppercase tracking-widest animate-pulse">
-            <span class="h-2 w-2 rounded-full bg-emerald-400"></span>
-            Đang đồng bộ trực tiếp
-          </div>
-
-          <!-- Payment Help Info -->
-          <div class="mt-6 rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-4 text-left text-xs font-semibold grid gap-2">
-            <div class="flex justify-between">
-              <span class="text-[var(--muted)]">Đơn hàng:</span>
-              <span class="font-mono font-bold text-[var(--text)]">#{{ paymentOrderCode }}</span>
-            </div>
-            <div class="flex justify-between">
-              <span class="text-[var(--muted)]">Số tiền:</span>
-              <span class="font-black text-emerald-400 text-sm">
-                {{ selectedPlan?.upgradeInfo ? formatPrice(selectedPlan.upgradeInfo.amount) : selectedPlan?.priceLabel }}
-              </span>
-            </div>
-            <p class="mt-2 text-[10px] text-[var(--muted)] border-t border-[var(--border)] pt-2 leading-relaxed">
-              💡 <b>Sandbox:</b> Click nút <b>"Giả lập thanh toán thành công"</b> trên trang PayOS để hoàn tất kiểm thử mà không tốn tiền thật.
-            </p>
-          </div>
-
-          <!-- Actions -->
-          <div class="mt-6 grid gap-3">
-            <a 
-              :href="checkoutUrl" 
-              target="_blank" 
-              class="h-12 w-full flex items-center justify-center font-black rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-[0_16px_36px_rgba(16,185,129,0.25)] transition hover:-translate-y-0.5 active:scale-[0.98]"
-            >
-              Mở Lại Trang Thanh Toán 🚀
-            </a>
-            <button 
-              @click="cancelWaitingForPayment"
-              class="h-12 w-full flex items-center justify-center font-black rounded-full border border-[var(--border-strong)] bg-[var(--surface-soft)] text-[var(--text)] transition hover:bg-[var(--chip-active)] active:scale-[0.98]"
-            >
-              Hủy & Quay Lại
-            </button>
-          </div>
-        </div>
-      </div>
-    </Transition>
 
     <!-- Confirm Trial Modal -->
     <Transition
@@ -626,7 +553,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { currentUserStorage, paymentsApi, authApi } from '@/services/api'
 
@@ -643,11 +570,6 @@ const isPaymentModalOpen = ref(false)
 const selectedPlan = ref(null)
 const isProcessing = ref(false)
 const errorMessage = ref('')
-
-const pollingInterval = ref(null)
-const isWaitingForPayment = ref(false)
-const paymentOrderCode = ref(null)
-const checkoutUrl = ref('')
 const isActivatingTrial = ref(false)
 
 const isConfirmTrialModalOpen = ref(false)
@@ -870,79 +792,10 @@ const closeCheckout = () => {
   selectedPlan.value = null
 }
 
-const startPolling = (orderCode, newWindow) => {
-  if (pollingInterval.value) {
-    clearInterval(pollingInterval.value)
-  }
-
-  pollingInterval.value = setInterval(async () => {
-    try {
-      const res = await paymentsApi.checkStatus(orderCode)
-      if (res.success) {
-        if (res.status === 'success') {
-          clearInterval(pollingInterval.value)
-          pollingInterval.value = null
-          // Xóa bộ đếm thời gian để chấm dứt các request Polling lặp lại gửi lên server.
-          
-          if (newWindow && !newWindow.closed) {
-            newWindow.close()
-          }
-          // Tự động đóng tab quét mã QR PayOS đang mở trên trình duyệt của người dùng.
-
-          isWaitingForPayment.value = false
-          //đóng trạng thái chờ thanh toán.
-          
-          if (res.user) {
-            currentUserStorage.set(res.user)
-            currentUser.value = res.user
-          }
-
-          // chuyển user sang trang kết quả và báo thanh toán thành công
-          router.push({
-            path: '/payment-result',
-            query: {
-              orderCode: orderCode,
-              status: 'success'
-            }
-          })
-        } else if (res.status === 'failed') {
-          clearInterval(pollingInterval.value)
-          pollingInterval.value = null
-          
-          if (newWindow && !newWindow.closed) {
-            newWindow.close()
-          }
-
-          isWaitingForPayment.value = false
-          errorMessage.value = 'Giao dịch thanh toán đã bị hủy hoặc thất bại.'
-          isPaymentModalOpen.value = true
-        }
-      }
-    } catch (error) {
-      console.error('Lỗi khi kiểm tra trạng thái thanh toán:', error)
-    }
-  }, 3000)
-}
-
-const cancelWaitingForPayment = () => {
-  if (pollingInterval.value) {
-    clearInterval(pollingInterval.value)
-    pollingInterval.value = null
-  }
-  isWaitingForPayment.value = false
-  paymentOrderCode.value = null
-  checkoutUrl.value = ''
-}
-
 const handlePayment = async (provider) => {
   if (!selectedPlan.value) return
   isProcessing.value = true
   errorMessage.value = ''
-
-  let newWindow = null
-  if (provider === 'payos') {
-    newWindow = window.open('about:blank', '_blank')
-  }
 
   try {
     const res = await paymentsApi.create({
@@ -951,41 +804,16 @@ const handlePayment = async (provider) => {
     })
 
     if (res.success && res.payUrl) {
-      if (provider === 'payos') {
-        if (newWindow) {
-          newWindow.location.href = res.payUrl
-        }
-        // xử lý reponse 
-        checkoutUrl.value = res.payUrl
-        paymentOrderCode.value = res.order_code
-        isWaitingForPayment.value = true
-        isPaymentModalOpen.value = false
-        isProcessing.value = false
-        // Gọi hàm `startPolling` để kích hoạt vòng lặp kiểm tra trạng thái thanh toán tự động.
-        startPolling(res.order_code, newWindow)
-      } else {
-        if (newWindow) {
-          newWindow.close()
-        }
-        window.location.href = res.payUrl
-      }
+      // Điều hướng trực tiếp tab hiện tại đến cổng thanh toán (MoMo hoặc PayOS)
+      window.location.href = res.payUrl
     } else {
       throw new Error(res.message || 'Không khởi tạo được URL thanh toán.')
     }
   } catch (error) {
-    if (newWindow) {
-      newWindow.close()
-    }
     errorMessage.value = error.message
     isProcessing.value = false
   }
 }
-
-onUnmounted(() => {
-  if (pollingInterval.value) {
-    clearInterval(pollingInterval.value)
-  }
-})
 
 // Helpers
 const getPlanNameByAmount = (amount) => {

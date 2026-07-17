@@ -36,7 +36,7 @@ class PayOSService
         $cancelUrl = config('services.momo.redirect_url'); // Reusing the redirect URL for cancel
         $returnUrl = config('services.momo.redirect_url'); // Reusing the redirect URL for success redirect
 
-        // 1. Prepare data for signature
+        // 1. Chuẩn bị dữ liệu để ký
         $dataToSign = [
             'amount' => $amount,
             'cancelUrl' => $cancelUrl, // link quay về khi hủy

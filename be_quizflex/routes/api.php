@@ -21,6 +21,7 @@ use App\Services\AI\AIService;
 use App\AI\Prompts\QuizPrompt;
 use App\Http\Controllers\AIController;
 use App\Http\Controllers\ReportTicketController;
+use App\Http\Controllers\NotificationController;
 
 Route::get('/test', function () {
     return response()->json([
@@ -61,11 +62,16 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/ai/generate', [AIController::class, 'generate']);
     Route::post('/ai/generate-quiz', [AIController::class, 'generate']);
     Route::post('/ocr/scan', [OcrController::class, 'scan']);
+    Route::post('/orc/ai/quiz-suggestions', [OcrController::class, 'suggest']);
     Route::post('/payments/activate-trial', [PaymentController::class, 'activateTrial']);
     Route::get('/payments/upgrade-costs', [PaymentController::class, 'getUpgradeCosts']);
     Route::get('/ai/jobs/{jobId}', [AIController::class, 'status'])->whereUuid('jobId');
     Route::get('/ai/quiz-status/{jobId}', [AIController::class, 'status'])->whereUuid('jobId');
     Route::get('/ai/logs/{id}', [AIController::class, 'show']);
+
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::put('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
+    Route::put('/notifications/read-all', [NotificationController::class, 'markAllAsRead']);
 
 
     Route::patch('/admin/rooms/homework/{room}/close', [AdminRoomController::class, 'closeHomework'])->withTrashed();
@@ -90,6 +96,8 @@ Route::middleware('auth:api')->group(function () {
         Route::patch('/users/{id}/restore', [UserController::class, 'restore']);
         Route::delete('/users/{id}/force', [UserController::class, 'forceDelete']);
         Route::apiResource('users', UserController::class);
+
+        Route::get('/admin/report-tickets/count', [ReportTicketController::class, 'countPending']);
         
         // Quản lý báo cáo vi phạm cho admin
         Route::get('/admin/report-tickets', [ReportTicketController::class, 'index']);
@@ -99,7 +107,7 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/admin/quizzes/trash', [QuizController::class, 'trash']);
         Route::get('/admin/quizzes', [QuizController::class, 'adminIndex']);
         Route::get('/admin/quizzes/{id}', [QuizController::class, 'adminShow']);
-        Route::delete('/admin/quizzes/{quiz}', [QuizController::class, 'destroy']);
+        Route::delete('/admin/quizzes/{quiz}', [QuizController::class, 'destroy'])->withTrashed();
         Route::post('/admin/quizzes/{id}/restore', [QuizController::class, 'restore']);
         Route::delete('/admin/quizzes/{id}/force-delete', [QuizController::class, 'forceDelete']);
     });
