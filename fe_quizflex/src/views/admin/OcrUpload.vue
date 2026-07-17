@@ -1018,6 +1018,20 @@
       </div>
     </article>
   </section>
+
+  <!-- Custom Toast Message -->
+  <div
+    v-if="toast.isOpen"
+    class="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-2xl border px-4 py-3 shadow-lg backdrop-blur-xl transition-all duration-300"
+    :class="
+      toast.type === 'success'
+        ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400 shadow-[0_12px_40px_rgba(16,185,129,0.1)]'
+        : 'border-rose-500/30 bg-rose-500/10 text-rose-400 shadow-[0_12px_40px_rgba(244,63,94,0.1)]'
+    "
+  >
+    <span class="text-base">{{ toast.type === 'success' ? '✅' : '❌' }}</span>
+    <span class="text-sm font-bold">{{ toast.message }}</span>
+  </div>
 </template>
 
 <script setup>
@@ -1055,6 +1069,22 @@ const isDirty = ref(false);
 const selectedQuestionIds = ref([]);
 const aiSuggestions = ref([]);
 const aiLoading = ref(false);
+
+const toast = ref({
+  isOpen: false,
+  message: "",
+  type: "success",
+});
+let toastTimer = null;
+const showToast = (message, type = "success") => {
+  if (toastTimer) clearTimeout(toastTimer);
+  toast.value.message = message;
+  toast.value.type = type;
+  toast.value.isOpen = true;
+  toastTimer = setTimeout(() => {
+    toast.value.isOpen = false;
+  }, 3000);
+};
 
 const aiOptions = ref({
   action: "similar",
@@ -1675,7 +1705,7 @@ const saveQuestions = async () => {
   const payload = buildQuizPayload();
 
   if (!payload.quiz.title.trim()) {
-    alert("Vui lòng nhập tên bộ đề trước khi lưu.");
+    showToast("Vui lòng nhập tên bộ đề trước khi lưu.", "error");
     return;
   }
 
@@ -1687,14 +1717,14 @@ const saveQuestions = async () => {
     sessionStorage.removeItem("quizflex_quiz_payload");
     isDirty.value = false;
 
-    alert("Lưu bộ đề thành công");
+    showToast("Lưu bộ đề thành công", "success");
     router.push(questionBase.value);
 
     console.log("Quiz đã lưu:", data);
   } catch (error) {
     console.error(error);
 
-    alert(error?.response?.data?.message || "Có lỗi xảy ra khi lưu bộ đề.");
+    showToast(error?.response?.data?.message || "Có lỗi xảy ra khi lưu bộ đề.", "error");
   } finally {
     saving.value = false;
   }
@@ -1712,7 +1742,7 @@ const generateAiSuggestions = async (key) => {
     needSelected.includes(key) &&
     !selectedQuestions.value.length
   ) {
-    alert("Vui lòng chọn ít nhất 1 câu để AI có dữ liệu gợi ý.");
+    showToast("Vui lòng chọn ít nhất 1 câu để AI có dữ liệu gợi ý.", "error");
     return;
   }
 
@@ -1724,7 +1754,7 @@ const generateAiSuggestions = async (key) => {
 
     aiSuggestions.value = data.suggestions || [];
   } catch (error) {
-    alert(error?.response?.data?.message || "AI gợi ý thất bại.");
+    showToast(error?.response?.data?.message || "AI gợi ý thất bại.", "error");
   } finally {
     aiLoading.value = false;
   }
@@ -1732,7 +1762,7 @@ const generateAiSuggestions = async (key) => {
 
 const applyAiSuggestion = (item) => {
   if (item.type === "fix" || item.type === "analysis") {
-    alert("Mock: gợi ý này chỉ để xem, chưa áp dụng trực tiếp.");
+    showToast("Mock: gợi ý này chỉ để xem, chưa áp dụng trực tiếp.", "error");
     return;
   }
 
@@ -1747,6 +1777,7 @@ const applyAiSuggestion = (item) => {
   );
 
   markDirty();
+  showToast("Đã thêm câu hỏi vào bộ đề thành công!", "success");
 };
 
 const buildAiPayload = (action) => {
