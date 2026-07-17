@@ -388,6 +388,218 @@
         </div>
       </div>
 
+      <div
+        class="mt-6 rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface-soft)] p-5"
+      >
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p
+              class="text-xs font-black uppercase tracking-[0.18em] text-[var(--primary)]"
+            >
+              AI Assistant
+            </p>
+
+            <h2 class="mt-1 text-xl font-black text-[var(--text)]">
+              Gợi ý bằng AI
+            </h2>
+          </div>
+
+          <div class="flex flex-wrap gap-2">
+            <span
+              class="rounded-full bg-[var(--chip-active)] px-3 py-1 text-xs font-black text-[var(--muted)]"
+            >
+              {{
+                selectedQuestionIds.length
+                  ? `Đã chọn ${selectedQuestionIds.length} câu`
+                  : "Toàn bộ đề"
+              }}
+            </span>
+
+            <button
+              v-if="selectedQuestionIds.length"
+              type="button"
+              class="rounded-full bg-[var(--chip-active)] px-3 py-1 text-xs font-black text-[var(--text)]"
+              @click="clearSelectedQuestions"
+            >
+              Bỏ chọn
+            </button>
+          </div>
+        </div>
+
+        <div v-if="selectedQuestions.length" class="mt-3 flex flex-wrap gap-2">
+          <span
+            v-for="(question, index) in selectedQuestions"
+            :key="question.id"
+            class="rounded-full bg-[var(--chip-active)] px-3 py-1 text-xs font-black text-[var(--muted)]"
+          >
+            Câu {{ getQuestionNumber(question.id) }}
+          </span>
+        </div>
+
+        <div class="mt-4 grid gap-4 md:grid-cols-[1.5fr_1fr_1fr_auto]">
+          <div>
+            <label class="text-xs font-black uppercase text-[var(--muted)]">
+              AI muốn làm gì?
+            </label>
+
+            <select
+              v-model="aiOptions.action"
+              class="mt-2 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm font-bold text-[var(--text)] outline-none"
+            >
+              <option value="similar">Tạo câu tương tự</option>
+              <option value="generate_by_difficulty">Tạo theo độ khó</option>
+              <option value="better_options">Tạo đáp án nhiễu</option>
+              <option value="analyze_quiz">Đánh giá toàn bộ đề</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="text-xs font-black uppercase text-[var(--muted)]">
+              Độ khó
+            </label>
+
+            <select
+              v-model="aiOptions.difficulty"
+              class="mt-2 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm font-bold text-[var(--text)] outline-none"
+              :disabled="aiOptions.action === 'analyze_quiz'"
+            >
+              <option value="easy">Dễ</option>
+              <option value="medium">Trung bình</option>
+              <option value="hard">Khó</option>
+              <option value="advanced">Nâng cao</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="text-xs font-black uppercase text-[var(--muted)]">
+              Số câu
+            </label>
+
+            <input
+              v-model.number="aiOptions.count"
+              type="number"
+              min="1"
+              max="20"
+              class="mt-2 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm font-bold text-[var(--text)] outline-none"
+              :disabled="aiOptions.action === 'analyze_quiz'"
+            />
+          </div>
+
+          <div class="flex items-end">
+            <button
+              type="button"
+              class="btn-primary w-full"
+              @click="generateAiSuggestions(aiOptions.action)"
+            >
+              Tạo gợi ý
+            </button>
+          </div>
+        </div>
+        <div
+          v-if="aiLoading"
+          class="mt-5 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm font-bold text-[var(--muted)]"
+        >
+          AI đang xử lý...
+        </div>
+
+        <div v-if="aiSuggestions.length" class="mt-5 grid gap-4">
+          <div
+            v-for="item in aiSuggestions"
+            :key="item.id"
+            class="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4"
+          >
+            <template v-if="item.type === 'analysis'">
+              <p class="text-sm font-black text-[var(--primary)]">
+                Đánh giá nhanh bộ đề
+              </p>
+
+              <p class="mt-3 text-sm font-bold leading-7 text-[var(--text)]">
+                {{ item.summary }}
+              </p>
+
+              <div class="mt-3 grid gap-2">
+                <p
+                  v-for="point in item.recommendations"
+                  :key="point"
+                  class="rounded-xl bg-[var(--surface-soft)] p-3 text-xs font-bold leading-6 text-[var(--muted)]"
+                >
+                  {{ point }}
+                </p>
+                <div
+                  v-if="item.actions?.length"
+                  class="mt-4 flex flex-wrap gap-2"
+                >
+                  <button
+                    v-for="actionItem in item.actions"
+                    :key="actionItem.label"
+                    type="button"
+                    class="rounded-full bg-[var(--primary)] px-4 py-2 text-xs font-black text-white"
+                    @click="runAnalysisAction(actionItem)"
+                  >
+                    {{ actionItem.label }}
+                  </button>
+                </div>
+              </div>
+            </template>
+
+            <template v-else>
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <p class="text-sm font-black text-[var(--primary)]">
+                  {{ item.type_label }}
+                </p>
+
+                <span
+                  class="rounded-full bg-[var(--chip-active)] px-3 py-1 text-xs font-black text-[var(--muted)]"
+                >
+                  {{ item.difficulty_label }}
+                </span>
+              </div>
+
+              <p class="mt-3 text-sm font-bold leading-7 text-[var(--text)]">
+                {{ item.question }}
+              </p>
+
+              <div
+                v-if="item.options"
+                class="mt-3 grid gap-2 text-xs font-bold text-[var(--muted)]"
+              >
+                <p v-for="(value, key) in item.options" :key="key">
+                  {{ key }}. {{ value }}
+                </p>
+              </div>
+
+              <div class="mt-3 rounded-xl bg-[var(--surface-soft)] p-3">
+                <p class="text-xs font-black uppercase text-[var(--muted)]">
+                  💡 Tóm tắt hướng giải
+                </p>
+
+                <p class="mt-2 text-xs leading-6 text-[var(--muted)]">
+                  {{ item.solution_summary }}
+                </p>
+              </div>
+
+              <div class="mt-3 flex flex-wrap gap-2">
+                <span
+                  v-for="point in item.knowledge_points"
+                  :key="point"
+                  class="rounded-full bg-[var(--chip-active)] px-3 py-1 text-xs font-black text-[var(--muted)]"
+                >
+                  {{ point }}
+                </span>
+              </div>
+
+              <button
+                type="button"
+                class="mt-4 rounded-full bg-[var(--primary)] px-4 py-2 text-xs font-black text-white"
+                @click="applyAiSuggestion(item)"
+              >
+                Thêm vào đề
+              </button>
+            </template>
+          </div>
+        </div>
+      </div>
+
       <div class="mt-8 grid gap-5">
         <div
           v-for="(q, index) in questions"
@@ -396,6 +608,17 @@
         >
           <div class="flex flex-wrap items-center justify-between gap-3">
             <div class="flex flex-wrap items-center gap-2">
+              <label
+                class="flex cursor-pointer items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-1 text-xs font-black text-[var(--muted)]"
+              >
+                <input
+                  type="checkbox"
+                  :value="q.id"
+                  v-model="selectedQuestionIds"
+                />
+                Chọn
+              </label>
+
               <p class="text-sm font-black text-[var(--primary)]">
                 Câu {{ index + 1 }}
               </p>
@@ -803,7 +1026,7 @@ import { useRoute, useRouter } from "vue-router";
 import draggable from "vuedraggable";
 import "mathlive";
 import "mathlive/static.css";
-import { importOcrQuiz, ocrApi } from "@/services/api";
+import { importOcrQuiz, ocrApi, aiQuizApi } from "@/services/api";
 
 const route = useRoute();
 const router = useRouter();
@@ -811,7 +1034,7 @@ const router = useRouter();
 const questionBase = computed(() =>
   route.path.startsWith("/dashboard")
     ? "/dashboard/questions"
-    : "/admin/questions"
+    : "/admin/questions",
 );
 
 const fileInput = ref(null);
@@ -829,6 +1052,35 @@ const questionImageInputs = ref([]);
 const showReadyMessage = ref(false);
 const saving = ref(false);
 const isDirty = ref(false);
+const selectedQuestionIds = ref([]);
+const aiSuggestions = ref([]);
+const aiLoading = ref(false);
+
+const aiOptions = ref({
+  action: "similar",
+  difficulty: "medium",
+  count: 3,
+  scope: "selected",
+});
+
+const getQuestionNumber = (id) => {
+  return questions.value.findIndex((q) => q.id === id) + 1;
+};
+
+const runAnalysisAction = async (actionItem) => {
+  aiOptions.value.action = actionItem.action;
+  aiOptions.value.difficulty = actionItem.difficulty || "medium";
+  aiOptions.value.count = actionItem.count || 3;
+  aiOptions.value.scope = "all";
+
+  await generateAiSuggestions(actionItem.action);
+};
+
+const selectedQuestions = computed(() => {
+  return questions.value.filter((q) =>
+    selectedQuestionIds.value.includes(q.id),
+  );
+});
 
 const quizInfo = ref({
   title: "",
@@ -1329,7 +1581,10 @@ const handleFile = async (event) => {
   } catch (error) {
     stopFakeProgress();
 
-    const responseError = error.response?.data?.error || error.response?.data?.message || error.message;
+    const responseError =
+      error.response?.data?.error ||
+      error.response?.data?.message ||
+      error.message;
     errorMessage.value = `OCR thất bại: ${responseError}`;
     progress.value = 0;
 
@@ -1443,6 +1698,97 @@ const saveQuestions = async () => {
   } finally {
     saving.value = false;
   }
+};
+
+const clearSelectedQuestions = () => {
+  selectedQuestionIds.value = [];
+};
+
+const generateAiSuggestions = async (key) => {
+  const needSelected = ["similar", "better_options"];
+
+  if (
+    aiOptions.value.scope === "selected" &&
+    needSelected.includes(key) &&
+    !selectedQuestions.value.length
+  ) {
+    alert("Vui lòng chọn ít nhất 1 câu để AI có dữ liệu gợi ý.");
+    return;
+  }
+
+  try {
+    aiLoading.value = true;
+    aiSuggestions.value = [];
+
+    const { data } = await aiQuizApi.suggest(buildAiPayload(key));
+
+    aiSuggestions.value = data.suggestions || [];
+  } catch (error) {
+    alert(error?.response?.data?.message || "AI gợi ý thất bại.");
+  } finally {
+    aiLoading.value = false;
+  }
+};
+
+const applyAiSuggestion = (item) => {
+  if (item.type === "fix" || item.type === "analysis") {
+    alert("Mock: gợi ý này chỉ để xem, chưa áp dụng trực tiếp.");
+    return;
+  }
+
+  questions.value.push(
+    normalizeQuestion({
+      type: item.type || "single_choice",
+      question: item.question,
+      options: item.options,
+      correct_answer: item.correct_answer,
+      images: [],
+    }),
+  );
+
+  markDirty();
+};
+
+const buildAiPayload = (action) => {
+  return {
+    action,
+    quiz: buildQuizPayload(),
+    selected_question_ids: selectedQuestionIds.value,
+    selected_questions:
+      aiOptions.value.scope === "selected"
+        ? selectedQuestions.value.map((q) => normalizeAiQuestion(q))
+        : [],
+    options: {
+      count: aiOptions.value.count || 5,
+      difficulty: aiOptions.value.difficulty,
+      scope: aiOptions.value.scope,
+      keep_grade_scope: true,
+    },
+  };
+};
+
+const normalizeAiQuestion = (q) => {
+  const question =
+    q.editor_mode === "math" ? blocksToString(q.question_blocks) : q.question;
+
+  const options = {};
+
+  if (q.type !== "fill_blank") {
+    Object.keys(q.options || {}).forEach((key) => {
+      options[key] =
+        q.editor_mode === "math"
+          ? blocksToString(q.option_blocks[key])
+          : q.options[key];
+    });
+  }
+
+  return {
+    id: q.id,
+    type: q.type,
+    question,
+    options: q.type === "fill_blank" ? null : options,
+    correct_answer: q.correct_answer,
+  };
 };
 </script>
 

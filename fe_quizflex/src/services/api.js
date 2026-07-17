@@ -20,7 +20,9 @@ export const normalizeRole = (role) => {
   const value = String(role || "guest")
     .trim()
     .toLowerCase();
-  return ["admin", "plus", "pro", "ultra", "free", "guest"].includes(value) ? value : "guest";
+  return ["admin", "plus", "pro", "ultra", "free", "guest"].includes(value)
+    ? value
+    : "guest";
 };
 
 export const roleLabel = (role) =>
@@ -223,7 +225,10 @@ const unwrapCollection = (payload) => {
   if (Array.isArray(body?.data)) return body.data;
   return [];
 };
-const normalizeRoomCode = (value) => String(value || '').trim().toUpperCase();
+const normalizeRoomCode = (value) =>
+  String(value || "")
+    .trim()
+    .toUpperCase();
 
 export const authApi = {
   async login(payload) {
@@ -240,13 +245,13 @@ export const authApi = {
   },
 
   async verifyOtp(payload) {
-    const { data } = await api.post('/auth/verify-otp', payload)
-    return data
+    const { data } = await api.post("/auth/verify-otp", payload);
+    return data;
   },
 
   async resendOtp(payload) {
-    const { data } = await api.post('/auth/resend-otp', payload)
-    return unwrap(data)
+    const { data } = await api.post("/auth/resend-otp", payload);
+    return unwrap(data);
   },
 
   async me() {
@@ -330,7 +335,7 @@ export const usersApi = {
   },
 
   async trash(params = {}) {
-    const { data } = await api.get('/users/trashed', { params });
+    const { data } = await api.get("/users/trashed", { params });
     return unwrapCollection(data);
   },
 
@@ -503,7 +508,9 @@ export const adminRoomApi = {
   },
 
   async removeHomeworkRoomMember(roomId, memberId) {
-    const { data } = await api.delete(`/admin/rooms/homework/${roomId}/members/${memberId}`);
+    const { data } = await api.delete(
+      `/admin/rooms/homework/${roomId}/members/${memberId}`,
+    );
     return unwrap(data);
   },
 
@@ -551,15 +558,21 @@ export const adminRoomsApi = {
   softDeleteLive: adminRoomApi.softDeleteLiveRoom,
 };
 
+export const aiQuizApi = {
+  suggest(payload) {
+    return api.post("/orc/ai/quiz-suggestions", payload);
+  },
+};
+
 export const homeworkApi = {
   async getHomeworkRooms(params = {}) {
-    const { data } = await api.get('/rooms', { params })
-    return unwrapCollection(data)
+    const { data } = await api.get("/rooms", { params });
+    return unwrapCollection(data);
   },
 
   async createHomeworkRoom(payload) {
-    const { data } = await api.post('/rooms', payload)
-    return unwrap(data)
+    const { data } = await api.post("/rooms", payload);
+    return unwrap(data);
   },
 
   async updateHomeworkRoom(roomId, payload) {
@@ -568,8 +581,8 @@ export const homeworkApi = {
   },
 
   async joinHomeworkRoom(code) {
-    const { data } = await api.post('/rooms/join', { code })
-    return unwrap(data)
+    const { data } = await api.post("/rooms/join", { code });
+    return unwrap(data);
   },
 
   async leaveHomeworkRoom(roomId) {
@@ -578,143 +591,171 @@ export const homeworkApi = {
   },
 
   async getHomeworkRoom(roomId) {
-    const { data } = await api.get(`/rooms/${roomId}`)
-    return unwrap(data)
+    const { data } = await api.get(`/rooms/${roomId}`);
+    return unwrap(data);
   },
 
   async getRoomMembers(roomId) {
-    const { data } = await api.get(`/rooms/${roomId}/members`)
-    return unwrapCollection(data)
+    const { data } = await api.get(`/rooms/${roomId}/members`);
+    return unwrapCollection(data);
   },
 
   async removeRoomMember(roomId, memberId) {
-    const { data } = await api.delete(`/rooms/${roomId}/members/${memberId}`)
-    return unwrap(data)
+    const { data } = await api.delete(`/rooms/${roomId}/members/${memberId}`);
+    return unwrap(data);
   },
 
   async getMemberEvaluation(roomId, userId) {
-    const { data } = await api.get(`/homework-rooms/${roomId}/members/${userId}/evaluation`)
-    return unwrap(data)
+    const { data } = await api.get(
+      `/homework-rooms/${roomId}/members/${userId}/evaluation`,
+    );
+    return unwrap(data);
   },
 
   async saveMemberEvaluation(roomId, userId, payload) {
-    const { data } = await api.post(`/homework-rooms/${roomId}/members/${userId}/evaluation`, payload)
-    return unwrap(data)
+    const { data } = await api.post(
+      `/homework-rooms/${roomId}/members/${userId}/evaluation`,
+      payload,
+    );
+    return unwrap(data);
   },
 
   async getSubmissionEvaluation(roomId, submissionId) {
-    const { data } = await api.get(`/homework-rooms/${roomId}/submissions/${submissionId}/evaluation`)
-    return unwrap(data)
+    const { data } = await api.get(
+      `/homework-rooms/${roomId}/submissions/${submissionId}/evaluation`,
+    );
+    return unwrap(data);
   },
 
   async saveSubmissionEvaluation(roomId, submissionId, payload) {
-    const { data } = await api.post(`/homework-rooms/${roomId}/submissions/${submissionId}/evaluation`, payload)
-    return unwrap(data)
+    const { data } = await api.post(
+      `/homework-rooms/${roomId}/submissions/${submissionId}/evaluation`,
+      payload,
+    );
+    return unwrap(data);
   },
 
   async getAllowedMembers(roomId) {
-    const { data } = await api.get(`/homework-rooms/${roomId}/allowed-members`)
-    return unwrapCollection(data)
+    const { data } = await api.get(`/homework-rooms/${roomId}/allowed-members`);
+    return unwrapCollection(data);
   },
 
   async addAllowedMembers(roomId, emails) {
-    const payload = Array.isArray(emails) ? { emails } : { email: emails }
-    const { data } = await api.post(`/homework-rooms/${roomId}/allowed-members`, payload)
-    return unwrapCollection(data)
+    const payload = Array.isArray(emails) ? { emails } : { email: emails };
+    const { data } = await api.post(
+      `/homework-rooms/${roomId}/allowed-members`,
+      payload,
+    );
+    return unwrapCollection(data);
   },
 
   async removeAllowedMember(roomId, allowedMemberId) {
-    const { data } = await api.delete(`/homework-rooms/${roomId}/allowed-members/${allowedMemberId}`)
-    return data
+    const { data } = await api.delete(
+      `/homework-rooms/${roomId}/allowed-members/${allowedMemberId}`,
+    );
+    return data;
   },
 
   async getRoomAssignments(roomId) {
-    const { data } = await api.get(`/rooms/${roomId}/assignments`)
-    return unwrapCollection(data)
+    const { data } = await api.get(`/rooms/${roomId}/assignments`);
+    return unwrapCollection(data);
   },
 
   async createRoomAssignment(roomId, payload) {
-    const { data } = await api.post(`/rooms/${roomId}/assignments`, payload)
-    return unwrap(data)
+    const { data } = await api.post(`/rooms/${roomId}/assignments`, payload);
+    return unwrap(data);
   },
 
   async getRoomAssignment(assignmentId) {
-    const { data } = await api.get(`/room-assignments/${assignmentId}`)
-    return unwrap(data)
+    const { data } = await api.get(`/room-assignments/${assignmentId}`);
+    return unwrap(data);
   },
 
   async getRoomAssignmentAttempts(assignmentId) {
-    const { data } = await api.get(`/room-assignments/${assignmentId}/attempts`)
-    return unwrapCollection(data)
+    const { data } = await api.get(
+      `/room-assignments/${assignmentId}/attempts`,
+    );
+    return unwrapCollection(data);
   },
 
   async startRoomAssignmentAttempt(assignmentId, payload = {}) {
-    const { data } = await api.post(`/room-assignments/${assignmentId}/attempts/start`, payload)
-    return unwrap(data)
+    const { data } = await api.post(
+      `/room-assignments/${assignmentId}/attempts/start`,
+      payload,
+    );
+    return unwrap(data);
   },
 
   async answerRoomAssignmentAttempt(assignmentId, attemptId, payload) {
-    const { data } = await api.post(`/room-assignments/${assignmentId}/attempts/${attemptId}/answer`, payload)
-    return unwrap(data)
+    const { data } = await api.post(
+      `/room-assignments/${assignmentId}/attempts/${attemptId}/answer`,
+      payload,
+    );
+    return unwrap(data);
   },
 
   async submitRoomAssignmentAttempt(assignmentId, attemptId, payload) {
-    const body = payload?.answers ? payload : { answers: payload }
-    const { data } = await api.post(`/room-assignments/${assignmentId}/attempts/${attemptId}/submit`, body)
-    return unwrap(data)
+    const body = payload?.answers ? payload : { answers: payload };
+    const { data } = await api.post(
+      `/room-assignments/${assignmentId}/attempts/${attemptId}/submit`,
+      body,
+    );
+    return unwrap(data);
   },
-}
+};
 
 export const liveRoomApi = {
   async createLiveRoom(payload) {
-    const { data } = await api.post('/live-rooms', payload)
-    return unwrap(data)
+    const { data } = await api.post("/live-rooms", payload);
+    return unwrap(data);
   },
 
   async joinLiveRoom(code) {
-    const payload = typeof code === 'object'
-      ? { ...code, code: normalizeRoomCode(code.code || code.room_code) }
-      : { code: normalizeRoomCode(code) }
-    const { data } = await api.post('/live-rooms/join', payload)
-    return unwrap(data)
+    const payload =
+      typeof code === "object"
+        ? { ...code, code: normalizeRoomCode(code.code || code.room_code) }
+        : { code: normalizeRoomCode(code) };
+    const { data } = await api.post("/live-rooms/join", payload);
+    return unwrap(data);
   },
 
   async getLiveRoom(id) {
-    const { data } = await api.get(`/live-rooms/${id}`)
-    return unwrap(data)
+    const { data } = await api.get(`/live-rooms/${id}`);
+    return unwrap(data);
   },
 
   async startLiveRoom(id) {
-    const { data } = await api.post(`/live-rooms/${id}/start`)
-    return unwrap(data)
+    const { data } = await api.post(`/live-rooms/${id}/start`);
+    return unwrap(data);
   },
 
   async getLiveCurrentQuestion(id) {
-    const { data } = await api.get(`/live-rooms/${id}/current-question`)
-    return unwrap(data)
+    const { data } = await api.get(`/live-rooms/${id}/current-question`);
+    return unwrap(data);
   },
 
   async answerLiveQuestion(id, answerId) {
-    const payload = typeof answerId === 'object' ? answerId : { answer_id: answerId }
-    const { data } = await api.post(`/live-rooms/${id}/answer`, payload)
-    return unwrap(data)
+    const payload =
+      typeof answerId === "object" ? answerId : { answer_id: answerId };
+    const { data } = await api.post(`/live-rooms/${id}/answer`, payload);
+    return unwrap(data);
   },
 
   async nextLiveQuestion(id) {
-    const { data } = await api.post(`/live-rooms/${id}/next-question`)
-    return unwrap(data)
+    const { data } = await api.post(`/live-rooms/${id}/next-question`);
+    return unwrap(data);
   },
 
   async finishLiveRoom(id) {
-    const { data } = await api.post(`/live-rooms/${id}/finish`)
-    return unwrap(data)
+    const { data } = await api.post(`/live-rooms/${id}/finish`);
+    return unwrap(data);
   },
 
   async getLiveLeaderboard(id) {
-    const { data } = await api.get(`/live-rooms/${id}/leaderboard`)
-    return unwrapCollection(data)
+    const { data } = await api.get(`/live-rooms/${id}/leaderboard`);
+    return unwrapCollection(data);
   },
-}
+};
 
 export const gamificationApi = {
   async getLeaderboard() {
@@ -808,9 +849,14 @@ export const normalizeUser = (user) => ({
   role: String(user.role || "free").toLowerCase(),
   roleLabel:
     user.role_label ||
-    { admin: "Admin", plus: "Plus", pro: "Pro", ultra: "Ultra", free: "Free", guest: "Guest" }[
-      String(user.role || "free").toLowerCase()
-    ] ||
+    {
+      admin: "Admin",
+      plus: "Plus",
+      pro: "Pro",
+      ultra: "Ultra",
+      free: "Free",
+      guest: "Guest",
+    }[String(user.role || "free").toLowerCase()] ||
     user.role,
   joinedAt:
     user.joined_at || user.created_at
