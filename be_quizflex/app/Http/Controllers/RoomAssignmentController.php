@@ -65,6 +65,8 @@ class RoomAssignmentController extends Controller
             'max_attempts' => ['nullable', 'integer', 'min:1', 'max:20'],
             'show_result_mode' => ['nullable', Rule::in(['immediately', 'after_deadline', 'manual'])],
             'status' => ['nullable', Rule::in(['draft', 'published', 'closed'])],
+            'shuffle_questions' => ['nullable', 'boolean'],
+            'shuffle_answers' => ['nullable', 'boolean'],
         ]);
 
         $quiz = Quiz::findOrFail($data['quiz_id']);
@@ -81,6 +83,8 @@ class RoomAssignmentController extends Controller
             'max_attempts' => $data['max_attempts'] ?? 1,
             'show_result_mode' => $data['show_result_mode'] ?? 'immediately',
             'status' => $data['status'] ?? 'published',
+            'shuffle_questions' => $data['shuffle_questions'] ?? false,
+            'shuffle_answers' => $data['shuffle_answers'] ?? false,
         ])->load(['quiz:id,title,description,time_limit_seconds', 'assigner:id,name', 'room']);
 
         return response()->json([
@@ -139,7 +143,11 @@ class RoomAssignmentController extends Controller
         $attempt = $this->findReusableHomeworkAttempt($assignment, $user->id, $data['attempt_id'] ?? null);
 
         if ($attempt) {
-            $attempt = $this->questionOrderService->ensureAttemptOrder($attempt, $assignment->quiz);
+           $attempt = $this->questionOrderService->ensureAttemptOrder(
+    $attempt,
+    $assignment->quiz,
+    $assignment->shuffle_questions
+);
         } else {
             $attemptCount = QuizAttempt::where('assignment_id', $assignment->id)
                 ->where('user_id', $user->id)
@@ -164,7 +172,10 @@ class RoomAssignmentController extends Controller
                 'total_points' => $assignment->quiz->questions->sum(fn(Question $question) => (int) ($question->points ?? 0)),
                 'time_spent_seconds' => null,
                 'answers_snapshot' => [],
-                'question_order' => $this->questionOrderService->makeForQuiz($assignment->quiz),
+                'question_order' => $this->questionOrderService->makeForQuiz(
+                  $assignment->quiz,
+                  $assignment->shuffle_questions
+),
                 'status' => 'in_progress',
                 'started_at' => now(),
             ]);
@@ -176,7 +187,7 @@ class RoomAssignmentController extends Controller
             'data' => [
                 'attempt' => $this->formatAttempt($attempt),
                 'assignment' => $this->formatAssignment($assignment, $user),
-                'quiz' => $this->formatQuizForTaking($assignment->quiz, $attempt),
+                'quiz' => $this->formatQuizForTaking($assignment->quiz, $attempt,  $assignment->shuffle_answers),
             ],
         ], 201);
     }
@@ -411,6 +422,8 @@ class RoomAssignmentController extends Controller
             'attempts_count' => $assignment->attempts_count ?? null,
             'created_at' => $assignment->created_at,
             'updated_at' => $assignment->updated_at,
+            'shuffle_questions' => $assignment->shuffle_questions,
+            'shuffle_answers' => $assignment->shuffle_answers,
         ];
 
         $myAttempts = $this->isRoomOwner($assignment->room, $user->id)
@@ -495,7 +508,7 @@ class RoomAssignmentController extends Controller
         ];
     }
 
-    private function formatQuizForTaking(Quiz $quiz, QuizAttempt $attempt): array
+    private function formatQuizForTaking(Quiz $quiz, QuizAttempt $attempt,bool $shuffleAnswers = false): array
     {
         $questions = $this->questionOrderService->questionsForQuiz($quiz, $attempt->question_order ?? []);
 
@@ -504,21 +517,54 @@ class RoomAssignmentController extends Controller
             'title' => $quiz->title,
             'description' => $quiz->description,
             'time_limit_seconds' => $quiz->time_limit_seconds,
-            'questions' => $questions->map(fn(Question $question) => [
-                'id' => $question->id,
-                'content' => $question->content,
-                'text' => $question->content,
-                'type' => $question->type,
-                'points' => $question->points,
-                'answers' => $question->answers->map(fn($answer, int $index) => [
-                    'id' => $answer->id,
-                    'content' => $answer->content,
-                    'text' => $answer->content,
-                    'answer_key' => chr(65 + ($answer->order ?? $index)),
-                    'key' => chr(65 + ($answer->order ?? $index)),
-                    'order' => $answer->order,
-                ])->values(),
-            ])->values(),
+            // 'questions' => $questions->map(fn(Question $question) => [
+            //     'id' => $question->id,
+            //     'content' => $question->content,
+            //     'text' => $question->content,
+            //     'type' => $question->type,
+            //     'points' => $question->points,
+            //     'answers' => $question->answers->map(fn($answer, int $index) => [
+            //         'id' => $answer->id,
+            //         'content' => $answer->content,
+            //         'text' => $answer->content,
+            //         'answer_key' => chr(65 + ($answer->order ?? $index)),
+            //         'key' => chr(65 + ($answer->order ?? $index)),
+            //         'order' => $answer->order,
+            //     ])->values(),
+            // ])->values(),
+            'questions' => $questions->map(function (Question $question) use ($shuffleAnswers) {
+
+    $answers = $question->answers->values();
+
+    if ($shuffleAnswers) {
+        $answers = $answers->shuffle()->values();
+    }
+
+    return [
+        'id' => $question->id,
+        'content' => $question->content,
+        'text' => $question->content,
+        'type' => $question->type,
+        'points' => $question->points,
+
+        'answers' => $answers->map(function ($answer, int $index) {
+
+            return [
+                'id' => $answer->id,
+                'content' => $answer->content,
+                'text' => $answer->content,
+
+                // Gán lại A, B, C, D theo vị trí sau khi trộn
+                'answer_key' => chr(65 + $index),
+                'key' => chr(65 + $index),
+
+                'order' => $index,
+            ];
+
+        })->values(),
+    ];
+
+})->values(),
         ];
     }
 }
