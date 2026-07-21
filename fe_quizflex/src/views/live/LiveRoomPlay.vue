@@ -210,6 +210,7 @@ const applyLeaderboardPayload = (leaderboardPayload) => {
 // }
 const handleRoomStarted = async (event) => {
     realtimeLog('live.room.started', event)
+        console.log("=== ROOM STARTED ===", event)
 
     audioService.stopLobby()
 

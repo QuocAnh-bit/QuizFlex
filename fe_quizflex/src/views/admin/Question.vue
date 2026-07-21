@@ -44,10 +44,22 @@
           <div class="absolute bottom-4 right-4 grid h-12 w-12 place-items-center rounded-2xl bg-white/90 text-sm font-black text-slate-900 shadow-xl transition group-hover:scale-110 group-hover:rotate-3">{{ quiz.icon }}</div>
         </div>
         <div class="p-5">
-          <div class="mb-3 flex flex-wrap items-center gap-2">
-            <VisibilityBadge :value="quiz.visibility" />
-            <span class="rounded-full border border-[var(--border)] bg-[var(--surface-soft)] px-3 py-1 text-xs font-black text-[var(--muted)]">{{ quiz.difficulty }}</span>
-          </div>
+         <div class="mb-3 flex flex-wrap items-center gap-2">
+  <!-- Nếu user đang ở Kho quiz của tôi và quiz bị admin ẩn -->
+  <span
+    v-if="isUserWorkspace && !quiz.is_public"
+    class="rounded-full border border-yellow-500/30 bg-yellow-500/10 px-3 py-1 text-xs font-black text-yellow-300"
+  >
+    Đã bị ẩn
+  </span>
+
+  <!-- Các trạng thái bình thường -->
+  <VisibilityBadge v-else :value="quiz.visibility" />
+
+  <span class="rounded-full border border-[var(--border)] bg-[var(--surface-soft)] px-3 py-1 text-xs font-black text-[var(--muted)]">
+    {{ quiz.difficulty }}
+  </span>
+</div>
           <h3 class="text-xl font-black tracking-[-0.04em] text-[var(--text)] transition group-hover:text-[var(--primary)]">{{ quiz.title }}</h3>
           <p class="mt-2 text-sm leading-6 text-[var(--muted)]">{{ quiz.category }} • {{ quiz.tag }} • by {{ quiz.author }}</p>
           <div class="mt-5 grid grid-cols-3 gap-2">
@@ -55,11 +67,46 @@
             <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-3 text-center"><b class="block text-[var(--text)]">{{ quiz.attempts }}</b><span class="text-[10px] font-bold text-[var(--muted)]">Lượt</span></div>
             <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-3 text-center"><b class="block text-[var(--text)]">{{ quiz.avgScore }}%</b><span class="text-[10px] font-bold text-[var(--muted)]">Điểm</span></div>
           </div>
-          <div class="mt-5 flex flex-wrap gap-2">
+          <!-- <div class="mt-5 flex flex-wrap gap-2">
             <router-link class="rounded-full border border-[var(--border)] bg-[var(--surface-soft)] px-4 py-2 text-xs font-black text-[var(--text)] transition hover:border-[var(--border-strong)] hover:bg-[var(--chip-active)]" :to="`/quizzes/${quiz.id}`">Xem</router-link>
             <router-link class="rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--primary-2)] px-4 py-2 text-xs font-black text-white" :to="`${questionBase}/edit/${quiz.id}`">Sửa</router-link>
             <button class="rounded-full border border-rose-500/30 bg-rose-500/10 px-4 py-2 text-xs font-black text-rose-300" type="button" @click="deleteQuiz(quiz.id)">Xóa</button>
-          </div>
+          </div> -->
+          <div class="mt-5 flex flex-wrap gap-2">
+  <router-link
+    class="rounded-full border border-[var(--border)] bg-[var(--surface-soft)] px-4 py-2 text-xs font-black text-[var(--text)] transition hover:border-[var(--border-strong)] hover:bg-[var(--chip-active)]"
+    :to="`/quizzes/${quiz.id}`"
+  >
+    Xem
+  </router-link>
+
+  <router-link
+    class="rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--primary-2)] px-4 py-2 text-xs font-black text-white"
+    :to="`${questionBase}/edit/${quiz.id}`"
+  >
+    Sửa
+  </router-link>
+
+  <!-- Nếu là dashboard của user thì mới hiện nút Xóa -->
+  <button
+    v-if="isUserWorkspace"
+    class="rounded-full border border-rose-500/30 bg-rose-500/10 px-4 py-2 text-xs font-black text-rose-300"
+    type="button"
+    @click="deleteQuiz(quiz.id)"
+  >
+    Xóa
+  </button>
+
+  <!-- Nếu là admin thì hiện nút Ẩn / Hiện lại -->
+  <button
+    v-else
+    class="rounded-full border border-yellow-500/30 bg-yellow-500/10 px-4 py-2 text-xs font-black text-yellow-300"
+    type="button"
+    @click="toggleVisibility(quiz)"
+  >
+    {{ quiz.is_public ? 'Ẩn' : 'Hiện lại' }}
+  </button>
+</div>
         </div>
       </article>
     </div>
@@ -141,6 +188,23 @@ const deleteQuiz = async (id) => {
     quizzes.value = quizzes.value.filter((quiz) => quiz.id !== id)
   } catch (error) {
     errorMessage.value = `Xóa thất bại: ${error.message}`
+  }
+}
+const toggleVisibility = async (quiz) => {
+  const action = quiz.is_public ? 'ẩn' : 'hiện lại'
+
+  if (!window.confirm(`Bạn có chắc muốn ${action} quiz này?`)) return
+
+  try {
+    await quizzesApi.toggleVisibility(quiz.id)
+
+    // Cập nhật trạng thái ngay trên giao diện
+    quiz.is_public = !quiz.is_public
+
+    // Cập nhật visibility để badge đổi theo
+    quiz.visibility = quiz.is_public ? 'public' : 'private'
+  } catch (error) {
+    errorMessage.value = `Cập nhật thất bại: ${error.message}`
   }
 }
 

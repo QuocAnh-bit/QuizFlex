@@ -398,6 +398,7 @@ const prepareQuizPayload = (payload) =>
 export const quizzesApi = {
   async list(params = {}) {
     const { data } = await api.get("/quizzes", { params });
+    
     return unwrapCollection(data);
   },
 
@@ -434,6 +435,12 @@ export const quizzesApi = {
   async remove(id) {
     const { data } = await api.delete(`/quizzes/${id}`);
     return data;
+  },
+  async toggleVisibility(id) {
+    const { data } = await api.patch(
+      `/admin/quizzes/${id}/toggle-visibility`
+    )
+    return data
   },
 
   async startAttempt(id, payload = {}) {
@@ -536,6 +543,8 @@ export const adminRoomApi = {
     const { data } = await api.patch(`/admin/rooms/live/${id}/restore`);
     return unwrap(data);
   },
+
+    
 };
 
 export const adminRoomsApi = {
