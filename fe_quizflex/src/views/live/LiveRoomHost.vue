@@ -50,48 +50,158 @@
     </article>
 
     <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
+      <!-- Cột tiến độ người chơi (Bên trái) -->
       <article class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-card)]">
         <div class="flex items-center justify-between gap-3">
           <div>
             <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Progress</p>
             <h2 class="mt-1 text-2xl font-black tracking-[-0.04em] text-[var(--text)]">Tiến độ người chơi</h2>
           </div>
-          <span class="text-xs font-bold text-[var(--muted)]">Polling 10s</span>
+          <span class="rounded-full bg-violet-500/10 px-3 py-1 text-xs font-bold text-violet-400">Realtime</span>
         </div>
 
-        <div v-if="playersProgress.length" class="mt-5 grid gap-3">
-          <article v-for="player in playersProgress" :key="player.user_id" class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-4">
-            <div class="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <h3 class="font-black text-[var(--text)]">{{ player.user?.name || `User #${player.user_id}` }}</h3>
-                <p class="mt-1 text-xs font-bold text-[var(--muted)]">{{ player.user?.email || 'Chưa có email' }}</p>
-              </div>
-              <span class="rounded-full bg-[var(--chip-active)] px-3 py-1 text-xs font-black text-[var(--primary)]">{{ player.score }} điểm</span>
-            </div>
-            <div class="mt-3 h-2 overflow-hidden rounded-full bg-[var(--surface)]">
-              <div class="h-full rounded-full bg-[var(--primary)]" :style="{ width: `${progressPercent(player)}%` }"></div>
-            </div>
-            <p class="mt-2 text-xs font-bold text-[var(--muted)]">{{ player.answered_count ?? player.current_question_index }}/{{ player.total_questions ?? monitor.total_questions ?? 0 }} câu, đúng {{ player.correct_count }}</p>
-          </article>
+        <div v-if="sortedPlayersProgress.length" class="mt-5 overflow-x-auto max-h-[600px] overflow-y-auto rounded-2xl border border-[var(--border)]">
+          <table class="w-full text-left border-collapse">
+            <thead class="sticky top-0 bg-[var(--surface-strong)] z-20 border-b border-[var(--border)]">
+              <tr class="text-xs font-black uppercase tracking-[0.12em] text-[var(--muted)]">
+                <th class="px-4 py-3 text-center">#</th>
+                <th class="px-4 py-3">Người chơi</th>
+                <th class="px-4 py-3 d-none d-md-table-cell">Email</th>
+                <th class="px-4 py-3 text-center">Điểm</th>
+                <th class="px-4 py-3 text-center">Đã trả lời</th>
+                <th class="px-4 py-3 text-center">Đúng</th>
+                <th class="px-4 py-3">Tiến độ</th>
+                <th class="px-4 py-3 text-center">Trạng thái</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(player, idx) in sortedPlayersProgress" :key="player.user_id"
+                  class="border-b border-[var(--border)] last:border-b-0 transition duration-150 hover:bg-[var(--surface-soft)]"
+                  :class="[
+                    idx === 0 ? 'bg-yellow-500/5 hover:bg-yellow-500/10 border-l-4 border-l-yellow-500' :
+                    idx === 1 ? 'bg-slate-300/5 hover:bg-slate-300/10 border-l-4 border-l-slate-400' :
+                    idx === 2 ? 'bg-amber-600/5 hover:bg-amber-700/10 border-l-4 border-l-amber-600' : ''
+                  ]">
+                <td class="px-4 py-3 text-center font-black" 
+                    :class="[
+                      idx === 0 ? 'text-yellow-400' :
+                      idx === 1 ? 'text-slate-300' :
+                      idx === 2 ? 'text-amber-500' : 'text-[var(--muted)]'
+                    ]">
+                  {{ idx + 1 }}
+                </td>
+                <td class="px-4 py-3 font-bold text-[var(--text)] whitespace-nowrap">
+                  {{ player.user?.name || `User #${player.user_id}` }}
+                </td>
+                <td class="px-4 py-3 text-xs text-[var(--muted)] whitespace-nowrap d-none d-md-table-cell">
+                  {{ player.user?.email || 'Chưa có email' }}
+                </td>
+                <td class="px-4 py-3 text-center">
+                  <span class="inline-flex items-center justify-center rounded-full bg-[var(--chip-active)] px-3 py-1 text-xs font-black text-[var(--primary)] whitespace-nowrap">
+                    {{ player.score }} điểm
+                  </span>
+                </td>
+                <td class="px-4 py-3 text-center font-bold text-[var(--text)] whitespace-nowrap">
+                  {{ player.answered_count ?? player.current_question_index }} / {{ player.total_questions ?? monitor.total_questions ?? 0 }}
+                </td>
+                <td class="px-4 py-3 text-center font-black text-emerald-400">
+                  {{ player.correct_count }}
+                </td>
+                <td class="px-4 py-3 min-w-[140px]">
+                  <div class="flex items-center gap-2">
+                    <div class="h-2 w-20 overflow-hidden rounded-full bg-[var(--surface)]">
+                      <div class="h-full rounded-full bg-gradient-to-r from-[var(--primary)] to-[var(--primary-2)] transition-all duration-500" 
+                           :style="{ width: `${progressPercent(player)}%` }">
+                      </div>
+                    </div>
+                    <span class="text-xs font-bold text-[var(--text)]">{{ progressPercent(player)}}%</span>
+                  </div>
+                </td>
+                <td class="px-4 py-3 text-center">
+                  <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-black border"
+                        :class="player.status === 'disconnected' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' :
+                                (player.is_finished || player.player_finished) ? 'bg-sky-500/10 text-sky-400 border-sky-500/20' : 
+                                'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'">
+                    <span class="h-1.5 w-1.5 rounded-full" 
+                          :class="player.status === 'disconnected' ? 'bg-rose-400' :
+                                  (player.is_finished || player.player_finished) ? 'bg-sky-400' : 
+                                  'bg-emerald-400'"></span>
+                    <span>
+                      {{ player.status === 'disconnected' ? 'Disconnected' :
+                         (player.is_finished || player.player_finished) ? 'Finished' : 'Playing' }}
+                    </span>
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
 
-        <div v-else class="mt-5 rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-8 text-center text-sm font-bold text-[var(--muted)]">Chưa có người chơi tham gia.</div>
+        <div v-else class="mt-5 rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-8 text-center text-sm font-bold text-[var(--muted)]">
+          Chưa có người chơi tham gia.
+        </div>
       </article>
 
+      <!-- Cột Bảng xếp hạng (Bên phải) -->
       <article class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-card)]">
         <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Leaderboard</p>
         <h2 class="mt-1 text-2xl font-black tracking-[-0.04em] text-[var(--text)]">Bảng xếp hạng</h2>
 
-        <div v-if="leaderboard.length" class="mt-5 grid gap-3">
-          <div v-for="entry in leaderboard" :key="entry.user_id" class="flex items-center justify-between gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-4">
-            <div>
-              <p class="font-black text-[var(--text)]">#{{ entry.rank }} {{ entry.user?.name || `User #${entry.user_id}` }}</p>
-              <p class="mt-1 text-xs font-bold text-[var(--muted)]">Đúng {{ entry.correct_count }} / {{ entry.total_questions }}</p>
+        <div v-if="leaderboard.length" class="mt-5 relative">
+          <TransitionGroup name="leaderboard-list" tag="div" class="grid gap-3 max-h-[600px] overflow-y-auto pr-1">
+            <div v-for="entry in leaderboard" :key="entry.user_id" 
+                 class="relative flex flex-col gap-3 rounded-2xl border p-4 transition duration-300 hover:scale-[1.02]"
+                 :class="[
+                   entry.rank === 1 ? 'border-yellow-500/40 bg-yellow-500/5 shadow-[0_0_15px_rgba(234,179,8,0.12)]' : 
+                   entry.rank === 2 ? 'border-slate-300/40 bg-slate-400/5 shadow-[0_0_15px_rgba(203,213,225,0.1)]' : 
+                   entry.rank === 3 ? 'border-amber-600/40 bg-amber-700/5 shadow-[0_0_15px_rgba(180,83,9,0.1)]' : 
+                   'border-[var(--border)] bg-[var(--surface-soft)]'
+                 ]">
+              
+              <!-- Floating Points animation for this user -->
+              <transition name="float-points">
+                <span v-if="activeFloatingPoints[entry.user_id]" class="floating-points" :key="activeFloatingPoints[entry.user_id].id">
+                  {{ activeFloatingPoints[entry.user_id].amount }}
+                </span>
+              </transition>
+
+              <div class="flex items-center justify-between gap-3">
+                <div class="flex items-center gap-3">
+                  <span class="w-6 text-center text-lg font-black">
+                    {{ getRankIcon(entry.rank) || `#${entry.rank}` }}
+                  </span>
+                  
+                  <!-- Avatar Gradient -->
+                  <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full font-black text-white text-xs"
+                       :style="getAvatarStyle(entry.user?.name || entry.user_id)">
+                    {{ getAvatarInitial(entry.user?.name || entry.user_id) }}
+                  </div>
+                  
+                  <div>
+                    <h3 class="text-sm font-black text-[var(--text)] truncate max-w-[120px]">{{ entry.user?.name || `User #${entry.user_id}` }}</h3>
+                    <p class="text-[10px] font-bold text-[var(--muted)]">Đúng {{ entry.correct_count }} / {{ entry.total_questions }}</p>
+                  </div>
+                </div>
+                
+                <div class="text-right">
+                  <span class="text-lg font-black text-[var(--primary)]">{{ entry.score }}</span>
+                </div>
+              </div>
+
+              <!-- Thanh progress mini -->
+              <div class="w-full">
+                <div class="h-1.5 overflow-hidden rounded-full bg-[var(--surface)]">
+                  <div class="h-full rounded-full bg-gradient-to-r from-[var(--primary)] to-[var(--primary-2)] transition-all duration-500" 
+                       :style="{ width: `${entry.total_questions ? (entry.answered_count / entry.total_questions) * 100 : 0}%` }">
+                  </div>
+                </div>
+              </div>
             </div>
-            <b class="text-xl font-black text-[var(--primary)]">{{ entry.score }}</b>
-          </div>
+          </TransitionGroup>
         </div>
-        <div v-else class="mt-5 rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-8 text-center text-sm font-bold text-[var(--muted)]">Chưa có điểm.</div>
+        <div v-else class="mt-5 rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-8 text-center text-sm font-bold text-[var(--muted)]">
+          Chưa có điểm.
+        </div>
       </article>
     </div>
   </section>
@@ -111,13 +221,80 @@ const liveRoom = ref({})
 const isActionLoading = ref(false)
 const errorMessage = ref('')
 const lastRealtimeAt = ref(0)
+const activeFloatingPoints = ref({})
 let pollTimer = null
 let liveChannel = null
 const realtimeFreshMs = 8000
 
+const getAvatarInitial = (name) => {
+  if (!name) return '?'
+  return String(name).trim().charAt(0).toUpperCase()
+}
+
+const getAvatarStyle = (name) => {
+  const colors = [
+    ['#9b2cff', '#cf30ff'],
+    ['#ff7a45', '#ff4d6d'],
+    ['#16f2b3', '#0b8793'],
+    ['#ec4899', '#f43f5e'],
+    ['#3b82f6', '#1d4ed8'],
+    ['#10b981', '#047857']
+  ]
+  const str = String(name || '')
+  let hash = 0
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash)
+  }
+  const index = Math.abs(hash) % colors.length
+  const [c1, c2] = colors[index]
+  return {
+    background: `linear-gradient(135deg, ${c1}, ${c2})`,
+    boxShadow: `0 4px 10px rgba(0, 0, 0, 0.2)`
+  }
+}
+
+const getRankIcon = (rank) => {
+  if (rank === 1) return '🥇'
+  if (rank === 2) return '🥈'
+  if (rank === 3) return '🥉'
+  return ''
+}
+
+const triggerFloatingPoints = (userId, amount) => {
+  activeFloatingPoints.value[userId] = {
+    amount: `+${amount}`,
+    id: Date.now()
+  }
+  setTimeout(() => {
+    if (activeFloatingPoints.value[userId] && activeFloatingPoints.value[userId].amount === `+${amount}`) {
+      delete activeFloatingPoints.value[userId]
+    }
+  }, 1500)
+}
+
 const hasLoadedRoom = computed(() => Boolean(liveRoom.value.id))
 const roomStatus = computed(() => monitor.value.room_status || liveRoom.value.status || 'loading')
 const playersProgress = computed(() => monitor.value.players_progress || [])
+const sortedPlayersProgress = computed(() => {
+  const list = [...playersProgress.value]
+  return list.sort((a, b) => {
+    const scoreDiff = (b.score ?? 0) - (a.score ?? 0)
+    if (scoreDiff !== 0) return scoreDiff
+    
+    const correctDiff = (b.correct_count ?? 0) - (a.correct_count ?? 0)
+    if (correctDiff !== 0) return correctDiff
+    
+    const aFinished = a.is_finished || a.player_finished || a.finished_at ? 1 : 0
+    const bFinished = b.is_finished || b.player_finished || b.finished_at ? 1 : 0
+    if (bFinished !== aFinished) return bFinished - aFinished
+    
+    if (a.finished_at && b.finished_at) {
+      return new Date(a.finished_at).getTime() - new Date(b.finished_at).getTime()
+    }
+    
+    return (a.user_id ?? 0) - (b.user_id ?? 0)
+  })
+})
 const leaderboard = computed(() => monitor.value.leaderboard || [])
 
 const progressPercent = (player) => {
@@ -204,6 +381,20 @@ const handlePlayerJoined = (event) => {
 const handleAnswerSubmitted = (event) => {
   realtimeLog('live.answer.submitted', event)
   markRealtime()
+  
+  const playerPayload = event?.player
+  if (playerPayload?.user_id) {
+    const existingPlayer = (monitor.value.players_progress || []).find(
+      p => Number(p.user_id) === Number(playerPayload.user_id)
+    )
+    if (existingPlayer) {
+      const diff = Number(playerPayload.score) - Number(existingPlayer.score)
+      if (diff > 0) {
+        triggerFloatingPoints(playerPayload.user_id, diff)
+      }
+    }
+  }
+
   if (!upsertPlayerProgress(event?.player)) {
     loadMonitor(true)
   }
@@ -335,3 +526,64 @@ onBeforeUnmount(() => {
   leaveRealtime()
 })
 </script>
+
+<style scoped>
+.leaderboard-list-move {
+  transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+}
+.leaderboard-list-enter-active,
+.leaderboard-list-leave-active {
+  transition: all 0.5s ease;
+}
+.leaderboard-list-enter-from,
+.leaderboard-list-leave-to {
+  opacity: 0;
+  transform: translateX(-20px);
+}
+.leaderboard-list-leave-active {
+  position: absolute;
+  width: 100%;
+}
+
+@keyframes floatUpFade {
+  0% {
+    transform: translateY(0) scale(0.8);
+    opacity: 0;
+  }
+  15% {
+    transform: translateY(-15px) scale(1.25);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-50px) scale(0.9);
+    opacity: 0;
+  }
+}
+.floating-points {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: var(--accent-2);
+  animation: floatUpFade 1.4s forwards cubic-bezier(0.18, 0.89, 0.32, 1.28);
+  pointer-events: none;
+  z-index: 50;
+  text-shadow: 0 4px 10px rgba(0,0,0,0.5);
+}
+
+/* Scrollbar styling for Leaderboard container */
+.max-h-\[600px\]::-webkit-scrollbar {
+  width: 5px;
+}
+.max-h-\[600px\]::-webkit-scrollbar-track {
+  background: transparent;
+}
+.max-h-\[600px\]::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 99px;
+}
+.max-h-\[600px\]::-webkit-scrollbar-thumb:hover {
+  background: var(--border-strong);
+}
+</style>
