@@ -98,7 +98,7 @@ Route::middleware('auth:api')->group(function () {
         Route::apiResource('users', UserController::class);
 
         Route::get('/admin/report-tickets/count', [ReportTicketController::class, 'countPending']);
-        
+
         // Quản lý báo cáo vi phạm cho admin
         Route::get('/admin/report-tickets', [ReportTicketController::class, 'index']);
         Route::put('/admin/report-tickets/{id}', [ReportTicketController::class, 'update']);
@@ -108,6 +108,9 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/admin/quizzes', [QuizController::class, 'adminIndex']);
         Route::get('/admin/quizzes/{id}', [QuizController::class, 'adminShow']);
         Route::delete('/admin/quizzes/{quiz}', [QuizController::class, 'destroy'])->withTrashed();
+Route::patch('/admin/quizzes/{id}/toggle-visibility', [QuizController::class, 'toggleVisibility'])
+    ->middleware(['auth:api']);
+
         Route::post('/admin/quizzes/{id}/restore', [QuizController::class, 'restore']);
         Route::delete('/admin/quizzes/{id}/force-delete', [QuizController::class, 'forceDelete']);
     });
@@ -115,7 +118,7 @@ Route::middleware('auth:api')->group(function () {
     Route::middleware('role:free,plus,pro,ultra,admin')->group(function () {
         // Gửi báo cáo vi phạm
         Route::post('/report-tickets', [ReportTicketController::class, 'store']);
-        
+
         // Protected Payment Routes
         Route::get('/payments/history', [PaymentController::class, 'history']);
 

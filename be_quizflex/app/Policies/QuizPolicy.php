@@ -33,12 +33,12 @@ class QuizPolicy
         if ($quiz->is_public || !empty($quiz->room_code)) {
             return true;
         }
-        
+
         if (!$user) {
             Log::info('QuizPolicy@view failed: no user');
             return false;
         }
-        
+
         $role = strtolower($user->role ?? 'user');
         if ($role === 'admin') {
             return true;
@@ -71,15 +71,21 @@ class QuizPolicy
 
     /**
      * Determine whether the user can delete the model.
-     */
+      */
+    // public function delete(User $user, Quiz $quiz): bool
+    // {
+    //     $role = strtolower($user->role ?? 'user');
+    //     if ($role === 'admin') {
+    //         return true;
+    //     }
+    //     return $user->id == $quiz->user_id;
+    // }
+
     public function delete(User $user, Quiz $quiz): bool
-    {
-        $role = strtolower($user->role ?? 'user');
-        if ($role === 'admin') {
-            return true;
-        }
-        return $user->id == $quiz->user_id;
-    }
+{
+    // Chỉ người tạo quiz mới được xóa
+    return $user->id === $quiz->user_id;
+}
 
     /**
      * Determine whether the user can restore the model.

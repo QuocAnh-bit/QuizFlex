@@ -199,36 +199,100 @@ class QuizController extends Controller
         ]);
     }
 
-    public function destroy(Quiz $quiz)
-    {
-        Gate::forUser(auth('api')->user())->authorize('delete', $quiz);
+    // public function destroy(Quiz $quiz)
+    // {
+    //     Gate::forUser(auth('api')->user())->authorize('delete', $quiz);
 
-        if ($quiz->trashed()) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Quiz đã được xóa mềm trước đó.',
-            ]);
-        }
+    //     if ($quiz->trashed()) {
+    //         return response()->json([
+    //             'success' => true,
+    //             'message' => 'Quiz đã được xóa mềm trước đó.',
+    //         ]);
+    //     }
 
-        $ownerId = $quiz->user_id; // Lưu lại ID chủ Quiz trước khi xóa
+    //     $ownerId = $quiz->user_id; // Lưu lại ID chủ Quiz trước khi xóa
 
-        $quiz->delete();
+    //     $quiz->delete();
 
-        // NẾU NGƯỜI XÓA KHÔNG PHẢI LÀ CHỦ QUIZ (LÀ ADMIN) -> GỬI THÔNG BÁO 'deleted'
-        $currentUserId = auth('api')->id();
-        if ($currentUserId !== null && $currentUserId !== $ownerId) {
-            $owner = User::find($ownerId);
-            if ($owner) {
-                $owner->notify(new QuizModerated($quiz, 'deleted')); // Gửi trực tiếp biến $quiz vì nó đã bị Soft Delete nhưng vẫn truy cập được dữ liệu
-            }
-        }
+    //     // NẾU NGƯỜI XÓA KHÔNG PHẢI LÀ CHỦ QUIZ (LÀ ADMIN) -> GỬI THÔNG BÁO 'deleted'
+    //     $currentUserId = auth('api')->id();
+    //     if ($currentUserId !== null && $currentUserId !== $ownerId) {
+    //         $owner = User::find($ownerId);
+    //         if ($owner) {
+    //             $owner->notify(new QuizModerated($quiz, 'deleted')); // Gửi trực tiếp biến $quiz vì nó đã bị Soft Delete nhưng vẫn truy cập được dữ liệu
+    //         }
+    //     }
 
+    //     return response()->json([
+    //         'success' => true,
+    //         'message' => 'Đã xóa mềm quiz',
+    //     ]);
+    // }
+public function destroy(Quiz $quiz)
+{
+    $currentUser = auth('api')->user();
+
+    // Chỉ người tạo quiz mới được xóa
+    if (!$currentUser || $quiz->user_id !== $currentUser->id) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Bạn không có quyền xóa quiz này.'
+        ], 403);
+    }
+
+    if ($quiz->trashed()) {
         return response()->json([
             'success' => true,
-            'message' => 'Đã xóa mềm quiz',
+            'message' => 'Quiz đã được xóa mềm trước đó.',
         ]);
     }
 
+    $quiz->delete();
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Đã xóa mềm quiz',
+    ]);
+}
+public function toggleVisibility($id)
+{
+    $user = auth('api')->user();
+
+    // Chỉ admin mới được ẩn/hiện quiz
+    if (!$user || strtolower($user->role) !== 'admin') {
+        return response()->json([
+            'success' => false,
+            'message' => 'Bạn không có quyền thực hiện thao tác này.'
+        ], 403);
+    }
+
+    $quiz = Quiz::findOrFail($id);
+
+    // Đảo trạng thái public/private
+    $quiz->is_public = !$quiz->is_public;
+    $quiz->save();
+
+    // Gửi thông báo cho người tạo quiz
+    $owner = User::find($quiz->user_id);
+
+    if ($owner) {
+        $owner->notify(new QuizModerated(
+            $quiz,
+            $quiz->is_public ? 'shown' : 'hidden'
+        ));
+    }
+
+    return response()->json([
+        'success' => true,
+        'message' => $quiz->is_public
+            ? 'Quiz đã được hiển thị lại'
+            : 'Quiz đã được ẩn do vi phạm',
+        'data' => [
+            'id' => $quiz->id,
+            'is_public' => $quiz->is_public,
+        ]
+    ]);
+}
     private function validateQuizPayload(Request $request, bool $isUpdate = false): array
     {
         return $request->validate([
