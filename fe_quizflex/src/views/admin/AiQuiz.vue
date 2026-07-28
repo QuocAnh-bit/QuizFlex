@@ -17,7 +17,7 @@
         <div class="mt-8 grid gap-4">
           <textarea v-model="prompt" class="field min-h-44" placeholder="Ví dụ: Tạo 10 câu hỏi toán lớp 10 về hàm số bậc nhất, mức trung bình, 4 đáp án mỗi câu."></textarea>
 
-          <div class="grid gap-4 md:grid-cols-4">
+          <div class="grid gap-4 md:grid-cols-3">
             <select v-model.number="settings.count" class="quiz-select">
               <option :value="5">5 câu</option>
               <option :value="10">10 câu</option>
@@ -37,11 +37,6 @@
               <option value="easy">Dễ</option>
               <option value="medium">Vừa</option>
               <option value="hard">Khó</option>
-            </select>
-
-            <select v-model="settings.language" class="quiz-select">
-              <option value="vi">Tiếng Việt</option>
-              <option value="en">English</option>
             </select>
 
             <select v-model="settings.visibility" class="quiz-select">

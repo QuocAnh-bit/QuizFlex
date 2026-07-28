@@ -8,11 +8,6 @@ use Symfony\Component\HttpFoundation\Response;
 
 class CheckRole
 {
-    /**
-     * Handle an incoming request.
-     *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
-     */
     public function handle(Request $request, Closure $next, ...$roles): Response
     {
         $user = auth('api')->user();
@@ -21,16 +16,14 @@ class CheckRole
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
         }
 
-        $userRole = strtolower(trim($user->getSubscriptionTier()));
-
-        // Admin automatically bypasses all role checks.
-        if ($userRole === 'admin') {
+        // Admin luôn được phép qua
+        if ($user->isAdmin()) {
             return $next($request);
         }
 
-        $allowedRoles = array_map(fn ($role) => strtolower(trim((string) $role)), $roles);
-        
-        if (!in_array($userRole, $allowedRoles)) {
+        $allowed = array_map(fn($r) => strtolower(trim((string) $r)), $roles);
+
+        if (!in_array($user->getRole(), $allowed)) {
             return response()->json(['success' => false, 'message' => 'Bạn không có quyền truy cập khu vực này'], 403);
         }
 
