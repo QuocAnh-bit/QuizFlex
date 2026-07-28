@@ -11,7 +11,6 @@ class Room extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'owner_id',
         'host_id',
         'quiz_id',
         'name',
@@ -29,11 +28,6 @@ class Room extends Model
         'started_at' => 'datetime',
         'ended_at' => 'datetime',
     ];
-
-    public function owner()
-    {
-        return $this->belongsTo(User::class, 'owner_id');
-    }
 
     public function host()
     {

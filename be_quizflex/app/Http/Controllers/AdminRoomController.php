@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\LiveLeaderboardUpdated;
 use App\Events\LiveRoomFinished;
 use App\Models\LiveRoom;
 use App\Models\LiveRoomAnswer;
@@ -21,16 +22,16 @@ class AdminRoomController extends Controller
         $perPage = $this->perPage($request);
         $query = Room::query()
             ->where('type', 'homework')
-            ->with(['owner:id,name,email'])
+            ->with(['host:id,name,email'])
             ->withCount([
                 'members as member_count' => fn (Builder $memberQuery) => $memberQuery
                     ->where('status', 'active')
-                    ->whereColumn('room_members.user_id', '!=', 'rooms.owner_id'),
+                    ->whereColumn('room_members.user_id', '!=', 'rooms.host_id'),
                 'assignments as assignment_count',
             ])
             ->latest();
 
-        $this->applyRoomFilters($query, $request, 'owner');
+        $this->applyRoomFilters($query, $request, 'host');
 
         $rooms = $query->paginate($perPage);
 
@@ -51,16 +52,16 @@ class AdminRoomController extends Controller
         $perPage = $this->perPage($request);
         $query = Room::onlyTrashed()
             ->where('type', 'homework')
-            ->with(['owner:id,name,email'])
+            ->with(['host:id,name,email'])
             ->withCount([
                 'members as member_count' => fn (Builder $memberQuery) => $memberQuery
                     ->where('status', 'active')
-                    ->whereColumn('room_members.user_id', '!=', 'rooms.owner_id'),
+                    ->whereColumn('room_members.user_id', '!=', 'rooms.host_id'),
                 'assignments as assignment_count',
             ])
             ->latest();
 
-        $this->applyRoomFilters($query, $request, 'owner');
+        $this->applyRoomFilters($query, $request, 'host');
 
         $rooms = $query->paginate($perPage);
 
@@ -85,7 +86,7 @@ class AdminRoomController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Homework room restored.',
-            'data' => $this->formatHomeworkRoomSummary($room->fresh(['owner'])),
+            'data' => $this->formatHomeworkRoomSummary($room->fresh(['host'])),
         ]);
     }
 
@@ -94,7 +95,7 @@ class AdminRoomController extends Controller
         abort_if($room->type !== 'homework', 404);
 
         $room->load([
-            'owner:id,name,email',
+            'host:id,name,email',
             'members.user:id,name,email,role',
             'assignments' => fn ($query) => $query
                 ->with(['quiz:id,title,time_limit_seconds', 'assigner:id,name,email'])
@@ -103,7 +104,7 @@ class AdminRoomController extends Controller
         ])->loadCount([
             'members as member_count' => fn (Builder $query) => $query
                 ->where('status', 'active')
-                ->where('user_id', '!=', $room->owner_id),
+                ->where('user_id', '!=', $room->host_id),
             'assignments as assignment_count',
         ]);
 
@@ -135,71 +136,7 @@ class AdminRoomController extends Controller
         ]);
     }
 
-    public function closeHomework(Room $room)
-    {
-        abort_if($room->type !== 'homework', 404);
 
-        $user = auth('api')->user();
-        if (strtolower($user->role ?? '') !== 'admin' && (int)$room->owner_id !== (int)$user->id) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Bạn không có quyền đóng phòng này.',
-            ], 403);
-        }
-
-        if (!$room->trashed()) {
-            $room->forceFill([
-                'status' => 'closed',
-                'ended_at' => $room->ended_at ?: now(),
-            ])->save();
-        }
-
-        $room->load('owner:id,name,email')->loadCount([
-            'members as member_count' => fn (Builder $query) => $query
-                ->where('status', 'active')
-                ->where('user_id', '!=', $room->owner_id),
-            'assignments as assignment_count',
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Homework room closed.',
-            'data' => $this->formatHomeworkRoomSummary($room, true),
-        ]);
-    }
-
-    public function openHomework(Room $room)
-    {
-        abort_if($room->type !== 'homework', 404);
-
-        $user = auth('api')->user();
-        if (strtolower($user->role ?? '') !== 'admin' && (int)$room->owner_id !== (int)$user->id) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Bạn không có quyền mở lại phòng này.',
-            ], 403);
-        }
-
-        if (!$room->trashed() && $room->status === 'closed') {
-            $room->forceFill([
-                'status' => 'active',
-                'ended_at' => null,
-            ])->save();
-        }
-
-        $room->load('owner:id,name,email')->loadCount([
-            'members as member_count' => fn (Builder $query) => $query
-                ->where('status', 'active')
-                ->where('user_id', '!=', $room->owner_id),
-            'assignments as assignment_count',
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Homework room opened.',
-            'data' => $this->formatHomeworkRoomSummary($room, true),
-        ]);
-    }
 
     public function softDeleteHomework(Room $room)
     {
@@ -213,29 +150,27 @@ class AdminRoomController extends Controller
         ]);
     }
 
-    public function removeHomeworkMember(Room $room, RoomMember $member)
+
+
+    public function forceDeleteHomework($id)
     {
+        $room = Room::onlyTrashed()->findOrFail($id);
         abort_if($room->type !== 'homework', 404);
-        abort_if((int) $member->room_id !== (int) $room->id, 404);
 
-        if ((int) $member->user_id === (int) $room->owner_id || $member->role === 'owner') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Room owner cannot be removed from the room.',
-            ], 422);
-        }
+        DB::transaction(function () use ($room) {
+            // Xóa quiz attempts trước vì không có cascade từ rooms → quiz_attempts
+            // (room_submission_evaluations sẽ cascade khi quiz_attempts bị xóa)
+            \App\Models\QuizAttempt::where('room_id', $room->id)->delete();
 
-        $member->forceFill(['status' => 'removed'])->save();
+            // Force delete phòng – cascade tự động xóa:
+            // room_members, room_assignments, room_allowed_members,
+            // room_member_evaluations, room_submission_evaluations
+            $room->forceDelete();
+        });
 
         return response()->json([
             'success' => true,
-            'message' => 'Homework room member removed.',
-            'data' => [
-                'id' => $member->id,
-                'room_id' => $member->room_id,
-                'user_id' => $member->user_id,
-                'status' => $member->status,
-            ],
+            'message' => 'Homework room đã được xóa vĩnh viễn.',
         ]);
     }
 
@@ -365,33 +300,7 @@ class AdminRoomController extends Controller
         ]);
     }
 
-    public function closeLive(LiveRoom $liveRoom)
-    {
-        if (in_array($liveRoom->status, ['waiting', 'playing'], true)) {
-            $liveRoom = DB::transaction(function () use ($liveRoom) {
-                $liveRoom->forceFill([
-                    'status' => 'finished',
-                    'ended_at' => $liveRoom->ended_at ?: now(),
-                ])->save();
 
-                return $liveRoom->fresh(['host:id,name,email', 'quiz:id,title']);
-            });
-
-            LiveRoomFinished::dispatch($liveRoom, 'admin_closed');
-        }
-
-        $liveRoom->loadMissing(['host:id,name,email', 'quiz:id,title'])->loadCount([
-            'players as player_count' => fn (Builder $query) => $query
-                ->where('status', 'joined')
-                ->where('user_id', '!=', $liveRoom->host_id),
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Live room finished.',
-            'data' => $this->formatLiveRoomSummary($liveRoom, true),
-        ]);
-    }
 
     public function softDeleteLive(LiveRoom $liveRoom)
     {
@@ -403,15 +312,15 @@ class AdminRoomController extends Controller
         ]);
     }
 
-    private function applyRoomFilters(Builder $query, Request $request, string $ownerRelation): void
+    private function applyRoomFilters(Builder $query, Request $request, string $hostRelation): void
     {
         $search = trim((string) $request->query('search', ''));
         if ($search !== '') {
-            $query->where(function (Builder $roomQuery) use ($search, $ownerRelation) {
+            $query->where(function (Builder $roomQuery) use ($search, $hostRelation) {
                 $roomQuery->where('name', 'like', "%{$search}%")
                     ->orWhere('code', 'like', "%{$search}%")
-                    ->orWhereHas($ownerRelation, function (Builder $ownerQuery) use ($search) {
-                        $ownerQuery->where('name', 'like', "%{$search}%")
+                    ->orWhereHas($hostRelation, function (Builder $hostQuery) use ($search) {
+                        $hostQuery->where('name', 'like', "%{$search}%")
                             ->orWhere('email', 'like', "%{$search}%");
                     });
             });
@@ -426,8 +335,8 @@ class AdminRoomController extends Controller
             }
         }
 
-        if ($request->filled('owner_id')) {
-            $query->where('owner_id', (int) $request->query('owner_id'));
+        if ($request->filled('host_id')) {
+            $query->where('host_id', (int) $request->query('host_id'));
         }
 
         if ($request->filled('created_from')) {
@@ -485,10 +394,10 @@ class AdminRoomController extends Controller
             'created_at' => $room->created_at,
             'updated_at' => $room->updated_at,
             'deleted_at' => $room->deleted_at ? $room->deleted_at->toIso8601String() : null,
-            'owner' => $room->owner ? [
-                'id' => $room->owner->id,
-                'name' => $room->owner->name,
-                'email' => $room->owner->email,
+            'host' => $room->host ? [
+                'id' => $room->host->id,
+                'name' => $room->host->name,
+                'email' => $room->host->email,
             ] : null,
             'member_count' => (int) ($room->member_count ?? 0),
             'assignment_count' => (int) ($room->assignment_count ?? 0),
@@ -505,19 +414,19 @@ class AdminRoomController extends Controller
 
     private function formatHomeworkMembers(Room $room)
     {
-        $owner = $room->owner ? [[
+        $host = $room->host ? [[
             'id' => null,
-            'user_id' => $room->owner->id,
-            'name' => $room->owner->name,
-            'email' => $room->owner->email,
-            'role' => 'owner',
+            'user_id' => $room->host->id,
+            'name' => $room->host->name,
+            'email' => $room->host->email,
+            'role' => 'host',
             'status' => 'active',
             'joined_at' => $room->created_at,
-            'user' => $room->owner,
+            'user' => $room->host,
         ]] : [];
 
         $members = $room->members
-            ->filter(fn (RoomMember $member) => (int) $member->user_id !== (int) $room->owner_id)
+            ->filter(fn (RoomMember $member) => (int) $member->user_id !== (int) $room->host_id)
             ->map(fn (RoomMember $member) => [
                 'id' => $member->id,
                 'user_id' => $member->user_id,
@@ -531,7 +440,7 @@ class AdminRoomController extends Controller
             ->values()
             ->all();
 
-        return collect(array_merge($owner, $members))->values();
+        return collect(array_merge($host, $members))->values();
     }
 
     private function formatHomeworkAssignment(RoomAssignment $assignment): array
@@ -699,5 +608,81 @@ class AdminRoomController extends Controller
             'from' => $paginator->firstItem(),
             'to' => $paginator->lastItem(),
         ];
+    }
+
+    public function banHomework(Room $room)
+    {
+        $room->forceFill(['status' => 'banned'])->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Đã khóa phòng học.',
+            'data' => $room->fresh(['host:id,name,email']),
+        ]);
+    }
+
+    public function unbanHomework(Room $room)
+    {
+        $room->forceFill(['status' => 'active'])->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Đã mở khóa phòng học.',
+            'data' => $room->fresh(['host:id,name,email']),
+        ]);
+    }
+
+    public function banLive(LiveRoom $liveRoom)
+    {
+        $liveRoom = DB::transaction(function () use ($liveRoom) {
+            $oldStatus = $liveRoom->status;
+            $liveRoom->forceFill([
+                'status' => 'banned',
+                'ended_at' => $liveRoom->ended_at ?: ($oldStatus === 'playing' ? now() : null),
+            ])->save();
+
+            return $liveRoom->fresh(['host:id,name,email', 'quiz:id,title']);
+        });
+
+        if ($liveRoom->ended_at) {
+            LiveRoomFinished::dispatch($liveRoom, 'admin_banned');
+            LiveLeaderboardUpdated::dispatch($liveRoom);
+        }
+
+        $liveRoom->loadCount([
+            'players as player_count' => fn (Builder $query) => $query
+                ->where('status', 'joined')
+                ->where('user_id', '!=', $liveRoom->host_id),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Đã khóa trận đấu trực tuyến.',
+            'data' => $this->formatLiveRoomSummary($liveRoom, true),
+        ]);
+    }
+
+    public function unbanLive(LiveRoom $liveRoom)
+    {
+        $liveRoom = DB::transaction(function () use ($liveRoom) {
+            $newStatus = $liveRoom->started_at ? 'finished' : 'waiting';
+            $liveRoom->forceFill([
+                'status' => $newStatus,
+            ])->save();
+
+            return $liveRoom->fresh(['host:id,name,email', 'quiz:id,title']);
+        });
+
+        $liveRoom->loadCount([
+            'players as player_count' => fn (Builder $query) => $query
+                ->where('status', 'joined')
+                ->where('user_id', '!=', $liveRoom->host_id),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Đã mở khóa phòng trực tuyến.',
+            'data' => $this->formatLiveRoomSummary($liveRoom, true),
+        ]);
     }
 }

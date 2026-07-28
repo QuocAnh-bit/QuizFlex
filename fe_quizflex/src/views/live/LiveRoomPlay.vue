@@ -21,11 +21,18 @@
         </div>
       </transition>
 
-      <template v-if="isWaiting">
-        <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Waiting</p>
-        <h1 class="mt-2 text-4xl font-black tracking-[-0.06em] text-[var(--text)]">Đang chờ host bắt đầu</h1>
-        <p class="mt-3 text-sm leading-7 text-[var(--muted)]">Trang sẽ tự cập nhật mỗi 10 giây. Khi live bắt đầu, câu hỏi sẽ xuất hiện tại đây.</p>
-      </template>
+      <!-- Banner Banned cho Player -->
+      <div v-if="isBanned" class="mb-5 rounded-[2rem] border border-rose-500/30 bg-rose-500/10 p-6 text-sm font-bold text-rose-300 flex items-center gap-3">
+        <span>🚫</span>
+        <span>Phòng đã bị quản trị viên khóa và hiện không thể sử dụng.</span>
+      </div>
+
+      <template v-else>
+        <template v-if="isWaiting">
+          <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Waiting</p>
+          <h1 class="mt-2 text-4xl font-black tracking-[-0.06em] text-[var(--text)]">Đang chờ host bắt đầu</h1>
+          <p class="mt-3 text-sm leading-7 text-[var(--muted)]">Trang sẽ tự cập nhật mỗi 10 giây. Khi live bắt đầu, câu hỏi sẽ xuất hiện tại đây.</p>
+        </template>
  
       <template v-if="isFinished">
         <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Finished</p>
@@ -63,9 +70,10 @@
         </div>
       </template>
  
-      <div v-else-if="!isFinished" class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-8 text-center text-sm font-bold text-[var(--muted)]">
-        Đang tải câu hỏi live...
-      </div>
+        <div v-else-if="!isFinished" class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-8 text-center text-sm font-bold text-[var(--muted)]">
+          Đang tải câu hỏi live...
+        </div>
+      </template>
     </article>
  
     <aside class="grid content-start gap-5">
@@ -271,6 +279,7 @@ const selectedAnswerClass = ['border-[var(--border-strong)]', 'bg-[var(--chip-ac
 const defaultAnswerClass = ['border-[var(--border)]', 'bg-[var(--surface-soft)]', 'hover:border-[var(--border-strong)]']
 const isWaiting = computed(() => roomStatus.value === 'waiting')
 const isFinished = computed(() => roomStatus.value === 'finished' || progress.value.player_finished || progress.value.is_finished)
+const isBanned = computed(() => roomStatus.value === 'banned')
 const currentQuestionNumber = computed(() => Number(progress.value.player_current_question_index ?? progress.value.current_question_index ?? 0) + 1)
 
 const markRealtime = () => {
@@ -309,6 +318,11 @@ const loadCurrentQuestion = async (force = false) => {
     }
   } catch (error) {
     const message = error.message || ''
+    if (message.includes('khóa bởi quản trị viên') || error.response?.status === 403) {
+      roomStatus.value = 'banned'
+      errorMessage.value = message || 'Phòng trực tuyến này đã bị khóa.'
+      return
+    }
     if (message.includes('Chưa trong trạng thái đang chơi') || message.includes('chưa trong trạng thái')) {
       roomStatus.value = 'waiting'
       question.value = { id: 0, question: '', answers: [] }

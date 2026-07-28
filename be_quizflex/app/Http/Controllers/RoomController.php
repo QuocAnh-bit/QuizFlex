@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Gate;
 
 class RoomController extends Controller
 {
@@ -16,11 +17,11 @@ class RoomController extends Controller
     {
         $user = $request->user();
         $query = Room::query()
-            ->with(['owner:id,name,email'])
+            ->with(['host:id,name,email'])
             ->withCount([
                 'members as members_count' => fn ($memberQuery) => $memberQuery
                     ->where('status', 'active')
-                    ->whereColumn('room_members.user_id', '!=', 'rooms.owner_id'),
+                    ->whereColumn('room_members.user_id', '!=', 'rooms.host_id'),
                 'assignments as assignments_count',
             ])
             ->where('type', 'homework')
@@ -28,7 +29,7 @@ class RoomController extends Controller
 
         if (!$this->isAdmin($user)) {
             $query->where(function ($roomQuery) use ($user) {
-                $roomQuery->where('owner_id', $user->id)
+                $roomQuery->where('host_id', $user->id)
                     ->orWhereHas('members', function ($memberQuery) use ($user) {
                         $memberQuery->where('user_id', $user->id)
                             ->where('status', 'active');
@@ -64,7 +65,6 @@ class RoomController extends Controller
             $joinPolicy = $data['join_policy'] ?? 'open';
 
             $room = Room::create([
-                'owner_id' => $user->id,
                 'host_id' => $user->id,
                 'quiz_id' => null,
                 'name' => $data['name'],
@@ -76,7 +76,7 @@ class RoomController extends Controller
                 'join_policy' => $joinPolicy,
             ]);
 
-            return $room->fresh(['owner:id,name,email']);
+            return $room->fresh(['host:id,name,email']);
         });
 
         return response()->json([
@@ -88,13 +88,15 @@ class RoomController extends Controller
 
     public function update(Request $request, Room $room)
     {
-        $user = $request->user();
-        if ((int) $room->owner_id !== (int) $user->id && !$this->isAdmin($user)) {
+        if ($room->status === 'banned') {
             return response()->json([
                 'success' => false,
-                'message' => 'Bạn không có quyền chỉnh sửa phòng này.',
+                'message' => 'Phòng học này đã bị khóa bởi quản trị viên.',
             ], 403);
         }
+
+        $user = $request->user();
+        Gate::forUser($user)->authorize('update', $room);
 
         $data = $request->validate([
             'name' => ['sometimes', 'required', 'string', 'max:255'],
@@ -108,30 +110,32 @@ class RoomController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Cập nhật cấu hình phòng thành công.',
-            'data' => $this->formatRoom($room->fresh(['owner:id,name,email'])),
+            'data' => $this->formatRoom($room->fresh(['host:id,name,email'])),
         ]);
     }
 
     public function show(Request $request, Room $room)
     {
-        if (!$this->canViewRoom($request->user(), $room)) {
+        if ($room->trashed()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Bạn không có quyền xem phòng này.',
-            ], 403);
+                'message' => 'Phòng học này đã bị xóa hoặc khóa bởi Ban quản trị.',
+            ], 410);
         }
 
+        Gate::forUser($request->user())->authorize('view', $room);
+
         $room->load([
-            'owner:id,name,email',
+            'host:id,name,email',
             'members' => fn ($query) => $query
-                ->where('user_id', '!=', $room->owner_id)
+                ->where('user_id', '!=', $room->host_id)
                 ->where('status', 'active')
                 ->with('user:id,name,email,role'),
             'assignments.quiz:id,title,description,time_limit_seconds',
         ])->loadCount([
             'members as members_count' => fn ($query) => $query
                 ->where('status', 'active')
-                ->where('user_id', '!=', $room->owner_id),
+                ->where('user_id', '!=', $room->host_id),
             'assignments as assignments_count',
         ]);
 
@@ -162,7 +166,21 @@ class RoomController extends Controller
 
     public function joinRoom(Request $request, Room $room)
     {
+        if ($room->status === 'banned') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Phòng học này đã bị khóa bởi quản trị viên.',
+            ], 403);
+        }
+
         $user = $request->user();
+
+        if ($this->isAdmin($user)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tài khoản quản trị viên không thể tham gia phòng học với tư cách học sinh.',
+            ], 403);
+        }
 
         if (!$this->isRoomActive($room)) {
             return response()->json([
@@ -171,13 +189,132 @@ class RoomController extends Controller
             ], 422);
         }
 
-        if ((int) $room->owner_id === (int) $user->id) {
+        if ((int) $room->host_id === (int) $user->id) {
             return response()->json([
                 'success' => false,
-                'message' => 'Chủ room không cần tham gia room của chính mình.',
+                'message' => 'Chủ phòng không cần tham gia phòng của chính mình.',
             ], 403);
         }
 
+        // 1. Kiểm tra nếu đã có bản ghi RoomMember của user này
+        $existingMember = RoomMember::where('room_id', $room->id)
+            ->where('user_id', $user->id)
+            ->first();
+
+        if ($existingMember) {
+            if ($existingMember->status === 'active') {
+                $room->load('host:id,name,email');
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Tham gia phòng thành công',
+                    'data' => [
+                        'room' => $this->formatRoom($room),
+                        'member' => $existingMember,
+                    ],
+                ]);
+            }
+
+            if ($existingMember->status === 'pending') {
+                return response()->json([
+                    'success' => false,
+                    'code' => 'JOIN_PENDING',
+                    'message' => 'Yêu cầu tham gia của bạn đang chờ chủ phòng phê duyệt.',
+                ], 403);
+            }
+
+            if ($existingMember->status === 'blocked') {
+                // Học sinh bị kick -> Luôn cần duyệt lại
+                $existingMember->forceFill([
+                    'status' => 'pending',
+                    'joined_at' => now(),
+                ])->save();
+
+                return response()->json([
+                    'success' => false,
+                    'code' => 'JOIN_PENDING',
+                    'message' => 'Bạn đã bị xóa khỏi phòng trước đó. Yêu cầu tham gia lại đã được gửi tới chủ phòng để phê duyệt.',
+                ], 403);
+            }
+
+            if ($existingMember->status === 'removed') {
+                // Học sinh tự rời phòng -> Kiểm tra xem có được vào thẳng không
+                if ($this->usesEmailWhitelist($room)) {
+                    $email = $this->normalizeEmail($user->email ?? '');
+                    $allowedMember = RoomAllowedMember::query()
+                        ->where('room_id', $room->id)
+                        ->where('email', $email)
+                        ->where('status', 'active')
+                        ->first();
+
+                    if ($email && $allowedMember) {
+                        // Vẫn có trong Whitelist -> Cho vào thẳng
+                        $existingMember->forceFill([
+                            'status' => 'active',
+                            'joined_at' => now(),
+                        ])->save();
+
+                        $allowedMember->user_id = $allowedMember->user_id ?: $user->id;
+                        $allowedMember->joined_at = $allowedMember->joined_at ?: now();
+                        $allowedMember->save();
+
+                        $room->load('host:id,name,email');
+                        return response()->json([
+                            'success' => true,
+                            'message' => 'Tham gia phòng thành công',
+                            'data' => [
+                                'room' => $this->formatRoom($room),
+                                'member' => $existingMember,
+                            ],
+                        ]);
+                    }
+
+                    // Không còn trong Whitelist -> Cần duyệt
+                    $existingMember->forceFill([
+                        'status' => 'pending',
+                        'joined_at' => now(),
+                    ])->save();
+
+                    return response()->json([
+                        'success' => false,
+                        'code' => 'JOIN_PENDING',
+                        'message' => 'Email của bạn không nằm trong Whitelist. Yêu cầu tham gia phòng đã được gửi và đang chờ chủ phòng phê duyệt.',
+                    ], 403);
+                } else {
+                    // Phòng công khai -> Cho vào thẳng
+                    $existingMember->forceFill([
+                        'status' => 'active',
+                        'joined_at' => now(),
+                    ])->save();
+
+                    $room->load('host:id,name,email');
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Tham gia phòng thành công',
+                        'data' => [
+                            'room' => $this->formatRoom($room),
+                            'member' => $existingMember,
+                        ],
+                    ]);
+                }
+            }
+        }
+
+        // 2. Nếu chưa từng tham gia (chưa có bản ghi RoomMember)
+        // Kiểm tra giới hạn số lượng thành viên (max_players)
+        $activeMembersCount = RoomMember::where('room_id', $room->id)
+            ->where('status', 'active')
+            ->where('user_id', '!=', $room->host_id)
+            ->count();
+
+        $maxPlayers = $room->max_players ?: 50;
+        if ($activeMembersCount >= $maxPlayers) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Phòng học đã đạt số lượng thành viên tối đa cho phép.',
+            ], 422);
+        }
+
+        // Kiểm tra chính sách Whitelist
         if ($this->usesEmailWhitelist($room)) {
             $email = $this->normalizeEmail($user->email ?? '');
             $allowedMember = RoomAllowedMember::query()
@@ -186,28 +323,61 @@ class RoomController extends Controller
                 ->where('status', 'active')
                 ->first();
 
-            if (!$email || !$allowedMember) {
+            // Nếu có trong Whitelist -> Cho vào thẳng với status 'active'
+            if ($email && $allowedMember) {
+                $allowedMember->user_id = $allowedMember->user_id ?: $user->id;
+                $allowedMember->joined_at = $allowedMember->joined_at ?: now();
+                $allowedMember->save();
+
+                $member = RoomMember::create([
+                    'room_id' => $room->id,
+                    'user_id' => $user->id,
+                    'role' => 'member',
+                    'status' => 'active',
+                    'joined_at' => now(),
+                ]);
+
+                $room->load('host:id,name,email');
+
                 return response()->json([
-                    'success' => false,
-                    'message' => 'Email của bạn không nằm trong danh sách được phép tham gia phòng này.',
-                ], 403);
+                    'success' => true,
+                    'message' => 'Tham gia phòng thành công',
+                    'data' => [
+                        'room' => $this->formatRoom($room),
+                        'member' => $member,
+                    ],
+                ]);
             }
 
-            $allowedMember->user_id = $allowedMember->user_id ?: $user->id;
-            $allowedMember->joined_at = $allowedMember->joined_at ?: now();
-            $allowedMember->save();
+            // Nếu KHÔNG có trong Whitelist -> Tạo yêu cầu chờ duyệt với status 'pending'
+            $member = RoomMember::create([
+                'room_id' => $room->id,
+                'user_id' => $user->id,
+                'role' => 'member',
+                'status' => 'pending',
+                'joined_at' => now(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'code' => 'JOIN_PENDING',
+                'message' => 'Email của bạn không nằm trong danh sách được phép tham gia. Yêu cầu tham gia phòng đã được gửi và đang chờ chủ phòng phê duyệt.',
+                'data' => [
+                    'member' => $member,
+                ]
+            ], 403);
         }
 
-        $member = RoomMember::updateOrCreate(
-            ['room_id' => $room->id, 'user_id' => $user->id],
-            [
-                'role' => 'member',
-                'status' => 'active',
-                'joined_at' => now(),
-            ]
-        );
+        // Chế độ công khai (open) -> Vào thẳng
+        $member = RoomMember::create([
+            'room_id' => $room->id,
+            'user_id' => $user->id,
+            'role' => 'member',
+            'status' => 'active',
+            'joined_at' => now(),
+        ]);
 
-        $room->load('owner:id,name,email');
+        $room->load('host:id,name,email');
 
         return response()->json([
             'success' => true,
@@ -221,18 +391,18 @@ class RoomController extends Controller
 
     public function members(Request $request, Room $room)
     {
-        if (!$this->canViewRoom($request->user(), $room)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Bạn không có quyền xem thành viên phòng này.',
-            ], 403);
+        Gate::forUser($request->user())->authorize('view', $room);
+
+        $status = $request->query('status', 'active');
+        if (!in_array($status, ['active', 'pending'])) {
+            $status = 'active';
         }
 
         $members = RoomMember::query()
             ->with('user:id,name,email,role')
             ->where('room_id', $room->id)
-            ->where('user_id', '!=', $room->owner_id)
-            ->where('status', 'active')
+            ->where('user_id', '!=', $room->host_id)
+            ->where('status', $status)
             ->latest('joined_at')
             ->get();
 
@@ -282,12 +452,14 @@ class RoomController extends Controller
 
     public function destroyMember(Request $request, Room $room, RoomMember $member)
     {
-        if (!$this->canManageRoomMembers($request->user(), $room)) {
+        if ($room->status === 'banned') {
             return response()->json([
                 'success' => false,
-                'message' => 'Bạn không có quyền xóa thành viên khỏi phòng này.',
+                'message' => 'Phòng học này đã bị khóa bởi quản trị viên.',
             ], 403);
         }
+
+        Gate::forUser($request->user())->authorize('manageMembers', $room);
 
         if ((int) $member->room_id !== (int) $room->id) {
             return response()->json([
@@ -296,14 +468,28 @@ class RoomController extends Controller
             ], 404);
         }
 
-        if ((int) $member->user_id === (int) $room->owner_id || $member->role === 'owner') {
+        if ((int) $member->user_id === (int) $room->host_id || $member->role === 'host') {
             return response()->json([
                 'success' => false,
-                'message' => 'Không thể xóa chủ phòng.',
+                'message' => 'Không thể xóa Host.',
             ], 422);
         }
 
-        $member->forceFill(['status' => 'removed'])->save();
+        $member->forceFill(['status' => 'blocked'])->save();
+
+        // Đồng bộ reset joined_at và user_id trong bảng room_allowed_members
+        $memberUser = $member->user;
+        if ($memberUser) {
+            $email = $this->normalizeEmail($memberUser->email ?? '');
+            if ($email) {
+                RoomAllowedMember::where('room_id', $room->id)
+                    ->where('email', $email)
+                    ->update([
+                        'user_id' => null,
+                        'joined_at' => null,
+                    ]);
+            }
+        }
 
         return response()->json([
             'success' => true,
@@ -332,7 +518,7 @@ class RoomController extends Controller
             ], 422);
         }
 
-        if ((int) $room->owner_id === (int) $user->id) {
+        if ((int) $room->host_id === (int) $user->id) {
             return response()->json([
                 'success' => false,
                 'message' => 'Chủ phòng không thể rời phòng của chính mình.',
@@ -341,20 +527,50 @@ class RoomController extends Controller
 
         $member->forceFill(['status' => 'removed'])->save();
 
+        // Đồng bộ reset joined_at và user_id trong bảng room_allowed_members
+        $email = $this->normalizeEmail($user->email ?? '');
+        if ($email) {
+            RoomAllowedMember::where('room_id', $room->id)
+                ->where('email', $email)
+                ->update([
+                    'user_id' => null,
+                    'joined_at' => null,
+                ]);
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Rời phòng thành công.',
         ]);
     }
 
-    public function allowedMembers(Request $request, Room $room)
+    public function dissolve(Request $request, Room $room)
     {
-        if (!$this->canManageAllowedMembers($request->user(), $room)) {
+        // Phòng bị ban thì không thể giải tán
+        if ($room->status === 'banned') {
             return response()->json([
                 'success' => false,
-                'message' => 'Bạn không có quyền quản lý danh sách email phòng này.',
+                'message' => 'Phòng học này đã bị quản trị viên khóa và không thể giải tán.',
             ], 403);
         }
+
+        $user = $request->user();
+
+        // Chỉ Host mới được phép giải tán phòng – kiểm tra ở Backend
+        Gate::forUser($user)->authorize('dissolve', $room);
+
+        // Soft Delete – toàn bộ dữ liệu liên quan vẫn được giữ nguyên
+        $room->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Phòng học đã được giải tán thành công.',
+        ]);
+    }
+
+    public function allowedMembers(Request $request, Room $room)
+    {
+        Gate::forUser($request->user())->authorize('manageWhitelist', $room);
 
         $allowedMembers = RoomAllowedMember::query()
             ->with(['user:id,name,email', 'inviter:id,name,email'])
@@ -371,13 +587,15 @@ class RoomController extends Controller
 
     public function storeAllowedMembers(Request $request, Room $room)
     {
-        $user = $request->user();
-        if (!$this->canManageAllowedMembers($user, $room)) {
+        if ($room->status === 'banned') {
             return response()->json([
                 'success' => false,
-                'message' => 'Bạn không có quyền quản lý danh sách email phòng này.',
+                'message' => 'Phòng học này đã bị khóa bởi quản trị viên.',
             ], 403);
         }
+
+        $user = $request->user();
+        Gate::forUser($user)->authorize('manageWhitelist', $room);
 
         $emailsInput = $request->input('emails', []);
         $request->merge([
@@ -428,12 +646,14 @@ class RoomController extends Controller
 
     public function destroyAllowedMember(Request $request, Room $room, RoomAllowedMember $allowedMember)
     {
-        if (!$this->canManageAllowedMembers($request->user(), $room)) {
+        if ($room->status === 'banned') {
             return response()->json([
                 'success' => false,
-                'message' => 'Bạn không có quyền quản lý danh sách email phòng này.',
+                'message' => 'Phòng học này đã bị khóa bởi quản trị viên.',
             ], 403);
         }
+
+        Gate::forUser($request->user())->authorize('manageWhitelist', $room);
 
         if ((int) $allowedMember->room_id !== (int) $room->id) {
             return response()->json([
@@ -450,11 +670,56 @@ class RoomController extends Controller
         ]);
     }
 
-    private function canCreateRoom($user): bool
-{
-    if ($this->isAdmin($user)) {
-        return true;
+    public function destroyAllowedMembersBatch(Request $request, Room $room)
+    {
+        if ($room->status === 'banned') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Phòng học này đã bị khóa bởi quản trị viên.',
+            ], 403);
+        }
+
+        Gate::forUser($request->user())->authorize('manageWhitelist', $room);
+
+        // Xóa tất cả nếu có flag clear_all
+        if ($request->input('clear_all')) {
+            RoomAllowedMember::where('room_id', $room->id)->delete();
+            return response()->json([
+                'success' => true,
+                'message' => 'Đã xóa toàn bộ email khỏi danh sách.',
+            ]);
+        }
+
+        $ids = $request->input('ids');
+        if (!is_array($ids)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Danh sách ID không hợp lệ.',
+            ], 422);
+        }
+
+        if (empty($ids)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không có email nào được chọn để xóa.',
+            ], 422);
+        }
+
+        RoomAllowedMember::where('room_id', $room->id)
+            ->whereIn('id', $ids)
+            ->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Đã xóa các email được chọn khỏi danh sách.',
+        ]);
     }
+
+    private function canCreateRoom($user): bool
+    {
+        if ($this->isAdmin($user)) {
+            return false;
+        }
 
     if (!method_exists($user, 'getSubscriptionTier')) {
         return false;
@@ -469,37 +734,14 @@ class RoomController extends Controller
     );
 }
 
-    private function canViewRoom($user, Room $room): bool
-    {
-        if ($this->isAdmin($user) || (int) $room->owner_id === (int) $user->id) {
-            return true;
-        }
-
-        return RoomMember::where('room_id', $room->id)
-            ->where('user_id', $user->id)
-            ->where('status', 'active')
-            ->exists();
-    }
-
     private function isRoomActive(Room $room): bool
     {
-        return $room->status === 'active' || $room->status === 'waiting';
+        return $room->status === 'active';
     }
 
     private function isAdmin($user): bool
     {
         return strtolower((string) ($user->role ?? 'user')) === 'admin';
-    }
-
-    private function canManageRoomMembers($user, Room $room): bool
-    {
-        return $room->type === 'homework'
-            && ($this->isAdmin($user) || (int) $room->owner_id === (int) $user->id);
-    }
-
-    private function canManageAllowedMembers($user, Room $room): bool
-    {
-        return $room->type === 'homework' && (int) $room->owner_id === (int) $user->id;
     }
 
     private function usesEmailWhitelist(Room $room): bool
@@ -536,19 +778,19 @@ class RoomController extends Controller
         $membersCount = $room->members_count ?? null;
         if ($membersCount === null && $room->relationLoaded('members')) {
             $membersCount = $room->members
-                ->filter(fn (RoomMember $member) => (int) $member->user_id !== (int) $room->owner_id && $member->status === 'active')
+                ->filter(fn (RoomMember $member) => (int) $member->user_id !== (int) $room->host_id && $member->status === 'active')
                 ->count();
         }
         if ($membersCount === null) {
             $membersCount = RoomMember::where('room_id', $room->id)
-                ->where('user_id', '!=', $room->owner_id)
+                ->where('user_id', '!=', $room->host_id)
                 ->where('status', 'active')
                 ->count();
         }
 
         $data = [
             'id' => $room->id,
-            'owner_id' => $room->owner_id,
+            'host_id' => $room->host_id,
             'name' => $room->name,
             'description' => $room->description,
             'type' => $room->type,
@@ -556,7 +798,7 @@ class RoomController extends Controller
             'status' => $room->status === 'active' ? 'open' : $room->status,
             'max_players' => $room->max_players,
             'join_policy' => $room->join_policy ?: 'open',
-            'owner' => $room->owner,
+            'host' => $room->host,
             'members_count' => $membersCount,
             'assignments_count' => $room->assignments_count ?? null,
             'created_at' => $room->created_at,
@@ -575,7 +817,7 @@ class RoomController extends Controller
                 ->groupBy('user_id');
 
             $data['members'] = $room->members
-                ->filter(fn (RoomMember $member) => (int) $member->user_id !== (int) $room->owner_id && $member->status === 'active')
+                ->filter(fn (RoomMember $member) => (int) $member->user_id !== (int) $room->host_id && $member->status === 'active')
                 ->map(function (RoomMember $member) use ($assignedCount, $attemptsGrouped) {
                     $userAttempts = $attemptsGrouped->get($member->user_id, collect());
                     $completed = $userAttempts->pluck('assignment_id')->unique()->count();
@@ -626,5 +868,93 @@ class RoomController extends Controller
             'user' => $allowedMember->user,
             'inviter' => $allowedMember->inviter,
         ];
+    }
+
+    public function approveMember(Request $request, Room $room, RoomMember $member)
+    {
+        if ($room->status === 'banned') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Phòng học này đã bị khóa bởi quản trị viên.',
+            ], 403);
+        }
+
+        $user = $request->user();
+
+        Gate::forUser($user)->authorize('manageMembers', $room);
+
+        if ((int) $member->room_id !== (int) $room->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Thành viên không thuộc phòng này.',
+            ], 404);
+        }
+
+        if ($member->status !== 'pending') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Thành viên này không ở trong trạng thái chờ duyệt.',
+            ], 422);
+        }
+
+        $member->forceFill([
+            'status' => 'active',
+            'joined_at' => now(),
+        ])->save();
+
+        // Đồng bộ joined_at và user_id sang bảng room_allowed_members
+        $memberUser = $member->user;
+        if ($memberUser) {
+            $email = $this->normalizeEmail($memberUser->email ?? '');
+            if ($email) {
+                RoomAllowedMember::where('room_id', $room->id)
+                    ->where('email', $email)
+                    ->update([
+                        'user_id' => $memberUser->id,
+                        'joined_at' => $member->joined_at ?: now(),
+                    ]);
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Phê duyệt thành viên thành công.',
+            'data' => $member,
+        ]);
+    }
+
+    public function rejectMember(Request $request, Room $room, RoomMember $member)
+    {
+        if ($room->status === 'banned') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Phòng học này đã bị khóa bởi quản trị viên.',
+            ], 403);
+        }
+
+        $user = $request->user();
+
+        Gate::forUser($user)->authorize('manageMembers', $room);
+
+        if ((int) $member->room_id !== (int) $room->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Thành viên không thuộc phòng này.',
+            ], 404);
+        }
+
+        if ($member->status !== 'pending') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Thành viên này không ở trong trạng thái chờ duyệt.',
+            ], 422);
+        }
+
+        $member->delete(); // Xóa hẳn bản ghi RoomMember để họ có thể gửi lại yêu cầu nếu muốn
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Từ chối thành viên thành công.',
+        ]);
     }
 }

@@ -11,7 +11,7 @@
 
     <div class="grid gap-4 sm:grid-cols-3">
       <StatCard value="Code" label="Mã room" hint="Backend sinh tự động" />
-      <StatCard value="Owner" label="Quyền quản lý" hint="Chủ room giao bài" />
+      <StatCard value="Host" label="Quyền quản lý" hint="Host giao bài" />
       <StatCard value="Assignments" label="Homework" hint="Giao nhiều quiz trong một room" />
     </div>
 

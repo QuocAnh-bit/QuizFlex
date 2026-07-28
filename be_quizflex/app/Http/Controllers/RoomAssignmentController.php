@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Gate;
 
 class RoomAssignmentController extends Controller
 {
@@ -24,12 +25,7 @@ class RoomAssignmentController extends Controller
 
     public function index(Request $request, Room $room)
     {
-        if (!$this->canViewRoom($request->user(), $room)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Bạn không có quyền xem bài giao trong phòng này.',
-            ], 403);
-        }
+        Gate::forUser($request->user())->authorize('view', $room);
 
         $assignments = RoomAssignment::query()
             ->with(['quiz:id,title,description,time_limit_seconds', 'assigner:id,name'])
@@ -47,13 +43,15 @@ class RoomAssignmentController extends Controller
 
     public function store(Request $request, Room $room)
     {
-        $user = $request->user();
-        if (!$this->canManageRoom($user, $room)) {
+        if ($room->status === 'banned') {
             return response()->json([
                 'success' => false,
-                'message' => 'Chỉ chủ phòng mới được giao bài.',
+                'message' => 'Phòng học này đã bị khóa bởi quản trị viên.',
             ], 403);
         }
+
+        $user = $request->user();
+        Gate::forUser($user)->authorize('assignHomework', $room);
 
         $data = $request->validate([
             'quiz_id' => ['required', 'integer', 'exists:quizzes,id'],
@@ -98,12 +96,7 @@ class RoomAssignmentController extends Controller
     {
         $assignment->load(['room', 'quiz.questions.answers', 'assigner:id,name']);
 
-        if (!$this->canViewRoom($request->user(), $assignment->room)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Bạn không có quyền xem bài tập này.',
-            ], 403);
-        }
+        Gate::forUser($request->user())->authorize('view', $assignment->room);
 
         return response()->json([
             'success' => true,
@@ -114,14 +107,22 @@ class RoomAssignmentController extends Controller
 
     public function startAttempt(Request $request, RoomAssignment $assignment)
     {
+        $assignment->load(['room']);
+        if ($assignment->room->status === 'banned') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Phòng học này đã bị khóa bởi quản trị viên.',
+            ], 403);
+        }
+
         $data = $request->validate([
             'attempt_id' => ['nullable', 'integer', 'exists:quiz_attempts,id'],
         ]);
 
-        $assignment->load(['room', 'quiz.questions.answers']);
+        $assignment->load(['quiz.questions.answers']);
         $user = $request->user();
 
-        if ($this->isRoomOwner($assignment->room, $user->id)) {
+        if ($this->isRoomHost($assignment->room, $user->id)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Chủ phòng không thể làm bài trong phòng của mình.',
@@ -203,7 +204,7 @@ class RoomAssignmentController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Da ghi nhan cau tra loi tam tren client.',
+            'message' => 'Đã ghi nhận câu trả lời tạm từ phía người chơi.',
             'data' => $this->formatAttempt($attempt),
         ]);
     }
@@ -219,7 +220,7 @@ class RoomAssignmentController extends Controller
         if ($attempt->status === 'completed') {
             return response()->json([
                 'success' => false,
-                'message' => 'Luot lam bai nay da duoc nop.',
+                'message' => 'Lượt làm bài này đã được nộp.',
             ], 422);
         }
 
@@ -259,7 +260,7 @@ class RoomAssignmentController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => $expired ? 'Bai nop da qua han.' : 'Nop bai thanh cong',
+            'message' => $expired ? 'Bài nộp đã quá hạn.' : 'Nộp bài thành công',
             'data' => $result,
         ]);
     }
@@ -269,54 +270,82 @@ class RoomAssignmentController extends Controller
         $assignment->load('room');
         $user = $request->user();
 
-        if (!$this->canViewRoom($user, $assignment->room)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Ban khong co quyen xem ket qua bai giao nay.',
-            ], 403);
-        }
+        Gate::forUser($user)->authorize('view', $assignment->room);
 
         $query = QuizAttempt::query()
             ->with(['user:id,name,email', 'quiz:id,title', 'evaluation'])
             ->where('assignment_id', $assignment->id)
             ->latest('started_at');
 
-        if (!$this->canManageRoom($user, $assignment->room)) {
-            $query->where('user_id', $user->id);
+        if (strtolower((string)($user->role ?? '')) === 'admin' || (int) $assignment->room->host_id === (int) $user->id) {
+            $query->where('user_id', '!=', $assignment->room->host_id);
         } else {
-            $query->where('user_id', '!=', $assignment->room->owner_id);
+            $query->where('user_id', $user->id);
         }
 
         return response()->json([
             'success' => true,
-            'message' => 'Danh sach luot lam bai duoc giao',
+            'message' => 'Danh sách lượt làm bài được giao',
             'data' => $query->get()->map(fn(QuizAttempt $attempt) => $this->formatAttemptSummary($attempt)),
+        ]);
+    }
+
+    public function resetAttempt(Request $request, RoomAssignment $assignment, QuizAttempt $attempt)
+    {
+        $assignment->loadMissing('room');
+        if ($assignment->room->status === 'banned') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Phòng học này đã bị khóa bởi quản trị viên.',
+            ], 403);
+        }
+
+        $user = $request->user();
+        Gate::forUser($user)->authorize('resetAttempt', $assignment->room);
+
+        if ((int) $attempt->assignment_id !== (int) $assignment->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lượt làm bài không thuộc bài tập này.',
+            ], 422);
+        }
+
+        DB::transaction(function () use ($attempt) {
+            $attempt->evaluation()->delete();
+            $attempt->delete();
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Đã reset lượt làm bài thành công. Học viên có thể làm lại từ đầu.',
         ]);
     }
 
     private function authorizeHomeworkAttempt(Request $request, RoomAssignment $assignment, QuizAttempt $attempt): void
     {
         $assignment->loadMissing(['room']);
+        abort_if($assignment->room->status === 'banned', 403, 'Phòng học này đã bị khóa bởi quản trị viên.');
+
         $user = $request->user();
 
-        abort_if((int) $attempt->assignment_id !== (int) $assignment->id, 404, 'Khong tim thay luot lam bai.');
-        abort_if($this->isRoomOwner($assignment->room, $user->id), 403, 'Chủ room không thể làm bài trong room của mình.');
-        abort_if((int) $attempt->user_id !== (int) $user->id, 403, 'Ban khong co quyen thao tac luot lam bai nay.');
-        abort_if(!$this->isActiveMember($assignment->room, $user->id), 403, 'Ban chua la thanh vien cua phong nay.');
+        abort_if((int) $attempt->assignment_id !== (int) $assignment->id, 404, 'Không tìm thấy lượt làm bài.');
+        abort_if($this->isRoomHost($assignment->room, $user->id), 403, 'Chủ phòng không thể làm bài trong phòng của mình.');
+        abort_if((int) $attempt->user_id !== (int) $user->id, 403, 'Bạn không có quyền thao tác lượt làm bài này.');
+        abort_if(!$this->isActiveMember($assignment->room, $user->id), 403, 'Bạn chưa là thành viên của phòng này.');
     }
 
     private function assignmentAvailabilityError(RoomAssignment $assignment): ?string
     {
         if ($assignment->status !== 'published') {
-            return 'Bai giao chua duoc mo.';
+            return 'Bài giao chưa được mở.';
         }
 
         if ($assignment->starts_at && now()->lt($assignment->starts_at)) {
-            return 'Bai giao chua den thoi gian bat dau.';
+            return 'Bài giao chưa đến thời gian bắt đầu.';
         }
 
         if ($assignment->deadline_at && now()->gt($assignment->deadline_at)) {
-            return 'Bai giao da het han.';
+            return 'Bài giao đã hết hạn.';
         }
 
         return null;
@@ -350,20 +379,9 @@ class RoomAssignmentController extends Controller
         return $query->latest('started_at')->first();
     }
 
-    private function canViewRoom($user, Room $room): bool
-    {
-        return $this->canManageRoom($user, $room) || $this->isActiveMember($room, $user->id);
-    }
-
-    private function canManageRoom($user, Room $room): bool
-    {
-        return strtolower((string) ($user->role ?? 'user')) === 'admin'
-            || (int) $room->owner_id === (int) $user->id;
-    }
-
     private function isActiveMember(Room $room, int $userId): bool
     {
-        if ($this->isRoomOwner($room, $userId)) {
+        if ($this->isRoomHost($room, $userId)) {
             return false;
         }
 
@@ -374,14 +392,14 @@ class RoomAssignmentController extends Controller
             ->exists();
     }
 
-    private function isRoomOwner(Room $room, int $userId): bool
+    private function isRoomHost(Room $room, int $userId): bool
     {
-        return (int) $room->owner_id === (int) $userId;
+        return (int) $room->host_id === (int) $userId;
     }
 
     private function canViewResult(RoomAssignment $assignment, QuizAttempt $attempt, $user): bool
     {
-        if ($this->canManageRoom($user, $assignment->room)) {
+        if (strtolower((string) ($user->role ?? 'user')) === 'admin' || (int) $assignment->room->host_id === (int) $user->id) {
             return true;
         }
 
@@ -426,7 +444,7 @@ class RoomAssignmentController extends Controller
             'shuffle_answers' => $assignment->shuffle_answers,
         ];
 
-        $myAttempts = $this->isRoomOwner($assignment->room, $user->id)
+        $myAttempts = $this->isRoomHost($assignment->room, $user->id)
             ? collect()
             : QuizAttempt::where('assignment_id', $assignment->id)
             ->where('user_id', $user->id)
@@ -566,5 +584,100 @@ class RoomAssignmentController extends Controller
 
 })->values(),
         ];
+    }
+
+    public function gradebook(Request $request, Room $room)
+    {
+        $currentUser = $request->user();
+        $isAdmin = strtolower((string) ($currentUser->role ?? 'user')) === 'admin';
+        $isHost = (int) $room->host_id === (int) $currentUser->id;
+
+        if (strtolower((string) ($currentUser->role ?? 'user')) !== 'admin') {
+            Gate::forUser($currentUser)->authorize('update', $room);
+        }
+
+        // Lấy danh sách Assignments theo starts_at hoặc created_at asc
+        $assignments = RoomAssignment::where('room_id', $room->id)
+            ->orderBy('created_at', 'asc')
+            ->get(['id', 'title']);
+
+        // Lấy danh sách học sinh (active members, exclude host)
+        $members = RoomMember::with('user:id,name,email')
+            ->where('room_id', $room->id)
+            ->where('status', 'active')
+            ->where('user_id', '!=', $room->host_id)
+            ->get();
+
+        // Lấy toàn bộ attempts đã nộp/hoàn thành của các assignments thuộc room
+        $assignmentIds = $assignments->pluck('id')->all();
+        $attempts = QuizAttempt::whereIn('assignment_id', $assignmentIds)
+            ->whereIn('status', ['completed', 'expired'])
+            ->get(['user_id', 'assignment_id', 'score', 'total_points']);
+
+        $attemptsGrouped = $attempts->groupBy('user_id');
+
+        $studentsData = [];
+
+        foreach ($members as $member) {
+            $user = $member->user;
+            if (!$user) {
+                continue;
+            }
+
+            $scores = [];
+            $totalScore10Sum = 0;
+            $attemptedAssignmentsCount = 0;
+
+            $userAttempts = $attemptsGrouped->get($user->id, collect());
+
+            foreach ($assignments as $assignment) {
+                $assignmentAttempts = $userAttempts->where('assignment_id', $assignment->id);
+
+                if ($assignmentAttempts->isNotEmpty()) {
+                    // Tìm attempt có score cao nhất
+                    $bestAttempt = $assignmentAttempts->sortByDesc('score')->first();
+
+                    $scores[$assignment->id] = [
+                        'score' => (int) $bestAttempt->score,
+                        'total_points' => (int) $bestAttempt->total_points,
+                    ];
+
+                    if ($bestAttempt->total_points > 0) {
+                        $score10 = ($bestAttempt->score / $bestAttempt->total_points) * 10;
+                        $totalScore10Sum += $score10;
+                        $attemptedAssignmentsCount++;
+                    }
+                } else {
+                    $scores[$assignment->id] = null;
+                }
+            }
+
+            $totalAssignmentsCount = count($assignments);
+
+            $averageScore10 = $attemptedAssignmentsCount > 0
+                ? round($totalScore10Sum / $attemptedAssignmentsCount, 1)
+                : null;
+
+            $averageScore10All = $totalAssignmentsCount > 0
+                ? round($totalScore10Sum / $totalAssignmentsCount, 1)
+                : ($attemptedAssignmentsCount > 0 ? 0.0 : null);
+
+            $studentsData[] = [
+                'user_id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'scores' => $scores,
+                'average_score10' => $averageScore10,
+                'average_score10_all' => $averageScore10All,
+            ];
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'assignments' => $assignments,
+                'students' => $studentsData,
+            ],
+        ]);
     }
 }

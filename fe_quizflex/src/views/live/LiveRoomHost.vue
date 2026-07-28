@@ -7,7 +7,13 @@
 
     <div v-if="errorMessage" class="rounded-[2rem] border border-rose-500/30 bg-rose-500/10 p-5 text-sm font-bold text-rose-300">{{ errorMessage }}</div>
 
-    <article class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-soft)]">
+    <div v-else class="grid gap-6">
+      <!-- Banner Banned -->
+      <div v-if="liveRoom.status === 'banned'" class="rounded-[2rem] border border-amber-500/30 bg-amber-500/10 p-5 text-sm font-bold text-amber-300">
+        Phòng này đã bị quản trị viên khóa. Bạn chỉ có thể xem thông tin phòng và không thể thực hiện bất kỳ thao tác quản lý nào.
+      </div>
+
+      <article class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-soft)]">
       <div class="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
         <div>
           <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Host Monitor</p>
@@ -39,7 +45,7 @@
         </div>
       </div>
 
-      <div class="mt-6 flex flex-wrap gap-3">
+      <div v-if="liveRoom.status !== 'banned'" class="mt-6 flex flex-wrap gap-3">
         <button v-if="hasLoadedRoom && roomStatus === 'waiting'" class="btn-primary" type="button" :disabled="isActionLoading" @click="startLive">
           {{ isActionLoading ? 'Đang start...' : 'Start Live' }}
         </button>
@@ -204,6 +210,7 @@
         </div>
       </article>
     </div>
+    </div>
   </section>
 </template>
 
@@ -212,10 +219,11 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import { getEcho } from '@/echo'
-import { liveRoomApi } from '@/services/api'
+import { currentUserStorage, liveRoomApi } from '@/services/api'
 
 const route = useRoute()
 const liveRoomId = computed(() => route.params.liveRoomId)
+const currentUser = currentUserStorage.get()
 const monitor = ref({})
 const liveRoom = ref({})
 const isActionLoading = ref(false)
@@ -516,8 +524,12 @@ const finishLive = async () => {
 }
 
 onMounted(async () => {
-  subscribeToRealtime()
   await loadMonitor(true)
+  if (Number(liveRoom.value.host_id) !== Number(currentUser?.id)) {
+    errorMessage.value = 'Bạn không có quyền quản lý phòng trực tuyến này.'
+    return
+  }
+  subscribeToRealtime()
   pollTimer = setInterval(loadMonitor, 10000)
 })
 

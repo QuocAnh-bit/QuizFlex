@@ -18,6 +18,7 @@ use App\Services\QuestionOrderService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Gate;
 
 class LiveRoomController extends Controller
 {
@@ -26,8 +27,15 @@ class LiveRoomController extends Controller
     public function store(Request $request)
     {
         $user = $request->user();
+        if ($this->isAdmin($user)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Quản trị viên không được phép tạo phòng trực tuyến.',
+            ], 403);
+        }
+
         $tier = $user->getSubscriptionTier();
-        if (!in_array($tier, ['plus', 'pro', 'ultra', 'admin'], true)) {
+        if (!in_array($tier, ['plus', 'pro', 'ultra'], true)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Tính năng tạo phòng trực tuyến yêu cầu nâng cấp gói Plus trở lên.',
@@ -77,12 +85,26 @@ class LiveRoomController extends Controller
         ]);
 
         $user = $request->user();
+        if ($this->isAdmin($user)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tài khoản quản trị viên không thể tham gia phòng trực tuyến với tư cách người chơi.',
+            ], 403);
+        }
+
         $liveRoom = LiveRoom::where('code', strtoupper(trim((string) $data['code'])))->first();
         if (!$liveRoom) {
             return response()->json([
                 'success' => false,
                 'message' => 'Khong tim thay live room.',
             ], 404);
+        }
+
+        if ($liveRoom->status === 'banned') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Phòng trực tuyến này đã bị khóa bởi quản trị viên.',
+            ], 403);
         }
 
         if ($this->isHost($user, $liveRoom)) {
@@ -97,6 +119,20 @@ class LiveRoomController extends Controller
                 'success' => false,
                 'message' => 'Live room nay khong cho tham gia them.',
             ], 422);
+        }
+
+        if ($liveRoom->status === 'playing' || $liveRoom->started_at !== null) {
+            $hasJoined = LiveRoomPlayer::where('live_room_id', $liveRoom->id)
+                ->where('user_id', $user->id)
+                ->where('status', 'joined')
+                ->exists();
+
+            if (!$hasJoined) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Phòng đã bắt đầu, không thể tham gia.',
+                ], 403);
+            }
         }
 
         $player = LiveRoomPlayer::firstOrNew([
@@ -131,12 +167,7 @@ class LiveRoomController extends Controller
 
     public function show(Request $request, LiveRoom $liveRoom)
     {
-        if (!$this->canViewLiveRoom($request->user(), $liveRoom)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Ban khong co quyen xem live room nay.',
-            ], 403);
-        }
+        Gate::forUser($request->user())->authorize('view', $liveRoom);
 
         $liveRoom->load([
             'host:id,name,email',
@@ -153,12 +184,14 @@ class LiveRoomController extends Controller
 
     public function start(Request $request, LiveRoom $liveRoom)
     {
-        if (!$this->isHost($request->user(), $liveRoom)) {
+        if ($liveRoom->status === 'banned') {
             return response()->json([
                 'success' => false,
-                'message' => 'Chi host moi duoc bat dau live room.',
+                'message' => 'Phòng trực tuyến này đã bị khóa bởi quản trị viên.',
             ], 403);
         }
+
+        Gate::forUser($request->user())->authorize('start', $liveRoom);
 
         if ($liveRoom->status !== 'waiting') {
             return response()->json([
@@ -214,14 +247,9 @@ class LiveRoomController extends Controller
     public function currentQuestion(Request $request, LiveRoom $liveRoom)
     {
         $user = $request->user();
-        if (!$this->canViewLiveRoom($user, $liveRoom)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Ban khong co quyen xem cau hoi live room nay.',
-            ], 403);
-        }
+        Gate::forUser($user)->authorize('view', $liveRoom);
 
-        if ($this->isHost($user, $liveRoom)) {
+        if ($this->isHost($user, $liveRoom) || $this->isAdmin($user)) {
             return response()->json([
                 'success' => true,
                 'message' => 'Du lieu theo doi live room',
@@ -273,6 +301,13 @@ class LiveRoomController extends Controller
 
     public function answer(Request $request, LiveRoom $liveRoom)
     {
+        if ($liveRoom->status === 'banned') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Phòng trực tuyến này đã bị khóa bởi quản trị viên.',
+            ], 403);
+        }
+
         $data = $request->validate([
             'answer_id' => ['required', 'integer', 'exists:answers,id'],
             'response_time_ms' => ['nullable', 'integer', 'min:0'],
@@ -419,12 +454,14 @@ class LiveRoomController extends Controller
 
     public function nextQuestion(Request $request, LiveRoom $liveRoom)
     {
-        if (!$this->isHost($request->user(), $liveRoom)) {
+        if ($liveRoom->status === 'banned') {
             return response()->json([
                 'success' => false,
-                'message' => 'Chi host moi duoc goi API nay.',
+                'message' => 'Phòng trực tuyến này đã bị khóa bởi quản trị viên.',
             ], 403);
         }
+
+        Gate::forUser($request->user())->authorize('nextQuestion', $liveRoom);
 
         return response()->json([
             'success' => true,
@@ -437,12 +474,14 @@ class LiveRoomController extends Controller
 
     public function finish(Request $request, LiveRoom $liveRoom)
     {
-        if (!$this->isHost($request->user(), $liveRoom)) {
+        if ($liveRoom->status === 'banned') {
             return response()->json([
                 'success' => false,
-                'message' => 'Chi host moi duoc ket thuc live room.',
+                'message' => 'Phòng trực tuyến này đã bị khóa bởi quản trị viên.',
             ], 403);
         }
+
+        Gate::forUser($request->user())->authorize('finish', $liveRoom);
 
         if (!in_array($liveRoom->status, ['waiting', 'playing'], true)) {
             return response()->json([
@@ -473,12 +512,7 @@ class LiveRoomController extends Controller
 
     public function leaderboard(Request $request, LiveRoom $liveRoom)
     {
-        if (!$this->canViewLiveRoom($request->user(), $liveRoom)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Ban khong co quyen xem bang xep hang live room nay.',
-            ], 403);
-        }
+        Gate::forUser($request->user())->authorize('view', $liveRoom);
 
         return response()->json([
             'success' => true,
@@ -527,10 +561,7 @@ class LiveRoomController extends Controller
             || ((bool) $quiz->is_public && $quiz->status === 'published');
     }
 
-    private function canViewLiveRoom($user, LiveRoom $liveRoom): bool
-    {
-        return $this->isHost($user, $liveRoom) || (bool) $this->activePlayer($liveRoom, $user->id);
-    }
+
 
     private function isHost($user, LiveRoom $liveRoom): bool
     {
@@ -763,4 +794,6 @@ class LiveRoomController extends Controller
 
         return $code;
     }
+
+
 }

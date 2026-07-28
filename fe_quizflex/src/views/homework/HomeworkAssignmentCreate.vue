@@ -172,7 +172,7 @@ shuffle_answers: false,
 
 const canManageRoom = computed(() => {
   const role = String(currentUser?.role || '').toLowerCase()
-  return role === 'admin' || Number(room.value?.owner_id) === Number(currentUser?.id)
+  return role === 'admin' || Number(room.value?.host_id) === Number(currentUser?.id)
 })
 
 const syncTitleFromQuiz = () => {
