@@ -509,6 +509,7 @@ const routes = [
       roles: adminRoles,
     },
   },
+  
 
   // Admin Quiz Management
   { path: '/admin/quizzes', name: 'admin-quizzes', component: () => import('@/views/admin/quizzes/QuizList.vue'), meta: { layout: 'admin', title: 'Quản lý Quiz', requiresAuth: true, roles: adminRoles } },
