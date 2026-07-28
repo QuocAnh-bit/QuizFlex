@@ -45,8 +45,13 @@ const triggerConfirmAction = async () => {
 const fetchTrash = async () => {
   try {
     loading.value = true
+
     const res = await api.get('/admin/quizzes/trash')
-    quizzes.value = res.data.data.data || []
+
+    console.log(res.data) // thêm để kiểm tra
+
+    quizzes.value = res.data.data || []
+
   } catch (error) {
     console.error(error)
     showToast('Không tải được thùng rác', 'error')

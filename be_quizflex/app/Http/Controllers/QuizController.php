@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use PHPOpenSourceSaver\JWTAuth\Exceptions\TokenExpiredException;
+use Illuminate\Support\Facades\Auth;
 
 class QuizController extends Controller
 {
@@ -740,44 +741,66 @@ public function toggleVisibility($id)
     }
 
     // Thùng rác
-    public function trash()
-    {
-        $quizzes = Quiz::onlyTrashed()
-            ->with('user:id,name')
-            ->latest()
-            ->paginate(10);
+ public function trash()
+{
+    $user =Auth::user();
 
-        return response()->json([
-            'success' => true,
-            'data' => $quizzes
-        ]);
-    }
 
+    $quizzes = Quiz::onlyTrashed()
+        ->where('user_id', $user->id)
+        ->with('user')
+        ->latest()
+        ->get();
+
+    return response()->json([
+        'success' => true,
+        'data' => $quizzes
+    ]);
+}
     // Khôi phục quiz
-    public function restore($id)
-    {
-        $quiz = Quiz::onlyTrashed()
-            ->findOrFail($id);
+  public function restore($id)
+{
+    $admin = Auth::user();
 
-        $quiz->restore();
+    $quiz = Quiz::onlyTrashed()
+        ->where('id', $id)
+        ->where('user_id', $admin->id)
+        ->firstOrFail();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Khôi phục quiz thành công'
-        ]);
-    }
+    $quiz->restore();
 
+    return response()->json([
+        'message' => 'Khôi phục thành công',
+        'data' => $quiz
+    ]);
+}
     // Xóa vĩnh viễn
-    public function forceDelete($id)
-    {
-        $quiz = Quiz::onlyTrashed()
-            ->findOrFail($id);
+ public function forceDelete($id)
+{
+    $admin = Auth::user();
 
-        $quiz->forceDelete();
+    $quiz = Quiz::onlyTrashed()
+        ->where('id',$id)
+        ->where('user_id',$admin->id)
+        ->firstOrFail();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Xóa vĩnh viễn quiz thành công'
-        ]);
-    }
+    $quiz->forceDelete();
+
+    return response()->json([
+        'message'=>'Đã xóa vĩnh viễn'
+    ]);
+}
+public function adminTrash()
+{
+    $admin = Auth::user();
+
+    $quizzes = Quiz::onlyTrashed()
+        ->where('user_id', $admin->id)
+        ->with('user')
+        ->get();
+
+    return response()->json([
+        'data' => $quizzes
+    ]);
+}
 }

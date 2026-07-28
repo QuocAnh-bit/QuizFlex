@@ -403,12 +403,10 @@ const prepareQuizPayload = (payload) =>
 export const quizzesApi = {
   async list(params = {}) {
     const { data } = await api.get("/quizzes", { params });
-    
     return unwrapCollection(data);
   },
 
   async get(id) {
-    // hàm này sẽ thực hiện cuộc gọi api lên server backend và đóng gói dữ liệu dưới dạng json
     const { data } = await api.get(`/quizzes/${id}`);
     return unwrap(data);
   },
@@ -429,32 +427,90 @@ export const quizzesApi = {
 
     if (body instanceof FormData) {
       body.append("_method", "PUT");
-      const { data } = await api.post(`/quizzes/${id}`, body);
+
+      const { data } = await api.post(
+        `/quizzes/${id}`,
+        body
+      );
+
       return unwrap(data);
     }
 
-    const { data } = await api.put(`/quizzes/${id}`, body);
+    const { data } = await api.put(
+      `/quizzes/${id}`,
+      body
+    );
+
     return unwrap(data);
   },
 
+
+  // USER XÓA MỀM
   async remove(id) {
     const { data } = await api.delete(`/quizzes/${id}`);
     return data;
   },
+
+
+  // USER + ADMIN xem thùng rác quiz của mình
+async trash() {
+    const { data } = await api.get(
+      "/quizzes/trash"
+    );
+
+    return unwrapCollection(data);
+},
+
+async restore(id) {
+    const { data } = await api.patch(
+      `/quizzes/${id}/restore`
+    );
+
+    return unwrap(data);
+},
+
+
+  // ADMIN XÓA VĨNH VIỄN
+  async forceDelete(id) {
+    const { data } = await api.delete(
+      `/quizzes/${id}/force-delete`
+    );
+
+    return data;
+},
+// ADMIN xem thùng rác quiz admin tạo
+async adminTrash() {
+    const { data } = await api.get("/admin/quizzes/trash");
+    return unwrapCollection(data);
+},
+
+
+  // ADMIN ẨN / HIỆN
   async toggleVisibility(id) {
     const { data } = await api.patch(
       `/admin/quizzes/${id}/toggle-visibility`
-    )
-    return data
-  },
+    );
 
-  async startAttempt(id, payload = {}) {
-    const { data } = await api.post(`/quizzes/${id}/attempts/start`, payload);
     return unwrap(data);
   },
 
+
+  async startAttempt(id, payload = {}) {
+    const { data } = await api.post(
+      `/quizzes/${id}/attempts/start`,
+      payload
+    );
+
+    return unwrap(data);
+  },
+
+
   async submitAttempt(id, payload) {
-    const { data } = await api.post(`/quizzes/${id}/attempts/submit`, payload);
+    const { data } = await api.post(
+      `/quizzes/${id}/attempts/submit`,
+      payload
+    );
+
     return unwrap(data);
   },
 };
@@ -1001,6 +1057,7 @@ export const notificationApi = {
     const { data } = await api.put("/notifications/read-all");
     return data;
   },
+ 
 };
 
 export default api;
