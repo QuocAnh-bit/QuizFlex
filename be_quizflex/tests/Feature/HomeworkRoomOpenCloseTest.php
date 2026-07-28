@@ -69,7 +69,6 @@ class HomeworkRoomOpenCloseTest extends TestCase
         ]);
 
         return Room::create(array_merge([
-            'owner_id' => $owner->id,
             'host_id' => $owner->id,
             'quiz_id' => $quiz->id,
             'name' => 'Homework room',
