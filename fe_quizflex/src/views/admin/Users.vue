@@ -14,7 +14,7 @@
         <input v-model="newUser.name" class="field" placeholder="Tên user" />
         <input v-model="newUser.email" class="field" type="email" placeholder="email@example.com" />
         <select v-model="newUser.role" class="field"><option value="user">User</option><option value="admin">Admin</option></select>
-        <select v-model="newUser.plan" class="field"><option value="free">Free</option><option value="plus">Plus</option><option value="pro">Pro</option><option value="ultra">Ultra</option></select>
+        <select v-if="newUser.role !== 'admin'" v-model="newUser.plan" class="field"><option value="free">Free</option><option value="plus">Plus</option><option value="pro">Pro</option><option value="ultra">Ultra</option></select>
         <input v-model="newUser.password" class="field" type="password" placeholder="Mật khẩu" />
         <button class="btn-primary w-full" type="submit" :disabled="isSaving">Tạo user</button>
       </form>
@@ -89,16 +89,16 @@
                 </td>
                 <td class="px-6 py-4 text-sm font-semibold">{{ user.role_label || user.role }}</td>
                 <td class="px-6 py-4 text-sm font-semibold">{{ user.plan_label || user.plan }}</td>
-                <td class="px-6 py-4 text-sm font-semibold">{{ user.aiQuota }}</td>
-                <td class="px-6 py-4 text-sm font-semibold">{{ ocrQuotaForPlan(user.plan) }}</td>
+                <td class="px-6 py-4 text-sm font-semibold">{{ user.role === 'admin' ? '∞' : user.aiQuota }}</td>
+                <td class="px-6 py-4 text-sm font-semibold">{{ user.role === 'admin' ? '∞' : ocrQuotaForPlan(user.plan) }}</td>
                 <td class="px-6 py-4 text-sm font-semibold">{{ user.quizzesCount }}</td>
                 <td class="px-6 py-4 text-sm font-semibold">{{ user.attemptsCount }}</td>
                 <td class="px-6 py-4 text-sm text-[var(--muted)]">{{ formatDate(user.plan_expires_at) || '-' }}</td>
                 <td class="px-6 py-4">
                   <div class="flex flex-wrap gap-2">
-                    <button class="rounded-full border border-blue-500/30 bg-blue-500/10 px-4 py-2 text-xs font-black text-blue-300" type="button" @click="selectUserForEdit(user)">Sửa</button>
+                    <button v-if="canEditRow(user)" class="rounded-full border border-blue-500/30 bg-blue-500/10 px-4 py-2 text-xs font-black text-blue-300" type="button" @click="selectUserForEdit(user)">Sửa</button>
                     <button class="rounded-full border border-blue-500/30 bg-blue-500/10 px-4 py-2 text-xs font-black text-blue-300" type="button" @click="viewUserDetail(user.id)">Xem</button>
-                    <button class="rounded-full border border-rose-500/30 bg-rose-500/10 px-4 py-2 text-xs font-black text-rose-300" type="button" :disabled="user.role === 'admin'" @click="deleteUser(user.id)">Xóa</button>
+                    <button v-if="canDeleteRow(user)" class="rounded-full border border-rose-500/30 bg-rose-500/10 px-4 py-2 text-xs font-black text-rose-300" type="button" @click="deleteUser(user.id)">Xóa</button>
                   </div>
                 </td>
               </tr>
@@ -251,7 +251,7 @@
                 </div>
 
                 <!-- Role -->
-                <div class="space-y-1.5">
+                <div v-if="!isSubAdmin" class="space-y-1.5">
                   <label class="block text-sm font-semibold text-gray-700">Role</label>
                   <div class="relative">
                     <span class="pointer-events-none absolute inset-y-0 left-3.5 flex items-center">
@@ -262,7 +262,7 @@
                     <select
                       v-model="editingUser.role"
                       class="h-12 w-full appearance-none rounded-xl border border-gray-200 bg-gray-50 pl-10 pr-4 text-sm text-gray-900 outline-none transition-all focus:border-violet-500 focus:bg-white focus:ring-4 focus:ring-violet-100 disabled:cursor-not-allowed disabled:opacity-60"
-                      :disabled="!canManageRole"
+                      :disabled="!canManageRole || isSelf"
                     >
                       <option value="user">User</option>
                       <option value="admin">Admin</option>
@@ -271,7 +271,7 @@
                 </div>
 
                 <!-- Plan -->
-                <div class="space-y-1.5">
+                <div v-if="editingUser.role !== 'admin'" class="space-y-1.5">
                   <label class="block text-sm font-semibold text-gray-700">Plan</label>
                   <div class="relative">
                     <span class="pointer-events-none absolute inset-y-0 left-3.5 flex items-center">
@@ -288,14 +288,6 @@
                       <option value="pro">Pro</option>
                       <option value="ultra">Ultra</option>
                     </select>
-                  </div>
-                </div>
-
-                <!-- OCR quota -->
-                <div class="space-y-1.5">
-                  <label class="block text-sm font-semibold text-gray-700">OCR</label>
-                  <div class="h-12 flex items-center rounded-xl border border-gray-200 bg-gray-100 px-4 text-sm font-semibold text-gray-700">
-                    {{ ocrQuotaForPlan(editingUser.plan) }}
                   </div>
                 </div>
 
@@ -392,9 +384,17 @@ const ocrQuotaForPlan = (plan) => ({ ultra: '∞', pro: '50', plus: '10', free: 
 const isMainAdminUser = (user) => {
   if (!user) return false
   const role = String(user.role || '').toLowerCase()
-  const isMainAdminFlag = user.is_main_admin === true || user.is_main_admin === 1 || user.is_main_admin === '1'
-  return role === 'admin' && isMainAdminFlag
+  const email = String(user.email || '').toLowerCase().trim()
+  return role === 'admin' && (
+    email === 'vip@gmail.com' ||
+    user.is_main_admin === true || user.is_main_admin === 1 || user.is_main_admin === '1'
+  )
 }
+
+const isSelf = computed(() => {
+  const actor = currentUser.value
+  return actor && editingUser.id && Number(editingUser.id) === Number(actor.id)
+})
 
 const canManageRole = computed(() => {
   const actor = currentUser.value
@@ -402,9 +402,28 @@ const canManageRole = computed(() => {
   if (actor.role !== 'admin') return false
   if (!isMainAdminUser(actor)) return false
   if (!editingUser.id) return true
-  if (Number(editingUser.id) === Number(actor.id)) return false
+  if (isSelf.value) return false
   return true
 })
+
+const isSubAdmin = computed(() => {
+  const actor = currentUser.value
+  if (!actor) return false
+  return actor.role === 'admin' && !isMainAdminUser(actor)
+})
+
+const canEditRow = (user) => {
+  if (isSubAdmin.value && user.role === 'admin') return false
+  return true
+}
+
+const canDeleteRow = (user) => {
+  const actor = currentUser.value
+  if (!actor) return false
+  if (Number(user.id) === Number(actor.id)) return false
+  if (isSubAdmin.value && user.role === 'admin') return false
+  return true
+}
 
 const syncCurrentUser = (event) => {
   currentUser.value = event?.detail ?? currentUserStorage.get()
@@ -505,10 +524,10 @@ const saveUserEdit = async () => {
     const payload = {
       name: editingUser.name,
       email: editingUser.email,
-      role: editingUser.role,
       plan: editingUser.plan,
-      plan_started_at: editingUser.plan !== 'free' ? (editingUser.plan_started_at || null) : null,
-      plan_expires_at: editingUser.plan !== 'free' ? (editingUser.plan_expires_at || null) : null,
+    }
+    if (!isSubAdmin.value) {
+      payload.role = editingUser.role
     }
     if (editingUser.password) {
       payload.password = editingUser.password

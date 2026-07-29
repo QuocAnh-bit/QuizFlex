@@ -35,11 +35,7 @@
               </div>
               <div class="rounded-3xl bg-[var(--surface-soft)] p-4">
                 <p class="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">AI còn lại</p>
-                <p class="mt-2 text-lg font-black text-[var(--text)]">{{ user.ai_quota_remaining ?? 0 }} lượt</p>
-              </div>
-              <div class="rounded-3xl bg-[var(--surface-soft)] p-4">
-                <p class="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">OCR hạn mức</p>
-                <p class="mt-2 text-lg font-black text-[var(--text)]">{{ ocrQuotaForPlan(user.plan || user.plan_label?.toLowerCase()) }}</p>
+                <p class="mt-2 text-lg font-black text-[var(--text)]">{{ user.role === 'admin' ? '∞' : (user.ai_quota_remaining ?? 0) + ' lượt' }}</p>
               </div>
               <div class="rounded-3xl bg-[var(--surface-soft)] p-4">
                 <p class="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">Role hiện tại</p>

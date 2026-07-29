@@ -789,7 +789,7 @@ export const normalizeQuizCard = (quiz) => ({
 
 export const normalizeUser = (user) => ({
   ...user,
-  role: String(user.role || "free").toLowerCase(),
+  role: ['admin', 'user'].includes(String(user.role || '').toLowerCase()) ? String(user.role).toLowerCase() : 'user',
   roleLabel:
     user.role_label ||
     { admin: "Admin", plus: "Plus", pro: "Pro", ultra: "Ultra", free: "Free", guest: "Guest" }[
