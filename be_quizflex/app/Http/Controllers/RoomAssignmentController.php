@@ -122,17 +122,11 @@ class RoomAssignmentController extends Controller
         $assignment->load(['quiz.questions.answers']);
         $user = $request->user();
 
-        if ($this->isRoomHost($assignment->room, $user->id)) {
+        $takeAuthorization = Gate::forUser($user)->inspect('takeAssignment', $assignment->room);
+        if ($takeAuthorization->denied()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Chủ phòng không thể làm bài trong phòng của mình.',
-            ], 403);
-        }
-
-        if (!$this->isActiveMember($assignment->room, $user->id)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Bạn chưa là thành viên của phòng này.',
+                'message' => $takeAuthorization->message(),
             ], 403);
         }
 
@@ -277,7 +271,7 @@ class RoomAssignmentController extends Controller
             ->where('assignment_id', $assignment->id)
             ->latest('started_at');
 
-        if (strtolower((string)($user->role ?? '')) === 'admin' || (int) $assignment->room->host_id === (int) $user->id) {
+        if (Gate::forUser($user)->allows('viewAssignmentAttempts', $assignment->room)) {
             $query->where('user_id', '!=', $assignment->room->host_id);
         } else {
             $query->where('user_id', $user->id);
@@ -329,9 +323,9 @@ class RoomAssignmentController extends Controller
         $user = $request->user();
 
         abort_if((int) $attempt->assignment_id !== (int) $assignment->id, 404, 'Không tìm thấy lượt làm bài.');
-        abort_if($this->isRoomHost($assignment->room, $user->id), 403, 'Chủ phòng không thể làm bài trong phòng của mình.');
-        abort_if((int) $attempt->user_id !== (int) $user->id, 403, 'Bạn không có quyền thao tác lượt làm bài này.');
-        abort_if(!$this->isActiveMember($assignment->room, $user->id), 403, 'Bạn chưa là thành viên của phòng này.');
+
+        $attemptAuthorization = Gate::forUser($user)->inspect('useHomeworkAttempt', [$assignment->room, $attempt]);
+        abort_if($attemptAuthorization->denied(), 403, $attemptAuthorization->message());
     }
 
     private function assignmentAvailabilityError(RoomAssignment $assignment): ?string
@@ -379,43 +373,9 @@ class RoomAssignmentController extends Controller
         return $query->latest('started_at')->first();
     }
 
-    private function isActiveMember(Room $room, int $userId): bool
-    {
-        if ($this->isRoomHost($room, $userId)) {
-            return false;
-        }
-
-        return RoomMember::where('room_id', $room->id)
-            ->where('user_id', $userId)
-            ->where('role', 'member')
-            ->where('status', 'active')
-            ->exists();
-    }
-
-    private function isRoomHost(Room $room, int $userId): bool
-    {
-        return (int) $room->host_id === (int) $userId;
-    }
-
     private function canViewResult(RoomAssignment $assignment, QuizAttempt $attempt, $user): bool
     {
-        if (strtolower((string) ($user->role ?? 'user')) === 'admin' || (int) $assignment->room->host_id === (int) $user->id) {
-            return true;
-        }
-
-        if ((int) $attempt->user_id !== (int) $user->id) {
-            return false;
-        }
-
-        if (!in_array($attempt->status, ['completed', 'expired'], true)) {
-            return false;
-        }
-
-        return match ($assignment->show_result_mode) {
-            'immediately' => true,
-            'after_deadline' => $assignment->deadline_at && now()->gte($assignment->deadline_at),
-            default => false,
-        };
+        return Gate::forUser($user)->allows('viewAssignmentAttemptResult', [$assignment->room, $assignment, $attempt]);
     }
 
     private function formatAssignment(RoomAssignment $assignment, $user, bool $includeQuiz = false): array
@@ -444,7 +404,7 @@ class RoomAssignmentController extends Controller
             'shuffle_answers' => $assignment->shuffle_answers,
         ];
 
-        $myAttempts = $this->isRoomHost($assignment->room, $user->id)
+        $myAttempts = Gate::forUser($user)->denies('takeAssignment', $assignment->room)
             ? collect()
             : QuizAttempt::where('assignment_id', $assignment->id)
             ->where('user_id', $user->id)
@@ -589,12 +549,7 @@ class RoomAssignmentController extends Controller
     public function gradebook(Request $request, Room $room)
     {
         $currentUser = $request->user();
-        $isAdmin = strtolower((string) ($currentUser->role ?? 'user')) === 'admin';
-        $isHost = (int) $room->host_id === (int) $currentUser->id;
-
-        if (strtolower((string) ($currentUser->role ?? 'user')) !== 'admin') {
-            Gate::forUser($currentUser)->authorize('update', $room);
-        }
+        Gate::forUser($currentUser)->authorize('viewGradebook', $room);
 
         // Lấy danh sách Assignments theo starts_at hoặc created_at asc
         $assignments = RoomAssignment::where('room_id', $room->id)

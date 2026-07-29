@@ -27,18 +27,11 @@ class LiveRoomController extends Controller
     public function store(Request $request)
     {
         $user = $request->user();
-        if ($this->isAdmin($user)) {
+        $createAuthorization = Gate::forUser($user)->inspect('create', LiveRoom::class);
+        if ($createAuthorization->denied()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Quản trị viên không được phép tạo phòng trực tuyến.',
-            ], 403);
-        }
-
-        $tier = $user->getSubscriptionTier();
-        if (!in_array($tier, ['plus', 'pro', 'ultra'], true)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Tính năng tạo phòng trực tuyến yêu cầu nâng cấp gói Plus trở lên.',
+                'message' => $createAuthorization->message(),
             ], 403);
         }
 
@@ -48,10 +41,11 @@ class LiveRoomController extends Controller
         ]);
 
         $quiz = Quiz::withCount('questions')->findOrFail($data['quiz_id']);
-        if (!$this->canUseQuiz($user, $quiz)) {
+        $quizAuthorization = Gate::forUser($user)->inspect('createFromQuiz', [LiveRoom::class, $quiz]);
+        if ($quizAuthorization->denied()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Ban khong co quyen tao live room tu quiz nay.',
+                'message' => $quizAuthorization->message(),
             ], 403);
         }
 
@@ -85,13 +79,6 @@ class LiveRoomController extends Controller
         ]);
 
         $user = $request->user();
-        if ($this->isAdmin($user)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Tài khoản quản trị viên không thể tham gia phòng trực tuyến với tư cách người chơi.',
-            ], 403);
-        }
-
         $liveRoom = LiveRoom::where('code', strtoupper(trim((string) $data['code'])))->first();
         if (!$liveRoom) {
             return response()->json([
@@ -107,10 +94,11 @@ class LiveRoomController extends Controller
             ], 403);
         }
 
-        if ($this->isHost($user, $liveRoom)) {
+        $joinAuthorization = Gate::forUser($user)->inspect('join', $liveRoom);
+        if ($joinAuthorization->denied()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Host khong the join live room cua chinh minh voi tu cach player.',
+                'message' => $joinAuthorization->message(),
             ], 403);
         }
 
@@ -249,7 +237,7 @@ class LiveRoomController extends Controller
         $user = $request->user();
         Gate::forUser($user)->authorize('view', $liveRoom);
 
-        if ($this->isHost($user, $liveRoom) || $this->isAdmin($user)) {
+        if (Gate::forUser($user)->allows('viewMonitor', $liveRoom)) {
             return response()->json([
                 'success' => true,
                 'message' => 'Du lieu theo doi live room',
@@ -314,10 +302,11 @@ class LiveRoomController extends Controller
         ]);
 
         $user = $request->user();
-        if ($this->isHost($user, $liveRoom)) {
+        $answerAuthorization = Gate::forUser($user)->inspect('answer', $liveRoom);
+        if ($answerAuthorization->denied()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Host khong duoc tra loi cau hoi live room.',
+                'message' => $answerAuthorization->message(),
             ], 403);
         }
 
@@ -555,18 +544,6 @@ class LiveRoomController extends Controller
         return true;
     }
 
-    private function canUseQuiz($user, Quiz $quiz): bool
-    {
-        return (int) $quiz->user_id === (int) $user->id
-            || ((bool) $quiz->is_public && $quiz->status === 'published');
-    }
-
-
-
-    private function isHost($user, LiveRoom $liveRoom): bool
-    {
-        return (int) $liveRoom->host_id === (int) $user->id;
-    }
 
     private function activePlayer(LiveRoom $liveRoom, int $userId): ?LiveRoomPlayer
     {

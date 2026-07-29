@@ -19,10 +19,11 @@ class HomeworkSubmissionEvaluationController extends Controller
 
         // 1. Authorization: Admin, Room Host, or the student themselves
         Gate::forUser($currentUser)->authorize('view', $room);
-        if (strtolower((string) ($currentUser->role ?? 'user')) !== 'admin' && (int) $room->host_id !== (int) $currentUser->id && (int) $submission->user_id !== (int) $currentUser->id) {
+        $viewAuthorization = Gate::forUser($currentUser)->inspect('viewSubmissionEvaluation', [$room, $submission]);
+        if ($viewAuthorization->denied()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Bạn không có quyền xem nhận xét này.',
+                'message' => $viewAuthorization->message(),
             ], 403);
         }
 
