@@ -9,53 +9,67 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('rooms', function (Blueprint $table) {
-            // 1. Drop khóa ngoại cũ nếu tồn tại
-            if (Schema::getConnection()->getDriverName() === 'mysql') {
-                $foreignKeys = $this->getForeignKeys('rooms');
-                if (in_array('rooms_owner_id_foreign', $foreignKeys)) {
+        // 1. Drop khóa ngoại cũ nếu tồn tại
+        if (Schema::getConnection()->getDriverName() === 'mysql') {
+            $foreignKeys = $this->getForeignKeys('rooms');
+            if (in_array('rooms_owner_id_foreign', $foreignKeys)) {
+                Schema::table('rooms', function (Blueprint $table) {
                     $table->dropForeign('rooms_owner_id_foreign');
-                }
+                });
             }
+        }
 
-            // 2. Đổi tên cột owner_id sang host_id
-            if (Schema::hasColumn('rooms', 'owner_id')) {
+        // 2. Nếu đã có cả host_id và owner_id:
+        // Copy giá trị từ owner_id sang host_id (nếu cần) rồi xóa owner_id đi
+        if (Schema::hasColumn('rooms', 'host_id') && Schema::hasColumn('rooms', 'owner_id')) {
+            DB::table('rooms')
+                ->whereNull('host_id')
+                ->update(['host_id' => DB::raw('owner_id')]);
+
+            Schema::table('rooms', function (Blueprint $table) {
+                $table->dropColumn('owner_id');
+            });
+        } 
+        // 3. Nếu chỉ có owner_id mà chưa có host_id (trường hợp đổi tên cũ):
+        // Đổi tên owner_id thành host_id
+        elseif (Schema::hasColumn('rooms', 'owner_id') && !Schema::hasColumn('rooms', 'host_id')) {
+            Schema::table('rooms', function (Blueprint $table) {
                 $table->renameColumn('owner_id', 'host_id');
-            }
-        });
+            });
+        }
 
-        Schema::table('rooms', function (Blueprint $table) {
-            // 3. Tạo lại khóa ngoại mới trên host_id
-            $table->foreign('host_id')
-                ->references('id')
-                ->on('users')
-                ->cascadeOnUpdate()
-                ->cascadeOnDelete();
-        });
+        // 4. Đảm bảo khóa ngoại fk_rooms_host_id tồn tại hoặc tạo lại nếu chưa có
+        if (Schema::getConnection()->getDriverName() === 'mysql') {
+            $foreignKeys = $this->getForeignKeys('rooms');
+            if (!in_array('fk_rooms_host_id', $foreignKeys)) {
+                Schema::table('rooms', function (Blueprint $table) {
+                    $table->foreign('host_id')
+                        ->references('id')
+                        ->on('users')
+                        ->cascadeOnUpdate()
+                        ->cascadeOnDelete();
+                });
+            }
+        }
     }
 
     public function down(): void
     {
-        Schema::table('rooms', function (Blueprint $table) {
-            if (Schema::getConnection()->getDriverName() === 'mysql') {
-                $foreignKeys = $this->getForeignKeys('rooms');
-                if (in_array('rooms_host_id_foreign', $foreignKeys)) {
-                    $table->dropForeign('rooms_host_id_foreign');
-                }
-            }
+        if (!Schema::hasColumn('rooms', 'owner_id')) {
+            Schema::table('rooms', function (Blueprint $table) {
+                $table->unsignedBigInteger('owner_id')->nullable()->after('id')->index();
+            });
 
-            if (Schema::hasColumn('rooms', 'host_id')) {
-                $table->renameColumn('host_id', 'owner_id');
-            }
-        });
+            DB::table('rooms')->update(['owner_id' => DB::raw('host_id')]);
 
-        Schema::table('rooms', function (Blueprint $table) {
-            $table->foreign('owner_id')
-                ->references('id')
-                ->on('users')
-                ->cascadeOnUpdate()
-                ->cascadeOnDelete();
-        });
+            Schema::table('rooms', function (Blueprint $table) {
+                $table->foreign('owner_id')
+                    ->references('id')
+                    ->on('users')
+                    ->cascadeOnUpdate()
+                    ->cascadeOnDelete();
+            });
+        }
     }
 
     private function getForeignKeys(string $table): array
