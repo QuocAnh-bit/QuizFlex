@@ -1133,6 +1133,16 @@ const exportGradebookExcel = async () => {
   }
 }
 
+const parseAllowedEmails = () => {
+  const text = allowedEmailText.value || ''
+  const rawEmails = text.split(/[\s,;\n]+/)
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
+  const validEmails = rawEmails
+    .map(email => email.trim().toLowerCase())
+    .filter(email => email && emailRegex.test(email))
+  return [...new Set(validEmails)]
+}
+
 const extractEmailsFromText = (text) => {
   const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g
   const matchedEmails = text.match(emailRegex) || []
