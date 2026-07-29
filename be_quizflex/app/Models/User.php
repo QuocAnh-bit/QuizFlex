@@ -2,105 +2,123 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use PHPOpenSourceSaver\JWTAuth\Contracts\JWTSubject;
 
-#[Fillable(['name', 'email', 'password', 'role', 'avatar', 'ai_quota_remaining', 'vip_expires_at', 'trial_used_at'])]
-#[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements JWTSubject
 {
-    /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable,SoftDeletes;
+    use HasFactory, Notifiable, SoftDeletes;
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    public function quizzes()
-    {
-        return $this->hasMany(Quiz::class);
-    }
+    protected $fillable = [
+        'name', 'email', 'password', 'role', 'avatar',
+        'ai_quota_remaining', 'vip_expires_at', 'trial_used_at',
+        'plan', 'plan_started_at', 'plan_expires_at', 'is_main_admin',
+    ];
 
-    public function attempts()
-    {
-        return $this->hasMany(QuizAttempt::class);
-    }
-
-    public function hostedRooms()
-    {
-        return $this->hasMany(Room::class, 'host_id');
-    }
-
-    public function roomMemberships()
-    {
-        return $this->hasMany(RoomMember::class);
-    }
-
-    public function payments()
-    {
-        return $this->hasMany(Payment::class);
-    }
+    protected $hidden = ['password', 'remember_token'];
 
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-            'vip_expires_at' => 'datetime',
-            'trial_used_at' => 'datetime',
+            'password'          => 'hashed',
+            'vip_expires_at'    => 'datetime',
+            'trial_used_at'     => 'datetime',
+            'plan_started_at'   => 'datetime',
+            'plan_expires_at'   => 'datetime',
+            'is_main_admin'     => 'boolean',
         ];
     }
 
-    /**
-     * Lấy cấp độ subscription thực tế của người dùng (tính toán động theo ngày hết hạn).
-     */
-    public function getSubscriptionTier(): string
+    // ─── Relations ───────────────────────────────────────────────────────────
+
+    public function quizzes()         { return $this->hasMany(Quiz::class); }
+    public function attempts()        { return $this->hasMany(QuizAttempt::class); }
+    public function ownedRooms()      { return $this->hasMany(Room::class, 'owner_id'); }
+    public function hostedRooms()     { return $this->hasMany(Room::class, 'host_id'); }
+    public function roomMemberships() { return $this->hasMany(RoomMember::class); }
+    public function payments()        { return $this->hasMany(Payment::class); }
+
+    // ─── Helpers ─────────────────────────────────────────────────────────────
+
+    /** Role hệ thống: 'admin' | 'free' | 'plus' | 'pro' | 'ultra' */
+    public function getRole(): string
     {
-        if (strtolower($this->role) === 'admin') {
+        $role = strtolower(trim((string) ($this->role ?? '')));
+
+        if ($role === '' || in_array($role, ['user', 'guest', 'member', 'basic', 'default'], true)) {
+            return 'free';
+        }
+
+        if ($role === 'administrator') {
             return 'admin';
         }
 
-        if ($this->vip_expires_at && \Carbon\Carbon::parse($this->vip_expires_at)->isFuture()) {
-            $role = strtolower($this->role);
-            return $role === 'free' ? 'plus' : $role;
+        return in_array($role, ['admin', 'free', 'plus', 'pro', 'ultra'], true)
+            ? $role
+            : 'free';
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->getRole() === 'admin';
+    }
+
+    public function isMainAdmin(): bool
+    {
+        return $this->isAdmin() && (bool) $this->is_main_admin;
+    }
+
+    /**
+     * Plan hiện tại (tính toán động, tự reset nếu hết hạn).
+     * Trả về: 'free' | 'plus' | 'pro' | 'ultra'
+     */
+    public function getActivePlan(): string
+    {
+        $plan = strtolower($this->plan ?? 'free');
+
+        if ($plan === 'free') {
+            return 'free';
         }
 
-        // Hết hạn VIP: tự động cập nhật role cột trong CSDL về FREE
-        if (in_array(strtoupper($this->role), ['PLUS', 'PRO', 'ULTRA'])) {
-            $this->role = 'FREE';
-            $this->save();
+        if ($this->plan_expires_at && $this->plan_expires_at->isFuture()) {
+            return $plan;
         }
+
+        // Hết hạn → reset về free
+        $this->plan            = 'free';
+        $this->plan_started_at = null;
+        $this->plan_expires_at = null;
+        $this->save();
 
         return 'free';
     }
 
     /**
-     * Get the identifier that will be stored in the subject claim of the JWT.
-     *
-     * @return mixed
+     * Giữ tương thích ngược với code cũ dùng getSubscriptionTier().
      */
+    public function getSubscriptionTier(): string
+    {
+        if ($this->isAdmin()) {
+            return 'admin';
+        }
+
+        return $this->getActivePlan();
+    }
+
+    // ─── JWT ─────────────────────────────────────────────────────────────────
+
     public function getJWTIdentifier()
     {
         return $this->getKey();
     }
 
-    /**
-     * Return a key value array, containing any custom claims to be added to the JWT.
-     *
-     * @return array
-     */
-    public function getJWTCustomClaims()
+    public function getJWTCustomClaims(): array
     {
-        return [
-            'role' => $this->role,
-        ];
+        return ['role' => $this->getRole()];
     }
 }

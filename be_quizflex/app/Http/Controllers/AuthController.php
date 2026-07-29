@@ -279,10 +279,20 @@ class AuthController extends Controller
 
     private function roleValueForDatabase(string $role): string
     {
-        $role = strtoupper($role);
+        $normalized = strtolower(trim($role));
+
+        if ($normalized === '' || in_array($normalized, ['user', 'guest', 'member', 'basic', 'default'], true)) {
+            return 'free';
+        }
+
+        if ($normalized === 'administrator') {
+            return 'admin';
+        }
+
+        $role = strtoupper($normalized);
 
         if (!Schema::hasColumn('users', 'role')) {
-            return $role;
+            return strtolower($role);
         }
 
         try {
@@ -300,7 +310,7 @@ class AuthController extends Controller
             // Fall back to the migration-defined uppercase enum values.
         }
 
-        return $role;
+        return strtolower($role);
     }
 
     private function defaultAiQuotaForRole(string $role): int
