@@ -19,12 +19,12 @@ class HomeworkRoomMemberEvaluationController extends Controller
     {
         $currentUser = $request->user();
 
-        // 1. Authorization check: Admin, Room Host, or the user themselves
         Gate::forUser($currentUser)->authorize('view', $room);
-        if (strtolower((string) ($currentUser->role ?? 'user')) !== 'admin' && (int) $room->host_id !== (int) $currentUser->id && (int) $user->id !== (int) $currentUser->id) {
+        $viewAuthorization = Gate::forUser($currentUser)->inspect('viewMemberEvaluation', [$room, $user]);
+        if ($viewAuthorization->denied()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Bạn không có quyền xem đánh giá này.',
+                'message' => $viewAuthorization->message(),
             ], 403);
         }
 

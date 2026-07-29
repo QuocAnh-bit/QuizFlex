@@ -27,7 +27,7 @@ class RoomController extends Controller
             ->where('type', 'homework')
             ->latest();
 
-        if (!$this->isAdmin($user)) {
+        if (Gate::forUser($user)->denies('viewAnyAdminScope', Room::class)) {
             $query->where(function ($roomQuery) use ($user) {
                 $roomQuery->where('host_id', $user->id)
                     ->orWhereHas('members', function ($memberQuery) use ($user) {
@@ -47,12 +47,13 @@ class RoomController extends Controller
     public function store(Request $request)
     {
         $user = $request->user();
-        if (!$this->canCreateRoom($user)) {
+        $createAuthorization = Gate::forUser($user)->inspect('create', Room::class);
+        if ($createAuthorization->denied()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Tính năng tạo phòng yêu cầu tài khoản VIP.',
+                'message' => $createAuthorization->message(),
             ], 403);
-        }   
+        }
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -175,24 +176,11 @@ class RoomController extends Controller
 
         $user = $request->user();
 
-        if ($this->isAdmin($user)) {
+        $joinAuthorization = Gate::forUser($user)->inspect('join', $room);
+        if ($joinAuthorization->denied()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Tài khoản quản trị viên không thể tham gia phòng học với tư cách học sinh.',
-            ], 403);
-        }
-
-        if (!$this->isRoomActive($room)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Phòng này không còn hoạt động.',
-            ], 422);
-        }
-
-        if ((int) $room->host_id === (int) $user->id) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Chủ phòng không cần tham gia phòng của chính mình.',
+                'message' => $joinAuthorization->message(),
             ], 403);
         }
 
@@ -518,10 +506,11 @@ class RoomController extends Controller
             ], 422);
         }
 
-        if ((int) $room->host_id === (int) $user->id) {
+        $leaveAuthorization = Gate::forUser($user)->inspect('leave', $room);
+        if ($leaveAuthorization->denied()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Chủ phòng không thể rời phòng của chính mình.',
+                'message' => $leaveAuthorization->message(),
             ], 422);
         }
 
@@ -715,34 +704,6 @@ class RoomController extends Controller
         ]);
     }
 
-    private function canCreateRoom($user): bool
-    {
-        if ($this->isAdmin($user)) {
-            return false;
-        }
-
-    if (!method_exists($user, 'getSubscriptionTier')) {
-        return false;
-    }
-
-    $tier = strtolower((string) $user->getSubscriptionTier());
-
-    return in_array(
-        $tier,
-        ['plus', 'pro', 'ultra'],
-        true
-    );
-}
-
-    private function isRoomActive(Room $room): bool
-    {
-        return $room->status === 'active';
-    }
-
-    private function isAdmin($user): bool
-    {
-        return strtolower((string) ($user->role ?? 'user')) === 'admin';
-    }
 
     private function usesEmailWhitelist(Room $room): bool
     {
