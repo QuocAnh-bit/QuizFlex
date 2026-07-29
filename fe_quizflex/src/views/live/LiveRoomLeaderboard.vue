@@ -15,6 +15,10 @@
 
     <div v-if="errorMessage" class="rounded-[2rem] border border-rose-500/30 bg-rose-500/10 p-5 text-sm font-bold text-rose-300">{{ errorMessage }}</div>
 
+    <div v-if="isBanned" class="rounded-[2rem] border border-rose-500/30 bg-rose-500/10 p-5 text-sm font-bold text-rose-300">
+      Phòng đã bị quản trị viên khóa và hiện không thể sử dụng.
+    </div>
+
     <div v-if="leaderboard.length">
       <!-- Bục danh dự (Podium) cho Top 3 -->
       <div class="podium-container flex flex-col md:flex-row items-end justify-center gap-6 mb-8 mt-6">
@@ -142,9 +146,11 @@ import { liveRoomApi } from '@/services/api'
 const route = useRoute()
 const liveRoomId = computed(() => route.params.liveRoomId)
 const leaderboard = ref([])
+const liveRoom = ref(null)
 const isLoading = ref(false)
 const errorMessage = ref('')
 const lastRealtimeAt = ref(0)
+const isBanned = computed(() => liveRoom.value?.status === 'banned' || errorMessage.value.includes('khóa bởi quản trị viên'))
 let pollTimer = null
 let liveChannel = null
 const realtimeFreshMs = 8000
@@ -238,6 +244,13 @@ const leaveRealtime = () => {
 
 onMounted(async () => {
   subscribeToRealtime()
+  try {
+    liveRoom.value = await liveRoomApi.getLiveRoom(liveRoomId.value)
+  } catch (error) {
+    if (error.response?.status === 403) {
+      errorMessage.value = error.message || 'Phòng trực tuyến này đã bị khóa.'
+    }
+  }
   await loadLeaderboard(true)
   pollTimer = setInterval(loadLeaderboard, 15000)
 })

@@ -403,12 +403,10 @@ const prepareQuizPayload = (payload) =>
 export const quizzesApi = {
   async list(params = {}) {
     const { data } = await api.get("/quizzes", { params });
-    
     return unwrapCollection(data);
   },
 
   async get(id) {
-    // hàm này sẽ thực hiện cuộc gọi api lên server backend và đóng gói dữ liệu dưới dạng json
     const { data } = await api.get(`/quizzes/${id}`);
     return unwrap(data);
   },
@@ -429,32 +427,90 @@ export const quizzesApi = {
 
     if (body instanceof FormData) {
       body.append("_method", "PUT");
-      const { data } = await api.post(`/quizzes/${id}`, body);
+
+      const { data } = await api.post(
+        `/quizzes/${id}`,
+        body
+      );
+
       return unwrap(data);
     }
 
-    const { data } = await api.put(`/quizzes/${id}`, body);
+    const { data } = await api.put(
+      `/quizzes/${id}`,
+      body
+    );
+
     return unwrap(data);
   },
 
+
+  // USER XÓA MỀM
   async remove(id) {
     const { data } = await api.delete(`/quizzes/${id}`);
     return data;
   },
+
+
+  // USER + ADMIN xem thùng rác quiz của mình
+async trash() {
+    const { data } = await api.get(
+      "/quizzes/trash"
+    );
+
+    return unwrapCollection(data);
+},
+
+async restore(id) {
+    const { data } = await api.patch(
+      `/quizzes/${id}/restore`
+    );
+
+    return unwrap(data);
+},
+
+
+  // ADMIN XÓA VĨNH VIỄN
+  async forceDelete(id) {
+    const { data } = await api.delete(
+      `/quizzes/${id}/force-delete`
+    );
+
+    return data;
+},
+// ADMIN xem thùng rác quiz admin tạo
+async adminTrash() {
+    const { data } = await api.get("/admin/quizzes/trash");
+    return unwrapCollection(data);
+},
+
+
+  // ADMIN ẨN / HIỆN
   async toggleVisibility(id) {
     const { data } = await api.patch(
       `/admin/quizzes/${id}/toggle-visibility`
-    )
-    return data
-  },
+    );
 
-  async startAttempt(id, payload = {}) {
-    const { data } = await api.post(`/quizzes/${id}/attempts/start`, payload);
     return unwrap(data);
   },
 
+
+  async startAttempt(id, payload = {}) {
+    const { data } = await api.post(
+      `/quizzes/${id}/attempts/start`,
+      payload
+    );
+
+    return unwrap(data);
+  },
+
+
   async submitAttempt(id, payload) {
-    const { data } = await api.post(`/quizzes/${id}/attempts/submit`, payload);
+    const { data } = await api.post(
+      `/quizzes/${id}/attempts/submit`,
+      payload
+    );
+
     return unwrap(data);
   },
 };
@@ -494,15 +550,7 @@ export const adminRoomApi = {
     return unwrap(data);
   },
 
-  async closeHomeworkRoom(id) {
-    const { data } = await api.patch(`/admin/rooms/homework/${id}/close`);
-    return unwrap(data);
-  },
 
-  async reopenHomeworkRoom(id) {
-    const { data } = await api.patch(`/admin/rooms/homework/${id}/open`);
-    return unwrap(data);
-  },
 
   async softDeleteHomeworkRoom(id) {
     const { data } = await api.delete(`/admin/rooms/homework/${id}`);
@@ -536,10 +584,7 @@ export const adminRoomApi = {
     return unwrap(data);
   },
 
-  async closeLiveRoom(id) {
-    const { data } = await api.patch(`/admin/rooms/live/${id}/close`);
-    return unwrap(data);
-  },
+
 
   async softDeleteLiveRoom(id) {
     const { data } = await api.delete(`/admin/rooms/live/${id}`);
@@ -551,20 +596,45 @@ export const adminRoomApi = {
     return unwrap(data);
   },
 
-    
+  async banHomeworkRoom(id) {
+    const { data } = await api.post(`/admin/rooms/homework/${id}/ban`);
+    return unwrap(data);
+  },
+
+  async unbanHomeworkRoom(id) {
+    const { data } = await api.post(`/admin/rooms/homework/${id}/unban`);
+    return unwrap(data);
+  },
+
+  async banLiveRoom(id) {
+    const { data } = await api.post(`/admin/rooms/live/${id}/ban`);
+    return unwrap(data);
+  },
+
+  async unbanLiveRoom(id) {
+    const { data } = await api.post(`/admin/rooms/live/${id}/unban`);
+    return unwrap(data);
+  },
+
+  async forceDeleteHomework(id) {
+    const { data } = await api.delete(`/admin/rooms/homework/${id}/force`);
+    return data;
+  },
 };
 
 export const adminRoomsApi = {
   listHomework: adminRoomApi.getHomeworkRooms,
   getHomework: adminRoomApi.getHomeworkRoomDetail,
-  closeHomework: adminRoomApi.closeHomeworkRoom,
-  reopenHomework: adminRoomApi.reopenHomeworkRoom,
   softDeleteHomework: adminRoomApi.softDeleteHomeworkRoom,
   removeHomeworkMember: adminRoomApi.removeHomeworkRoomMember,
+  banHomework: adminRoomApi.banHomeworkRoom,
+  unbanHomework: adminRoomApi.unbanHomeworkRoom,
+  forceDeleteHomework: adminRoomApi.forceDeleteHomework,
   listLive: adminRoomApi.getLiveRooms,
   getLive: adminRoomApi.getLiveRoomDetail,
-  closeLive: adminRoomApi.closeLiveRoom,
   softDeleteLive: adminRoomApi.softDeleteLiveRoom,
+  banLive: adminRoomApi.banLiveRoom,
+  unbanLive: adminRoomApi.unbanLiveRoom,
 };
 
 export const aiQuizApi = {
@@ -604,8 +674,8 @@ export const homeworkApi = {
     return unwrap(data);
   },
 
-  async getRoomMembers(roomId) {
-    const { data } = await api.get(`/rooms/${roomId}/members`);
+  async getRoomMembers(roomId, params = {}) {
+    const { data } = await api.get(`/rooms/${roomId}/members`, { params });
     return unwrapCollection(data);
   },
 
@@ -665,6 +735,20 @@ export const homeworkApi = {
     return data;
   },
 
+  async removeAllowedMembersBatch(roomId, ids) {
+    const { data } = await api.delete(`/homework-rooms/${roomId}/allowed-members`, {
+      data: { ids }
+    });
+    return data;
+  },
+
+  async clearAllowedMembers(roomId) {
+    const { data } = await api.delete(`/homework-rooms/${roomId}/allowed-members`, {
+      data: { clear_all: true }
+    });
+    return data;
+  },
+
   async getRoomAssignments(roomId) {
     const { data } = await api.get(`/rooms/${roomId}/assignments`);
     return unwrapCollection(data);
@@ -710,6 +794,33 @@ export const homeworkApi = {
       body,
     );
     return unwrap(data);
+  },
+
+  async resetRoomAssignmentAttempt(assignmentId, attemptId) {
+    const { data } = await api.post(
+      `/room-assignments/${assignmentId}/attempts/${attemptId}/reset`,
+    );
+    return unwrap(data);
+  },
+
+  async fetchRoomGradebook(roomId) {
+    const { data } = await api.get(`/rooms/${roomId}/gradebook`);
+    return unwrap(data);
+  },
+
+  async approveRoomMember(roomId, memberId) {
+    const { data } = await api.post(`/rooms/${roomId}/members/${memberId}/approve`);
+    return unwrap(data);
+  },
+
+  async rejectRoomMember(roomId, memberId) {
+    const { data } = await api.post(`/rooms/${roomId}/members/${memberId}/reject`);
+    return unwrap(data);
+  },
+
+  async dissolveHomeworkRoom(roomId) {
+    const { data } = await api.delete(`/rooms/${roomId}/dissolve`);
+    return data;
   },
 };
 
@@ -1001,6 +1112,7 @@ export const notificationApi = {
     const { data } = await api.put("/notifications/read-all");
     return data;
   },
+ 
 };
 
 export default api;

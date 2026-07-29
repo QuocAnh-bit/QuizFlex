@@ -34,9 +34,9 @@ class User extends Authenticatable implements JWTSubject
         return $this->hasMany(QuizAttempt::class);
     }
 
-    public function ownedRooms()
+    public function hostedRooms()
     {
-        return $this->hasMany(Room::class, 'owner_id');
+        return $this->hasMany(Room::class, 'host_id');
     }
 
     public function roomMemberships()

@@ -49,11 +49,10 @@
         <select v-model="homeworkFilters.status" class="field" :disabled="viewMode === 'trash'">
           <option value="">Tất cả trạng thái</option>
           <option value="open">Hoạt động</option>
-          <option value="waiting">Đang chờ</option>
-          <option value="closed">Đã đóng</option>
+          <option value="banned">Bị khóa (Banned)</option>
           <option value="removed" v-if="viewMode === 'trash'">Đã xóa</option>
         </select>
-        <input v-model="homeworkFilters.owner_id" class="field" type="number" min="1" placeholder="Owner ID" />
+        <input v-model="homeworkFilters.host_id" class="field" type="number" min="1" placeholder="Host ID" />
         <input v-model="homeworkFilters.created_from" class="field" type="date" />
         <input v-model="homeworkFilters.created_to" class="field" type="date" />
         <div class="flex gap-2">
@@ -69,26 +68,26 @@
         Đang tải Homework Rooms...
       </div>
       <div v-else class="mt-5 overflow-x-auto scrollbar-soft">
-        <table class="min-w-[1180px] w-full border-separate border-spacing-y-2 text-left text-sm">
+        <table class="min-w-[850px] w-full border-separate border-spacing-y-2 text-left text-sm">
           <thead class="text-xs font-black uppercase tracking-[0.12em] text-[var(--muted)]">
             <tr v-if="viewMode === 'trash'">
               <th class="px-3 py-2">ID</th>
               <th class="px-3 py-2">Tên phòng</th>
-              <th class="px-3 py-2">Chủ room</th>
-              <th class="px-3 py-2">Ngày tạo</th>
-              <th class="px-3 py-2">Ngày xóa</th>
+              <th class="px-3 py-2">Host</th>
+              <th class="px-3 py-2 hidden lg:table-cell">Ngày tạo</th>
+              <th class="px-3 py-2 hidden md:table-cell">Ngày xóa</th>
               <th class="px-3 py-2 text-right">Hành động</th>
             </tr>
             <tr v-else>
               <th class="px-3 py-2">ID</th>
               <th class="px-3 py-2">Tên phòng</th>
               <th class="px-3 py-2">Mã phòng</th>
-              <th class="px-3 py-2">Chủ room</th>
-              <th class="px-3 py-2">Email chủ room</th>
+              <th class="px-3 py-2">Host</th>
+              <th class="px-3 py-2 hidden md:table-cell">Email Host</th>
               <th class="px-3 py-2">Thành viên</th>
               <th class="px-3 py-2">Assignment</th>
               <th class="px-3 py-2">Trạng thái</th>
-              <th class="px-3 py-2">Ngày tạo</th>
+              <th class="px-3 py-2 hidden lg:table-cell">Ngày tạo</th>
               <th class="px-3 py-2 text-right">Hành động</th>
             </tr>
           </thead>
@@ -96,13 +95,16 @@
             <tr v-for="room in homeworkState.items" :key="room.id" class="rounded-[1.25rem] bg-[var(--surface-soft)] text-[var(--text)]">
               <td class="rounded-l-[1.25rem] px-3 py-4 font-black">#{{ room.id }}</td>
               <td class="px-3 py-4 font-bold">{{ room.name || 'Chưa đặt tên' }}</td>
-              <td class="px-3 py-4">{{ room.owner?.name || 'Không rõ' }}</td>
-              <td class="px-3 py-4 text-[var(--muted)]">{{ formatDate(room.created_at) }}</td>
-              <td class="px-3 py-4 text-[var(--muted)]">{{ formatDateTime(room.deleted_at) }}</td>
+              <td class="px-3 py-4">{{ room.host?.name || 'Không rõ' }}</td>
+              <td class="px-3 py-4 text-[var(--muted)] hidden lg:table-cell">{{ formatDate(room.created_at) }}</td>
+              <td class="px-3 py-4 text-[var(--muted)] hidden md:table-cell">{{ formatDateTime(room.deleted_at) }}</td>
               <td class="rounded-r-[1.25rem] px-3 py-4">
                 <div class="flex justify-end gap-2">
                   <button class="btn-ghost px-4 py-2 font-black text-[var(--primary)] hover:bg-[var(--surface)] border border-[var(--border)] rounded-full transition" type="button" :disabled="roomActionLoading === `homework:${room.id}`" @click="restoreHomeworkRoom(room)">
                     {{ roomActionLoading === `homework:${room.id}` ? 'Đang khôi phục...' : 'Khôi phục' }}
+                  </button>
+                  <button class="btn-ghost px-4 py-2 font-black text-rose-400 hover:bg-rose-500/10 border border-rose-500/20 rounded-full transition" type="button" :disabled="roomActionLoading === `homework:${room.id}`" @click="forceDeleteHomeworkRoom(room)">
+                    Xóa vĩnh viễn
                   </button>
                 </div>
               </td>
@@ -113,29 +115,38 @@
               <td class="rounded-l-[1.25rem] px-3 py-4 font-black">#{{ room.id }}</td>
               <td class="px-3 py-4 font-bold">{{ room.name || 'Chưa đặt tên' }}</td>
               <td class="px-3 py-4"><span class="badge">{{ room.code || '-' }}</span></td>
-              <td class="px-3 py-4">{{ room.owner?.name || 'Không rõ' }}</td>
-              <td class="px-3 py-4 text-[var(--muted)]">{{ room.owner?.email || '-' }}</td>
+              <td class="px-3 py-4">{{ room.host?.name || 'Không rõ' }}</td>
+              <td class="px-3 py-4 text-[var(--muted)] hidden md:table-cell">{{ room.host?.email || '-' }}</td>
               <td class="px-3 py-4 font-black">{{ formatNumber(room.member_count) }}</td>
               <td class="px-3 py-4 font-black">{{ formatNumber(room.assignment_count) }}</td>
               <td class="px-3 py-4"><StatusPill :label="homeworkStatusLabel(room.status)" /></td>
-              <td class="px-3 py-4 text-[var(--muted)]">{{ formatDate(room.created_at) }}</td>
+              <td class="px-3 py-4 text-[var(--muted)] hidden lg:table-cell">{{ formatDate(room.created_at) }}</td>
               <td class="rounded-r-[1.25rem] px-3 py-4">
                 <div class="flex justify-end gap-2">
                   <button class="btn-ghost px-4 py-2" type="button" @click="openHomeworkDetail(room.id)">Chi tiết</button>
-                  <details class="relative">
-                    <summary class="list-none rounded-full border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-xs font-black text-[var(--text)] transition hover:border-[var(--border-strong)] hover:text-[var(--primary)]">Quản lý</summary>
-                    <div class="absolute right-0 z-20 mt-2 grid min-w-44 gap-1 rounded-2xl border border-[var(--border)] bg-[var(--surface-strong)] p-2 shadow-[var(--shadow-card)]">
-                      <button v-if="String(room.status).toLowerCase() === 'open'" class="rounded-xl px-3 py-2 text-left text-xs font-black text-[var(--text)] hover:bg-[var(--surface-soft)] disabled:opacity-50" type="button" :disabled="roomActionLoading === `homework:${room.id}`" @click="closeHomeworkRoom(room)">
-                        Đóng phòng
+                  <div class="relative inline-block text-left">
+                    <button
+                      type="button"
+                      class="dropdown-trigger rounded-full border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-xs font-black text-[var(--text)] transition hover:border-[var(--border-strong)] hover:text-[var(--primary)]"
+                      @click="toggleDropdown(`homework:${room.id}`)"
+                    >
+                      Quản lý
+                    </button>
+                    <div
+                      v-if="activeDropdown === `homework:${room.id}`"
+                      class="dropdown-menu absolute right-0 z-20 mt-2 grid min-w-44 gap-1 rounded-2xl border border-[var(--border)] bg-[var(--surface-strong)] p-2 shadow-[var(--shadow-card)]"
+                    >
+                      <button v-if="String(room.status).toLowerCase() === 'banned'" class="rounded-xl px-3 py-2 text-left text-xs font-black text-emerald-400 hover:bg-emerald-500/10 disabled:opacity-50" type="button" :disabled="roomActionLoading === `homework:${room.id}`" @click="unbanHomeworkRoom(room); activeDropdown = null">
+                        Mở khóa phòng
                       </button>
-                      <button v-else-if="String(room.status).toLowerCase() === 'closed'" class="rounded-xl px-3 py-2 text-left text-xs font-black text-[var(--text)] hover:bg-[var(--surface-soft)] disabled:opacity-50" type="button" :disabled="roomActionLoading === `homework:${room.id}`" @click="reopenHomeworkRoom(room)">
-                        Mở phòng
+                      <button v-else class="rounded-xl px-3 py-2 text-left text-xs font-black text-amber-400 hover:bg-amber-500/10 disabled:opacity-50" type="button" :disabled="roomActionLoading === `homework:${room.id}`" @click="banHomeworkRoom(room); activeDropdown = null">
+                        Khóa phòng (Ban)
                       </button>
-                      <button class="rounded-xl px-3 py-2 text-left text-xs font-black text-rose-300 hover:bg-rose-500/10 disabled:opacity-50" type="button" :disabled="roomActionLoading === `homework:${room.id}` || String(room.status).toLowerCase() === 'removed'" @click="softDeleteHomeworkRoom(room)">
+                      <button class="rounded-xl px-3 py-2 text-left text-xs font-black text-rose-300 hover:bg-rose-500/10 disabled:opacity-50" type="button" :disabled="roomActionLoading === `homework:${room.id}` || ['removed', 'banned'].includes(String(room.status).toLowerCase())" @click="softDeleteHomeworkRoom(room); activeDropdown = null">
                         Xóa phòng
                       </button>
                     </div>
-                  </details>
+                  </div>
                 </div>
               </td>
             </tr>
@@ -154,6 +165,7 @@
           <option value="waiting">Đang chờ</option>
           <option value="playing">Đang diễn ra</option>
           <option value="finished">Đã kết thúc</option>
+          <option value="banned">Bị khóa (Banned)</option>
           <option value="removed" v-if="viewMode === 'trash'">Đã xóa</option>
         </select>
         <input v-model="liveFilters.host_id" class="field" type="number" min="1" placeholder="Host ID" />
@@ -172,14 +184,14 @@
         Đang tải Live Rooms...
       </div>
       <div v-else class="mt-5 overflow-x-auto scrollbar-soft">
-        <table class="min-w-[1320px] w-full border-separate border-spacing-y-2 text-left text-sm">
+        <table class="min-w-[950px] w-full border-separate border-spacing-y-2 text-left text-sm">
           <thead class="text-xs font-black uppercase tracking-[0.12em] text-[var(--muted)]">
             <tr v-if="viewMode === 'trash'">
               <th class="px-3 py-2">ID</th>
               <th class="px-3 py-2">Tên live room</th>
               <th class="px-3 py-2">Host</th>
-              <th class="px-3 py-2">Tạo lúc</th>
-              <th class="px-3 py-2">Ngày xóa</th>
+              <th class="px-3 py-2 hidden lg:table-cell">Tạo lúc</th>
+              <th class="px-3 py-2 hidden md:table-cell">Ngày xóa</th>
               <th class="px-3 py-2 text-right">Hành động</th>
             </tr>
             <tr v-else>
@@ -187,13 +199,13 @@
               <th class="px-3 py-2">Tên live room</th>
               <th class="px-3 py-2">Mã phòng</th>
               <th class="px-3 py-2">Host</th>
-              <th class="px-3 py-2">Email host</th>
+              <th class="px-3 py-2 hidden xl:table-cell">Email host</th>
               <th class="px-3 py-2">Quiz</th>
               <th class="px-3 py-2">Player</th>
               <th class="px-3 py-2">Trạng thái</th>
-              <th class="px-3 py-2">Tạo lúc</th>
-              <th class="px-3 py-2">Bắt đầu</th>
-              <th class="px-3 py-2">Kết thúc</th>
+              <th class="px-3 py-2 hidden lg:table-cell">Tạo lúc</th>
+              <th class="px-3 py-2 hidden lg:table-cell">Bắt đầu</th>
+              <th class="px-3 py-2 hidden lg:table-cell">Kết thúc</th>
               <th class="px-3 py-2 text-right">Hành động</th>
             </tr>
           </thead>
@@ -202,8 +214,8 @@
               <td class="rounded-l-[1.25rem] px-3 py-4 font-black">#{{ room.id }}</td>
               <td class="px-3 py-4 font-bold">{{ room.title || room.name || 'Chưa đặt tên' }}</td>
               <td class="px-3 py-4">{{ room.host?.name || 'Không rõ' }}</td>
-              <td class="px-3 py-4 text-[var(--muted)]">{{ formatDateTime(room.created_at) }}</td>
-              <td class="px-3 py-4 text-[var(--muted)]">{{ formatDateTime(room.deleted_at) }}</td>
+              <td class="px-3 py-4 text-[var(--muted)] hidden lg:table-cell">{{ formatDateTime(room.created_at) }}</td>
+              <td class="px-3 py-4 text-[var(--muted)] hidden md:table-cell">{{ formatDateTime(room.deleted_at) }}</td>
               <td class="rounded-r-[1.25rem] px-3 py-4">
                 <div class="flex justify-end gap-2">
                   <button class="btn-ghost px-4 py-2 font-black text-[var(--primary)] hover:bg-[var(--surface)] border border-[var(--border)] rounded-full transition" type="button" :disabled="roomActionLoading === `live:${room.id}`" @click="restoreLiveRoom(room)">
@@ -219,27 +231,41 @@
               <td class="px-3 py-4 font-bold">{{ room.title || room.name || 'Chưa đặt tên' }}</td>
               <td class="px-3 py-4"><span class="badge">{{ room.code || '-' }}</span></td>
               <td class="px-3 py-4">{{ room.host?.name || 'Không rõ' }}</td>
-              <td class="px-3 py-4 text-[var(--muted)]">{{ room.host?.email || '-' }}</td>
+              <td class="px-3 py-4 text-[var(--muted)] hidden xl:table-cell">{{ room.host?.email || '-' }}</td>
               <td class="px-3 py-4">{{ room.quiz?.title || '-' }}</td>
               <td class="px-3 py-4 font-black">{{ formatNumber(room.player_count) }}</td>
               <td class="px-3 py-4"><StatusPill :label="liveStatusLabel(room.status)" /></td>
-              <td class="px-3 py-4 text-[var(--muted)]">{{ formatDateTime(room.created_at) }}</td>
-              <td class="px-3 py-4 text-[var(--muted)]">{{ formatDateTime(room.started_at) }}</td>
-              <td class="px-3 py-4 text-[var(--muted)]">{{ formatDateTime(room.finished_at || room.ended_at) }}</td>
+              <td class="px-3 py-4 text-[var(--muted)] hidden lg:table-cell">{{ formatDateTime(room.created_at) }}</td>
+              <td class="px-3 py-4 text-[var(--muted)] hidden lg:table-cell">{{ formatDateTime(room.started_at) }}</td>
+              <td class="px-3 py-4 text-[var(--muted)] hidden lg:table-cell">{{ formatDateTime(room.finished_at || room.ended_at) }}</td>
               <td class="rounded-r-[1.25rem] px-3 py-4">
                 <div class="flex justify-end gap-2">
                   <button class="btn-ghost px-4 py-2" type="button" @click="openLiveDetail(room.id)">Chi tiết</button>
-                  <details class="relative">
-                    <summary class="list-none rounded-full border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-xs font-black text-[var(--text)] transition hover:border-[var(--border-strong)] hover:text-[var(--primary)]">Quản lý</summary>
-                    <div class="absolute right-0 z-20 mt-2 grid min-w-48 gap-1 rounded-2xl border border-[var(--border)] bg-[var(--surface-strong)] p-2 shadow-[var(--shadow-card)]">
-                      <button class="rounded-xl px-3 py-2 text-left text-xs font-black text-[var(--text)] hover:bg-[var(--surface-soft)] disabled:opacity-50" type="button" :disabled="roomActionLoading === `live:${room.id}` || ['finished', 'removed'].includes(String(room.status).toLowerCase())" @click="closeLiveRoom(room)">
-                        Đóng/Kết thúc phòng
+                  <div class="relative inline-block text-left">
+                    <button
+                      type="button"
+                      class="dropdown-trigger rounded-full border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-xs font-black text-[var(--text)] transition hover:border-[var(--border-strong)] hover:text-[var(--primary)]"
+                      @click="toggleDropdown(`live:${room.id}`)"
+                    >
+                      Quản lý
+                    </button>
+                    <div
+                      v-if="activeDropdown === `live:${room.id}`"
+                      class="dropdown-menu absolute right-0 z-20 mt-2 grid min-w-48 gap-1 rounded-2xl border border-[var(--border)] bg-[var(--surface-strong)] p-2 shadow-[var(--shadow-card)]"
+                    >
+                      <button v-if="String(room.status).toLowerCase() === 'banned'" class="rounded-xl px-3 py-2 text-left text-xs font-black text-emerald-400 hover:bg-emerald-500/10 disabled:opacity-50" type="button" :disabled="roomActionLoading === `live:${room.id}`" @click="unbanLiveRoom(room); activeDropdown = null">
+                        Unban
                       </button>
-                      <button class="rounded-xl px-3 py-2 text-left text-xs font-black text-rose-300 hover:bg-rose-500/10 disabled:opacity-50" type="button" :disabled="roomActionLoading === `live:${room.id}` || String(room.status).toLowerCase() === 'removed'" @click="softDeleteLiveRoom(room)">
+                      <button v-else class="rounded-xl px-3 py-2 text-left text-xs font-black text-amber-400 hover:bg-amber-500/10 disabled:opacity-50" type="button" :disabled="roomActionLoading === `live:${room.id}`" @click="banLiveRoom(room); activeDropdown = null">
+                        Ban
+                      </button>
+
+
+                      <button class="rounded-xl px-3 py-2 text-left text-xs font-black text-rose-300 hover:bg-rose-500/10 disabled:opacity-50" type="button" :disabled="roomActionLoading === `live:${room.id}` || ['removed', 'banned'].includes(String(room.status).toLowerCase())" @click="softDeleteLiveRoom(room); activeDropdown = null">
                         Xóa phòng
                       </button>
                     </div>
-                  </details>
+                  </div>
                 </div>
               </td>
             </tr>
@@ -251,7 +277,7 @@
     </article>
 
     <div v-if="detailOpen" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" @click.self="closeDetail">
-      <aside class="ml-auto flex h-full w-full max-w-5xl flex-col border-l border-[var(--border)] bg-[var(--surface-strong)] shadow-[var(--shadow-soft)]">
+      <aside class="ml-auto flex h-full w-full max-w-full md:max-w-3xl lg:max-w-5xl flex-col border-l border-[var(--border)] bg-[var(--surface-strong)] shadow-[var(--shadow-soft)]">
         <header class="flex items-start justify-between gap-4 border-b border-[var(--border)] p-5">
           <div>
             <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">{{ detailType === 'homework' ? 'Homework Room' : 'Live Room' }}</p>
@@ -277,7 +303,7 @@
             </button>
           </div>
 
-          <HomeworkDetail v-if="detailType === 'homework'" :detail="detailData" :tab="detailTab" :member-action-loading="memberActionLoading" @remove-member="removeHomeworkMemberFromDetail" />
+          <HomeworkDetail v-if="detailType === 'homework'" :detail="detailData" :tab="detailTab" />
           <LiveDetail v-if="detailType === 'live'" :detail="detailData" :tab="detailTab" />
         </div>
       </aside>
@@ -286,8 +312,9 @@
 </template>
 
 <script setup>
-import { computed, defineComponent, h, onMounted, reactive, ref } from 'vue'
-import { adminRoomApi } from '@/services/api'
+import { computed, defineComponent, h, onMounted, onBeforeUnmount, reactive, ref } from 'vue'
+import { adminRoomApi, adminRoomsApi } from '@/services/api'
+
 
 const props = defineProps({
   roomType: {
@@ -322,7 +349,7 @@ const makeListState = () => ({
 const activeTab = computed(() => props.roomType)
 const homeworkState = reactive(makeListState())
 const liveState = reactive(makeListState())
-const homeworkFilters = reactive({ search: '', status: '', owner_id: '', created_from: '', created_to: '' })
+const homeworkFilters = reactive({ search: '', status: '', host_id: '', created_from: '', created_to: '' })
 const liveFilters = reactive({ search: '', status: '', host_id: '', created_from: '', created_to: '' })
 
 const detailOpen = ref(false)
@@ -334,7 +361,6 @@ const detailError = ref('')
 const actionMessage = ref('')
 const actionError = ref('')
 const roomActionLoading = ref('')
-const memberActionLoading = ref('')
 
 const viewMode = ref('all') // 'all' or 'trash'
 
@@ -417,7 +443,7 @@ const reloadActiveTab = () => {
 }
 
 const resetHomeworkFilters = () => {
-  Object.assign(homeworkFilters, { search: '', status: '', owner_id: '', created_from: '', created_to: '' })
+  Object.assign(homeworkFilters, { search: '', status: '', host_id: '', created_from: '', created_to: '' })
   loadHomework(1)
 }
 
@@ -480,43 +506,7 @@ const resetActionNotice = () => {
   actionError.value = ''
 }
 
-const closeHomeworkRoom = async (room) => {
-  resetActionNotice()
-  if (!window.confirm('Đóng Homework room này? Dữ liệu assignment, submission và thành viên vẫn được giữ lại.')) return
 
-  roomActionLoading.value = `homework:${room.id}`
-  try {
-    const updatedRoom = await adminRoomApi.closeHomeworkRoom(room.id)
-    updateListRoom(homeworkState, updatedRoom)
-    if (detailData.value?.room && Number(detailData.value.room.id) === Number(room.id)) {
-      detailData.value = { ...detailData.value, room: { ...detailData.value.room, ...updatedRoom } }
-    }
-    actionMessage.value = 'Đã đóng Homework room.'
-  } catch (error) {
-    actionError.value = error.message || 'Không đóng được Homework room.'
-  } finally {
-    roomActionLoading.value = ''
-  }
-}
-
-const reopenHomeworkRoom = async (room) => {
-  resetActionNotice()
-  if (!window.confirm('Mở lại Homework room này?')) return
-
-  roomActionLoading.value = `homework:${room.id}`
-  try {
-    const updatedRoom = await adminRoomApi.reopenHomeworkRoom(room.id)
-    updateListRoom(homeworkState, updatedRoom)
-    if (detailData.value?.room && Number(detailData.value.room.id) === Number(room.id)) {
-      detailData.value = { ...detailData.value, room: { ...detailData.value.room, ...updatedRoom } }
-    }
-    actionMessage.value = 'Đã mở lại Homework room.'
-  } catch (error) {
-    actionError.value = error.message || 'Không mở lại được Homework room.'
-  } finally {
-    roomActionLoading.value = ''
-  }
-}
 
 const softDeleteHomeworkRoom = async (room) => {
   resetActionNotice()
@@ -535,24 +525,7 @@ const softDeleteHomeworkRoom = async (room) => {
   }
 }
 
-const closeLiveRoom = async (room) => {
-  resetActionNotice()
-  if (!window.confirm('Đóng/Kết thúc Live room này? Dữ liệu player và câu trả lời vẫn được giữ lại.')) return
 
-  roomActionLoading.value = `live:${room.id}`
-  try {
-    const updatedRoom = await adminRoomApi.closeLiveRoom(room.id)
-    updateListRoom(liveState, updatedRoom)
-    if (detailData.value?.room && Number(detailData.value.room.id) === Number(room.id)) {
-      detailData.value = { ...detailData.value, room: { ...detailData.value.room, ...updatedRoom } }
-    }
-    actionMessage.value = 'Đã kết thúc Live room.'
-  } catch (error) {
-    actionError.value = error.message || 'Không kết thúc được Live room.'
-  } finally {
-    roomActionLoading.value = ''
-  }
-}
 
 const softDeleteLiveRoom = async (room) => {
   resetActionNotice()
@@ -587,6 +560,22 @@ const restoreHomeworkRoom = async (room) => {
   }
 }
 
+const forceDeleteHomeworkRoom = async (room) => {
+  resetActionNotice()
+  if (!window.confirm(`XÓA VĨNH VIỄN phòng Homework "${room.name || room.id}"?\n\nHành động này KHÔNG THỂ hoàn tác. Toàn bộ dữ liệu phòng, bài tập, và kết quả sẽ bị xóa hoàn toàn.`)) return
+
+  roomActionLoading.value = `homework:${room.id}`
+  try {
+    await adminRoomsApi.forceDeleteHomework(room.id)
+    removeListRoom(homeworkState, room.id)
+    actionMessage.value = 'Đã xóa vĩnh viễn Homework room.'
+  } catch (error) {
+    actionError.value = error.message || 'Không xóa vĩnh viễn được Homework room.'
+  } finally {
+    roomActionLoading.value = ''
+  }
+}
+
 const restoreLiveRoom = async (room) => {
   resetActionNotice()
   if (!window.confirm(`Khôi phục Live room "${room.title || room.id}"?`)) return
@@ -603,28 +592,90 @@ const restoreLiveRoom = async (room) => {
   }
 }
 
-const removeHomeworkMemberFromDetail = async (member) => {
+const banHomeworkRoom = async (room) => {
   resetActionNotice()
-  const room = detailData.value?.room
-  if (!room || !member?.id) return
-  if (!window.confirm('Xóa thành viên này khỏi Homework room? Bài nộp và dữ liệu cũ vẫn được giữ lại.')) return
+  if (!window.confirm(`Khóa phòng Homework "${room.name || room.id}"? Học sinh và Host sẽ không thể thực hiện các thao tác nghiệp vụ.`)) return
 
-  memberActionLoading.value = String(member.id)
+  roomActionLoading.value = `homework:${room.id}`
   try {
-    await adminRoomApi.removeHomeworkRoomMember(room.id, member.id)
-    const remainingMembers = (detailData.value?.members || []).filter((item) => Number(item.id) !== Number(member.id))
-    const nextCount = remainingMembers.filter((item) => String(item.role).toLowerCase() !== 'owner').length
-    detailData.value = {
-      ...detailData.value,
-      members: remainingMembers,
-      room: { ...room, member_count: nextCount },
+    const updatedRoom = await adminRoomApi.banHomeworkRoom(room.id)
+    updateListRoom(homeworkState, updatedRoom)
+    if (detailData.value?.room && Number(detailData.value.room.id) === Number(room.id)) {
+      detailData.value = { ...detailData.value, room: { ...detailData.value.room, ...updatedRoom } }
     }
-    updateListRoom(homeworkState, { id: room.id, member_count: nextCount })
-    actionMessage.value = 'Đã xóa thành viên khỏi Homework room.'
+    actionMessage.value = 'Đã khóa phòng học (Ban).'
   } catch (error) {
-    actionError.value = error.message || 'Không xóa được thành viên khỏi Homework room.'
+    actionError.value = error.message || 'Không khóa được phòng học.'
   } finally {
-    memberActionLoading.value = ''
+    roomActionLoading.value = ''
+  }
+}
+
+const unbanHomeworkRoom = async (room) => {
+  resetActionNotice()
+  if (!window.confirm(`Mở khóa phòng Homework "${room.name || room.id}"?`)) return
+
+  roomActionLoading.value = `homework:${room.id}`
+  try {
+    const updatedRoom = await adminRoomApi.unbanHomeworkRoom(room.id)
+    updateListRoom(homeworkState, updatedRoom)
+    if (detailData.value?.room && Number(detailData.value.room.id) === Number(room.id)) {
+      detailData.value = { ...detailData.value, room: { ...detailData.value.room, ...updatedRoom } }
+    }
+    actionMessage.value = 'Đã mở khóa phòng học.'
+  } catch (error) {
+    actionError.value = error.message || 'Không mở khóa được phòng học.'
+  } finally {
+    roomActionLoading.value = ''
+  }
+}
+
+const banLiveRoom = async (room) => {
+  resetActionNotice()
+  if (!window.confirm(`Khóa phòng trực tuyến "${room.title || room.id}"? Trận đấu đang diễn ra sẽ lập tức bị kết thúc và đóng băng.`)) return
+
+  roomActionLoading.value = `live:${room.id}`
+  try {
+    const updatedRoom = await adminRoomApi.banLiveRoom(room.id)
+    updateListRoom(liveState, updatedRoom)
+    if (detailData.value?.room && Number(detailData.value.room.id) === Number(room.id)) {
+      detailData.value = { ...detailData.value, room: { ...detailData.value.room, ...updatedRoom } }
+    }
+    actionMessage.value = 'Đã khóa phòng trực tuyến (Ban).'
+  } catch (error) {
+    actionError.value = error.message || 'Không khóa được phòng trực tuyến.'
+  } finally {
+    roomActionLoading.value = ''
+  }
+}
+
+const unbanLiveRoom = async (room) => {
+  resetActionNotice()
+  if (!window.confirm(`Mở khóa phòng trực tuyến "${room.title || room.id}"?`)) return
+
+  roomActionLoading.value = `live:${room.id}`
+  try {
+    const updatedRoom = await adminRoomApi.unbanLiveRoom(room.id)
+    updateListRoom(liveState, updatedRoom)
+    if (detailData.value?.room && Number(detailData.value.room.id) === Number(room.id)) {
+      detailData.value = { ...detailData.value, room: { ...detailData.value.room, ...updatedRoom } }
+    }
+    actionMessage.value = 'Đã mở khóa phòng trực tuyến.'
+  } catch (error) {
+    actionError.value = error.message || 'Không mở khóa được phòng trực tuyến.'
+  } finally {
+    roomActionLoading.value = ''
+  }
+}
+
+const activeDropdown = ref(null)
+const toggleDropdown = (id) => {
+  activeDropdown.value = activeDropdown.value === id ? null : id
+}
+
+const handleDocumentClick = (e) => {
+  if (!e.target.closest('.dropdown-trigger') && !e.target.closest('.dropdown-menu')) {
+    activeDropdown.value = null
   }
 }
 
@@ -653,6 +704,7 @@ const homeworkStatusLabel = (status) => ({
   removed: 'Đã xóa',
   archived: 'Đã lưu trữ',
   finished: 'Đã kết thúc',
+  banned: 'Bị khóa',
 })[String(status || '').toLowerCase()] || (status || '-')
 
 const liveStatusLabel = (status) => ({
@@ -662,10 +714,11 @@ const liveStatusLabel = (status) => ({
   finished: 'Đã kết thúc',
   removed: 'Đã xóa',
   cancelled: 'Đã hủy',
+  banned: 'Bị khóa',
 })[String(status || '').toLowerCase()] || (status || '-')
 
 const roomRoleLabel = (role) => ({
-  owner: 'Chủ phòng',
+  host: 'Host',
   student: 'Thành viên',
   member: 'Thành viên',
 })[String(role || '').toLowerCase()] || (role || '-')
@@ -776,8 +829,8 @@ const HomeworkDetail = defineComponent({
             { label: 'Tên phòng', value: room.name },
             { label: 'Mã phòng', value: room.code },
             { label: 'Mô tả', value: room.description || '-' },
-            { label: 'Chủ room', value: room.owner?.name },
-            { label: 'Email chủ room', value: room.owner?.email },
+            { label: 'Host', value: room.host?.name },
+            { label: 'Email Host', value: room.host?.email },
             { label: 'Trạng thái', value: homeworkStatusLabel(room.status) },
             { label: 'Ngày tạo', value: formatDateTime(room.created_at) },
             { label: 'Số thành viên', value: formatNumber(room.member_count) },
@@ -921,5 +974,10 @@ const LiveDetail = defineComponent({
 
 onMounted(() => {
   loadActiveTab()
+  document.addEventListener('click', handleDocumentClick)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleDocumentClick)
 })
 </script>

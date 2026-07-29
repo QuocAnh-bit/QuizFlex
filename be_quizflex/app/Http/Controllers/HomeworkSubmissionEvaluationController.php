@@ -6,6 +6,7 @@ use App\Models\Room;
 use App\Models\QuizAttempt;
 use App\Models\RoomSubmissionEvaluation;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class HomeworkSubmissionEvaluationController extends Controller
 {
@@ -16,15 +17,13 @@ class HomeworkSubmissionEvaluationController extends Controller
     {
         $currentUser = $request->user();
 
-        // 1. Authorization: Admin, Room Owner, or the student themselves
-        $isAdmin = strtolower((string) ($currentUser->role ?? 'user')) === 'admin';
-        $isOwner = (int) $room->owner_id === (int) $currentUser->id;
-        $isSelf = (int) $submission->user_id === (int) $currentUser->id;
-
-        if (!$isAdmin && !$isOwner && !$isSelf) {
+        // 1. Authorization: Admin, Room Host, or the student themselves
+        Gate::forUser($currentUser)->authorize('view', $room);
+        $viewAuthorization = Gate::forUser($currentUser)->inspect('viewSubmissionEvaluation', [$room, $submission]);
+        if ($viewAuthorization->denied()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Bạn không có quyền xem nhận xét này.',
+                'message' => $viewAuthorization->message(),
             ], 403);
         }
 
@@ -51,18 +50,17 @@ class HomeworkSubmissionEvaluationController extends Controller
      */
     public function store(Request $request, Room $room, QuizAttempt $submission)
     {
-        $currentUser = $request->user();
-
-        // 1. Authorization: Only Owner or Admin
-        $isAdmin = strtolower((string) ($currentUser->role ?? 'user')) === 'admin';
-        $isOwner = (int) $room->owner_id === (int) $currentUser->id;
-
-        if (!$isAdmin && !$isOwner) {
+        if ($room->status === 'banned') {
             return response()->json([
                 'success' => false,
-                'message' => 'Chỉ chủ phòng mới có quyền lưu nhận xét bài nộp.',
+                'message' => 'Phòng học này đã bị khóa bởi quản trị viên.',
             ], 403);
         }
+
+        $currentUser = $request->user();
+
+        // 1. Authorization: Only Host
+        Gate::forUser($currentUser)->authorize('manageMembers', $room);
 
         // 2. Validate relationship
         if ((int) $submission->room_id !== (int) $room->id) {

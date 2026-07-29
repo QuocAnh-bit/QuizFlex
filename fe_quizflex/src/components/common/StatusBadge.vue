@@ -35,7 +35,7 @@ const statusMap = {
   closed: { text: 'Closed', className: 'border-rose-500/25 bg-rose-500/10 text-rose-300', dotClass: 'bg-rose-300' },
   expired: { text: 'Expired', className: 'border-rose-500/25 bg-rose-500/10 text-rose-300', dotClass: 'bg-rose-300' },
   in_progress: { text: 'In progress', className: 'border-violet-500/25 bg-violet-500/10 text-violet-300', dotClass: 'bg-violet-300' },
-  owner: { text: 'Chủ room', className: 'border-violet-500/25 bg-violet-500/10 text-violet-300', dotClass: 'bg-violet-300' },
+  host: { text: 'Host', className: 'border-violet-500/25 bg-violet-500/10 text-violet-300', dotClass: 'bg-violet-300' },
   member: { text: 'Thành viên', className: 'border-sky-500/25 bg-sky-500/10 text-sky-300', dotClass: 'bg-sky-300' },
 }
 

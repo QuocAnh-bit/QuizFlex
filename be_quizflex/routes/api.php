@@ -74,24 +74,23 @@ Route::middleware('auth:api')->group(function () {
     Route::put('/notifications/read-all', [NotificationController::class, 'markAllAsRead']);
 
 
-    Route::patch('/admin/rooms/homework/{room}/close', [AdminRoomController::class, 'closeHomework'])->withTrashed();
-    Route::patch('/admin/rooms/homework/{room}/open', [AdminRoomController::class, 'openHomework'])->withTrashed();
-
-    // Admin Only
     Route::middleware('role:admin')->group(function () {
         Route::get('/admin/dashboard/overview', [AdminDashboardController::class, 'overview']);
         Route::get('/admin/rooms/homework', [AdminRoomController::class, 'homeworkIndex']);
         Route::get('/admin/rooms/homework/trash', [AdminRoomController::class, 'homeworkTrash']);
         Route::delete('/admin/rooms/homework/{room}', [AdminRoomController::class, 'softDeleteHomework'])->withTrashed();
+        Route::delete('/admin/rooms/homework/{id}/force', [AdminRoomController::class, 'forceDeleteHomework']);
         Route::patch('/admin/rooms/homework/{id}/restore', [AdminRoomController::class, 'restoreHomework']);
-        Route::delete('/admin/rooms/homework/{room}/members/{member}', [AdminRoomController::class, 'removeHomeworkMember']);
         Route::get('/admin/rooms/homework/{room}', [AdminRoomController::class, 'homeworkShow'])->withTrashed();
         Route::get('/admin/rooms/live', [AdminRoomController::class, 'liveIndex']);
         Route::get('/admin/rooms/live/trash', [AdminRoomController::class, 'liveTrash']);
-        Route::patch('/admin/rooms/live/{liveRoom}/close', [AdminRoomController::class, 'closeLive'])->withTrashed();
         Route::delete('/admin/rooms/live/{liveRoom}', [AdminRoomController::class, 'softDeleteLive'])->withTrashed();
         Route::patch('/admin/rooms/live/{id}/restore', [AdminRoomController::class, 'restoreLive']);
         Route::get('/admin/rooms/live/{liveRoom}', [AdminRoomController::class, 'liveShow'])->withTrashed();
+        Route::post('/admin/rooms/homework/{room}/ban', [AdminRoomController::class, 'banHomework']);
+        Route::post('/admin/rooms/homework/{room}/unban', [AdminRoomController::class, 'unbanHomework']);
+        Route::post('/admin/rooms/live/{liveRoom}/ban', [AdminRoomController::class, 'banLive']);
+        Route::post('/admin/rooms/live/{liveRoom}/unban', [AdminRoomController::class, 'unbanLive']);
         Route::get('/users/trashed', [UserController::class, 'trashed']);
         Route::patch('/users/{id}/restore', [UserController::class, 'restore']);
         Route::delete('/users/{id}/force', [UserController::class, 'forceDelete']);
@@ -104,15 +103,33 @@ Route::middleware('auth:api')->group(function () {
         Route::put('/admin/report-tickets/{id}', [ReportTicketController::class, 'update']);
 
         // Quản lý quiz cho admin
-        Route::get('/admin/quizzes/trash', [QuizController::class, 'trash']);
-        Route::get('/admin/quizzes', [QuizController::class, 'adminIndex']);
-        Route::get('/admin/quizzes/{id}', [QuizController::class, 'adminShow']);
-        Route::delete('/admin/quizzes/{quiz}', [QuizController::class, 'destroy'])->withTrashed();
-Route::patch('/admin/quizzes/{id}/toggle-visibility', [QuizController::class, 'toggleVisibility'])
-    ->middleware(['auth:api']);
+        Route::middleware('role:admin')->group(function () {
 
-        Route::post('/admin/quizzes/{id}/restore', [QuizController::class, 'restore']);
-        Route::delete('/admin/quizzes/{id}/force-delete', [QuizController::class, 'forceDelete']);
+    Route::get(
+        '/admin/quizzes/trash',
+        [QuizController::class,'adminTrash']
+    );
+
+    Route::get('/admin/quizzes', [QuizController::class, 'adminIndex']);
+
+    Route::get('/admin/quizzes/{id}', [QuizController::class, 'adminShow']);
+
+    Route::delete('/admin/quizzes/{quiz}', [QuizController::class, 'destroy'])
+        ->withTrashed();
+
+    Route::patch('/admin/quizzes/{id}/toggle-visibility',
+        [QuizController::class, 'toggleVisibility']
+    );
+
+    Route::post('/admin/quizzes/{id}/restore',
+        [QuizController::class, 'restore']
+    );
+
+    Route::delete('/admin/quizzes/{id}/force-delete',
+        [QuizController::class, 'forceDelete']
+    );
+
+});
     });
 
     Route::middleware('role:free,plus,pro,ultra,admin')->group(function () {
@@ -129,7 +146,10 @@ Route::patch('/admin/quizzes/{id}/toggle-visibility', [QuizController::class, 't
         Route::patch('/quizzes/{quiz}', [QuizController::class, 'update']);
         Route::delete('/quizzes/{quiz}', [QuizController::class, 'destroy']);
         Route::post('/ocr/import-quiz', [OcrController::class, 'importQuiz']);
-
+        // User chỉ quản lý quiz của mình
+Route::get('/quizzes/trash', [QuizController::class,'trash']);
+Route::patch('/quizzes/{id}/restore', [QuizController::class,'restore']);
+Route::delete('/quizzes/{id}/force-delete', [QuizController::class,'forceDelete']);
 
         // Protected Question & Answer Routes
         Route::post('/quizzes/{quiz}/questions', [QuestionController::class, 'store']);
@@ -151,20 +171,25 @@ Route::patch('/admin/quizzes/{id}/toggle-visibility', [QuizController::class, 't
         Route::get('/rooms', [RoomController::class, 'index']);
         Route::post('/rooms', [RoomController::class, 'store']);
         Route::post('/rooms/join', [RoomController::class, 'joinByCode']);
-        Route::get('/rooms/{room}', [RoomController::class, 'show']);
+        Route::get('/rooms/{room}', [RoomController::class, 'show'])->withTrashed();
         Route::patch('/rooms/{room}', [RoomController::class, 'update']);
         Route::post('/rooms/{room}/join', [RoomController::class, 'joinRoom']);
         Route::post('/rooms/{room}/leave', [RoomController::class, 'leave']);
+        Route::delete('/rooms/{room}/dissolve', [RoomController::class, 'dissolve']);
         Route::get('/rooms/{room}/members', [RoomController::class, 'members']);
         Route::delete('/rooms/{room}/members/{member}', [RoomController::class, 'destroyMember']);
+        Route::post('/rooms/{room}/members/{member}/approve', [RoomController::class, 'approveMember']);
+        Route::post('/rooms/{room}/members/{member}/reject', [RoomController::class, 'rejectMember']);
         Route::get('/homework-rooms/{room}/allowed-members', [RoomController::class, 'allowedMembers']);
         Route::post('/homework-rooms/{room}/allowed-members', [RoomController::class, 'storeAllowedMembers']);
+        Route::delete('/homework-rooms/{room}/allowed-members', [RoomController::class, 'destroyAllowedMembersBatch']);
         Route::delete('/homework-rooms/{room}/allowed-members/{allowedMember}', [RoomController::class, 'destroyAllowedMember']);
         Route::get('/homework-rooms/{room}/members/{user}/evaluation', [HomeworkRoomMemberEvaluationController::class, 'show']);
         Route::post('/homework-rooms/{room}/members/{user}/evaluation', [HomeworkRoomMemberEvaluationController::class, 'store']);
         Route::get('/homework-rooms/{room}/submissions/{submission}/evaluation', [HomeworkSubmissionEvaluationController::class, 'show']);
         Route::post('/homework-rooms/{room}/submissions/{submission}/evaluation', [HomeworkSubmissionEvaluationController::class, 'store']);
 
+        Route::get('/rooms/{room}/gradebook', [RoomAssignmentController::class, 'gradebook']);
         Route::get('/rooms/{room}/assignments', [RoomAssignmentController::class, 'index']);
         Route::post('/rooms/{room}/assignments', [RoomAssignmentController::class, 'store']);
         Route::get('/room-assignments/{assignment}', [RoomAssignmentController::class, 'show']);
@@ -172,6 +197,7 @@ Route::patch('/admin/quizzes/{id}/toggle-visibility', [QuizController::class, 't
         Route::post('/room-assignments/{assignment}/attempts/{attempt}/answer', [RoomAssignmentController::class, 'answer']);
         Route::post('/room-assignments/{assignment}/attempts/{attempt}/submit', [RoomAssignmentController::class, 'submitAttempt']);
         Route::get('/room-assignments/{assignment}/attempts', [RoomAssignmentController::class, 'attempts']);
+        Route::post('/room-assignments/{assignment}/attempts/{attempt}/reset', [RoomAssignmentController::class, 'resetAttempt']);
 
         // Live Room Routes
         Route::post('/live-rooms', [LiveRoomController::class, 'store']);
