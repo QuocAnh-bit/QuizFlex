@@ -53,6 +53,8 @@ Route::post('/auth/login', [AuthController::class, 'login']);
 Route::post('/auth/register', [AuthController::class, 'register']);
 Route::post('/auth/verify-otp', [AuthController::class, 'verifyOtp']);
 Route::post('/auth/resend-otp', [AuthController::class, 'resendOtp']);
+Route::post('/auth/forgot-password/send-otp', [AuthController::class, 'forgotPasswordSendOtp']);
+Route::post('/auth/forgot-password/reset', [AuthController::class, 'forgotPasswordReset']);
 Route::post('/auth/refresh', [AuthController::class, 'refresh']);
 
 Route::middleware('auth:api')->group(function () {

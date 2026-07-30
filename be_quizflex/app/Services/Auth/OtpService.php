@@ -16,7 +16,7 @@ class OtpService
     /**
      * Tạo mã OTP mới và gửi qua Email
      */
-    public function generateOtp(string $email): string
+    public function generateOtp(string $email, string $type = 'register'): string
     {
         // 1. Dọn dẹp tất cả các OTP cũ của email này để tránh xung đột
         DB::table('otp_verifications')->where('email', $email)->delete();
@@ -35,11 +35,11 @@ class OtpService
         ]);
 
         // Ghi log OTP ngay lập tức để nhà phát triển xem được trong laravel.log
-        \Illuminate\Support\Facades\Log::info("=== OTP CODE FOR {$email}: [{$rawOtp}] ===");
+        \Illuminate\Support\Facades\Log::info("=== OTP CODE FOR {$email} (Type: {$type}): [{$rawOtp}] ===");
 
         // 4. Gửi email chứa OTP cho người dùng (bọc trong try-catch để tránh chặn luồng HTTP khi SMTP lỗi)
         try {
-            Mail::to($email)->send(new SendOtpMail($rawOtp));
+            Mail::to($email)->send(new SendOtpMail($rawOtp, $type));
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::warning("Could not send OTP email to {$email}. Error: " . $e->getMessage());
         }

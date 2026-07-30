@@ -1,7 +1,7 @@
 <template>
-  <section class="grid gap-6 2xl:grid-cols-[minmax(0,1fr)_360px]">
+  <section class="grid gap-6 min-w-0 mx-auto w-full max-w-[1500px] 2xl:grid-cols-[minmax(0,1fr)_360px]">
     <form
-      class="relative overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-soft)] backdrop-blur-2xl"
+      class="relative min-w-0 overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-5 sm:p-8 shadow-[var(--shadow-soft)] backdrop-blur-2xl"
       @submit.prevent="saveQuiz"
     >
       <div class="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[var(--primary)]/15 blur-3xl"></div>
@@ -301,7 +301,7 @@
             v-for="(q, index) in questions"
             :key="q.id"
             :ref="(el) => setQuestionCardRef(el, index)"
-            class="rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface-soft)] p-5 transition hover:border-[var(--border-strong)]"
+            class="min-w-0 rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface-soft)] p-5 sm:p-6 transition hover:border-[var(--border-strong)]"
           >
             <div class="flex flex-wrap items-center justify-between gap-3">
               <div class="flex flex-wrap items-center gap-2">
@@ -1573,12 +1573,15 @@ onBeforeUnmount(() => {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.75rem;
+  max-width: 100%;
+  overflow-x: auto;
+  padding: 0.25rem 0.35rem;
 }
 
 .editor-block {
   position: relative;
   display: inline-flex;
-  flex: 0 0 auto;
+  flex: 0 1 auto;
   align-items: stretch;
   min-height: 56px;
   max-width: 100%;

@@ -254,6 +254,16 @@ export const authApi = {
     return unwrap(data);
   },
 
+  async forgotPasswordSendOtp(payload) {
+    const { data } = await api.post("/auth/forgot-password/send-otp", payload);
+    return data;
+  },
+
+  async forgotPasswordReset(payload) {
+    const { data } = await api.post("/auth/forgot-password/reset", payload);
+    return data;
+  },
+
   async me() {
     const { data } = await api.get("/auth/me");
     const user = unwrap(data);
