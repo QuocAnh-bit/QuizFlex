@@ -13,13 +13,15 @@ class SendOtpMail extends Mailable
     use Queueable, SerializesModels;
 
     public string $otpCode;
+    public string $type;
 
     /**
      * Create a new message instance.
      */
-    public function __construct(string $otpCode)
+    public function __construct(string $otpCode, string $type = 'register')
     {
         $this->otpCode = $otpCode;
+        $this->type = $type;
     }
 
     /**
@@ -27,8 +29,12 @@ class SendOtpMail extends Mailable
      */
     public function envelope(): Envelope
     {
+        $subject = $this->type === 'forgot_password'
+            ? '[' . config('app.name', 'QuizFlex') . '] Mã xác thực khôi phục mật khẩu'
+            : '[' . config('app.name', 'QuizFlex') . '] Mã xác thực đăng ký tài khoản';
+
         return new Envelope(
-            subject: '[' . config('app.name', 'QuizFlex') . '] Mã xác thực đăng ký tài khoản',
+            subject: $subject,
         );
     }
 
@@ -41,6 +47,7 @@ class SendOtpMail extends Mailable
             view: 'emails.otp',
             with: [
                 'otpCode' => $this->otpCode,
+                'type' => $this->type,
             ]
         );
     }

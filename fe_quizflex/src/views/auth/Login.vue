@@ -130,8 +130,10 @@
               </div>
 
               <!-- Lựa chọn đổi tài khoản -->
-              <div class="mt-6 flex items-center justify-center gap-3 text-xs font-black">
+              <div class="mt-6 flex flex-wrap items-center justify-center gap-3 text-xs font-black">
                 <button type="button" class="text-[var(--primary)] hover:underline" @click="switchToStandardLogin">Sử dụng tài khoản khác</button>
+                <span class="text-[var(--border-strong)]">•</span>
+                <router-link to="/forgot-password" class="text-[var(--muted)] hover:underline">Quên mật khẩu?</router-link>
                 <span class="text-[var(--border-strong)]">•</span>
                 <button type="button" class="text-[var(--muted)] hover:underline" @click="goToRegister">Đăng ký ngay</button>
               </div>
@@ -243,7 +245,7 @@ onMounted(async () => {
   // Kiểm tra thông tin tài khoản đăng nhập nhanh trong localStorage và lấy tài khoản đăng nhập gần nhất
   const savedUser = localStorage.getItem('quizflex_last_user')
   // Bỏ qua đăng nhập nhanh nếu URL có token hoặc tham số rõ ràng
-  const hasAuthParams = route.query.token || route.query.error_message || route.query.email || (state && state.email)
+  const hasAuthParams = route.query.token || route.query.error_message || route.query.email || route.query.reset || (state && state.email)
   
   if (savedUser && !hasAuthParams) {
     try {
@@ -300,7 +302,13 @@ onMounted(async () => {
   }
   if (state && state.password) {
     form.password = state.password
-    successMessage.value = 'Kích hoạt tài khoản thành công! Vui lòng nhấn Đăng nhập để tiếp tục.'
+    if (route.query.reset === 'success') {
+      successMessage.value = 'Đặt lại mật khẩu thành công! Mật khẩu mới đã được tự động điền sẵn, bạn chỉ cần nhấn Đăng nhập.'
+    } else {
+      successMessage.value = 'Kích hoạt tài khoản thành công! Vui lòng nhấn Đăng nhập để tiếp tục.'
+    }
+  } else if (route.query.reset === 'success') {
+    successMessage.value = 'Đặt lại mật khẩu thành công! Vui lòng nhập mật khẩu mới để đăng nhập.'
   }
 })
 

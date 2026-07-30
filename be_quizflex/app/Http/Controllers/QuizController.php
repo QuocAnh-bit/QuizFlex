@@ -131,8 +131,29 @@ class QuizController extends Controller
         ], 201);
     }
 
-    public function show(Quiz $quiz)
+    public function show($id)
     {
+        $quiz = Quiz::withTrashed()->find($id);
+
+        if (!$quiz) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không tìm thấy bài quiz này hoặc quiz đã bị xóa vĩnh viễn.',
+            ], 404);
+        }
+
+        if ($quiz->trashed()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bài quiz này đã bị đưa vào thùng rác.',
+                'data' => [
+                    'id' => $quiz->id,
+                    'is_trashed' => true,
+                    'title' => $quiz->title,
+                ]
+            ], 404);
+        }
+
         try {
             $user = $this->resolveOptionalApiUser();
         } catch (TokenExpiredException) {
@@ -140,11 +161,11 @@ class QuizController extends Controller
         }
 
         Gate::forUser($user)->authorize('view', $quiz);
-        // chỉ lấy id và name của người tạo quiz, Trong mỗi question, lấy tiếp answers
+
         $quiz->load(['user:id,name', 'questions.answers'])
             ->loadCount(['questions', 'attempts'])
             ->loadAvg(['attempts as avg_score' => fn($q) => $q->where('status', 'completed')], 'score');
-        // tính điểm trung bình
+
         return response()->json([
             'success' => true,
             'message' => 'Chi tiết quiz',
@@ -714,7 +735,8 @@ public function toggleVisibility($id)
     // Chi tiết quiz
     public function adminShow($id)
     {
-        $quiz = Quiz::with([
+        $quiz = Quiz::withTrashed()
+        ->with([
             'user:id,name,email',
             'questions.answers',
             'attempts.user:id,name'

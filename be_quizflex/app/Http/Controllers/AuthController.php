@@ -203,6 +203,85 @@ class AuthController extends Controller
         }
     }
 
+    public function forgotPasswordSendOtp(Request $request)
+    {
+        $data = $request->validate([
+            'email' => ['required', 'email'],
+        ]);
+
+        $user = User::where('email', $data['email'])->first();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Email này chưa được đăng ký trong hệ thống.',
+            ], 422);
+        }
+
+        try {
+            $otpService = app(OtpService::class);
+            $otpService->generateOtp($user->email, 'forgot_password');
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Mã OTP khôi phục mật khẩu đã được gửi tới email của bạn.',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không thể gửi mã OTP: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function forgotPasswordReset(Request $request)
+    {
+        $data = $request->validate([
+            'email' => ['required', 'email'],
+            'otp' => ['required', 'string', 'size:6'],
+            'password' => ['required', 'string', 'min:6', 'confirmed'],
+        ]);
+
+        $user = User::where('email', $data['email'])->first();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Email này chưa được đăng ký trong hệ thống.',
+            ], 422);
+        }
+
+        try {
+            $otpService = app(OtpService::class);
+            $res = $otpService->verifyOtp($data['email'], $data['otp']);
+
+            if (!$res['status']) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $res['message'],
+                ], 422);
+            }
+
+            $user->password = Hash::make($data['password']);
+
+            if ($user->email_verified_at === null) {
+                $user->email_verified_at = now();
+            }
+
+            $user->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Đặt lại mật khẩu thành công! Bạn có thể đăng nhập ngay bằng mật khẩu mới.',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Có lỗi xảy ra: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
     public function me()
     {
         return response()->json([
@@ -279,10 +358,20 @@ class AuthController extends Controller
 
     private function roleValueForDatabase(string $role): string
     {
-        $role = strtoupper($role);
+        $normalized = strtolower(trim($role));
+
+        if ($normalized === '' || in_array($normalized, ['user', 'guest', 'member', 'basic', 'default'], true)) {
+            return 'free';
+        }
+
+        if ($normalized === 'administrator') {
+            return 'admin';
+        }
+
+        $role = strtoupper($normalized);
 
         if (!Schema::hasColumn('users', 'role')) {
-            return $role;
+            return strtolower($role);
         }
 
         try {
@@ -300,7 +389,7 @@ class AuthController extends Controller
             // Fall back to the migration-defined uppercase enum values.
         }
 
-        return $role;
+        return strtolower($role);
     }
 
     private function defaultAiQuotaForRole(string $role): int

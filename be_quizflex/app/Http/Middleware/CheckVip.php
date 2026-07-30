@@ -5,15 +5,13 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Illuminate\Support\Carbon;
 
+/**
+ * Kiểm tra người dùng có plan đang hoạt động (plus/pro/ultra).
+ * Không kiểm tra role — role chỉ dùng cho CheckRole.
+ */
 class CheckVip
 {
-    /**
-     * Handle an incoming request.
-     *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
-     */
     public function handle(Request $request, Closure $next): Response
     {
         $user = auth('api')->user();
@@ -22,23 +20,19 @@ class CheckVip
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
         }
 
-        $userRole = strtolower($user->role ?? 'user');
-        
-        if ($userRole === 'admin') {
+        if ($user->isAdmin()) {
             return $next($request);
         }
 
-        if ($userRole === 'vip' && (!$user->vip_expires_at || Carbon::parse($user->vip_expires_at)->isFuture())) {
-            return $next($request);
-        }
+        $plan = $user->getActivePlan();
 
-        if ($user->vip_expires_at && Carbon::parse($user->vip_expires_at)->isFuture()) {
+        if (in_array($plan, ['plus', 'pro', 'ultra'])) {
             return $next($request);
         }
 
         return response()->json([
-            'success' => false, 
-            'message' => 'Tính năng này yêu cầu tài khoản VIP. Vui lòng nâng cấp!'
+            'success' => false,
+            'message' => 'Tính năng này yêu cầu gói Plus trở lên. Vui lòng nâng cấp!',
         ], 403);
     }
 }

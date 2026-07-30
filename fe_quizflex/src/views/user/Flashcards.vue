@@ -1,17 +1,61 @@
 <template>
   <section class="mx-auto max-w-4xl py-6 md:py-10">
-    <!-- Header Navigation -->
-    <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
-      <button 
-        type="button" 
-        class="flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface-soft)] px-4 py-2 text-xs font-black text-[var(--muted)] transition hover:border-[var(--border-strong)] hover:text-[var(--text)] active:scale-95"
-        @click="goBack"
-      >
-        <span>← Quãng đường quay lại</span>
-      </button>
-      <div class="text-right">
+    <!-- Header Navigation & Quiz Info -->
+    <div class="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-[var(--border)] pb-4">
+      <div class="flex flex-wrap items-center gap-3">
+        <button 
+          type="button" 
+          class="flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface-soft)] px-4 py-2 text-xs font-black text-[var(--muted)] transition hover:border-[var(--border-strong)] hover:text-[var(--text)] active:scale-95 shadow-sm"
+          @click="goBack"
+        >
+          <span>← Quay lại</span>
+        </button>
+
+        <!-- Compact Audio Controls Pill -->
+        <div class="flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface)] p-1 shadow-sm">
+          <button 
+            type="button" 
+            class="flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition active:scale-95"
+            :class="isAutoPlayAudio ? 'bg-[var(--chip-active)] text-[var(--primary)] font-black' : 'text-[var(--muted)] hover:text-[var(--text)]'"
+            @click="toggleAutoPlayAudio"
+            :title="isAutoPlayAudio ? 'Tự động phát âm thanh: Đang BẬT' : 'Tự động phát âm thanh: Đang TẮT'"
+          >
+            <span>{{ isAutoPlayAudio ? '🔊 Tự phát âm' : '🔇 Tự phát âm' }}</span>
+          </button>
+
+          <!-- Multi-speed Audio Rate Toggle (1.0x -> 0.75x -> 0.55x) -->
+          <button 
+            type="button" 
+            class="flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition active:scale-95"
+            :class="audioRate < 1.0 ? 'bg-indigo-500/15 text-indigo-400 font-black' : 'text-[var(--muted)] hover:text-[var(--text)]'"
+            @click="toggleAudioRate"
+            :title="`Tốc độ phát âm: ${audioRate}x (Nhấn để đổi tốc độ)`"
+          >
+            <span v-if="audioRate === 0.55">🐢 Rất chậm (0.55x)</span>
+            <span v-else-if="audioRate === 0.75">🔉 Đọc vừa (0.75x)</span>
+            <span v-else>⚡ Tốc độ (1.0x)</span>
+          </button>
+
+          <button 
+            type="button" 
+            class="flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition active:scale-95"
+            :class="isSoundEffects ? 'bg-amber-500/15 text-amber-400 font-black' : 'text-[var(--muted)] hover:text-[var(--text)]'"
+            @click="toggleSoundEffects"
+            :title="isSoundEffects ? 'Hiệu ứng âm thanh: Đang BẬT' : 'Hiệu ứng âm thanh: Đang TẮT'"
+          >
+            <span>{{ isSoundEffects ? '🔔 Hiệu ứng' : '🔕 Hiệu ứng' }}</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="text-right flex flex-col items-end">
         <h2 class="text-xl font-black text-[var(--text)] line-clamp-1 max-w-md">{{ quizMeta.title }}</h2>
-        <p class="text-xs font-bold text-[var(--muted)]">Ôn tập thẻ ghi nhớ</p>
+        <div class="flex items-center gap-2 mt-0.5">
+          <span v-if="!isLoggedIn" class="rounded-full bg-amber-500/15 px-2.5 py-0.5 text-[11px] font-black text-amber-400 border border-amber-500/30">
+            🔒 Khách (Dùng thử 5 thẻ)
+          </span>
+          <span class="text-xs font-bold text-[var(--muted)]">Ôn tập thẻ ghi nhớ</span>
+        </div>
       </div>
     </div>
 
@@ -124,7 +168,18 @@
 
             <div class="relative z-10 flex items-center justify-between text-xs font-black text-[var(--muted)] uppercase tracking-widest">
               <span>Mặt trước: Câu hỏi</span>
-              <span>🔍 Nhấp để lật</span>
+              <div class="flex items-center gap-2">
+                <button 
+                  type="button"
+                  class="flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface-soft)] px-3 py-1 text-xs font-bold text-[var(--text)] transition hover:scale-105 active:scale-95 shadow-sm"
+                  :class="{ 'ring-2 ring-[var(--primary)] text-[var(--primary)] animate-pulse': activeSpeakingTarget === 'front' }"
+                  @click.stop="speakFrontText"
+                  title="Đọc phát âm câu hỏi"
+                >
+                  <span>{{ activeSpeakingTarget === 'front' ? '🔊 Đang đọc...' : '🔊 Đọc' }}</span>
+                </button>
+                <span>🔍 Nhấp để lật</span>
+              </div>
             </div>
 
             <div class="relative z-10 flex-1 flex items-center justify-center py-6 text-center">
@@ -145,7 +200,18 @@
 
             <div class="relative z-10 flex items-center justify-between text-xs font-black text-[var(--muted)] uppercase tracking-widest">
               <span>Mặt sau: Đáp án</span>
-              <span class="text-emerald-400">✓ Đã lật</span>
+              <div class="flex items-center gap-2">
+                <button 
+                  type="button"
+                  class="flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-400 transition hover:scale-105 active:scale-95 shadow-sm"
+                  :class="{ 'ring-2 ring-emerald-500 animate-pulse': activeSpeakingTarget === 'back' }"
+                  @click.stop="speakBackText"
+                  title="Đọc các đáp án đúng"
+                >
+                  <span>{{ activeSpeakingTarget === 'back' ? '🔊 Đang đọc...' : '🔊 Đọc đáp án đúng' }}</span>
+                </button>
+                <span class="text-emerald-400">✓ Đã lật</span>
+              </div>
             </div>
 
             <div class="relative z-10 flex-1 flex flex-col justify-center py-4">
@@ -172,7 +238,21 @@
                     {{ answer.key }}
                   </span>
                   <span class="flex-1 leading-snug">{{ answer.text }}</span>
-                  <span v-if="answer.isCorrect" class="text-sm font-black text-emerald-400 shrink-0">✓ Đúng</span>
+
+                  <!-- Speaker icon per option -->
+                  <button 
+                    type="button"
+                    class="rounded-lg p-1.5 text-xs transition hover:bg-[var(--surface-soft)] active:scale-95 shrink-0"
+                    :class="activeSpeakingTarget === `ans-${answer.key}` ? 'text-emerald-400 font-bold animate-pulse' : 'text-[var(--muted)] hover:text-[var(--text)]'"
+                    @click.stop="speakOptionText(answer)"
+                    title="Đọc phát âm phương án này"
+                  >
+                    🔊
+                  </button>
+
+                  <span v-if="answer.isCorrect" class="text-sm font-black text-emerald-400 shrink-0 flex items-center gap-1">
+                    ✓ Đúng
+                  </span>
                 </div>
               </div>
             </div>
@@ -203,13 +283,51 @@
         </button>
       </div>
     </div>
+
+    <!-- GUEST LIMIT AUTH MODAL -->
+    <div v-if="showGuestLimitModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-fade-in">
+      <div class="relative w-full max-w-md rounded-[2.5rem] border border-[var(--border-strong)] bg-[var(--surface)] p-8 text-center shadow-2xl overflow-hidden">
+        <!-- Background Glow -->
+        <div class="pointer-events-none absolute -right-20 -top-20 h-48 w-48 rounded-full bg-amber-500/20 blur-3xl"></div>
+        <div class="pointer-events-none absolute -left-20 -bottom-20 h-48 w-48 rounded-full bg-[var(--primary)]/20 blur-3xl"></div>
+
+        <div class="relative z-10">
+          <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 text-3xl shadow-inner border border-amber-500/30 mb-4 animate-bounce">
+            🔒
+          </div>
+          <h3 class="text-2xl font-black text-[var(--text)] tracking-tight">Đăng ký để học trọn bộ!</h3>
+          <p class="mt-3 text-sm text-[var(--muted)] leading-relaxed">
+            Bạn đang trải nghiệm chế độ <b class="text-amber-400">Khách dùng thử ({{ GUEST_PREVIEW_LIMIT }} thẻ)</b>. Để học tiếp toàn bộ <b>{{ totalCount }}</b> thẻ và lưu kết quả thuộc bài, hãy đăng nhập hoặc tạo tài khoản miễn phí nhé!
+          </p>
+
+          <div class="mt-6 flex flex-col gap-3">
+            <button 
+              type="button" 
+              class="w-full rounded-full bg-gradient-to-r from-[var(--primary)] to-[var(--accent)] py-3.5 text-sm font-black text-white shadow-lg transition hover:-translate-y-0.5 hover:shadow-xl active:scale-95"
+              @click="goToLogin"
+            >
+              🚀 Đăng nhập / Đăng ký ngay
+            </button>
+
+            <button 
+              type="button" 
+              class="w-full rounded-full border border-[var(--border)] bg-[var(--surface-soft)] py-3 text-xs font-bold text-[var(--muted)] transition hover:text-[var(--text)] hover:border-[var(--border-strong)] active:scale-95"
+              @click="restartGuestPreview"
+            >
+              🔄 Ôn lại 5 thẻ dùng thử
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </section>
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { normalizeQuestion, normalizeQuizCard, quizzesApi } from '@/services/api'
+import { normalizeQuestion, normalizeQuizCard, quizzesApi, tokenStorage } from '@/services/api'
+import speechService from '@/services/speechService'
 
 const route = useRoute()
 const router = useRouter()
@@ -219,6 +337,17 @@ const errorMessage = ref('')
 const isFlipped = ref(false)
 const currentIndex = ref(0)
 const isFinished = ref(false)
+
+// Auth & Guest Limit State
+const isLoggedIn = computed(() => !!tokenStorage.get())
+const GUEST_PREVIEW_LIMIT = 5
+const showGuestLimitModal = ref(false)
+
+// Audio Controls State
+const isAutoPlayAudio = ref(localStorage.getItem('flashcard_autoplay_audio') === 'true')
+const isSoundEffects = ref(localStorage.getItem('flashcard_sfx_enabled') !== 'false')
+const audioRate = ref(parseFloat(localStorage.getItem('flashcard_audio_rate') || '1.0'))
+const activeSpeakingTarget = ref(null) // 'front' | 'back' | 'ans-A' | etc.
 
 const quizMeta = ref({ title: '', category: '', difficulty: '' })
 const questions = ref([])
@@ -231,32 +360,146 @@ const isReviewingWeakOnly = ref(false)
 
 const totalCount = computed(() => questions.value.length)
 const currentCard = computed(() => activeList.value[currentIndex.value] || { question: '', answers: [] })
-// xác định thẻ hiện tại đang hiện thị dựa trên currentIndex
 const progressPercent = computed(() => {
   if (activeList.value.length === 0) return 0
   return Math.round((currentIndex.value / activeList.value.length) * 100)
 })
 
+const toggleAutoPlayAudio = () => {
+  isAutoPlayAudio.value = !isAutoPlayAudio.value
+  localStorage.setItem('flashcard_autoplay_audio', isAutoPlayAudio.value ? 'true' : 'false')
+  if (!isAutoPlayAudio.value) {
+    speechService.stop()
+    activeSpeakingTarget.value = null
+  }
+}
+
+const toggleAudioRate = () => {
+  if (audioRate.value === 1.0) {
+    audioRate.value = 0.75
+  } else if (audioRate.value === 0.75) {
+    audioRate.value = 0.55
+  } else {
+    audioRate.value = 1.0
+  }
+  localStorage.setItem('flashcard_audio_rate', audioRate.value.toString())
+  speechService.stop()
+  activeSpeakingTarget.value = null
+}
+
+const toggleSoundEffects = () => {
+  isSoundEffects.value = !isSoundEffects.value
+  localStorage.setItem('flashcard_sfx_enabled', isSoundEffects.value ? 'true' : 'false')
+}
+
+const speakFrontText = () => {
+  if (!currentCard.value.question) return
+  activeSpeakingTarget.value = 'front'
+  speechService.speak(currentCard.value.question, {
+    rate: audioRate.value,
+    onEnd: () => {
+      if (activeSpeakingTarget.value === 'front') {
+        activeSpeakingTarget.value = null
+      }
+    }
+  })
+}
+
+const speakBackText = () => {
+  const correctAnswers = currentCard.value.answers
+    .filter(a => a.isCorrect)
+    .map(a => a.text)
+    .join('. ')
+  
+  const textToSpeak = correctAnswers || currentCard.value.question
+  activeSpeakingTarget.value = 'back'
+  speechService.speak(textToSpeak, {
+    rate: audioRate.value,
+    onEnd: () => {
+      if (activeSpeakingTarget.value === 'back') {
+        activeSpeakingTarget.value = null
+      }
+    }
+  })
+}
+
+const speakOptionText = (answer) => {
+  if (!answer || !answer.text) return
+  activeSpeakingTarget.value = `ans-${answer.key}`
+  speechService.speak(answer.text, {
+    rate: audioRate.value,
+    onEnd: () => {
+      if (activeSpeakingTarget.value === `ans-${answer.key}`) {
+        activeSpeakingTarget.value = null
+      }
+    }
+  })
+}
+
 const toggleFlip = () => {
+  speechService.stop()
+  activeSpeakingTarget.value = null
+
+  if (isSoundEffects.value) {
+    speechService.playFlipSound()
+  }
+
   isFlipped.value = !isFlipped.value
+
+  if (isAutoPlayAudio.value) {
+    setTimeout(() => {
+      if (isFlipped.value) {
+        speakBackText()
+      } else {
+        speakFrontText()
+      }
+    }, 300)
+  }
 }
 
 const goBack = () => {
+  speechService.stop()
   router.push(`/quizzes/${route.params.id}`)
 }
 
+const goToLogin = () => {
+  speechService.stop()
+  router.push({ path: '/login', query: { redirect: route.fullPath } })
+}
+
+const restartGuestPreview = () => {
+  speechService.stop()
+  showGuestLimitModal.value = false
+  currentIndex.value = 0
+  isFlipped.value = false
+}
+
 const markAnswer = (isMastered) => {
+  speechService.stop()
+  activeSpeakingTarget.value = null
+
+  // Restrict Guest after 5 preview cards
+  if (!isLoggedIn.value && currentIndex.value >= GUEST_PREVIEW_LIMIT - 1) {
+    showGuestLimitModal.value = true
+    return
+  }
+
+  if (isSoundEffects.value) {
+    if (isMastered) {
+      speechService.playSuccessSound()
+    } else {
+      speechService.playReviewSound()
+    }
+  }
+
   const originalQuestion = currentCard.value
-  // sẽ lấy câu hỏi và đáp án từ currentCard
   
   if (isMastered) {
-    // Thêm vào danh sách đã thành thạo nếu chưa có, loại bỏ khỏi danh sách còn yếu.
     if (!masteredQuestions.value.includes(originalQuestion.id)) {
       masteredQuestions.value.push(originalQuestion.id)
     }
     needReviewQuestions.value = needReviewQuestions.value.filter(id => id !== originalQuestion.id)
   } else {
-    // Thêm vào danh sách cần xem lại nếu chưa có, và loại bỏ khỏi danh sách đã nắm vững.
     if (!needReviewQuestions.value.includes(originalQuestion.id)) {
       needReviewQuestions.value.push(originalQuestion.id)
     }
@@ -265,20 +508,23 @@ const markAnswer = (isMastered) => {
 
   // Go to next card or complete
   if (currentIndex.value < activeList.value.length - 1) {
-    // Slide transition: reset flip first, wait brief delay for flip transition, then switch card
     isFlipped.value = false
     setTimeout(() => {
       currentIndex.value += 1
-    }, 150)
+      if (isAutoPlayAudio.value) {
+        speakFrontText()
+      }
+    }, 200)
   } else {
     isFlipped.value = false
     setTimeout(() => {
       isFinished.value = true
-    }, 150)
+    }, 200)
   }
 }
 
 const restartAll = () => {
+  speechService.stop()
   activeList.value = [...questions.value]
   currentIndex.value = 0
   isFlipped.value = false
@@ -286,24 +532,31 @@ const restartAll = () => {
   masteredQuestions.value = []
   needReviewQuestions.value = []
   isReviewingWeakOnly.value = false
+
+  if (isAutoPlayAudio.value) {
+    setTimeout(speakFrontText, 300)
+  }
 }
 
 const restartOnlyWeak = () => {
+  speechService.stop()
   const weakIds = [...needReviewQuestions.value]
   activeList.value = questions.value.filter(q => weakIds.includes(q.id))
   currentIndex.value = 0
   isFlipped.value = false
   isFinished.value = false
   isReviewingWeakOnly.value = true
+
+  if (isAutoPlayAudio.value) {
+    setTimeout(speakFrontText, 300)
+  }
 }
 
 const loadQuizDetails = async () => {
-  // hàm bất đồng bộ async, vì nó phải gọi API lấy dữ liệu quiz
   isLoading.value = true
   errorMessage.value = ''
   
   try {
-    //frontend gọi api lấy chi tiết quiz theo id trên url
     const rawData = await quizzesApi.get(route.params.id)
     const normalizedQuiz = normalizeQuizCard(rawData)
     
@@ -312,12 +565,14 @@ const loadQuizDetails = async () => {
       category: normalizedQuiz.category,
       difficulty: normalizedQuiz.difficulty,
     }
-    //chuyển đổi các thuộc tính từ phong cách của backend sang định dạng sử dụng của frontend
     
     const rawQuestions = rawData.questions || []
     questions.value = rawQuestions.map(q => normalizeQuestion(q))
     activeList.value = [...questions.value]
-    // lưu câu hỏi vào activelist
+
+    if (isAutoPlayAudio.value && activeList.value.length > 0) {
+      setTimeout(speakFrontText, 500)
+    }
   } catch (error) {
     errorMessage.value = `Không tải được dữ liệu: ${error.message}`
   } finally {
@@ -326,6 +581,10 @@ const loadQuizDetails = async () => {
 }
 
 onMounted(loadQuizDetails)
+
+onUnmounted(() => {
+  speechService.stop()
+})
 </script>
 
 <style scoped>
