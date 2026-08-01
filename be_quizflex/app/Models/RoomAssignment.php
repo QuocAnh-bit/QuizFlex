@@ -21,6 +21,8 @@ class RoomAssignment extends Model
         'max_attempts',
         'show_result_mode',
         'status',
+          'shuffle_questions',
+    'shuffle_answers',
     ];
 
     protected $casts = [
@@ -28,6 +30,9 @@ class RoomAssignment extends Model
         'deadline_at' => 'datetime',
         'duration_minutes' => 'integer',
         'max_attempts' => 'integer',
+
+          'shuffle_questions' => 'boolean',
+    'shuffle_answers' => 'boolean',
     ];
 
     public function room()

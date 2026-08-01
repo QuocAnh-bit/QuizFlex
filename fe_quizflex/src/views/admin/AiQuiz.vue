@@ -17,7 +17,7 @@
         <div class="mt-8 grid gap-4">
           <textarea v-model="prompt" class="field min-h-44" placeholder="Ví dụ: Tạo 10 câu hỏi toán lớp 10 về hàm số bậc nhất, mức trung bình, 4 đáp án mỗi câu."></textarea>
 
-          <div class="grid gap-4 md:grid-cols-4">
+          <div class="grid gap-4 md:grid-cols-3">
             <select v-model.number="settings.count" class="quiz-select">
               <option :value="5">5 câu</option>
               <option :value="10">10 câu</option>
@@ -37,11 +37,6 @@
               <option value="easy">Dễ</option>
               <option value="medium">Vừa</option>
               <option value="hard">Khó</option>
-            </select>
-
-            <select v-model="settings.language" class="quiz-select">
-              <option value="vi">Tiếng Việt</option>
-              <option value="en">English</option>
             </select>
 
             <select v-model="settings.visibility" class="quiz-select">
@@ -65,17 +60,17 @@
             </span>
           </div>
           <!-- KHU VỰC HIỂN THỊ TIẾN ĐỘ NGẦM (CHỈ HIỆN KHI ĐANG CHẠY) -->
-          <div v-if="isGenerating || isPolling" class="mt-6 rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface-soft)] p-6">
+          <!-- <div v-if="isGenerating || isPolling" class="mt-6 rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface-soft)] p-6">
             <h3 class="text-xs font-black uppercase tracking-[0.16em] text-[var(--text)] mb-5">Tiến trình xử lý AI</h3>
 
-            <!-- Thanh Progress Bar -->
+            
             <div class="w-full bg-[var(--surface)] rounded-full h-1.5 mb-6 overflow-hidden border border-[var(--border)]">
               <div class="bg-[var(--primary)] h-1.5 transition-all duration-500 ease-out" :style="{ width: progressPercentage + '%' }"></div>
             </div>
 
-            <!-- Danh sách các bước Timeline -->
+            
             <div class="space-y-5 relative before:absolute before:inset-0 before:left-[15px] before:bg-[var(--border)] before:w-[1px]">
-              <!-- Bước 1 -->
+              
               <div class="flex items-start space-x-4 relative">
                 <div :class="getStepClass('validate_prompt')" class="w-8 h-8 rounded-full flex items-center justify-center z-10 font-bold border-2 text-xs transition-colors duration-300">1</div>
                 <div class="flex-1 pt-1.5">
@@ -83,7 +78,7 @@
                   <span v-if="currentStep === 'validate_prompt'" class="text-xs text-[var(--primary)] mt-1 block">Đang phân tích...</span>
                 </div>
               </div>
-              <!-- Bước 2 -->
+              
               <div class="flex items-start space-x-4 relative">
                 <div :class="getStepClass('calling_ai_api')" class="w-8 h-8 rounded-full flex items-center justify-center z-10 font-bold border-2 text-xs transition-colors duration-300">2</div>
                 <div class="flex-1 pt-1.5">
@@ -91,20 +86,35 @@
                   <span v-if="currentStep === 'calling_ai_api'" class="text-xs text-[var(--primary)] mt-1 block">AI đang suy nghĩ (Có thể mất 10-20s)...</span>
                 </div>
               </div>
-              <!-- Bước 3 -->
+              
               <div class="flex items-start space-x-4 relative">
                 <div :class="getStepClass('parsing_ai_response')" class="w-8 h-8 rounded-full flex items-center justify-center z-10 font-bold border-2 text-xs transition-colors duration-300">3</div>
                 <div class="flex-1 pt-1.5">
                   <p class="text-sm transition-colors duration-300" :class="getTextClass('parsing_ai_response')">Bóc tách dữ liệu câu hỏi</p>
                 </div>
               </div>
-              <!-- Bước 4 -->
+              
               <div class="flex items-start space-x-4 relative">
                 <div :class="getStepClass('saving_to_database')" class="w-8 h-8 rounded-full flex items-center justify-center z-10 font-bold border-2 text-xs transition-colors duration-300">4</div>
                 <div class="flex-1 pt-1.5">
                   <p class="text-sm transition-colors duration-300" :class="getTextClass('saving_to_database')">Đồng bộ đáp án vào hệ thống</p>
                 </div>
               </div>
+            </div>
+          </div> -->
+          <div v-if="isGenerating || isPolling" class="mt-6 rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface-soft)] p-6">
+            <div class="flex items-center justify-between mb-3">
+              <p class="text-sm font-bold text-[var(--text)]">{{ currentLabel }}</p>
+              <span class="rounded-full bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 text-xs font-black text-emerald-300">
+                {{ Math.round(displayPercent) }}%
+              </span>
+            </div>
+
+            <div class="w-full bg-[var(--surface)] rounded-full h-2 overflow-hidden border border-[var(--border)]">
+              <div
+                class="h-2 rounded-full bg-gradient-to-r from-[var(--primary)] to-fuchsia-400 transition-[width] duration-150 ease-linear"
+                :style="{ width: displayPercent + '%' }"
+              ></div>
             </div>
           </div>
           <!-- KẾT THÚC KHU VỰC HIỂN THỊ TIẾN ĐỘ -->
@@ -214,41 +224,59 @@ const actionLabel = computed(() => {
   return 'Tạo quiz bằng AI'
 })
 
-// --- BẮT ĐẦU ĐOẠN CODE TIMELINE ---
-const progressPercentage = computed(() => {
-  if (jobStatus.value === 'failed') return 100
-  switch (currentStep.value) {
-    case 'validate_prompt': return 15
-    case 'calling_ai_api': return 45
-    case 'parsing_ai_response': return 75
-    case 'saving_to_database': return 90
-    case 'completed': return 100
-    default: return 0
-  }
-})
-
-const getStepClass = (stepName) => {
-  const steps = ['validate_prompt', 'calling_ai_api', 'parsing_ai_response', 'saving_to_database', 'completed']
-  const currentIndex = steps.indexOf(currentStep.value)
-  const targetIndex = steps.indexOf(stepName)
-
-  if (jobStatus.value === 'failed' && currentIndex === targetIndex) {
-    return 'border-rose-500 bg-rose-500/20 text-rose-300'
-  }
-  if (currentStep.value === 'completed' || targetIndex < currentIndex) {
-    return 'border-emerald-500 bg-emerald-500/20 text-emerald-400'
-  }
-  if (currentStep.value === stepName) {
-    return 'border-[var(--primary)] bg-[var(--primary)]/20 text-[var(--primary)] shadow-[0_0_15px_var(--primary)] animate-pulse'
-  }
-  return 'border-[var(--border)] bg-[var(--surface-soft)] text-[var(--muted)]'
+// Mốc % mục tiêu ứng với mỗi current_step từ backend
+const stepTargets = {
+  '': 5,
+  validate_prompt: 20,
+  calling_ai_api: 70,
+  parsing_ai_response: 85,
+  saving_to_database: 95,
+  completed: 100,
 }
 
-const getTextClass = (stepName) => {
-  if (currentStep.value === stepName) return 'text-[var(--primary)] font-bold'
-  return 'text-[var(--muted)]'
+const stepLabels = {
+  '': 'Đang khởi tạo...',
+  validate_prompt: 'Đang kiểm tra và tối ưu câu lệnh...',
+  calling_ai_api: 'AI đang suy nghĩ (có thể mất 10-20s)...',
+  parsing_ai_response: 'Đang bóc tách dữ liệu câu hỏi...',
+  saving_to_database: 'Đang đồng bộ đáp án vào hệ thống...',
+  completed: 'Hoàn tất!',
 }
-// --- KẾT THÚC ĐOẠN CODE TIMELINE ---
+
+const displayPercent = ref(0)
+let rafId = null
+
+const currentTarget = computed(() => stepTargets[currentStep.value] ?? displayPercent.value)
+const currentLabel = computed(() => stepLabels[currentStep.value] ?? 'Đang xử lý...')
+
+
+const startProgressLoop = () => {
+  if (rafId) cancelAnimationFrame(rafId)
+  rafId = requestAnimationFrame(animateProgress)
+}
+
+const stopProgressLoop = () => {
+  if (rafId) {
+    cancelAnimationFrame(rafId)
+    rafId = null
+  }
+}
+
+const animateProgress = () => {
+  const target = currentTarget.value
+  
+  if (displayPercent.value < target) {
+    const diff = target - displayPercent.value
+    
+    // Trick "đứng hình" mượt mà 
+    // Cách đích > 5% thì tiến bình thường. Cách <= 5% thì nhích cực chậm (0.01%/frame) 
+    // để trong lúc chờ 15s AI, thanh % vẫn trôi rề rề chứ không đứng yên.
+    const step = diff > 5 ? Math.max(0.1, diff * 0.05) : 0.01
+    
+    displayPercent.value = Math.min(target, displayPercent.value + step)
+  }
+  rafId = requestAnimationFrame(animateProgress)
+}
 
 const isInvalidPromptMessage = (message = '') =>
   message.includes('Prompt chưa rõ nội dung') ||
@@ -270,13 +298,20 @@ const pollJob = async () => {
   try {
     const job = await aiApi.getJob(jobId.value)
     jobStatus.value = job.status
-    currentStep.value = job.current_step || '' // <-- Thêm dòng này
+    
+    
+    if (job.current_step) {
+      currentStep.value = job.current_step 
+    }
 
     if (job.status === 'completed' && job.quiz_id) {
       generatedQuiz.value = job.quiz_full || job.quiz || null
       await authApi.me()
       isPolling.value = false
+      currentStep.value = 'completed' 
+      displayPercent.value = 100
       stopPolling()
+      stopProgressLoop()
       return
     }
 
@@ -289,6 +324,7 @@ const pollJob = async () => {
       }
       isPolling.value = false
       stopPolling()
+      stopProgressLoop()
       return
     }
 
@@ -297,6 +333,7 @@ const pollJob = async () => {
     errorMessage.value = `Không lấy được trạng thái AI job: ${error.message}`
     isPolling.value = false
     stopPolling()
+    stopProgressLoop()
   }
 }
 
@@ -306,7 +343,8 @@ const generateQuiz = async () => {
     return
   }
 
-  currentStep.value = 'validate_prompt' // <-- Thêm dòng này
+  displayPercent.value = 0
+  currentStep.value = 'validate_prompt'
   isGenerating.value = true
   errorMessage.value = ''
   successMessage.value = ''
@@ -314,6 +352,7 @@ const generateQuiz = async () => {
   jobId.value = ''
   jobStatus.value = ''
   stopPolling()
+  startProgressLoop()
 
   try {
     const response = await aiApi.generate({
@@ -338,6 +377,7 @@ const generateQuiz = async () => {
     } else {
       errorMessage.value = `Không tạo được AI quiz: ${msg}`
     }
+    stopProgressLoop()
   } finally {
     isGenerating.value = false
   }
@@ -349,6 +389,7 @@ const openInEditor = () => {
 }
 
 onBeforeUnmount(() => {
+  stopProgressLoop()
   stopPolling()
 })
 </script>

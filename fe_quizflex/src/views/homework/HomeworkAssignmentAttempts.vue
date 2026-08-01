@@ -45,7 +45,7 @@
           <span>Số câu đúng</span>
           <span>Bắt đầu</span>
           <span>Nộp bài</span>
-          <span>Đánh giá</span>
+          <span>Thao tác</span>
         </div>
 
         <article
@@ -62,7 +62,7 @@
           <p class="text-sm font-black text-[var(--text)]">{{ formatCorrectCount(attempt) }}</p>
           <p class="text-sm font-bold text-[var(--muted)]">{{ formatDateTime(attempt.started_at) }}</p>
           <p class="text-sm font-bold text-[var(--muted)]">{{ formatDateTime(attempt.submitted_at || attempt.finished_at) }}</p>
-          <div>
+          <div class="flex items-center gap-2">
             <button
               class="btn-ghost px-3 py-1.5 text-xs flex items-center gap-1"
               :class="attempt.evaluation ? 'text-emerald-400 hover:bg-emerald-500/10' : 'text-[var(--primary)] hover:bg-[var(--primary)]/10'"
@@ -71,6 +71,15 @@
             >
               <span>Đánh giá</span>
               <span v-if="attempt.evaluation" title="Đã có nhận xét">💬</span>
+            </button>
+            <button
+              v-if="isHost && !isBanned"
+              class="btn-ghost px-3 py-1.5 text-xs text-rose-400 hover:bg-rose-500/10 flex items-center gap-1 disabled:opacity-50"
+              type="button"
+              :disabled="isResetting === attempt.id"
+              @click="resetAttempt(attempt)"
+            >
+              {{ isResetting === attempt.id ? '...' : 'Reset' }}
             </button>
           </div>
         </article>
@@ -107,7 +116,7 @@
             </div>
 
             <div v-else>
-              <div v-if="canManageRoom" class="space-y-4">
+              <div v-if="isHost && !isBanned" class="space-y-4">
                 <div>
                   <label class="block text-xs font-bold text-[var(--muted)] mb-1 uppercase">Nhận xét của giáo viên</label>
                   <textarea 
@@ -133,7 +142,7 @@
         <div class="mt-6 flex items-center justify-end gap-3 pt-4 border-t border-[var(--border)]">
           <button @click="closeEvaluation" class="btn-ghost" type="button">Đóng</button>
           <button 
-            v-if="canManageRoom && !isLoadingEvaluation" 
+            v-if="isHost && !isLoadingEvaluation && !isBanned" 
             @click="saveEvaluation" 
             class="btn-primary" 
             type="button"
@@ -161,9 +170,12 @@ const room = ref(null)
 const attempts = ref([])
 const isLoading = ref(false)
 const errorMessage = ref('')
+const isResetting = ref(null)
 
 const currentUser = currentUserStorage.get()
-const canManageRoom = computed(() => currentUser?.role === 'admin' || Number(room.value?.owner_id) === Number(currentUser?.id))
+const canManageRoom = computed(() => currentUser?.role === 'admin' || Number(room.value?.host_id) === Number(currentUser?.id))
+const isHost = computed(() => Number(room.value?.host_id) === Number(currentUser?.id))
+const isBanned = computed(() => room.value?.status === 'banned')
 
 // Evaluation modal state
 const selectedAttempt = ref(null)
@@ -253,6 +265,21 @@ const saveEvaluation = async () => {
     alert(`Không lưu được nhận xét: ${error.message}`)
   } finally {
     isSavingEvaluation.value = false
+  }
+}
+
+const resetAttempt = async (attempt) => {
+  if (!confirm('Xác nhận xóa kết quả làm bài của học viên này? Thao tác này không thể hoàn tác.')) return
+
+  isResetting.value = attempt.id
+  try {
+    const res = await homeworkApi.resetRoomAssignmentAttempt(assignmentId.value, attempt.id)
+    alert(res.message || 'Đã reset lượt làm bài thành công. Học viên có thể làm lại từ đầu.')
+    await loadAttempts()
+  } catch (error) {
+    alert(error.message || 'Không reset được lượt làm bài.')
+  } finally {
+    isResetting.value = null
   }
 }
 

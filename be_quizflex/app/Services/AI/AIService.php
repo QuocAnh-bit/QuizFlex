@@ -290,16 +290,21 @@ PROMPT;
         return [
             'title' => $title !== '' ? $title : 'AI Generated Quiz',
             'questions' => $questions
-                ->map(fn(array $question) => [
-                    'content' => trim((string) $question['content']),
-                    'answers' => collect($question['answers'])
+                ->map(function (array $question): array {
+                    $answers = collect($question['answers'])
                         ->map(fn(array $answer) => [
                             'content' => trim((string) $answer['content']),
                             'is_correct' => (bool) $answer['is_correct'],
                         ])
-                        ->values()
-                        ->all(),
-                ])
+                        ->all();
+
+                    shuffle($answers);
+
+                    return [
+                        'content' => trim((string) $question['content']),
+                        'answers' => $answers,
+                    ];
+                })
                 ->values()
                 ->all(),
         ];

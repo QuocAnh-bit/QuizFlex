@@ -85,10 +85,10 @@ class PayOSService
     public function getPaymentDetails(string $orderCode)
     {
         $response = Http::withHeaders([
-            'x-client-id' => $this->clientId,
-            'x-api-key' => $this->apiKey,
+            'x-client-id' => $this->clientId, // gửi mã định danh của doanh nghiệp khi làm việc với PayOs
+            'x-api-key' => $this->apiKey, // gửi mã api key 
             'Content-Type' => 'application/json',
-        ])->get($this->baseUrl . '/v2/payment-requests/' . $orderCode);
+        ])->get($this->baseUrl . '/v2/payment-requests/' . $orderCode); // gửi mã đơn hàng để lấy thông tin thanh toán
 
         $resData = $response->json();
 

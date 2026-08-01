@@ -65,10 +65,7 @@ const joinRoom = async () => {
     successMessage.value = 'Tham gia room thành công.'
     window.setTimeout(() => router.push('/homework-rooms'), 700)
   } catch (error) {
-    const isWhitelistError = String(error.message || '').includes('danh sách được phép tham gia')
-    errorMessage.value = isWhitelistError
-      ? 'Email của bạn không nằm trong danh sách được phép tham gia phòng này. Vui lòng liên hệ chủ phòng.'
-      : `Không tham gia được room: ${error.message}`
+    errorMessage.value = error.message || 'Không tham gia được room.'
   } finally {
     isSubmitting.value = false
   }

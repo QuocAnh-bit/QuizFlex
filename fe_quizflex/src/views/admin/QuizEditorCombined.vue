@@ -1,7 +1,7 @@
 <template>
-  <section class="grid gap-6 2xl:grid-cols-[minmax(0,1fr)_360px]">
+  <section class="grid gap-6 min-w-0 mx-auto w-full max-w-[1500px] 2xl:grid-cols-[minmax(0,1fr)_360px]">
     <form
-      class="relative overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-soft)] backdrop-blur-2xl"
+      class="relative min-w-0 overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-5 sm:p-8 shadow-[var(--shadow-soft)] backdrop-blur-2xl"
       @submit.prevent="saveQuiz"
     >
       <div class="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[var(--primary)]/15 blur-3xl"></div>
@@ -300,7 +300,8 @@
           <div
             v-for="(q, index) in questions"
             :key="q.id"
-            class="rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface-soft)] p-5 transition hover:border-[var(--border-strong)]"
+            :ref="(el) => setQuestionCardRef(el, index)"
+            class="min-w-0 rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface-soft)] p-5 sm:p-6 transition hover:border-[var(--border-strong)]"
           >
             <div class="flex flex-wrap items-center justify-between gap-3">
               <div class="flex flex-wrap items-center gap-2">
@@ -649,31 +650,37 @@
           </div>
         </div>
 
-        <div
-          v-if="errorMessage"
-          class="mt-5 rounded-2xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm font-bold text-rose-300"
-        >
-          {{ errorMessage }}
-        </div>
-
-        <div
-          v-if="successMessage"
-          class="mt-5 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm font-bold text-emerald-300"
-        >
-          {{ successMessage }}
-        </div>
-
-        <div class="mt-6 flex flex-wrap gap-3">
-          <button class="btn-ghost" type="button" @click="addQuestion('single_choice')">
-            Thêm câu hỏi
-          </button>
-
-          <button class="btn-primary" type="submit" :disabled="isSaving">
-            {{ isSaving ? "Đang lưu..." : "Lưu quiz" }}
-          </button>
-        </div>
       </div>
     </form>
+
+    <div class="fixed bottom-4 right-4 z-[60] flex flex-col gap-2 rounded-[1.4rem] border border-[var(--border)] bg-[var(--surface)]/95 p-3 shadow-[var(--shadow-card)] backdrop-blur-xl">
+      <button class="btn-ghost !px-4 !py-2 text-xs" type="button" @click="addQuestion('single_choice')">
+        Thêm câu hỏi
+      </button>
+      <button class="btn-primary !px-4 !py-2 text-xs" type="button" :disabled="isSaving" @click="saveQuiz">
+        {{ isSaving ? "Đang lưu..." : "Lưu quiz" }}
+      </button>
+    </div>
+
+    <div
+      v-if="toastMessage"
+      class="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm"
+      @click="clearToast"
+    >
+      <div
+        class="w-full max-w-md rounded-[2rem] border px-6 py-6 text-center shadow-[0_30px_80px_rgba(0,0,0,0.35)]"
+        :class="toastType === 'success' ? 'border-emerald-500/30 bg-[var(--surface)] text-emerald-200' : 'border-rose-500/30 bg-[var(--surface)] text-rose-200'"
+        @click.stop
+      >
+        <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full text-2xl font-black"
+          :class="toastType === 'success' ? 'bg-emerald-500/15' : 'bg-rose-500/15'"
+        >
+          {{ toastType === 'success' ? '✓' : '!' }}
+        </div>
+        <h3 class="text-xl font-black text-[var(--text)]">{{ toastType === 'success' ? 'Thông báo' : 'Có lỗi xảy ra' }}</h3>
+        <p class="mt-3 text-sm font-semibold leading-7 text-[var(--muted)]">{{ toastMessage }}</p>
+      </div>
+    </div>
 
     <aside class="grid content-start gap-5">
       <article class="overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-card)] backdrop-blur-2xl">
@@ -739,7 +746,7 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, reactive, ref } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import draggable from "vuedraggable";
 import "mathlive";
@@ -789,9 +796,13 @@ const isEditMode = computed(() => Boolean(route.params.id));
 const isSaving = ref(false);
 const errorMessage = ref("");
 const successMessage = ref("");
+const toastMessage = ref("");
+const toastType = ref("success");
+const toastTimer = ref(null);
 const coverInput = ref(null);
 const coverPreview = ref("");
 const questionImageInputs = ref([]);
+const questionCardRefs = ref([]);
 const ocrMode = ref("math");
 
 const form = reactive({
@@ -1149,6 +1160,35 @@ const removeQuestionImage = (question, index) => {
   question.images.splice(index, 1);
 };
 
+const setQuestionCardRef = (el, index) => {
+  questionCardRefs.value[index] = el;
+};
+
+const scrollToLastQuestion = () => {
+  nextTick(() => {
+    const lastIndex = questions.value.length - 1;
+    const target = questionCardRefs.value[lastIndex];
+    target?.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+};
+
+const clearToast = () => {
+  if (toastTimer.value) {
+    clearTimeout(toastTimer.value);
+    toastTimer.value = null;
+  }
+  toastMessage.value = "";
+};
+
+const showToast = (message, type = "success") => {
+  clearToast();
+  toastMessage.value = message;
+  toastType.value = type;
+  toastTimer.value = window.setTimeout(() => {
+    clearToast();
+  }, 5000);
+};
+
 const addQuestion = (type = "single_choice") => {
   questions.value.push(
     normalizeEditorQuestion({
@@ -1168,15 +1208,19 @@ const addQuestion = (type = "single_choice") => {
       images: [],
     }),
   );
+
+  scrollToLastQuestion();
 };
 
 const removeQuestion = (index) => {
   if (questions.value.length === 1) {
     errorMessage.value = "Quiz cần ít nhất 1 câu hỏi.";
+    showToast(errorMessage.value, "error");
     return;
   }
 
   questions.value.splice(index, 1);
+  questionCardRefs.value.splice(index, 1);
 };
 
 const buildSavePayload = () => {
@@ -1351,7 +1395,10 @@ const saveQuiz = async () => {
   errorMessage.value = validateBeforeSave();
   successMessage.value = "";
 
-  if (errorMessage.value) return;
+  if (errorMessage.value) {
+    showToast(errorMessage.value, "error");
+    return;
+  }
 
   isSaving.value = true;
 
@@ -1365,6 +1412,7 @@ const saveQuiz = async () => {
     successMessage.value = isEditMode.value
       ? "Đã cập nhật quiz."
       : "Đã tạo quiz mới.";
+    showToast(successMessage.value, "success");
 
     if (!isEditMode.value) {
       router.push(`${questionBase.value}/edit/${saved.id}`);
@@ -1372,6 +1420,7 @@ const saveQuiz = async () => {
   } catch (error) {
     errorMessage.value =
       error?.response?.data?.message || `Lưu thất bại: ${error.message}`;
+    showToast(errorMessage.value, "error");
   } finally {
     isSaving.value = false;
   }
@@ -1511,6 +1560,7 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(() => {
+  clearToast();
   revokeCoverPreview();
   window.removeEventListener("quizflex-user-updated", syncCreatorProfile);
   window.removeEventListener("storage", syncCreatorProfile);
@@ -1523,12 +1573,15 @@ onBeforeUnmount(() => {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.75rem;
+  max-width: 100%;
+  overflow-x: auto;
+  padding: 0.25rem 0.35rem;
 }
 
 .editor-block {
   position: relative;
   display: inline-flex;
-  flex: 0 0 auto;
+  flex: 0 1 auto;
   align-items: stretch;
   min-height: 56px;
   max-width: 100%;

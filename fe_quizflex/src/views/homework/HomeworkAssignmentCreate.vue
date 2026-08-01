@@ -68,6 +68,24 @@
               <input v-model="form.starts_at" class="field" type="datetime-local" />
             </label>
 
+            <div class="space-y-3">
+    <label class="flex items-center gap-2">
+        <input
+            type="checkbox"
+            v-model="form.shuffle_questions"
+        >
+        <span>Trộn câu hỏi</span>
+    </label>
+
+    <label class="flex items-center gap-2">
+        <input
+            type="checkbox"
+            v-model="form.shuffle_answers"
+        >
+        <span>Trộn đáp án</span>
+    </label>
+</div>
+
             <label class="grid gap-2">
               <span class="text-sm font-black text-[var(--text)]">Deadline</span>
               <input v-model="form.deadline_at" class="field" type="datetime-local" />
@@ -148,11 +166,13 @@ const form = reactive({
   max_attempts: 1,
   show_result_mode: 'immediately',
   status: 'published',
+  shuffle_questions: false,
+shuffle_answers: false,
 })
 
 const canManageRoom = computed(() => {
   const role = String(currentUser?.role || '').toLowerCase()
-  return role === 'admin' || Number(room.value?.owner_id) === Number(currentUser?.id)
+  return role === 'admin' || Number(room.value?.host_id) === Number(currentUser?.id)
 })
 
 const syncTitleFromQuiz = () => {
@@ -182,6 +202,9 @@ const buildPayload = () => ({
   max_attempts: Number(form.max_attempts) || 1,
   show_result_mode: form.show_result_mode,
   status: form.status,
+
+  shuffle_questions: form.shuffle_questions,
+  shuffle_answers: form.shuffle_answers,
 })
 
 const loadData = async () => {

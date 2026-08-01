@@ -132,10 +132,10 @@ onMounted(() => {
 const verifyTransaction = async () => {
   const queryParams = route.query
   
-  // Case 1: PayOS redirect (contains orderCode) or custom success redirect
+  // Case 1: PayOS tự động chuyển hướng trình duyệt về URL thành công:
   if (queryParams.orderCode) {
     try {
-      const res = await paymentsApi.checkStatus(queryParams.orderCode)
+      const res = await paymentsApi.checkStatus(queryParams.orderCode) // kiểm tra trạng thái thành công hay thất bại
       if (res.success && res.status === 'success') {
         isSuccess.value = true
         resultData.value = res

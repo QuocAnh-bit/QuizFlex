@@ -156,12 +156,23 @@ select {
     background: var(--surface);
   }
 
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-extrabold text-white transition hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none;
+    background: linear-gradient(135deg, #ef4444, #b91c1c);
+    box-shadow: 0 12px 28px rgba(239,68,68,.30);
+  }
+
   .field {
     @apply w-full rounded-xl px-4 py-3 outline-none transition;
     color: var(--text);
     border: 1px solid var(--border);
     background: var(--input-bg);
   }
+
+  select option {
+  background-color: var(--surface, #1e1e24) !important;
+  color: var(--text, #ffffff) !important;
+}
 
   .field:focus {
     border-color: var(--border-strong);

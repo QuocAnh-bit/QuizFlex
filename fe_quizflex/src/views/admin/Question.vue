@@ -6,13 +6,42 @@
         <div>
           <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">{{ isUserWorkspace ? 'My Quiz Library' : 'Quiz Library' }}</p>
           <h1 class="mt-2 text-4xl font-black tracking-[-0.06em] text-[var(--text)]">{{ isUserWorkspace ? 'Kho quiz của tôi' : 'Kho quiz' }}</h1>
-          <p class="mt-3 max-w-2xl text-sm leading-7 text-[var(--muted)]">{{ isUserWorkspace ? 'Chỉ hiển thị các quiz do tài khoản của bạn tạo để quản lý và chỉnh sửa.' : 'Tìm kiếm, lọc theo tag, độ khó và visibility từ dữ liệu Laravel API.' }}</p>
+         <p class="mt-3 max-w-2xl text-sm leading-7 text-[var(--muted)]">
+  {{ isUserWorkspace 
+    ? 'Chỉ hiển thị các quiz do tài khoản của bạn tạo để quản lý và chỉnh sửa.' 
+    : 'Tìm kiếm, lọc theo tag, độ khó và visibility từ dữ liệu Laravel API.' 
+  }}
+</p>
+
+
+<div v-if="isUserWorkspace" class="mt-5 flex gap-3">
+
+  <button
+    type="button"
+    class="rounded-full border border-red-500/30 bg-red-500/10 px-5 py-2 text-xs font-black text-red-300 transition hover:-translate-y-1"
+    @click="loadTrash"
+  >
+    🗑 Thùng rác
+  </button>
+
+
+  <button
+    v-if="showTrash"
+    type="button"
+    class="rounded-full border border-[var(--border)] bg-[var(--surface-soft)] px-5 py-2 text-xs font-black text-[var(--text)]"
+    @click="loadQuizzes"
+  >
+    ← Quay lại
+  </button>
+
+</div>
         </div>
-        <div class="flex flex-wrap gap-3">
+        <!-- <div class="flex flex-wrap gap-3">
           <router-link class="btn-ghost" :to="`${questionBase}/ocr`">Upload OCR</router-link>
           <router-link class="btn-ghost" :to="`${questionBase}/ai`">AI Generator</router-link>
           <router-link class="btn-primary" :to="`${questionBase}/create`">Tạo quiz</router-link>
-        </div>
+        </div> -->
+        
       </div>
     </div>
 
@@ -44,10 +73,22 @@
           <div class="absolute bottom-4 right-4 grid h-12 w-12 place-items-center rounded-2xl bg-white/90 text-sm font-black text-slate-900 shadow-xl transition group-hover:scale-110 group-hover:rotate-3">{{ quiz.icon }}</div>
         </div>
         <div class="p-5">
-          <div class="mb-3 flex flex-wrap items-center gap-2">
-            <VisibilityBadge :value="quiz.visibility" />
-            <span class="rounded-full border border-[var(--border)] bg-[var(--surface-soft)] px-3 py-1 text-xs font-black text-[var(--muted)]">{{ quiz.difficulty }}</span>
-          </div>
+         <div class="mb-3 flex flex-wrap items-center gap-2">
+  <!-- Nếu user đang ở Kho quiz của tôi và quiz bị admin ẩn -->
+  <span
+    v-if="isUserWorkspace && !quiz.is_public"
+    class="rounded-full border border-yellow-500/30 bg-yellow-500/10 px-3 py-1 text-xs font-black text-yellow-300"
+  >
+    Đã bị ẩn
+  </span>
+
+  <!-- Các trạng thái bình thường -->
+  <VisibilityBadge v-else :value="quiz.visibility" />
+
+  <span class="rounded-full border border-[var(--border)] bg-[var(--surface-soft)] px-3 py-1 text-xs font-black text-[var(--muted)]">
+    {{ quiz.difficulty }}
+  </span>
+</div>
           <h3 class="text-xl font-black tracking-[-0.04em] text-[var(--text)] transition group-hover:text-[var(--primary)]">{{ quiz.title }}</h3>
           <p class="mt-2 text-sm leading-6 text-[var(--muted)]">{{ quiz.category }} • {{ quiz.tag }} • by {{ quiz.author }}</p>
           <div class="mt-5 grid grid-cols-3 gap-2">
@@ -55,11 +96,72 @@
             <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-3 text-center"><b class="block text-[var(--text)]">{{ quiz.attempts }}</b><span class="text-[10px] font-bold text-[var(--muted)]">Lượt</span></div>
             <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-3 text-center"><b class="block text-[var(--text)]">{{ quiz.avgScore }}%</b><span class="text-[10px] font-bold text-[var(--muted)]">Điểm</span></div>
           </div>
-          <div class="mt-5 flex flex-wrap gap-2">
+          <!-- <div class="mt-5 flex flex-wrap gap-2">
             <router-link class="rounded-full border border-[var(--border)] bg-[var(--surface-soft)] px-4 py-2 text-xs font-black text-[var(--text)] transition hover:border-[var(--border-strong)] hover:bg-[var(--chip-active)]" :to="`/quizzes/${quiz.id}`">Xem</router-link>
             <router-link class="rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--primary-2)] px-4 py-2 text-xs font-black text-white" :to="`${questionBase}/edit/${quiz.id}`">Sửa</router-link>
             <button class="rounded-full border border-rose-500/30 bg-rose-500/10 px-4 py-2 text-xs font-black text-rose-300" type="button" @click="deleteQuiz(quiz.id)">Xóa</button>
-          </div>
+          </div> -->
+          <div class="mt-5 flex flex-wrap gap-2">
+  <router-link
+    class="rounded-full border border-[var(--border)] bg-[var(--surface-soft)] px-4 py-2 text-xs font-black text-[var(--text)] transition hover:border-[var(--border-strong)] hover:bg-[var(--chip-active)]"
+    :to="`/quizzes/${quiz.id}`"
+  >
+    Xem
+  </router-link>
+  
+
+  <router-link
+    class="rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--primary-2)] px-4 py-2 text-xs font-black text-white"
+    :to="`${questionBase}/edit/${quiz.id}`"
+  >
+    Sửa
+  </router-link>
+<!-- USER -->
+
+<button
+  v-if="isUserWorkspace && !showTrash"
+  class="rounded-full border border-rose-500/30 bg-rose-500/10 px-4 py-2 text-xs font-black text-rose-300"
+  type="button"
+  @click="deleteQuiz(quiz.id)"
+>
+  Xóa
+</button>
+
+
+
+<button
+  v-if="isUserWorkspace && showTrash"
+  class="rounded-full border border-green-500/30 bg-green-500/10 px-4 py-2 text-xs font-black text-green-300"
+  type="button"
+  @click="restoreQuiz(quiz.id)"
+>
+  Khôi phục
+</button>
+
+
+
+<button
+  v-if="isUserWorkspace && showTrash"
+  class="rounded-full border border-red-500/30 bg-red-500/10 px-4 py-2 text-xs font-black text-red-300"
+  type="button"
+  @click="forceDeleteQuiz(quiz.id)"
+>
+  Xóa vĩnh viễn
+</button>
+
+
+
+<!-- ADMIN -->
+
+<button
+  v-if="!isUserWorkspace"
+  class="rounded-full border border-yellow-500/30 bg-yellow-500/10 px-4 py-2 text-xs font-black text-yellow-300"
+  type="button"
+  @click="toggleVisibility(quiz)"
+>
+  {{ quiz.is_public ? 'Ẩn' : 'Hiện lại' }}
+</button>
+</div>
         </div>
       </article>
     </div>
@@ -88,6 +190,7 @@ const isUserWorkspace = computed(() => route.path.startsWith('/dashboard'))
 const quizzes = ref([])
 const isLoading = ref(false)
 const errorMessage = ref('')
+const showTrash = ref(false)
 
 const visibilityChips = [
   { value: 'all', label: 'Tất cả' },
@@ -111,26 +214,55 @@ const setVisibility = async (value) => {
   visibilityFilter.value = value
   await loadQuizzes()
 }
-
 const loadQuizzes = async () => {
+
+  showTrash.value = false
+
   isLoading.value = true
   errorMessage.value = ''
 
+
   try {
+
     const data = await quizzesApi.list({
+
       search: search.value || undefined,
+
       difficulty: difficultyFilter.value || undefined,
-      visibility: visibilityFilter.value === 'all' ? undefined : visibilityFilter.value,
-      owner: isUserWorkspace.value ? 'me' : undefined,
-      per_page: 100,
+
+      visibility:
+        visibilityFilter.value === 'all'
+        ? undefined
+        : visibilityFilter.value,
+
+
+      owner: isUserWorkspace.value 
+        ? 'me'
+        : undefined,
+
+
+      per_page:100
+
     })
+
+
     quizzes.value = data.map(normalizeQuizCard)
-  } catch (error) {
-    errorMessage.value = `Không gọi được backend: ${error.message}`
-    quizzes.value = []
+
+
+  } catch(error){
+
+    errorMessage.value =
+      `Không gọi được backend: ${error.message}`
+
+    quizzes.value=[]
+
+
   } finally {
-    isLoading.value = false
+
+    isLoading.value=false
+
   }
+
 }
 
 const deleteQuiz = async (id) => {
@@ -143,11 +275,125 @@ const deleteQuiz = async (id) => {
     errorMessage.value = `Xóa thất bại: ${error.message}`
   }
 }
+const loadTrash = async()=>{
+
+
+ showTrash.value=true
+
+
+ isLoading.value=true
+
+ errorMessage.value=''
+
+
+
+ try{
+
+
+   const data = await quizzesApi.trash()
+
+
+   quizzes.value =
+     data.map(normalizeQuizCard)
+
+
+
+ }catch(error){
+
+
+   errorMessage.value =
+   `Không tải được thùng rác: ${error.message}`
+
+
+ }finally{
+
+
+   isLoading.value=false
+
+
+ }
+
+
+}
+const toggleVisibility = async (quiz) => {
+  const action = quiz.is_public ? 'ẩn' : 'hiện lại'
+
+  if (!window.confirm(`Bạn có chắc muốn ${action} quiz này?`)) return
+
+  try {
+    await quizzesApi.toggleVisibility(quiz.id)
+
+    // Cập nhật trạng thái ngay trên giao diện
+    quiz.is_public = !quiz.is_public
+
+    // Cập nhật visibility để badge đổi theo
+    quiz.visibility = quiz.is_public ? 'public' : 'private'
+  } catch (error) {
+    errorMessage.value = `Cập nhật thất bại: ${error.message}`
+  }
+}
 
 const filteredQuizzes = computed(() => {
   return quizzes.value.filter((quiz) => tagFilter.value === 'all' || quiz.tag === tagFilter.value)
 })
+const restoreQuiz = async(id)=>{
 
+
+ if(!confirm('Khôi phục quiz này?'))
+ return
+
+
+
+ try{
+
+
+   await quizzesApi.restore(id)
+
+
+   await loadTrash()
+
+
+
+ }catch(error){
+
+
+   errorMessage.value =
+   `Khôi phục thất bại: ${error.message}`
+
+
+ }
+
+
+}
+const forceDeleteQuiz = async(id)=>{
+
+
+ if(!confirm('Xóa vĩnh viễn quiz này?'))
+ return
+
+
+
+ try{
+
+
+   await quizzesApi.forceDelete(id)
+
+
+   await loadTrash()
+
+
+
+ }catch(error){
+
+
+   errorMessage.value =
+   `Xóa thất bại: ${error.message}`
+
+
+ }
+
+
+}
 onMounted(async () => {
   applyRouteFilters()
   await loadQuizzes()

@@ -8,6 +8,7 @@ use App\Models\RoomMember;
 use App\Models\RoomMemberEvaluation;
 use App\Models\QuizAttempt;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class HomeworkRoomMemberEvaluationController extends Controller
 {
@@ -18,15 +19,12 @@ class HomeworkRoomMemberEvaluationController extends Controller
     {
         $currentUser = $request->user();
 
-        // 1. Authorization check: Admin, Room Owner, or the user themselves
-        $isAdmin = strtolower((string) ($currentUser->role ?? 'user')) === 'admin';
-        $isOwner = (int) $room->owner_id === (int) $currentUser->id;
-        $isSelf = (int) $user->id === (int) $currentUser->id;
-
-        if (!$isAdmin && !$isOwner && !$isSelf) {
+        Gate::forUser($currentUser)->authorize('view', $room);
+        $viewAuthorization = Gate::forUser($currentUser)->inspect('viewMemberEvaluation', [$room, $user]);
+        if ($viewAuthorization->denied()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Bạn không có quyền xem đánh giá này.',
+                'message' => $viewAuthorization->message(),
             ], 403);
         }
 
@@ -84,18 +82,17 @@ class HomeworkRoomMemberEvaluationController extends Controller
      */
     public function store(Request $request, Room $room, User $user)
     {
-        $currentUser = $request->user();
-
-        // 1. Authorization check: Only Room Owner or Admin can write evaluation
-        $isAdmin = strtolower((string) ($currentUser->role ?? 'user')) === 'admin';
-        $isOwner = (int) $room->owner_id === (int) $currentUser->id;
-
-        if (!$isAdmin && !$isOwner) {
+        if ($room->status === 'banned') {
             return response()->json([
                 'success' => false,
-                'message' => 'Chỉ chủ phòng mới có quyền lưu đánh giá.',
+                'message' => 'Phòng học này đã bị khóa bởi quản trị viên.',
             ], 403);
         }
+
+        $currentUser = $request->user();
+
+        // 1. Authorization check: Only Room Host can write evaluation
+        Gate::forUser($currentUser)->authorize('manageMembers', $room);
 
         // 2. Verify target user is an active member in this room
         $isMember = RoomMember::where('room_id', $room->id)

@@ -33,10 +33,13 @@
             color: #a78bfa;
         }
         h1 {
-            font-size: 24px;
-            font-weight: 800;
-            margin-bottom: 8px;
+            font-size: 26px;
+            font-weight: 900;
+            line-height: 1.35;
+            margin-bottom: 12px;
             color: #ffffff;
+            letter-spacing: -0.01em;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         p {
             font-size: 15px;
@@ -65,14 +68,20 @@
             border-top: 1px solid #334155;
             padding-top: 24px;
             margin-top: 40px;
+            line-height: 1.6;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="logo">Quiz<span>Flex</span></div>
-        <h1>Mã Xác Thực OTP Đăng Ký</h1>
-        <p>Chào mừng bạn đến với <b>QuizFlex</b>! Để hoàn tất việc thiết lập tài khoản và kích hoạt đầy đủ tính năng, vui lòng sử dụng mã OTP dưới đây để xác thực:</p>
+        @if (($type ?? 'register') === 'forgot_password')
+            <h1 style="font-size: 26px; font-weight: 900; color: #ffffff; margin-bottom: 12px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">Mã Xác Thực OTP Đặt Lại Mật Khẩu</h1>
+            <p>Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản <b>QuizFlex</b> của bạn. Vui lòng sử dụng mã OTP dưới đây để tiến hành khôi phục:</p>
+        @else
+            <h1 style="font-size: 26px; font-weight: 900; color: #ffffff; margin-bottom: 12px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">Mã Xác Thực OTP Đăng Ký Tài Khoản</h1>
+            <p>Chào mừng bạn đến với <b>QuizFlex</b>! Để hoàn tất việc thiết lập tài khoản và kích hoạt đầy đủ tính năng, vui lòng sử dụng mã OTP dưới đây để xác thực:</p>
+        @endif
         
         <div class="otp-box">
             <h2 class="otp-code">{{ $otpCode }}</h2>
@@ -81,8 +90,12 @@
         <p style="margin-top: 0; font-size: 13px; color: #a78bfa;">* Mã OTP này chỉ có hiệu lực trong vòng <b>10 phút</b> và chỉ sử dụng được 1 lần.</p>
         
         <div class="warning">
-            Nếu bạn không thực hiện yêu cầu đăng ký này, vui lòng bỏ qua email này hoặc liên hệ hỗ trợ.
-            <br>
+            @if (($type ?? 'register') === 'forgot_password')
+                ⚠️ Nếu bạn <b>không thực hiện</b> yêu cầu đặt lại mật khẩu này, vui lòng bỏ qua email và bảo mật lại hộp thư Gmail của bạn ngay lập tức. Tuyệt đối KHÔNG chia sẻ mã này cho ai.
+            @else
+                Nếu bạn không thực hiện yêu cầu đăng ký này, vui lòng bỏ qua email này hoặc liên hệ hỗ trợ.
+            @endif
+            <br><br>
             © {{ date('Y') }} QuizFlex Team. All rights reserved.
         </div>
     </div>

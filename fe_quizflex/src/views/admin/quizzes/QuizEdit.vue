@@ -206,7 +206,7 @@ const saveQuiz = async () => {
 onMounted(fetchQuiz)
 </script>
 <template>
-  <section class="grid gap-6">
+  <section class="grid gap-6 min-w-0">
 
     <!-- Loading -->
     <div
@@ -216,12 +216,12 @@ onMounted(fetchQuiz)
       Đang tải thông tin quiz...
     </div>
 
-    <div v-else class="max-w-5xl">
+    <div v-else class="max-w-5xl w-full min-w-0 mx-auto">
 
       <!-- Header -->
 
       <div
-        class="relative overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-soft)] backdrop-blur-2xl mb-6"
+        class="relative min-w-0 overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-5 sm:p-8 shadow-[var(--shadow-soft)] backdrop-blur-2xl mb-6"
       >
 
         <div
@@ -268,7 +268,7 @@ onMounted(fetchQuiz)
       <!-- Card -->
 
       <article
-        class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-card)] backdrop-blur-2xl space-y-6"
+        class="min-w-0 rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-5 sm:p-8 shadow-[var(--shadow-card)] backdrop-blur-2xl space-y-6"
       >
 
         <div>
@@ -373,12 +373,12 @@ onMounted(fetchQuiz)
             >
               Danh sách câu hỏi
             </h2>
-<!-- <button
+<button
   class="btn-primary"
   @click="addQuestion"
 >
   ➕ Thêm câu hỏi
-</button> -->
+</button>
 </div>
           </div>
 
@@ -386,7 +386,7 @@ onMounted(fetchQuiz)
            <div
   v-for="(question, qIndex) in form.questions"
   :key="question.id ?? qIndex"
-  class="mt-6 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 space-y-5"
+  class="mt-6 min-w-0 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5 sm:p-6 space-y-5"
 >
 
   <div class="flex items-center justify-between">

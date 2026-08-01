@@ -69,7 +69,7 @@ const errorMessage = ref('')
 const currentUser = currentUserStorage.get()
 
 const roleForRoom = (room) => {
-  if (Number(room.owner_id) === Number(currentUser?.id)) return 'Chủ room'
+  if (Number(room.host_id) === Number(currentUser?.id)) return 'Host'
   return room.role || room.member_role || 'Thành viên'
 }
 

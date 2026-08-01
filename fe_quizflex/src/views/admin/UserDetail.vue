@@ -30,6 +30,14 @@
 
             <div class="mt-6 space-y-5">
               <div class="rounded-3xl bg-[var(--surface-soft)] p-4">
+                <p class="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">Plan</p>
+                <p class="mt-2 text-lg font-black text-[var(--text)]">{{ user.plan_label || user.plan }}</p>
+              </div>
+              <div class="rounded-3xl bg-[var(--surface-soft)] p-4">
+                <p class="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">AI còn lại</p>
+                <p class="mt-2 text-lg font-black text-[var(--text)]">{{ user.role === 'admin' ? '∞' : (user.ai_quota_remaining ?? 0) + ' lượt' }}</p>
+              </div>
+              <div class="rounded-3xl bg-[var(--surface-soft)] p-4">
                 <p class="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">Role hiện tại</p>
                 <p class="mt-2 text-lg font-black text-[var(--text)]">{{ user.role_label || user.role }}</p>
               </div>
@@ -206,6 +214,8 @@
 import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usersApi } from '@/services/api'
+
+const ocrQuotaForPlan = (plan) => ({ ultra: '∞', pro: '50', plus: '10', free: '0' }[plan] || '0')
 
 const route = useRoute()
 const router = useRouter()

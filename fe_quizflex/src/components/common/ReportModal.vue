@@ -5,7 +5,7 @@
       <p class="mt-2 text-sm text-[var(--muted)]">Vui lòng cho biết lý do bạn báo cáo bài Quiz này. Chúng tôi sẽ xem xét kỹ lưỡng.</p>
 
       <form @submit.prevent="submitReport" class="mt-6 grid gap-4">
-        <div>
+        <!-- <div>
           <label class="mb-2 block text-sm font-bold text-[var(--muted)]">Lý do</label>
           <select v-model="form.reason" required class="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-soft)] p-3 text-sm text-[var(--text)] outline-none focus:border-[var(--primary)]">
             <option value="" disabled>Chọn lý do...</option>
@@ -13,6 +13,16 @@
             <option value="Nội dung nhạy cảm, không phù hợp">Nội dung nhạy cảm, không phù hợp</option>
             <option value="Spam, quảng cáo">Spam, quảng cáo</option>
             <option value="Lý do khác">Lý do khác</option>
+          </select>
+        </div> -->
+        <div>
+          <label class="mb-2 block text-sm font-bold text-[var(--muted)]">Lý do</label>
+          <select v-model="form.reason" required style="color-scheme: dark;" class="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-soft)] p-3 text-sm text-[var(--text)] outline-none focus:border-[var(--primary)]">
+            <option value="" disabled class="bg-gray-800 text-white">Chọn lý do...</option>
+            <option value="Thông tin sai lệch" class="bg-gray-800 text-white">Thông tin sai lệch</option>
+            <option value="Nội dung nhạy cảm, không phù hợp" class="bg-gray-800 text-white">Nội dung nhạy cảm, không phù hợp</option>
+            <option value="Spam, quảng cáo" class="bg-gray-800 text-white">Spam, quảng cáo</option>
+            <option value="Lý do khác" class="bg-gray-800 text-white">Lý do khác</option>
           </select>
         </div>
 
