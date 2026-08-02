@@ -257,6 +257,11 @@ export const authApi = {
     return currentUserStorage.get() || user;
   },
 
+  async lockedInfo() {
+    const { data } = await api.get("/auth/locked-info");
+    return unwrap(data);
+  },
+
   async updateProfile(payload = {}) {
     const formData = new FormData();
     Object.entries(payload).forEach(([key, value]) => {
@@ -343,6 +348,16 @@ export const usersApi = {
   async forceDelete(id) {
     const { data } = await api.delete(`/users/${id}/force`);
     return data;
+  },
+
+  async lock(id, payload = {}) {
+    const { data } = await api.post(`/admin/users/${id}/lock`, payload);
+    return unwrap(data);
+  },
+
+  async unlock(id) {
+    const { data } = await api.post(`/admin/users/${id}/unlock`);
+    return unwrap(data);
   },
 };
 
@@ -456,6 +471,43 @@ export const attemptsApi = {
 
   async get(id) {
     const { data } = await api.get(`/quiz-attempts/${id}`);
+    return unwrap(data);
+  },
+};
+
+export const unlockRequestsApi = {
+  async create(payload = {}) {
+    const { data } = await api.post('/unlock-requests', payload);
+    return unwrap(data);
+  },
+
+  async latest() {
+    const { data } = await api.get('/unlock-requests/latest');
+    return unwrap(data);
+  },
+
+  async adminList(params = {}) {
+    const { data } = await api.get('/admin/unlock-requests', { params });
+    return unwrap(data);
+  },
+
+  async adminGet(id) {
+    const { data } = await api.get(`/admin/unlock-requests/${id}`);
+    return unwrap(data);
+  },
+
+  async pendingCount() {
+    const { data } = await api.get('/admin/unlock-requests/pending-count');
+    return unwrap(data);
+  },
+
+  async approve(id, payload = {}) {
+    const { data } = await api.post(`/admin/unlock-requests/${id}/approve`, payload);
+    return unwrap(data);
+  },
+
+  async reject(id, payload = {}) {
+    const { data } = await api.post(`/admin/unlock-requests/${id}/reject`, payload);
     return unwrap(data);
   },
 };

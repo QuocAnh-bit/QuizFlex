@@ -226,6 +226,14 @@ const handleQuickLoginPassword = async () => {
     successMessage.value = 'Đăng nhập thành công.'
     localStorage.setItem('quizflex_last_login_method', 'password')
 
+    if (user.is_locked) {
+      successMessage.value = 'Tài khoản của bạn đã bị khóa. Đang chuyển tới trang kháng cáo...'
+      setTimeout(() => {
+        router.push('/account-locked')
+      }, 400)
+      return
+    }
+
     let targetPath = getDefaultRouteForRole(user.role)
     setTimeout(() => {
       router.push(targetPath)
@@ -278,6 +286,14 @@ onMounted(async () => {
       successMessage.value = `Xin chào ${user.name}! Đăng nhập Google thành công.`
       localStorage.setItem('quizflex_last_login_method', 'google')
 
+      if (user.is_locked) {
+        successMessage.value = 'Tài khoản của bạn đã bị khóa. Đang chuyển tới trang kháng cáo...'
+        setTimeout(() => {
+          router.push('/account-locked')
+        }, 400)
+        return
+      }
+
       setTimeout(() => {
         router.push('/')
       }, 400)
@@ -323,6 +339,14 @@ const handleLogin = async () => {
     const user = await authApi.login({ email: form.email, password: form.password })
     successMessage.value = 'Đăng nhập thành công.'
     localStorage.setItem('quizflex_last_login_method', 'password')
+
+    if (user.is_locked) {
+      successMessage.value = 'Tài khoản của bạn đã bị khóa. Đang chuyển tới trang kháng cáo...'
+      setTimeout(() => {
+        router.push('/account-locked')
+      }, 400)
+      return
+    }
 
     const query = {}
     let targetPath = safeRedirect(route.query.redirect) || getDefaultRouteForRole(user.role)

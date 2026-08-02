@@ -33,6 +33,10 @@ class UserController extends Controller
             $query->where('plan', strtolower((string) $request->query('plan')));
         }
 
+        if ($request->filled('is_locked')) {
+            $query->where('is_locked', (bool) $request->query('is_locked'));
+        }
+
         $perPage = min(max((int) $request->query('per_page', 50), 1), 100);
         $users   = $query->paginate($perPage)->through(fn(User $u) => $this->formatUser($u));
 

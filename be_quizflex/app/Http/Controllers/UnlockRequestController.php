@@ -22,6 +22,10 @@ class UnlockRequestController extends Controller
             $query->where('status', strtolower((string) $request->query('status')));
         }
 
+        if ($request->filled('user_id')) {
+            $query->where('user_id', (int) $request->query('user_id'));
+        }
+
         $requests = $query->get()->map(function (UnlockRequest $requestItem) {
             return [
                 'id' => $requestItem->id,

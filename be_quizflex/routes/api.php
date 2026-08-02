@@ -94,8 +94,8 @@ Route::middleware('auth:api')->group(function () {
         Route::delete('/users/{id}/force', [UserController::class, 'forceDelete']);
         Route::post('/admin/users/{user}/lock', [UserController::class, 'lock']);
         Route::post('/admin/users/{user}/unlock', [UserController::class, 'unlock']);
-        Route::get('/admin/unlock-requests', [UnlockRequestController::class, 'index']);
         Route::get('/admin/unlock-requests/pending-count', [UnlockRequestController::class, 'pendingCount']);
+        Route::get('/admin/unlock-requests', [UnlockRequestController::class, 'index']);
         Route::get('/admin/unlock-requests/{unlockRequest}', [UnlockRequestController::class, 'show']);
         Route::post('/admin/unlock-requests/{unlockRequest}/approve', [UnlockRequestController::class, 'approve']);
         Route::post('/admin/unlock-requests/{unlockRequest}/reject', [UnlockRequestController::class, 'reject']);
