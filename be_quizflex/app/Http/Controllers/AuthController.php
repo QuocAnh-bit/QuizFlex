@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use App\Services\Auth\OtpService;
+use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 use PHPOpenSourceSaver\JWTAuth\JWTGuard;
 
 class AuthController extends Controller
@@ -27,7 +28,7 @@ class AuthController extends Controller
             ], 422);
         }
 
-        $user = $this->authenticatedUser();
+        $user = $this->apiGuard()->user();
 
         // Kiểm tra xem tài khoản đã xác thực email (OTP) chưa
         if ($user->email_verified_at === null) {
@@ -163,7 +164,7 @@ class AuthController extends Controller
                 $user->save();
 
                 // Tự động đăng nhập và sinh JWT Token
-                $token = auth('api')->login($user);
+                $token = JWTAuth::fromUser($user);
             }
 
             return response()->json([
@@ -207,6 +208,30 @@ class AuthController extends Controller
         return response()->json([
             'success' => true,
             'data' => $this->formatUser($this->authenticatedUser()),
+        ]);
+    }
+
+    public function lockedInfo()
+    {
+        $user = $this->apiGuard()->user();
+
+        if (!$user instanceof User) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Vui lòng đăng nhập để tiếp tục.',
+            ], 401);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'is_locked' => (bool) $user->is_locked,
+                'locked_at' => $user->locked_at ? $user->locked_at->toDateTimeString() : null,
+                'locked_reason' => $user->locked_reason,
+            ],
         ]);
     }
 
@@ -271,6 +296,11 @@ class AuthController extends Controller
 
         if (!$user instanceof User) {
             abort(401, 'Unauthenticated.');
+        }
+
+        if ($user->isLocked()) {
+            $this->apiGuard()->logout();
+            abort(403, 'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.');
         }
 
         return $user;
@@ -350,6 +380,9 @@ class AuthController extends Controller
             'role_label' => $roleLabel,
             'avatar' => $this->resolveAvatarForResponse($user->avatar),
             'ai_quota_remaining' => $user->ai_quota_remaining,
+            'is_locked' => (bool) $user->is_locked,
+            'locked_at' => $user->locked_at ? $user->locked_at->toDateTimeString() : null,
+            'locked_reason' => $user->locked_reason,
             'vip_expires_at' => $user->vip_expires_at ? $user->vip_expires_at->toDateTimeString() : null,
             'trial_used_at' => $user->trial_used_at ? $user->trial_used_at->toDateTimeString() : null,
             'created_at' => $user->created_at,

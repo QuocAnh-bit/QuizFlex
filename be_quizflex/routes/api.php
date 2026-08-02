@@ -17,6 +17,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\HomeworkRoomMemberEvaluationController;
 use App\Http\Controllers\HomeworkSubmissionEvaluationController;
+use App\Http\Controllers\UnlockRequestController;
 use App\Services\AI\AIService;
 use App\AI\Prompts\QuizPrompt;
 use App\Http\Controllers\AIController;
@@ -57,11 +58,14 @@ Route::post('/auth/refresh', [AuthController::class, 'refresh']);
 Route::middleware('auth:api')->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/auth/me', [AuthController::class, 'me']);
+    Route::get('/auth/locked-info', [AuthController::class, 'lockedInfo']);
     Route::post('/auth/profile', [AuthController::class, 'updateProfile']);
     Route::post('/ai/generate', [AIController::class, 'generate']);
     Route::post('/ai/generate-quiz', [AIController::class, 'generate']);
     Route::post('/ocr/scan', [OcrController::class, 'scan']);
     Route::post('/payments/activate-trial', [PaymentController::class, 'activateTrial']);
+    Route::post('/unlock-requests', [UnlockRequestController::class, 'store']);
+    Route::get('/unlock-requests/latest', [UnlockRequestController::class, 'latest']);
     Route::get('/ai/jobs/{jobId}', [AIController::class, 'status'])->whereUuid('jobId');
     Route::get('/ai/quiz-status/{jobId}', [AIController::class, 'status'])->whereUuid('jobId');
     Route::get('/ai/logs/{id}', [AIController::class, 'show']);
@@ -88,6 +92,13 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/users/trashed', [UserController::class, 'trashed']);
         Route::patch('/users/{id}/restore', [UserController::class, 'restore']);
         Route::delete('/users/{id}/force', [UserController::class, 'forceDelete']);
+        Route::post('/admin/users/{user}/lock', [UserController::class, 'lock']);
+        Route::post('/admin/users/{user}/unlock', [UserController::class, 'unlock']);
+        Route::get('/admin/unlock-requests', [UnlockRequestController::class, 'index']);
+        Route::get('/admin/unlock-requests/pending-count', [UnlockRequestController::class, 'pendingCount']);
+        Route::get('/admin/unlock-requests/{unlockRequest}', [UnlockRequestController::class, 'show']);
+        Route::post('/admin/unlock-requests/{unlockRequest}/approve', [UnlockRequestController::class, 'approve']);
+        Route::post('/admin/unlock-requests/{unlockRequest}/reject', [UnlockRequestController::class, 'reject']);
         Route::apiResource('users', UserController::class);
 
         // Quản lý quiz cho admin

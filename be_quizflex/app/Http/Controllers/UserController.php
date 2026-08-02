@@ -199,6 +199,52 @@ class UserController extends Controller
         return response()->json(['success' => true, 'message' => 'Cập nhật người dùng thành công', 'data' => $this->formatUser($user)]);
     }
 
+    public function lock(Request $request, User $user)
+    {
+        $actor = auth('api')->user();
+        $permissionError = $this->authorizeLockAction($actor, $user);
+        if ($permissionError) {
+            return $permissionError;
+        }
+
+        $data = $request->validate([
+            'reason' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $user->forceFill([
+            'is_locked'     => true,
+            'locked_at'     => now(),
+            'locked_reason' => trim((string) ($data['reason'] ?? '')) ?: null,
+            'locked_by'     => $actor?->id,
+        ])->save();
+
+        $user->load(['lockedBy']);
+        $user->loadCount(['quizzes', 'attempts']);
+
+        return response()->json(['success' => true, 'message' => 'Tài khoản đã được khóa.', 'data' => $this->formatUser($user)]);
+    }
+
+    public function unlock(User $user)
+    {
+        $actor = auth('api')->user();
+        $permissionError = $this->authorizeLockAction($actor, $user);
+        if ($permissionError) {
+            return $permissionError;
+        }
+
+        $user->forceFill([
+            'is_locked'     => false,
+            'locked_at'     => null,
+            'locked_reason' => null,
+            'locked_by'     => null,
+        ])->save();
+
+        $user->load(['lockedBy']);
+        $user->loadCount(['quizzes', 'attempts']);
+
+        return response()->json(['success' => true, 'message' => 'Tài khoản đã được mở khóa.', 'data' => $this->formatUser($user)]);
+    }
+
     // ─── Xóa mềm ─────────────────────────────────────────────────────────────
 
     public function destroy(User $user)
@@ -319,6 +365,34 @@ class UserController extends Controller
         };
     }
 
+    private function authorizeLockAction(?object $actor, User $target): ?\Illuminate\Http\JsonResponse
+    {
+        if (!$actor) {
+            return response()->json(['success' => false, 'message' => 'Không có quyền thực hiện thao tác này.'], 403);
+        }
+
+        if (!$actor->isAdmin()) {
+            return response()->json(['success' => false, 'message' => 'Bạn không có quyền thực hiện thao tác này.'], 403);
+        }
+
+        if ((int) ($actor?->id ?? 0) === (int) $target->id) {
+            return response()->json(['success' => false, 'message' => 'Không thể thực hiện trên chính mình.'], 403);
+        }
+
+        $actorIsMainAdmin = $this->isMainAdminActor($actor);
+        $targetIsMainAdmin = (bool) $target->isMainAdmin();
+
+        if ($targetIsMainAdmin) {
+            return response()->json(['success' => false, 'message' => 'Không thể khóa hoặc mở khóa admin chính.'], 403);
+        }
+
+        if (!$actorIsMainAdmin && $target->isAdmin()) {
+            return response()->json(['success' => false, 'message' => 'Bạn không có quyền thực hiện thao tác với tài khoản admin phụ.'], 403);
+        }
+
+        return null;
+    }
+
     private function formatUser(User $user): array
     {
         $activePlan = $user->getActivePlan();
@@ -330,6 +404,14 @@ class UserController extends Controller
             'role'               => $user->getRole(),
             'role_label'         => $user->isAdmin() ? 'Admin' : 'User',
             'is_main_admin'      => $user->isMainAdmin(),
+            'is_locked'          => (bool) $user->is_locked,
+            'locked_at'          => $user->locked_at?->toDateTimeString(),
+            'locked_reason'      => $user->locked_reason,
+            'locked_by'          => $user->lockedBy ? [
+                'id'    => $user->lockedBy->id,
+                'name'  => $user->lockedBy->name,
+                'email' => $user->lockedBy->email,
+            ] : null,
             'plan'               => $activePlan,
             'plan_label'         => ucfirst($activePlan),
             'plan_started_at'    => $user->plan_started_at?->toDateTimeString(),
@@ -339,7 +421,7 @@ class UserController extends Controller
             'ocr_label'          => $this->ocrLabelForPlan($activePlan),
             'quizzes_count'      => $user->quizzes_count ?? 0,
             'attempts_count'     => $user->attempts_count ?? 0,
-            'status'             => 'active',
+            'status'             => $user->is_locked ? 'locked' : 'active',
             'joined_at'          => $user->created_at,
             'created_at'         => $user->created_at,
             'updated_at'         => $user->updated_at,
@@ -351,7 +433,7 @@ class UserController extends Controller
 
     private function formatUserDetail(User $user): array
     {
-        $user->load('payments');
+        $user->load(['payments', 'lockedBy']);
         $userData = $this->formatUser($user);
 
         $payments        = Payment::where('user_id', $user->id)->orderByDesc('created_at')->get();
