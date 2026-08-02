@@ -23,7 +23,7 @@
             <span>{{ isAutoPlayAudio ? '🔊 Tự phát âm' : '🔇 Tự phát âm' }}</span>
           </button>
 
-          <!-- Multi-speed Audio Rate Toggle (1.0x -> 0.75x -> 0.55x) -->
+          <!-- Multi-speed Audio Rate Toggle (1.0x -> 0.7x -> 0.45x) -->
           <button 
             type="button" 
             class="flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition active:scale-95"
@@ -31,8 +31,8 @@
             @click="toggleAudioRate"
             :title="`Tốc độ phát âm: ${audioRate}x (Nhấn để đổi tốc độ)`"
           >
-            <span v-if="audioRate === 0.55">🐢 Rất chậm (0.55x)</span>
-            <span v-else-if="audioRate === 0.75">🔉 Đọc vừa (0.75x)</span>
+            <span v-if="audioRate === 0.45">🐢 Đọc chậm (0.45x)</span>
+            <span v-else-if="audioRate === 0.7">🔉 Đọc vừa (0.7x)</span>
             <span v-else>⚡ Tốc độ (1.0x)</span>
           </button>
 
@@ -376,9 +376,9 @@ const toggleAutoPlayAudio = () => {
 
 const toggleAudioRate = () => {
   if (audioRate.value === 1.0) {
-    audioRate.value = 0.75
-  } else if (audioRate.value === 0.75) {
-    audioRate.value = 0.55
+    audioRate.value = 0.7
+  } else if (audioRate.value === 0.7) {
+    audioRate.value = 0.45
   } else {
     audioRate.value = 1.0
   }

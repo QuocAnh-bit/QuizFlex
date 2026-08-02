@@ -422,6 +422,8 @@ class PaymentController extends Controller
         // 1. Kích hoạt dùng thử Plus trong 7 ngày
         $user->role = 'PLUS';
         $user->vip_expires_at = now()->addDays(7);
+        $user->plan = 'plus';
+        $user->plan_expires_at = $user->vip_expires_at;
         $user->trial_used_at = now();
         $user->ai_quota_remaining = ($user->ai_quota_remaining ?? 0) + 20;
         $user->save();

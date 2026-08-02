@@ -443,9 +443,29 @@ class PaymentService
             }
         }
 
+        // Kiểm tra xem người dùng có đang trong trạng thái dùng thử (Trial 0đ) hay không
+        $lastPayment = Payment::where('user_id', $user->id)
+            ->where('status', 'success')
+            ->orderBy('paid_at', 'desc')
+            ->first();
+
+        $isFromTrial = $lastPayment && ($lastPayment->provider === 'trial' || floatval($lastPayment->amount) < 0.01);
+
         $user->role = $newRole;
         $user->vip_expires_at = $newExpiry;
-        $user->ai_quota_remaining = ($user->ai_quota_remaining ?? 0) + $quota;
+        $user->plan = strtolower($newRole);
+        $user->plan_expires_at = $newExpiry;
+
+        if ($isUpgrade || $isFromTrial) {
+            // Khi NÂNG CẤP GÓI hoặc CHUYỂN TỪ DÙNG THỬ 0Đ SANG GÓI TRẢ PHÍ:
+            // Quota AI được đặt lại chuẩn theo định mức của gói cước mới mua (không cộng dồn lượt dùng thử 0đ hoặc gói cũ đã khấu trừ).
+            $user->ai_quota_remaining = $quota;
+        } else {
+            // Khi GIA HẠN CÙNG GÓI TRẢ PHÍ (VD: Đang dùng Pro trả phí mua thêm 1 tháng Pro):
+            // Cộng dồn Quota AI vào số dư hiện có.
+            $user->ai_quota_remaining = ($user->ai_quota_remaining ?? 0) + $quota;
+        }
+
         $user->save();
 
         Log::info('User upgraded to VIP successfully', [

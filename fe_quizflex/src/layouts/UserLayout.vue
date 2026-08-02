@@ -85,30 +85,33 @@
                 
                 <!-- Dropdown list -->
                 <transition name="dropdown-slide">
-                  <div v-if="isUserDropdownOpen" class="absolute right-0 top-full mt-2 w-56 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-2 shadow-2xl backdrop-blur-md z-50">
+                  <div v-if="isUserDropdownOpen" class="absolute right-0 top-full mt-2 w-64 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-2 shadow-2xl backdrop-blur-md z-50">
                     <!-- User Info Header -->
                     <div class="px-4 py-3 border-b border-[var(--border)] mb-1">
                       <p class="text-sm font-black text-[var(--text)] truncate">{{ currentUser.name }}</p>
                       <p class="text-[10px] font-bold text-[var(--primary)] uppercase mt-0.5">{{ currentUser.role_label || currentUser.role }}</p>
                     </div>
                     <!-- Navigation Links -->
-                    <router-link @click="isUserDropdownOpen = false" to="/profile" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold text-[var(--text)] hover:bg-[var(--surface-soft)] transition">
+                    <router-link @click="isUserDropdownOpen = false" to="/profile" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold text-[var(--text)] hover:bg-[var(--surface-soft)] transition whitespace-nowrap">
                       👤 Hồ sơ cá nhân
                     </router-link>
-                    <router-link @click="isUserDropdownOpen = false" to="/gamification" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold text-[var(--text)] hover:bg-[var(--surface-soft)] transition">
+                    <router-link @click="isUserDropdownOpen = false" to="/profile?tab=subscription" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold text-[var(--text)] hover:bg-[var(--surface-soft)] transition whitespace-nowrap">
+                      ⚡ Hạn mức & Gói cước
+                    </router-link>
+                    <router-link @click="isUserDropdownOpen = false" to="/gamification" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold text-[var(--text)] hover:bg-[var(--surface-soft)] transition whitespace-nowrap">
                       🏆 Thành tích & Huy hiệu
                     </router-link>
-                    <router-link @click="isUserDropdownOpen = false" to="/results" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold text-[var(--text)] hover:bg-[var(--surface-soft)] transition">
+                    <router-link @click="isUserDropdownOpen = false" to="/results" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold text-[var(--text)] hover:bg-[var(--surface-soft)] transition whitespace-nowrap">
                       📊 Lịch sử làm bài
                     </router-link>
-                    <router-link @click="isUserDropdownOpen = false" to="/analytics" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold text-[var(--text)] hover:bg-[var(--surface-soft)] transition">
+                    <router-link @click="isUserDropdownOpen = false" to="/analytics" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold text-[var(--text)] hover:bg-[var(--surface-soft)] transition whitespace-nowrap">
                       📈 Phân tích năng lực
                     </router-link>
-                    <router-link @click="isUserDropdownOpen = false" to="/upgrade" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold text-[var(--text)] hover:bg-[var(--surface-soft)] transition">
+                    <router-link @click="isUserDropdownOpen = false" to="/upgrade" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold text-[var(--text)] hover:bg-[var(--surface-soft)] transition whitespace-nowrap">
                       👑 Nâng cấp tài khoản
                     </router-link>
                     <div class="border-t border-[var(--border)] my-1"></div>
-                    <button @click="handleLogoutClick" class="flex w-full items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-black text-rose-500 hover:bg-rose-500/10 transition text-left">
+                    <button @click="handleLogoutClick" class="flex w-full items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-black text-rose-500 hover:bg-rose-500/10 transition text-left whitespace-nowrap">
                       🚪 Đăng xuất
                     </button>
                   </div>
@@ -298,6 +301,7 @@ const mobileNav = computed(() => {
       { label: 'Kết quả của tôi', to: '/results' },
       { label: '📈 Phân tích năng lực', to: '/analytics' },
       { label: 'Hồ sơ cá nhân', to: '/profile' },
+      { label: '⚡ Hạn mức & Gói cước', to: '/profile?tab=subscription' },
       { label: 'Nâng cấp tài khoản', to: '/upgrade' },
       {
         label:
