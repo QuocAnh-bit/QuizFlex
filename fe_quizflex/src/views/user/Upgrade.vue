@@ -749,13 +749,13 @@ onMounted(async () => {
       const latestUser = await authApi.me()
       currentUserStorage.set(latestUser)
       currentUser.value = latestUser
-      
-      // Lấy chi phí nâng cấp động
-      await fetchUpgradeCosts()
     } catch (error) {
       console.error('Failed to sync user state on mount:', error)
     }
     
+    // Lấy chi phí nâng cấp động (luôn thực thi)
+    await fetchUpgradeCosts()
+
     // Tự động mở modal thanh toán nếu có plan truyền qua URL query
     if (route.query.plan) {
       const matchedPlan = plans.value.find(p => p.id === route.query.plan)

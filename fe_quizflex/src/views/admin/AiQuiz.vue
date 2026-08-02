@@ -8,10 +8,19 @@
         <p class="mt-3 max-w-2xl text-sm leading-7 text-[var(--muted)]">Nhập yêu cầu, AI sẽ sinh câu hỏi, lưu thành quiz trong backend, rồi bạn có thể làm bài ngay hoặc chuyển sang editor để sửa.</p>
 
         <div class="mt-6 grid gap-4 md:grid-cols-3">
-          <div v-for="stat in quotaStats" :key="stat.label" class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-4">
-            <p class="text-xs font-bold text-[var(--muted)]">{{ stat.label }}</p>
+          <router-link 
+            v-for="stat in quotaStats" 
+            :key="stat.label" 
+            to="/profile?tab=subscription"
+            class="group relative overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-4 transition duration-300 hover:border-[var(--primary)] hover:bg-[var(--chip-active)] hover:shadow-md active:scale-95"
+            title="Nhấp để xem chi tiết hạn mức & quản lý gói"
+          >
+            <div class="flex items-center justify-between">
+              <p class="text-xs font-bold text-[var(--muted)] group-hover:text-[var(--primary)] transition-colors">{{ stat.label }}</p>
+              <span class="text-[10px] font-black text-[var(--primary)] opacity-0 group-hover:opacity-100 transition-opacity">Hạn mức ➔</span>
+            </div>
             <b class="mt-1 block text-2xl font-black text-[var(--text)]">{{ stat.value }}</b>
-          </div>
+          </router-link>
         </div>
 
         <div class="mt-8 grid gap-4">
@@ -120,8 +129,15 @@
           <!-- KẾT THÚC KHU VỰC HIỂN THỊ TIẾN ĐỘ -->
         </div>
 
-        <div v-if="errorMessage" class="mt-5 rounded-2xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm font-bold text-rose-300">
-          {{ errorMessage }}
+        <div v-if="errorMessage" class="mt-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 rounded-2xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm font-bold text-rose-300">
+          <span>{{ errorMessage }}</span>
+          <router-link 
+            v-if="errorMessage.includes('token') || errorMessage.includes('quota') || errorMessage.includes('hết')"
+            to="/profile?tab=subscription" 
+            class="shrink-0 rounded-full border border-rose-500/40 bg-rose-500/20 px-4 py-1.5 text-xs font-black text-rose-200 hover:bg-rose-500/30 transition"
+          >
+            ⚡ Kiểm Tra Hạn Mức & Nâng Cấp ➔
+          </router-link>
         </div>
 
         <div v-if="successMessage" class="mt-5 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm font-bold text-emerald-300">

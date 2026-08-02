@@ -974,29 +974,25 @@ export const normalizeQuizCard = (quiz) => ({
   rawDifficulty: difficultyValue(quiz.difficulty),
 });
 
-export const normalizeUser = (user) => ({
-  ...user,
-  role: ['admin', 'user'].includes(String(user.role || '').toLowerCase()) ? String(user.role).toLowerCase() : 'user',
-  roleLabel:
-    user.role_label ||
-    {
-      admin: "Admin",
-      plus: "Plus",
-      pro: "Pro",
-      ultra: "Ultra",
-      free: "Free",
-      guest: "Guest",
-    }[String(user.role || "free").toLowerCase()] ||
-    user.role,
-  joinedAt:
-    user.joined_at || user.created_at
-      ? new Date(user.joined_at || user.created_at).toLocaleDateString("vi-VN")
-      : "Chưa rõ",
-  aiQuota: user.ai_quota_remaining ?? 0,
-  quizzesCount: user.quizzes_count ?? 0,
-  attemptsCount: user.attempts_count ?? 0,
-  status: user.status || "active",
-});
+export const normalizeUser = (user) => {
+  const normRole = normalizeRole(user?.role)
+  return {
+    ...user,
+    role: normRole,
+    roleLabel:
+      user?.role_label ||
+      user?.roleLabel ||
+      roleLabel(normRole),
+    joinedAt:
+      user?.joined_at || user?.created_at
+        ? new Date(user.joined_at || user.created_at).toLocaleDateString("vi-VN")
+        : "Chưa rõ",
+    aiQuota: user?.ai_quota_remaining ?? 0,
+    quizzesCount: user?.quizzes_count ?? 0,
+    attemptsCount: user?.attempts_count ?? 0,
+    status: user?.status || "active",
+  }
+}
 
 export const normalizeQuestion = (question) => ({
   id: question.id,

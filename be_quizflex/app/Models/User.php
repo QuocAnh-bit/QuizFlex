@@ -82,21 +82,32 @@ class User extends Authenticatable implements JWTSubject
      */
     public function getActivePlan(): string
     {
-        $plan = strtolower($this->plan ?? 'free');
+        $roleStr = strtolower(trim((string) ($this->role ?? '')));
+        $planStr = strtolower(trim((string) ($this->plan ?? '')));
 
-        if ($plan === 'free') {
+        if (in_array($roleStr, ['admin', 'administrator'], true) || in_array($planStr, ['admin', 'administrator'], true)) {
+            return 'admin';
+        }
+
+        // Tìm tier cao nhất giữa role và plan
+        $candidateRole = 'free';
+        foreach ([$roleStr, $planStr] as $val) {
+            if (in_array($val, ['ultra', 'pro', 'plus'], true)) {
+                $candidateRole = $val;
+                break;
+            }
+        }
+
+        if ($candidateRole === 'free') {
             return 'free';
         }
 
-        if ($this->plan_expires_at && $this->plan_expires_at->isFuture()) {
-            return $plan;
-        }
+        // Kiểm tra hạn VIP theo vip_expires_at hoặc plan_expires_at
+        $expiry = $this->vip_expires_at ?? $this->plan_expires_at;
 
-        // Hết hạn → reset về free
-        $this->plan            = 'free';
-        $this->plan_started_at = null;
-        $this->plan_expires_at = null;
-        $this->save();
+        if ($expiry && \Carbon\Carbon::parse($expiry)->isFuture()) {
+            return $candidateRole;
+        }
 
         return 'free';
     }
