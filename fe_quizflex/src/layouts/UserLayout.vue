@@ -51,6 +51,7 @@
 
           <div class="hidden shrink-0 items-center gap-3 xl:flex">
             <ThemeToggle />
+            <LanguageSwitcher />
               <StreakXpBar />
 
             <template v-if="!currentUser">
@@ -58,7 +59,7 @@
                 to="/login"
                 class="inline-flex h-11 shrink-0 items-center justify-center whitespace-nowrap rounded-full border border-[var(--border)] bg-[var(--surface-soft)] px-5 text-sm font-black text-[var(--text)] transition duration-300 hover:-translate-y-0.5 hover:border-[var(--border-strong)] hover:bg-[var(--chip-active)] hover:shadow-[0_14px_35px_rgba(155,44,255,0.16)] active:scale-95"
               >
-                Đăng nhập
+                {{ $t('nav.user.login') }}
               </router-link>
 
               <router-link
@@ -68,7 +69,7 @@
                 <span
                   class="absolute inset-0 translate-x-[-120%] bg-gradient-to-r from-transparent via-white/30 to-transparent transition duration-700 group-hover:translate-x-[120%]"
                 ></span>
-                <span class="relative z-10"> Bắt đầu </span>
+                <span class="relative z-10"> {{ $t('nav.user.getStarted') }} </span>
               </router-link>
             </template>
             <template v-else>
@@ -93,23 +94,23 @@
                     </div>
                     <!-- Navigation Links -->
                     <router-link @click="isUserDropdownOpen = false" to="/profile" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold text-[var(--text)] hover:bg-[var(--surface-soft)] transition">
-                      👤 Hồ sơ cá nhân
+                      👤 {{ $t('nav.user.profile') }}
                     </router-link>
                     <router-link @click="isUserDropdownOpen = false" to="/gamification" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold text-[var(--text)] hover:bg-[var(--surface-soft)] transition">
-                      🏆 Thành tích & Huy hiệu
+                      🏆 {{ $t('nav.user.achievements') }}
                     </router-link>
                     <router-link @click="isUserDropdownOpen = false" to="/results" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold text-[var(--text)] hover:bg-[var(--surface-soft)] transition">
-                      📊 Lịch sử làm bài
+                      📊 {{ $t('nav.user.results') }}
                     </router-link>
                     <router-link @click="isUserDropdownOpen = false" to="/analytics" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold text-[var(--text)] hover:bg-[var(--surface-soft)] transition">
-                      📈 Phân tích năng lực
+                      📈 {{ $t('nav.user.analytics') }}
                     </router-link>
                     <router-link @click="isUserDropdownOpen = false" to="/upgrade" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-bold text-[var(--text)] hover:bg-[var(--surface-soft)] transition">
-                      👑 Nâng cấp tài khoản
+                      👑 {{ $t('nav.user.upgrade') }}
                     </router-link>
                     <div class="border-t border-[var(--border)] my-1"></div>
                     <button @click="handleLogoutClick" class="flex w-full items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-black text-rose-500 hover:bg-rose-500/10 transition text-left">
-                      🚪 Đăng xuất
+                      🚪 {{ $t('nav.user.logout') }}
                     </button>
                   </div>
                 </transition>
@@ -119,6 +120,7 @@
 
           <div class="flex shrink-0 items-center gap-2 xl:hidden">
             <ThemeToggle />
+            <LanguageSwitcher />
             <StreakXpBar />
 
             <NotificationBell v-if="currentUser" />
@@ -128,7 +130,7 @@
               class="inline-flex h-11 items-center justify-center whitespace-nowrap rounded-full border border-[var(--border)] bg-[var(--surface-soft)] px-4 text-sm font-black text-[var(--text)] shadow-[var(--shadow-card)] transition duration-300 hover:border-[var(--border-strong)] active:scale-95"
               @click="isMenuOpen = !isMenuOpen"
             >
-              {{ isMenuOpen ? "Đóng" : "Menu" }}
+              {{ isMenuOpen ? $t('nav.user.menuClose') : $t('nav.user.menuOpen') }}
             </button>
           </div>
         </div>
@@ -181,9 +183,11 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import { useI18n } from "vue-i18n";
 
 import BrandLogo from '@/components/common/BrandLogo.vue'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
+import LanguageSwitcher from '@/components/common/LanguageSwitcher.vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import { authApi, currentUserStorage, getDashboardRouteForRole } from '@/services/api'
 import StreakXpBar from '@/components/common/StreakXpBar.vue'
@@ -191,6 +195,7 @@ import NotificationBell from '@/components/common/NotificationBell.vue'
 
 const route = useRoute();
 const router = useRouter();
+const { t } = useI18n();
 
 const isMenuOpen = ref(false)
 const isScrolled = ref(false)
@@ -239,26 +244,26 @@ const handleLogoutClick = async () => {
   await handleLogout()
 }
 
-const baseNav = [
+const baseNav = computed(() => [
   {
-    label: "Trang chủ",
+    label: t('nav.user.home'),
     to: "/",
   },
   {
-    label: 'Làm quiz',
+    label: t('nav.user.quizzes'),
     to: '/quizzes',
   },
   {
-    label: 'Xếp hạng',
+    label: t('nav.user.leaderboard'),
     to: '/leaderboard',
   },
-];
+])
 
 const homeworkNav = computed(() => {
   if (!currentUser.value) return []
   return [
     {
-      label: 'Room Homework',
+      label: t('nav.user.homeworkRoom'),
       to: '/homework-rooms',
     },
   ]
@@ -268,7 +273,7 @@ const liveRoomNav = computed(() => {
   if (!currentUser.value) return []
   return [
     {
-      label: 'Live Room',
+      label: t('nav.user.liveRoom'),
       to: '/live-rooms',
     },
   ]
@@ -276,41 +281,41 @@ const liveRoomNav = computed(() => {
 
 // Menu chính cực kỳ rút gọn cho Desktop ở giữa navbar
 const mainNav = computed(() => [
-  ...baseNav.slice(0, 2),
+  ...baseNav.value.slice(0, 2),
   ...homeworkNav.value,
   ...liveRoomNav.value,
-  ...baseNav.slice(2),
+  ...baseNav.value.slice(2),
 ])
 
 // Mobile Nav đầy đủ tất cả danh mục
 const mobileNav = computed(() => {
   const items = [
-    { label: 'Trang chủ', to: '/' },
-    { label: 'Làm quiz', to: '/quizzes' },
-    { label: 'Xếp hạng', to: '/leaderboard' },
+    { label: t('nav.user.home'), to: '/' },
+    { label: t('nav.user.quizzes'), to: '/quizzes' },
+    { label: t('nav.user.leaderboard'), to: '/leaderboard' },
   ]
 
   if (currentUser.value) {
     items.push(
-      { label: 'Room Homework', to: '/homework-rooms' },
-      { label: 'Live Room', to: '/live-rooms' },
-      { label: 'Thành tích', to: '/gamification' },
-      { label: 'Kết quả của tôi', to: '/results' },
-      { label: '📈 Phân tích năng lực', to: '/analytics' },
-      { label: 'Hồ sơ cá nhân', to: '/profile' },
-      { label: 'Nâng cấp tài khoản', to: '/upgrade' },
+      { label: t('nav.user.homeworkRoom'), to: '/homework-rooms' },
+      { label: t('nav.user.liveRoom'), to: '/live-rooms' },
+      { label: t('nav.user.achievementsShort'), to: '/gamification' },
+      { label: t('nav.user.myResults'), to: '/results' },
+      { label: '📈 ' + t('nav.user.analytics'), to: '/analytics' },
+      { label: t('nav.user.profile'), to: '/profile' },
+      { label: t('nav.user.upgrade'), to: '/upgrade' },
       {
         label:
           currentUser.value.role === "admin"
-            ? "Admin dashboard"
-            : "Dashboard của tôi",
+            ? t('nav.user.adminDashboard')
+            : t('nav.user.myDashboard'),
         to: getDashboardRouteForRole(currentUser.value.role),
       }
     )
   } else {
     items.push(
-      { label: 'Đăng nhập', to: '/login' },
-      { label: 'Đăng ký', to: '/register' }
+      { label: t('nav.user.login'), to: '/login' },
+      { label: t('nav.user.register'), to: '/register' }
     )
   }
 
