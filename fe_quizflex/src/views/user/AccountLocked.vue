@@ -1,4 +1,16 @@
 <template>
+  <Transition name="fade">
+    <div v-if="isApproved" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div class="mx-4 w-full max-w-md rounded-[2rem] border border-emerald-500/30 bg-[var(--surface)] p-8 shadow-2xl text-center">
+        <div class="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-500/15 text-4xl">🎉</div>
+        <h2 class="text-2xl font-black text-emerald-400">Kháng cáo thành công!</h2>
+        <p class="mt-3 text-sm leading-7 text-[var(--muted)]">Tài khoản của bạn đã được mở khóa. Bạn có thể sử dụng đầy đủ các chức năng.</p>
+        <p class="mt-4 text-xs font-bold text-[var(--muted)]">Tự động chuyển hướng sau <span class="text-emerald-400">{{ countdown }}</span> giây...</p>
+        <button class="btn-primary mt-6 w-full" type="button" @click="goHome">Vào trang chủ ngay</button>
+      </div>
+    </div>
+  </Transition>
+
   <section class="mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
     <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-8 shadow-[var(--shadow-card)] backdrop-blur-2xl">
       <div class="flex items-center gap-3">
@@ -133,17 +145,20 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { authApi, unlockRequestsApi } from '@/services/api'
 
 const route = useRoute()
+const router = useRouter()
 const message = ref('')
 const isSubmitting = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
 const currentUser = ref(null)
 const latestRequest = ref(null)
+const isApproved = ref(false)
+const countdown = ref(5)
 
 const lockedReason = computed(() => currentUser.value?.locked_reason || route.query.reason || '')
 const lockedAt = computed(() => currentUser.value?.locked_at || route.query.locked_at || '')
@@ -207,26 +222,58 @@ const submitAppeal = async () => {
 
 onMounted(() => {
   loadData()
-  
-  // Setup polling to refresh data every 5 seconds
-  // This ensures we detect when account gets locked again or appeal status changes
-  const pollInterval = setInterval(async () => {
-    await loadData()
-  }, 5000)
 
-  // Cleanup interval on unmount
-  return () => clearInterval(pollInterval)
+  window.addEventListener('quizflex-account-unlocked', handleUnlocked)
+
+  // Polling fallback khi WebSocket không khả dụng
+  pollInterval = setInterval(async () => {
+    if (isApproved.value) return
+    try {
+      const data = await unlockRequestsApi.latest()
+      const req = data?.data || data || null
+      if (req?.status === 'approved') {
+        const user = await authApi.lockedInfo()
+        if (!user?.is_locked) {
+          handleUnlocked()
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, 3000)
 })
 
-// Watch for changes in user locked status
-// Useful when account status updates during polling
+let pollInterval = null
+
+const handleUnlocked = () => {
+  if (isApproved.value) return
+  if (pollInterval) { clearInterval(pollInterval); pollInterval = null }
+  isApproved.value = true
+  const countdownInterval = setInterval(() => {
+    countdown.value--
+    if (countdown.value <= 0) {
+      clearInterval(countdownInterval)
+      goHome()
+    }
+  }, 1000)
+}
+
+const goHome = async () => {
+  await authApi.me()
+  router.replace('/')
+}
+
 watch(
   () => currentUser.value?.is_locked,
   (newLocked, oldLocked) => {
     if (oldLocked === false && newLocked === true) {
-      // Account got locked again, immediately refresh unlock request data
       reloadUnlockRequest()
     }
   }
 )
+
+onBeforeUnmount(() => {
+  window.removeEventListener('quizflex-account-unlocked', handleUnlocked)
+  if (pollInterval) clearInterval(pollInterval)
+})
 </script>

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\AccountStatusChanged;
 use App\Models\UnlockRequest;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -176,6 +177,7 @@ class UnlockRequestController extends Controller
         if ($user) {
             $userController = app(UserController::class);
             $userController->unlock($user);
+            broadcast(new AccountStatusChanged($user, 'unlocked'));
         }
 
         return response()->json([
