@@ -24,7 +24,7 @@
                   <router-link v-for="item in group.items" :key="item.to" :to="item.to" :class="[getLinkClass(item), 'group transition-all duration-200']">
                     <span :class="['grid h-9 w-9 place-items-center rounded-2xl text-xs font-black transition-colors duration-300', isItemActive(item) ? 'bg-[var(--primary)] text-white' : 'bg-[var(--surface-soft)] text-[var(--primary)]', 'group-hover:bg-[var(--primary)]', 'group-hover:text-white']">{{ item.icon }}</span>
                     <span :class="['transition-colors duration-300', isItemActive(item) ? 'text-[var(--text)]' : 'text-[var(--muted)]', 'group-hover:text-[var(--text)]']">{{ item.label }}</span>
-                    <span v-if="(item.label === 'Quản lý báo cáo' && reportCount > 0) || (item.label !== 'Quản lý báo cáo' && item.badge > 0)" class="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-[var(--primary)] text-xs font-bold text-white">
+                    <span v-if="(item.label === 'Quản lý báo cáo' && reportCount > 0) || (item.badge !== undefined && item.badge !== null && item.badge !== 0)" class="ml-auto rounded-full border border-[var(--border)] bg-[var(--primary)]/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-[var(--primary)]">
                       {{ item.label === 'Quản lý báo cáo' ? reportCount : item.badge }}
                     </span>
                   </router-link>
@@ -65,11 +65,13 @@ import { useRoute } from 'vue-router'
 import axios from 'axios'
 import BrandLogo from '@/components/common/BrandLogo.vue'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
+import { unlockRequestsApi } from '@/services/api'
 
 const route = useRoute()
 const expandedGroups = ref(['Quản lý nội dung'])
 const homeworkRoomCount = ref(0)
 const activeLiveRoomCount = ref(0)
+const pendingUnlockCount = ref(0)
 
 const reportCount = ref(0);
 const reportBadge = computed(() => reportCount.value)
@@ -163,6 +165,15 @@ const roomMenu = computed(() => [
 */
 const pageTitle = computed(() => route.meta.title || 'Dashboard')
 
+const loadPendingUnlockCount = async () => {
+  try {
+    const payload = await unlockRequestsApi.pendingCount()
+    pendingUnlockCount.value = Number(payload?.data?.count || 0)
+  } catch {
+    pendingUnlockCount.value = 0
+  }
+}
+
 const toggleGroup = (groupLabel) => {
   if (expandedGroups.value.includes(groupLabel)) {
     expandedGroups.value = expandedGroups.value.filter((label) => label !== groupLabel)
@@ -179,4 +190,6 @@ const getLinkClass = (item) => {
   if (!active) return [...base, 'border-transparent', 'text-[var(--muted)]', 'hover:border-[var(--border)]', 'hover:bg-[var(--surface)]', 'hover:text-[var(--text)]']
   return [...base, 'border-[var(--border-strong)]', 'bg-[var(--surface)]', 'text-[var(--text)]']
 }
+
+onMounted(loadPendingUnlockCount)
 </script>
