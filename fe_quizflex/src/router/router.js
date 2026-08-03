@@ -262,6 +262,12 @@ const routes = [
     meta: { layout: "auth", title: "Đăng ký" },
   },
   {
+    path: "/account-locked",
+    name: "account-locked",
+    component: () => import("@/views/user/AccountLocked.vue"),
+    meta: { layout: "user", title: "Tài khoản bị khóa" },
+  },
+  {
     path: "/forgot-password",
     name: "forgot-password",
     component: () => import("@/views/auth/ForgotPassword.vue"),
@@ -499,6 +505,17 @@ const routes = [
     },
   },
   {
+    path: "/admin/unlock-requests",
+    name: "admin-unlock-requests",
+    component: () => import("@/views/admin/UnlockRequests.vue"),
+    meta: {
+      layout: "admin",
+      title: "Kháng cáo tài khoản",
+      requiresAuth: true,
+      roles: adminRoles,
+    },
+  },
+  {
     path: "/admin/settings",
     name: "admin-settings",
     component: () => import("@/views/admin/Settings.vue"),
@@ -555,6 +572,10 @@ router.beforeEach(async (to) => {
       authApi.clearSession();
       user = null;
     }
+  }
+
+  if (user && user.is_locked && !isAuthLayout && to.path !== "/account-locked") {
+    return { path: "/account-locked" };
   }
 
   if (user && isAuthLayout) {

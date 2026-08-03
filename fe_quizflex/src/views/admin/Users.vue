@@ -36,6 +36,15 @@
             Người dùng hoạt động
           </button>
           <button
+            class="relative rounded-full px-4 py-2 text-sm font-semibold transition"
+            :class="viewMode === 'locked' ? 'bg-[var(--primary)] text-white' : 'bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--surface-soft)]'"
+            type="button"
+            @click="setViewMode('locked')"
+          >
+            Tài khoản bị khóa
+            <span v-if="lockedCount > 0" class="ml-1.5 rounded-full bg-rose-500 px-2 py-0.5 text-[10px] font-black text-white">{{ lockedCount }}</span>
+          </button>
+          <button
             class="rounded-full px-4 py-2 text-sm font-semibold transition"
             :class="viewMode === 'trash' ? 'bg-[var(--primary)] text-white' : 'bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--surface-soft)]'"
             type="button"
@@ -107,7 +116,88 @@
         </div>
       </div>
 
-      <div v-else class="space-y-6 p-5">
+      <div v-else-if="viewMode === 'locked'" class="space-y-6 p-5">
+        <div class="grid gap-4 lg:grid-cols-[1fr_120px]">
+          <div class="flex items-center gap-3 rounded-2xl border border-[var(--border)] bg-[var(--input-bg)] px-4 py-3 focus-within:border-[var(--border-strong)]">
+            <span>🔍</span>
+            <input v-model="lockedSearch" class="w-full bg-transparent text-sm font-semibold text-[var(--text)] outline-none placeholder:text-[var(--muted)]" placeholder="Tìm user bị khóa" @keyup.enter="loadLockedUsers" />
+          </div>
+          <button class="btn-ghost w-full" type="button" @click="loadLockedUsers">Tìm kiếm</button>
+        </div>
+
+        <div class="overflow-x-auto rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface)]">
+          <table class="min-w-full text-left">
+            <thead class="border-b border-[var(--border)] bg-[var(--surface-soft)] text-xs font-black uppercase tracking-[0.2em] text-[var(--muted)]">
+              <tr>
+                <th class="px-6 py-4">Người dùng</th>
+                <th class="px-6 py-4">Role</th>
+                <th class="px-6 py-4">Plan</th>
+                <th class="px-6 py-4">Ngày khóa</th>
+                <th class="px-6 py-4">Kháng cáo</th>
+                <th class="px-6 py-4">Trạng thái</th>
+                <th class="px-6 py-4">Hành động</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-[var(--border)]">
+              <tr v-if="pagedLockedUsers.length === 0">
+                <td colspan="7" class="px-6 py-8 text-center text-sm font-semibold text-[var(--muted)]">Không có tài khoản bị khóa.</td>
+              </tr>
+              <tr v-for="user in pagedLockedUsers" :key="user.id" class="transition hover:bg-[var(--surface-soft)]">
+                <td class="px-6 py-4">
+                  <div class="flex items-center gap-3">
+                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-rose-500/10 font-bold text-rose-400">{{ user.name.charAt(0).toUpperCase() }}</div>
+                    <div>
+                      <p class="font-semibold text-[var(--text)]">{{ user.name }}</p>
+                      <p class="text-xs text-[var(--muted)]">{{ user.email }}</p>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-6 py-4 text-sm font-semibold">{{ user.role_label || user.role }}</td>
+                <td class="px-6 py-4 text-sm font-semibold">{{ user.plan_label || user.plan }}</td>
+                <td class="px-6 py-4 text-sm text-[var(--muted)] whitespace-nowrap">{{ formatDate(user.locked_at) }}</td>
+                <td class="px-6 py-4">
+                  <span class="rounded-full border px-3 py-1 text-xs font-black" :class="appealBadgeClass(lockedAppealMap[user.id])">
+                    {{ appealLabel(lockedAppealMap[user.id]) }}
+                  </span>
+                </td>
+                <td class="px-6 py-4">
+                  <span class="rounded-full border border-rose-500/25 bg-rose-500/10 px-3 py-1 text-xs font-black text-rose-300">Bị khóa</span>
+                </td>
+                <td class="px-6 py-4">
+                  <div class="flex flex-wrap gap-2">
+                    <button
+                      v-if="lockedAppealMap[user.id] === 'pending'"
+                      class="rounded-full border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-xs font-black text-amber-300"
+                      type="button"
+                      @click="openAppealModal(user)"
+                    >Xem kháng cáo</button>
+                    <button class="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-xs font-black text-emerald-300" type="button" @click="unlockUser(user.id)">Mở khóa</button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Phân trang -->
+        <div v-if="lockedTotalPages > 1" class="flex items-center justify-center gap-2">
+          <button
+            class="rounded-full border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm font-semibold text-[var(--muted)] transition hover:bg-[var(--surface-soft)] disabled:opacity-40"
+            type="button"
+            :disabled="lockedPage === 1"
+            @click="lockedPage--"
+          >← Trước</button>
+          <span class="text-sm font-semibold text-[var(--muted)]">{{ lockedPage }} / {{ lockedTotalPages }}</span>
+          <button
+            class="rounded-full border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm font-semibold text-[var(--muted)] transition hover:bg-[var(--surface-soft)] disabled:opacity-40"
+            type="button"
+            :disabled="lockedPage === lockedTotalPages"
+            @click="lockedPage++"
+          >Sau →</button>
+        </div>
+      </div>
+
+      <div v-else-if="viewMode === 'trash'" class="space-y-6 p-5">
         <div class="grid gap-4 lg:grid-cols-[1fr_200px_120px]">
           <div class="flex items-center gap-3 rounded-2xl border border-[var(--border)] bg-[var(--input-bg)] px-4 py-3 focus-within:border-[var(--border-strong)]">
             <span>🔍</span>
@@ -159,6 +249,40 @@
         </div>
       </div>
     </article>
+
+    <!-- Appeal Modal -->
+    <Transition enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0" enter-to-class="opacity-100" leave-active-class="transition duration-150 ease-in" leave-from-class="opacity-100" leave-to-class="opacity-0">
+      <div v-if="showAppealModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" @click.self="showAppealModal = false">
+        <div class="w-full max-w-lg rounded-[1.75rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-2xl">
+          <div class="mb-5 flex items-center justify-between">
+            <div>
+              <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Kháng cáo</p>
+              <h3 class="mt-1 text-xl font-black text-[var(--text)]">{{ selectedLockedUser?.name }}</h3>
+            </div>
+            <button type="button" class="rounded-xl border border-[var(--border)] p-2 text-[var(--muted)] hover:bg-[var(--surface-soft)]" @click="showAppealModal = false">
+              <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+          </div>
+          <div v-if="isLoadingAppeal" class="py-8 text-center text-sm font-semibold text-[var(--muted)]">Đang tải...</div>
+          <div v-else-if="modalAppealRequest" class="space-y-4">
+            <div class="rounded-[1.25rem] border border-[var(--border)] bg-[var(--surface-soft)] p-4">
+              <p class="text-xs font-black uppercase tracking-[0.15em] text-[var(--muted)]">Nội dung kháng cáo</p>
+              <p class="mt-2 text-sm leading-7 text-[var(--text)]">{{ modalAppealRequest.message }}</p>
+              <p class="mt-2 text-xs text-[var(--muted)]">Gửi lúc: {{ formatDate(modalAppealRequest.created_at) }}</p>
+            </div>
+            <div class="space-y-2">
+              <label class="text-sm font-black text-[var(--text)]">Admin note</label>
+              <textarea v-model="adminNote" rows="3" class="w-full rounded-[1rem] border border-[var(--border)] bg-[var(--surface-soft)] px-4 py-3 text-sm font-medium text-[var(--text)] outline-none transition focus:border-[var(--primary)]" placeholder="Nhập ghi chú..."></textarea>
+            </div>
+            <div class="flex gap-3">
+              <button class="btn-primary" type="button" :disabled="isActionLoading" @click="approveRequest">Duyệt — Mở khóa</button>
+              <button class="btn-ghost" type="button" :disabled="isActionLoading" @click="rejectRequest">Từ chối</button>
+            </div>
+          </div>
+          <div v-else class="py-8 text-center text-sm font-semibold text-[var(--muted)]">Không có kháng cáo đang chờ.</div>
+        </div>
+      </div>
+    </Transition>
 
     <!-- Confirm Modal -->
     <div v-if="confirmModal.show" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
@@ -357,16 +481,30 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { currentUserStorage, normalizeUser, usersApi } from '@/services/api'
+import { currentUserStorage, normalizeUser, unlockRequestsApi, usersApi } from '@/services/api'
 
 const search = ref('')
 const roleFilter = ref('all')
 const users = ref([])
 const trashedUsers = ref([])
+const lockedUsers = ref([])
+const lockedCount = ref(0)
 const viewMode = ref('active')
 const trashSearch = ref('')
 const trashRoleFilter = ref('all')
 const isLoading = ref(false)
+
+// Locked tab state
+const lockedSearch = ref('')
+const lockedAppealMap = ref({})
+const lockedPage = ref(1)
+const LOCKED_PAGE_SIZE = 20
+const selectedLockedUser = ref(null)
+const modalAppealRequest = ref(null)
+const adminNote = ref('')
+const isActionLoading = ref(false)
+const showAppealModal = ref(false)
+const isLoadingAppeal = ref(false)
 const router = useRouter()
 const isSaving = ref(false)
 const errorMessage = ref('')
@@ -554,8 +692,133 @@ const setViewMode = (mode) => {
   viewMode.value = mode
   if (mode === 'trash') {
     loadTrash()
+  } else if (mode === 'locked') {
+    loadLockedUsers()
   } else {
     loadUsers()
+  }
+}
+
+const loadLockedUsers = async () => {
+  isLoading.value = true
+  errorMessage.value = ''
+  try {
+    const data = await usersApi.list({ is_locked: 1, search: lockedSearch.value || undefined, per_page: 100 })
+    lockedUsers.value = data.map(normalizeUser)
+    lockedCount.value = lockedUsers.value.length
+    lockedPage.value = 1
+    await loadAppealMap()
+  } catch (error) {
+    errorMessage.value = `Không tải được danh sách bị khóa: ${error.message}`
+    lockedUsers.value = []
+  } finally {
+    isLoading.value = false
+  }
+}
+
+const loadLockedCount = async () => {
+  try {
+    const data = await usersApi.list({ is_locked: 1, per_page: 100 })
+    lockedCount.value = data.length
+  } catch {
+    lockedCount.value = 0
+  }
+}
+
+const unlockUser = (id) => {
+  openConfirm('Mở khóa tài khoản này?', async () => {
+    errorMessage.value = ''
+    successMessage.value = ''
+    try {
+      await usersApi.unlock(id)
+      lockedUsers.value = lockedUsers.value.filter((u) => u.id !== id)
+      lockedCount.value = Math.max(0, lockedCount.value - 1)
+      if (selectedLockedUser.value?.id === id) selectedLockedUser.value = null
+      successMessage.value = 'Đã mở khóa tài khoản.'
+    } catch (error) {
+      errorMessage.value = `Mở khóa thất bại: ${error.message}`
+    }
+  })
+}
+
+const pagedLockedUsers = computed(() => {
+  const start = (lockedPage.value - 1) * LOCKED_PAGE_SIZE
+  return lockedUsers.value.slice(start, start + LOCKED_PAGE_SIZE)
+})
+
+const lockedTotalPages = computed(() => Math.max(1, Math.ceil(lockedUsers.value.length / LOCKED_PAGE_SIZE)))
+
+const appealLabel = (status) => ({ pending: 'Đang chờ', approved: 'Đã duyệt', rejected: 'Đã từ chối' }[status] || 'Chưa gửi')
+
+const appealBadgeClass = (status) => ({
+  pending: 'border-amber-500/25 bg-amber-500/10 text-amber-300',
+  approved: 'border-emerald-500/25 bg-emerald-500/10 text-emerald-300',
+  rejected: 'border-rose-500/25 bg-rose-500/10 text-rose-300',
+}[status] || 'border-[var(--border)] bg-[var(--surface-soft)] text-[var(--muted)]')
+
+const loadAppealMap = async () => {
+  try {
+    const payload = await unlockRequestsApi.adminList({ per_page: 500 })
+    const list = payload?.data || payload || []
+    const map = {}
+    list.forEach((r) => {
+      const uid = r.user_id || r.user?.id
+      if (!uid) return
+      // giữ pending ưu tiên cao nhất, sau đó rejected, approved
+      const priority = { pending: 3, rejected: 2, approved: 1 }
+      if (!map[uid] || (priority[r.status] || 0) > (priority[map[uid]] || 0)) {
+        map[uid] = r.status
+      }
+    })
+    lockedAppealMap.value = map
+  } catch {
+    lockedAppealMap.value = {}
+  }
+}
+
+const openAppealModal = async (user) => {
+  selectedLockedUser.value = user
+  modalAppealRequest.value = null
+  adminNote.value = ''
+  showAppealModal.value = true
+  isLoadingAppeal.value = true
+  try {
+    const payload = await unlockRequestsApi.adminList({ user_id: user.id, status: 'pending' })
+    const list = payload?.data || payload || []
+    modalAppealRequest.value = list[0] || null
+  } catch {
+    modalAppealRequest.value = null
+  } finally {
+    isLoadingAppeal.value = false
+  }
+}
+
+const approveRequest = async () => {
+  if (!modalAppealRequest.value) return
+  isActionLoading.value = true
+  try {
+    await unlockRequestsApi.approve(modalAppealRequest.value.id, { admin_note: adminNote.value })
+    showAppealModal.value = false
+    await loadLockedUsers()
+    await loadLockedCount()
+  } catch (error) {
+    errorMessage.value = error.message || 'Không thể duyệt kháng cáo.'
+  } finally {
+    isActionLoading.value = false
+  }
+}
+
+const rejectRequest = async () => {
+  if (!modalAppealRequest.value) return
+  isActionLoading.value = true
+  try {
+    await unlockRequestsApi.reject(modalAppealRequest.value.id, { admin_note: adminNote.value })
+    showAppealModal.value = false
+    await loadAppealMap()
+  } catch (error) {
+    errorMessage.value = error.message || 'Không thể từ chối kháng cáo.'
+  } finally {
+    isActionLoading.value = false
   }
 }
 
@@ -636,7 +899,6 @@ const formatDate = (value) => {
 onMounted(async () => {
   syncCurrentUser()
   window.addEventListener('quizflex-user-updated', syncCurrentUser)
-  // AuthController không trả is_main_admin → fetch lại từ UserController để có đủ field
   const actor = currentUser.value
   if (actor?.id) {
     try {
@@ -645,5 +907,7 @@ onMounted(async () => {
     } catch { /* giữ nguyên nếu lỗi */ }
   }
   loadUsers()
+  loadLockedCount()
+  loadAppealMap()
 })
 </script>

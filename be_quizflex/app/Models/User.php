@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -17,6 +16,7 @@ class User extends Authenticatable implements JWTSubject
         'name', 'email', 'password', 'role', 'avatar',
         'ai_quota_remaining', 'vip_expires_at', 'trial_used_at',
         'plan', 'plan_started_at', 'plan_expires_at', 'is_main_admin',
+        'is_locked', 'locked_at', 'locked_reason', 'locked_by',
     ];
 
     protected $hidden = ['password', 'remember_token'];
@@ -31,6 +31,8 @@ class User extends Authenticatable implements JWTSubject
             'plan_started_at'   => 'datetime',
             'plan_expires_at'   => 'datetime',
             'is_main_admin'     => 'boolean',
+            'is_locked'         => 'boolean',
+            'locked_at'         => 'datetime',
         ];
     }
 
@@ -42,6 +44,8 @@ class User extends Authenticatable implements JWTSubject
     public function hostedRooms()     { return $this->hasMany(Room::class, 'host_id'); }
     public function roomMemberships() { return $this->hasMany(RoomMember::class); }
     public function payments()        { return $this->hasMany(Payment::class); }
+    public function lockedBy()        { return $this->belongsTo(User::class, 'locked_by'); }
+    public function unlockRequests()  { return $this->hasMany(UnlockRequest::class); }
 
     // ─── Helpers ─────────────────────────────────────────────────────────────
 
@@ -74,6 +78,11 @@ class User extends Authenticatable implements JWTSubject
             strtolower(trim($this->email ?? '')) === 'vip@gmail.com'
             || (bool) $this->is_main_admin
         );
+    }
+
+    public function isLocked(): bool
+    {
+        return (bool) $this->is_locked;
     }
 
     /**
