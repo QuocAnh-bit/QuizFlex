@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\AccountStatusChanged;
 use App\Models\Payment;
 use App\Models\Quiz;
 use App\Models\QuizAttempt;
@@ -225,6 +226,8 @@ class UserController extends Controller
         $user->load(['lockedBy']);
         $user->loadCount(['quizzes', 'attempts']);
 
+        broadcast(new AccountStatusChanged($user, 'locked', $user->locked_reason));
+
         return response()->json(['success' => true, 'message' => 'Tài khoản đã được khóa.', 'data' => $this->formatUser($user)]);
     }
 
@@ -245,6 +248,8 @@ class UserController extends Controller
 
         $user->load(['lockedBy']);
         $user->loadCount(['quizzes', 'attempts']);
+
+        broadcast(new AccountStatusChanged($user, 'unlocked'));
 
         return response()->json(['success' => true, 'message' => 'Tài khoản đã được mở khóa.', 'data' => $this->formatUser($user)]);
     }

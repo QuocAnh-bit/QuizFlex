@@ -379,7 +379,6 @@ class AuthController extends Controller
         }
 
         if ($user->isLocked()) {
-            $this->apiGuard()->logout();
             abort(403, 'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.');
         }
 

@@ -214,6 +214,11 @@ api.interceptors.response.use(
       error.response?.data?.message ||
       error.message ||
       "API request failed";
+
+    if (error.response?.status === 403 && message.toLowerCase().includes('kh\u00f3a')) {
+      window.dispatchEvent(new CustomEvent('quizflex-account-locked'))
+    }
+
     return Promise.reject(new Error(message));
   },
 );
