@@ -14,7 +14,7 @@
     "howler": "^2.2.4",
     "katex": "^0.17.0",
     "laravel-echo": "^2.3.4",
-    "mathlive": "^0.109.2",
+    "mathlive": "^0.110.0",
     "pinia": "^3.0.4",
     "pusher-js": "^8.5.0",
     "vue": "^3.5.32",
