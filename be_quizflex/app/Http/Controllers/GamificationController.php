@@ -98,25 +98,48 @@ class GamificationController extends Controller
     }
 
     // Helper: Cập nhật streak
-    private function updateStreak(int $userId): void
-    {
-        $streak = UserStreak::firstOrCreate(['user_id' => $userId], ['current_streak' => 0, 'longest_streak' => 0]);
-        $today = Carbon::today()->toDateString();
+   private function updateStreak(int $userId): void
+{
+    $streak = UserStreak::firstOrCreate(
+        ['user_id' => $userId],
+        [
+            'current_streak' => 0,
+            'longest_streak' => 0,
+        ]
+    );
 
-        if ($streak->last_activity_date === $today) return;
+    $today = Carbon::today();
 
-        $yesterday = Carbon::yesterday()->toDateString();
+    // Chưa từng hoạt động
+    if (!$streak->last_activity_date) {
+        $streak->current_streak = 1;
+    } else {
+        $lastActivity = Carbon::parse($streak->last_activity_date);
 
-        if ($streak->last_activity_date === $yesterday) {
-            $streak->current_streak += 1;
-        } else {
-            $streak->current_streak = 1;
+        // Đã hoạt động hôm nay
+        if ($lastActivity->isSameDay($today)) {
+            return;
         }
 
-        $streak->longest_streak = max($streak->longest_streak, $streak->current_streak);
-        $streak->last_activity_date = $today;
-        $streak->save();
+        $diff = $lastActivity->diffInDays($today);
+
+        if ($diff == 1) {
+            // Liên tục
+            $streak->current_streak++;
+        } elseif ($diff >= 2) {
+            // Nghỉ từ 2 ngày trở lên -> reset
+            $streak->current_streak = 1;
+        }
     }
+
+    $streak->longest_streak = max(
+        $streak->longest_streak,
+        $streak->current_streak
+    );
+
+    $streak->last_activity_date = $today->toDateString();
+    $streak->save();
+}
 
     // Helper: Kiểm tra và trao badge
     private function checkBadges(int $userId, UserXp $userXp): array
