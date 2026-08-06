@@ -297,6 +297,7 @@
         </button>
       </div>
     </div>
+    </template>
 
     <!-- GUEST LIMIT AUTH MODAL -->
     <div v-if="showGuestLimitModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-fade-in">
