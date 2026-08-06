@@ -10,7 +10,8 @@
         </div>
         <div class="flex flex-wrap gap-3">
           <router-link class="btn-ghost" to="/homework-rooms/join">Tham gia bằng mã</router-link>
-          <router-link class="btn-primary" to="/homework-rooms/create">Tạo room</router-link>
+          <router-link v-if="canCreateHomeworkRoom" class="btn-primary" to="/homework-rooms/create">Tạo room</router-link>
+          <router-link v-else class="btn-primary" to="/upgrade">Nâng cấp tài khoản</router-link>
         </div>
       </div>
     </article>
@@ -72,14 +73,15 @@
       <p class="mx-auto mt-3 max-w-xl text-sm leading-7 text-[var(--muted)]">Tạo room mới hoặc tham gia room bằng mã được chia sẻ.</p>
       <div class="mt-6 flex justify-center gap-3">
         <router-link class="btn-ghost" to="/homework-rooms/join">Tham gia bằng mã</router-link>
-        <router-link class="btn-primary" to="/homework-rooms/create">Tạo room</router-link>
+        <router-link v-if="canCreateHomeworkRoom" class="btn-primary" to="/homework-rooms/create">Tạo room</router-link>
+        <router-link v-else class="btn-primary" to="/upgrade">Nâng cấp tài khoản</router-link>
       </div>
     </article>
   </section>
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, computed } from 'vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import { currentUserStorage, homeworkApi } from '@/services/api'
 
@@ -87,6 +89,11 @@ const rooms = ref([])
 const isLoading = ref(false)
 const errorMessage = ref('')
 const currentUser = currentUserStorage.get()
+
+const canCreateHomeworkRoom = computed(() => {
+  const role = String(currentUser?.role || 'free').toLowerCase()
+  return ['admin', 'plus', 'pro', 'ultra'].includes(role)
+})
 
 const roleForRoom = (room) => {
   if (Number(room.host_id) === Number(currentUser?.id)) return 'Host'
