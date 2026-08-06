@@ -87,7 +87,9 @@ const triggerLockedOverlay = () => {
 const goToAppeal = () => {
   showLockedToast.value = false
   if (lockedCountdownInterval) clearInterval(lockedCountdownInterval)
-  router.replace('/account-locked')
+  if (route.path !== '/account-locked') {
+    router.push('/account-locked')
+  }
 }
 
 const startLockPolling = () => {
@@ -103,7 +105,7 @@ const startLockPolling = () => {
     } catch {
       // ignore
     }
-  }, 4000)
+  }, 30000)
 }
 
 let loadingTimer = null;
@@ -111,7 +113,7 @@ let forceCloseTimer = null;
 let removeBeforeGuard = null;
 let removeAfterGuard = null;
 
-const MIN_LOADING_TIME = 1500;
+const MIN_LOADING_TIME = 150;
 
 const layout = computed(() => {
   const layoutName = route.meta.layout;

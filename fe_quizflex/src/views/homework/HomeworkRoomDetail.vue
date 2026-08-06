@@ -1,45 +1,61 @@
 <template>
   <section class="grid gap-6 py-8">
-    <div class="flex flex-wrap items-center justify-between gap-3">
-      <router-link class="btn-ghost" to="/homework-rooms">Quay lại danh sách</router-link>
-      <div class="flex items-center gap-2">
-        <button
-          v-if="canManageRoom"
-          @click="exportGradebookExcel"
-          type="button"
-          :disabled="isExportingGradebook"
-          class="btn-primary flex items-center gap-2"
-        >
-          <span>📊 {{ isExportingGradebook ? 'Đang xuất...' : 'Xuất bảng điểm Excel' }}</span>
-        </button>
-        <button 
-          v-else-if="room" 
-          class="btn-ghost text-rose-400 hover:bg-rose-500/10 hover:text-rose-300"
-          type="button" 
-          :disabled="isLeavingRoom" 
-          @click="leaveRoom"
-        >
-          {{ isLeavingRoom ? 'Đang rời phòng...' : 'Rời phòng' }}
-        </button>
+    <!-- 1. LOADING STATE -->
+    <AppLoadingState 
+      v-if="isLoading" 
+      title="Đang tải chi tiết phòng học..." 
+      message="Vui lòng chờ trong giây lát để hệ thống tải dữ liệu phòng và danh sách bài tập."
+      icon="🏫"
+    />
+
+    <!-- 2. ERROR STATE -->
+    <AppErrorState 
+      v-else-if="errorMessage" 
+      title="Không thể tải chi tiết phòng học"
+      :message="errorMessage" 
+      @retry="loadRoom"
+    >
+      <template #actions>
+        <router-link class="btn-ghost text-xs" to="/homework-rooms">Quay lại danh sách</router-link>
+      </template>
+    </AppErrorState>
+
+    <template v-else-if="room">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <router-link class="btn-ghost" to="/homework-rooms">Quay lại danh sách</router-link>
+        <div class="flex items-center gap-2">
+          <button
+            v-if="canManageRoom"
+            @click="exportGradebookExcel"
+            type="button"
+            :disabled="isExportingGradebook"
+            class="btn-primary flex items-center gap-2"
+          >
+            <span>📊 {{ isExportingGradebook ? 'Đang xuất...' : 'Xuất bảng điểm Excel' }}</span>
+          </button>
+          <button 
+            v-else-if="room" 
+            class="btn-ghost text-rose-400 hover:bg-rose-500/10 hover:text-rose-300"
+            type="button" 
+            :disabled="isLeavingRoom" 
+            @click="leaveRoom"
+          >
+            {{ isLeavingRoom ? 'Đang rời phòng...' : 'Rời phòng' }}
+          </button>
+        </div>
       </div>
-    </div>
 
-    <div v-if="isLoading" class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-10 text-center text-sm font-bold text-[var(--muted)]">Đang tải chi tiết room...</div>
-    <div v-if="errorMessage" class="rounded-[2rem] border border-rose-500/30 bg-rose-500/10 p-5 text-sm font-bold text-rose-300">{{ errorMessage }}</div>
+      <!-- Banner Banned cho Host -->
+      <div v-if="isBanned && isHost" class="rounded-[2.5rem] border border-amber-500/30 bg-amber-500/10 p-6 text-sm font-bold text-amber-300 flex items-center gap-3">
+        <span>⚠️</span>
+        <span>Phòng này đã bị quản trị viên khóa. Bạn chỉ có thể xem thông tin phòng và không thể thực hiện bất kỳ thao tác quản lý nào.</span>
+      </div>
 
-    <!-- Banner Banned cho Host -->
-    <div v-if="isBanned && isHost" class="rounded-[2.5rem] border border-amber-500/30 bg-amber-500/10 p-6 text-sm font-bold text-amber-300 flex items-center gap-3">
-      <span>⚠️</span>
-      <span>Phòng này đã bị quản trị viên khóa. Bạn chỉ có thể xem thông tin phòng và không thể thực hiện bất kỳ thao tác quản lý nào.</span>
-    </div>
-
-    <!-- Banner Banned cho Member -->
-    <div v-if="isBanned && !isHost && !isAdmin" class="rounded-[2.5rem] border border-rose-500/30 bg-rose-500/10 p-6 text-sm font-bold text-rose-300 flex items-center gap-3">
-      <span>🚫</span>
-      <span>Phòng đã bị quản trị viên khóa và hiện không thể sử dụng.</span>
-    </div>
-
-    <template v-if="!isLoading && room">
+      <!-- Banner Banned cho Member -->
+      <div v-if="isBanned && !isHost && !isAdmin" class="rounded-[2.5rem] border border-rose-500/30 bg-rose-500/10 p-6 text-sm font-bold text-rose-300 flex items-center gap-3">
+        <span>🚫</span>
+        <span>Phòng đã bị quản trị viên khóa và hiện không thể sử dụng.</span>
+      </div>
       <article class="relative overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-soft)] backdrop-blur-2xl">
         <div class="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[var(--primary)]/15 blur-3xl"></div>
         <div class="relative z-10 flex flex-col justify-between gap-6 xl:flex-row xl:items-end">
@@ -700,6 +716,8 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import AppLoadingState from '@/components/common/AppLoadingState.vue'
+import AppErrorState from '@/components/common/AppErrorState.vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import { currentUserStorage, homeworkApi } from '@/services/api'
 
