@@ -36,13 +36,28 @@
       </div>
     </article>
 
-    <div v-if="isLoading" class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-10 text-center text-sm font-bold text-[var(--muted)]">Đang tải danh sách quiz...</div>
-    <div v-if="errorMessage" class="rounded-[2rem] border border-rose-500/30 bg-rose-500/10 p-5 text-sm font-bold text-rose-300">{{ errorMessage }}</div>
+    <!-- 1. LOADING STATE -->
+    <AppLoadingState 
+      v-if="isLoading" 
+      title="Đang tải danh sách quiz..." 
+      message="Vui lòng chờ trong giây lát để hệ thống tổng hợp danh sách các bộ câu hỏi."
+      icon="📚"
+    />
 
-    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-      <article v-for="quiz in filteredQuizzes" :key="quiz.id" class="group overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-card)] transition duration-300 hover:-translate-y-2 hover:border-[var(--border-strong)]">
-        <router-link :to="`/quizzes/${quiz.id}`" class="block">
-          <div class="relative h-36" :style="{ background: quiz.cover }">
+    <!-- 2. ERROR STATE -->
+    <AppErrorState 
+      v-else-if="errorMessage" 
+      title="Không thể tải danh sách quiz"
+      :message="errorMessage" 
+      @retry="loadQuizzes"
+    />
+
+    <!-- 3. LOADED STATE -->
+    <template v-else>
+      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <article v-for="quiz in filteredQuizzes" :key="quiz.id" class="group overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-card)] transition duration-300 hover:-translate-y-2 hover:border-[var(--border-strong)]">
+          <router-link :to="`/quizzes/${quiz.id}`" class="block">
+            <div class="relative h-36" :style="{ background: quiz.cover }">
             <div class="absolute inset-0 bg-gradient-to-t from-black/45 via-black/5 to-white/10"></div>
             <div class="absolute left-4 top-4 rounded-full bg-black/55 px-3 py-1 text-[10px] font-black text-white backdrop-blur">{{ quiz.badge }}</div>
             <div class="absolute bottom-4 right-4 grid h-12 w-12 place-items-center rounded-2xl bg-white/90 text-sm font-black text-slate-900 shadow-xl">{{ quiz.icon }}</div>
@@ -64,16 +79,19 @@
       </article>
     </div>
 
-    <div v-if="!isLoading && filteredQuizzes.length === 0" class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-10 text-center shadow-[var(--shadow-card)]">
-      <h3 class="text-2xl font-black text-[var(--text)]">Không tìm thấy quiz</h3>
-      <p class="mt-2 text-sm text-[var(--muted)]">Đổi bộ lọc hoặc tạo quiz mới trong Admin.</p>
-    </div>
+      <div v-if="filteredQuizzes.length === 0" class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-10 text-center shadow-[var(--shadow-card)]">
+        <h3 class="text-2xl font-black text-[var(--text)]">Không tìm thấy quiz</h3>
+        <p class="mt-2 text-sm text-[var(--muted)]">Đổi bộ lọc hoặc tạo quiz mới trong Admin.</p>
+      </div>
+    </template>
   </section>
 </template>
 
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute } from 'vue-router'
+import AppLoadingState from '@/components/common/AppLoadingState.vue'
+import AppErrorState from '@/components/common/AppErrorState.vue'
 import VisibilityBadge from '@/components/common/VisibilityBadge.vue'
 import { currentUserStorage, normalizeQuizCard, quizzesApi } from '@/services/api'
 

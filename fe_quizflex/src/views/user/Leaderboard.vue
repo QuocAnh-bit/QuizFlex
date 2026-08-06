@@ -23,96 +23,108 @@
     <div class="side-trophy">🏆</div>
     <div class="side-chart">📈</div>
 
-    <!-- Top 3 Podium -->
-    <div class="podium">
-      <!-- Hạng 2 -->
-      <div class="podium-card second">
-        <div class="rank-badge silver">2</div>
-        <div class="avatar silver">
-          {{ leaderboard[1]?.name?.charAt(0).toUpperCase() || '-' }}
+    <!-- LOADING STATE -->
+    <AppLoadingState 
+      v-if="isLoading" 
+      title="Đang tải Bảng xếp hạng..." 
+      message="Vui lòng chờ trong giây lát để hệ thống tải bảng tổng sắp điểm kinh nghiệm (XP)."
+      icon="👑"
+    />
+
+    <!-- LOADED STATE -->
+    <template v-else>
+      <!-- Top 3 Podium -->
+      <div class="podium">
+        <!-- Hạng 2 -->
+        <div class="podium-card second">
+          <div class="rank-badge silver">2</div>
+          <div class="avatar silver">
+            {{ leaderboard[1]?.name?.charAt(0).toUpperCase() || '-' }}
+          </div>
+          <h3>{{ leaderboard[1]?.name || 'Trống' }}</h3>
+          <span class="level" v-if="leaderboard[1]">Level {{ leaderboard[1]?.level }}</span>
+          <div class="xp" v-if="leaderboard[1]">🏆 {{ leaderboard[1]?.xp }} XP</div>
         </div>
-        <h3>{{ leaderboard[1]?.name || 'Trống' }}</h3>
-        <span class="level" v-if="leaderboard[1]">Level {{ leaderboard[1]?.level }}</span>
-        <div class="xp" v-if="leaderboard[1]">🏆 {{ leaderboard[1]?.xp }} XP</div>
+
+        <!-- Hạng 1 -->
+        <div class="podium-card first">
+          <div class="crown">👑</div>
+          <div class="rank-badge gold">1</div>
+          <div class="avatar gold">
+            {{ leaderboard[0]?.name?.charAt(0).toUpperCase() || '-' }}
+          </div>
+          <h2>
+            {{ leaderboard[0]?.name || 'Trống' }}
+            <span v-if="leaderboard[0]?.is_me" class="me-tag">(bạn)</span>
+          </h2>
+          <span class="level" v-if="leaderboard[0]">Level {{ leaderboard[0]?.level }}</span>
+          <div class="xp gold-xp" v-if="leaderboard[0]">🏆 {{ leaderboard[0]?.xp }} XP</div>
+        </div>
+
+        <!-- Hạng 3 -->
+        <div class="podium-card third">
+          <div class="rank-badge bronze">3</div>
+          <div class="avatar bronze">
+            {{ leaderboard[2]?.name?.charAt(0).toUpperCase() || '-' }}
+          </div>
+          <h3>{{ leaderboard[2]?.name || 'Trống' }}</h3>
+          <span class="level" v-if="leaderboard[2]">Level {{ leaderboard[2]?.level }}</span>
+          <div class="xp" v-if="leaderboard[2]">🏆 {{ leaderboard[2]?.xp }} XP</div>
+        </div>
       </div>
 
-      <!-- Hạng 1 -->
-      <div class="podium-card first">
-        <div class="crown">👑</div>
-        <div class="rank-badge gold">1</div>
-        <div class="avatar gold">
-          {{ leaderboard[0]?.name?.charAt(0).toUpperCase() || '-' }}
-        </div>
-        <h2>
-          {{ leaderboard[0]?.name || 'Trống' }}
-          <span v-if="leaderboard[0]?.is_me" class="me-tag">(bạn)</span>
-        </h2>
-        <span class="level" v-if="leaderboard[0]">Level {{ leaderboard[0]?.level }}</span>
-        <div class="xp gold-xp" v-if="leaderboard[0]">🏆 {{ leaderboard[0]?.xp }} XP</div>
-      </div>
-
-      <!-- Hạng 3 -->
-      <div class="podium-card third">
-        <div class="rank-badge bronze">3</div>
-        <div class="avatar bronze">
-          {{ leaderboard[2]?.name?.charAt(0).toUpperCase() || '-' }}
-        </div>
-        <h3>{{ leaderboard[2]?.name || 'Trống' }}</h3>
-        <span class="level" v-if="leaderboard[2]">Level {{ leaderboard[2]?.level }}</span>
-        <div class="xp" v-if="leaderboard[2]">🏆 {{ leaderboard[2]?.xp }} XP</div>
-      </div>
-    </div>
-
-    <!-- Leaderboard Table -->
-    <div class="leaderboard-card">
-      <table class="leader-table">
-        <thead>
-          <tr>
-            <th class="rank-col">#</th>
-            <th class="player-col">Người chơi</th>
-            <th class="xp-col">XP</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="(user, i) in leaderboard.slice(0, visibleCount)"
-            :key="i"
-            class="leader-row"
-            :class="{ me: user.is_me }"
-          >
-            <td class="rank-cell rank-col">
-              <span v-if="i === 0" class="medal">🥇</span>
-              <span v-else-if="i === 1" class="medal">🥈</span>
-              <span v-else-if="i === 2" class="medal">🥉</span>
-              <span v-else class="rank-num">#{{ i + 1 }}</span>
-            </td>
-            <td class="player-cell player-col">
-              <div class="avatar-small">{{ user.name.charAt(0).toUpperCase() }}</div>
-              <div class="player-info">
-                <div class="name">
-                  {{ user.name }}
-                  <span v-if="user.is_me" class="me-tag">(bạn)</span>
+      <!-- Leaderboard Table -->
+      <div class="leaderboard-card">
+        <table class="leader-table">
+          <thead>
+            <tr>
+              <th class="rank-col">#</th>
+              <th class="player-col">Người chơi</th>
+              <th class="xp-col">XP</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="(user, i) in leaderboard.slice(0, visibleCount)"
+              :key="i"
+              class="leader-row"
+              :class="{ me: user.is_me }"
+            >
+              <td class="rank-cell rank-col">
+                <span v-if="i === 0" class="medal">🥇</span>
+                <span v-else-if="i === 1" class="medal">🥈</span>
+                <span v-else-if="i === 2" class="medal">🥉</span>
+                <span v-else class="rank-num">#{{ i + 1 }}</span>
+              </td>
+              <td class="player-cell player-col">
+                <div class="avatar-small">{{ user.name.charAt(0).toUpperCase() }}</div>
+                <div class="player-info">
+                  <div class="name">
+                    {{ user.name }}
+                    <span v-if="user.is_me" class="me-tag">(bạn)</span>
+                  </div>
+                  <div class="level">Level {{ user.level }}</div>
                 </div>
-                <div class="level">Level {{ user.level }}</div>
-              </div>
-            </td>
-            <td class="xp-cell xp-col">
-              {{ user.xp }} XP
-              <span v-if="user.is_me" class="crown-mini">👑</span>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+              </td>
+              <td class="xp-cell xp-col">
+                {{ user.xp }} XP
+                <span v-if="user.is_me" class="crown-mini">👑</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
 
-      <button v-if="leaderboard.length > visibleCount" class="show-more" @click="visibleCount += 10">
-        Xem thêm <span class="chev">⌄</span>
-      </button>
-    </div>
+        <button v-if="leaderboard.length > visibleCount" class="show-more" @click="visibleCount += 10">
+          Xem thêm <span class="chev">⌄</span>
+        </button>
+      </div>
+    </template>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from "vue";
+import AppLoadingState from "@/components/common/AppLoadingState.vue";
 import { gamificationApi, currentUserStorage } from "@/services/api";
 
 const leaderboard = ref([]);
