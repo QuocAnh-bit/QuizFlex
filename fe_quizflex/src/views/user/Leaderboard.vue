@@ -1,5 +1,15 @@
 <template>
   <div class="leaderboard-page">
+    <div
+      v-if="isLoading"
+      class="loading-overlay"
+      role="status"
+      aria-live="polite"
+    >
+      <div class="loading-spinner"></div>
+      <p>Đang tải bảng xếp hạng...</p>
+    </div>
+
     <!-- Background Glows -->
     <div class="bg-glow glow-1"></div>
     <div class="bg-glow glow-2"></div>
@@ -29,11 +39,15 @@
       <div class="podium-card second">
         <div class="rank-badge silver">2</div>
         <div class="avatar silver">
-          {{ leaderboard[1]?.name?.charAt(0).toUpperCase() || '-' }}
+          {{ leaderboard[1]?.name?.charAt(0).toUpperCase() || "-" }}
         </div>
-        <h3>{{ leaderboard[1]?.name || 'Trống' }}</h3>
-        <span class="level" v-if="leaderboard[1]">Level {{ leaderboard[1]?.level }}</span>
-        <div class="xp" v-if="leaderboard[1]">🏆 {{ leaderboard[1]?.xp }} XP</div>
+        <h3>{{ leaderboard[1]?.name || "Trống" }}</h3>
+        <span class="level" v-if="leaderboard[1]"
+          >Level {{ leaderboard[1]?.level }}</span
+        >
+        <div class="xp" v-if="leaderboard[1]">
+          🏆 {{ leaderboard[1]?.xp }} XP
+        </div>
       </div>
 
       <!-- Hạng 1 -->
@@ -41,25 +55,33 @@
         <div class="crown">👑</div>
         <div class="rank-badge gold">1</div>
         <div class="avatar gold">
-          {{ leaderboard[0]?.name?.charAt(0).toUpperCase() || '-' }}
+          {{ leaderboard[0]?.name?.charAt(0).toUpperCase() || "-" }}
         </div>
         <h2>
-          {{ leaderboard[0]?.name || 'Trống' }}
+          {{ leaderboard[0]?.name || "Trống" }}
           <span v-if="leaderboard[0]?.is_me" class="me-tag">(bạn)</span>
         </h2>
-        <span class="level" v-if="leaderboard[0]">Level {{ leaderboard[0]?.level }}</span>
-        <div class="xp gold-xp" v-if="leaderboard[0]">🏆 {{ leaderboard[0]?.xp }} XP</div>
+        <span class="level" v-if="leaderboard[0]"
+          >Level {{ leaderboard[0]?.level }}</span
+        >
+        <div class="xp gold-xp" v-if="leaderboard[0]">
+          🏆 {{ leaderboard[0]?.xp }} XP
+        </div>
       </div>
 
       <!-- Hạng 3 -->
       <div class="podium-card third">
         <div class="rank-badge bronze">3</div>
         <div class="avatar bronze">
-          {{ leaderboard[2]?.name?.charAt(0).toUpperCase() || '-' }}
+          {{ leaderboard[2]?.name?.charAt(0).toUpperCase() || "-" }}
         </div>
-        <h3>{{ leaderboard[2]?.name || 'Trống' }}</h3>
-        <span class="level" v-if="leaderboard[2]">Level {{ leaderboard[2]?.level }}</span>
-        <div class="xp" v-if="leaderboard[2]">🏆 {{ leaderboard[2]?.xp }} XP</div>
+        <h3>{{ leaderboard[2]?.name || "Trống" }}</h3>
+        <span class="level" v-if="leaderboard[2]"
+          >Level {{ leaderboard[2]?.level }}</span
+        >
+        <div class="xp" v-if="leaderboard[2]">
+          🏆 {{ leaderboard[2]?.xp }} XP
+        </div>
       </div>
     </div>
 
@@ -87,7 +109,9 @@
               <span v-else class="rank-num">#{{ i + 1 }}</span>
             </td>
             <td class="player-cell player-col">
-              <div class="avatar-small">{{ user.name.charAt(0).toUpperCase() }}</div>
+              <div class="avatar-small">
+                {{ user.name.charAt(0).toUpperCase() }}
+              </div>
               <div class="player-info">
                 <div class="name">
                   {{ user.name }}
@@ -104,7 +128,11 @@
         </tbody>
       </table>
 
-      <button v-if="leaderboard.length > visibleCount" class="show-more" @click="visibleCount += 10">
+      <button
+        v-if="leaderboard.length > visibleCount"
+        class="show-more"
+        @click="visibleCount += 10"
+      >
         Xem thêm <span class="chev">⌄</span>
       </button>
     </div>
@@ -112,7 +140,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, nextTick } from "vue";
 import { gamificationApi, currentUserStorage } from "@/services/api";
 
 const leaderboard = ref([]);
@@ -120,14 +148,19 @@ const visibleCount = ref(5);
 const isLoading = ref(true);
 
 onMounted(async () => {
+  isLoading.value = true;
+
   try {
     const currentUser = currentUserStorage.get();
     const data = await gamificationApi.getLeaderboard();
-    
+
     leaderboard.value = data.map((item) => ({
       ...item,
       is_me: currentUser && Number(item.user_id) === Number(currentUser.id),
     }));
+
+    // Chờ Vue render xong dữ liệu API rồi mới ẩn loading.
+    await nextTick();
   } catch (error) {
     console.error("Failed to load leaderboard:", error);
   } finally {
@@ -137,10 +170,54 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  background: radial-gradient(
+    circle at 50% 30%,
+    #3b1e6b 0%,
+    #1a0f2e 60%,
+    #12081f 100%
+  );
+  color: #fff;
+}
+
+.loading-overlay p {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.loading-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid rgba(255, 255, 255, 0.25);
+  border-top-color: #fbbf24;
+  border-radius: 50%;
+  animation: loading-spin 0.8s linear infinite;
+}
+
+@keyframes loading-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .leaderboard-page {
   position: relative;
   min-height: 100vh;
-  background: radial-gradient(circle at 50% 30%, #3b1e6b 0%, #1a0f2e 60%, #12081f 100%);
+  background: radial-gradient(
+    circle at 50% 30%,
+    #3b1e6b 0%,
+    #1a0f2e 60%,
+    #12081f 100%
+  );
   overflow: hidden;
   color: white;
   padding: 40px 20px 100px;
@@ -199,16 +276,58 @@ onMounted(async () => {
   text-shadow: 0 0 8px rgba(224, 187, 255, 0.6);
 }
 
-.p1 { top: 12%; left: 8%; animation-delay: 0s; }
-.p2 { top: 22%; left: 22%; animation-delay: 1.8s; font-size: 24px; }
-.p3 { top: 8%; left: 48%; animation-delay: 3.5s; }
-.p4 { top: 35%; left: 68%; animation-delay: 0.8s; }
-.p5 { top: 52%; left: 15%; animation-delay: 5.2s; }
-.p6 { top: 48%; left: 82%; animation-delay: 2.8s; }
-.p7 { top: 68%; left: 28%; animation-delay: 7s; font-size: 18px; }
-.p8 { top: 18%; left: 78%; animation-delay: 4.5s; }
-.p9 { top: 62%; left: 88%; animation-delay: 6.5s; }
-.p10 { top: 25%; left: 5%; animation-delay: 9s; }
+.p1 {
+  top: 12%;
+  left: 8%;
+  animation-delay: 0s;
+}
+.p2 {
+  top: 22%;
+  left: 22%;
+  animation-delay: 1.8s;
+  font-size: 24px;
+}
+.p3 {
+  top: 8%;
+  left: 48%;
+  animation-delay: 3.5s;
+}
+.p4 {
+  top: 35%;
+  left: 68%;
+  animation-delay: 0.8s;
+}
+.p5 {
+  top: 52%;
+  left: 15%;
+  animation-delay: 5.2s;
+}
+.p6 {
+  top: 48%;
+  left: 82%;
+  animation-delay: 2.8s;
+}
+.p7 {
+  top: 68%;
+  left: 28%;
+  animation-delay: 7s;
+  font-size: 18px;
+}
+.p8 {
+  top: 18%;
+  left: 78%;
+  animation-delay: 4.5s;
+}
+.p9 {
+  top: 62%;
+  left: 88%;
+  animation-delay: 6.5s;
+}
+.p10 {
+  top: 25%;
+  left: 5%;
+  animation-delay: 9s;
+}
 
 @keyframes float-particle {
   0% {
@@ -244,13 +363,23 @@ onMounted(async () => {
 }
 
 @keyframes trophy-float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-30px); }
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-30px);
+  }
 }
 
 @keyframes chart-float {
-  0%, 100% { transform: translateY(0) rotate(3deg); }
-  50% { transform: translateY(-25px) rotate(-3deg); }
+  0%,
+  100% {
+    transform: translateY(0) rotate(3deg);
+  }
+  50% {
+    transform: translateY(-25px) rotate(-3deg);
+  }
 }
 
 /* Podium */
@@ -272,7 +401,7 @@ onMounted(async () => {
   text-align: center;
   background: rgba(30, 20, 55, 0.9);
   backdrop-filter: blur(16px);
-  border: 1px solid rgba(255,255,255,0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   transition: all 0.4s ease;
 }
 
@@ -300,8 +429,13 @@ onMounted(async () => {
 }
 
 @keyframes crown-bob {
-  0%, 100% { transform: translateX(-50%) translateY(0); }
-  50% { transform: translateX(-50%) translateY(-10px); }
+  0%,
+  100% {
+    transform: translateX(-50%) translateY(0);
+  }
+  50% {
+    transform: translateX(-50%) translateY(-10px);
+  }
 }
 
 .rank-badge {
@@ -319,9 +453,15 @@ onMounted(async () => {
   color: #111827;
 }
 
-.gold { background: #fbbf24; }
-.silver { background: #cbd5e1; }
-.bronze { background: #f59e0b; }
+.gold {
+  background: #fbbf24;
+}
+.silver {
+  background: #cbd5e1;
+}
+.bronze {
+  background: #f59e0b;
+}
 
 .avatar {
   width: 80px;
@@ -337,7 +477,12 @@ onMounted(async () => {
   box-shadow: 0 0 30px rgba(147, 51, 234, 0.7);
 }
 
-.gold .avatar { width: 92px; height: 92px; font-size: 34px; box-shadow: 0 0 40px #fbbf24; }
+.gold .avatar {
+  width: 92px;
+  height: 92px;
+  font-size: 34px;
+  box-shadow: 0 0 40px #fbbf24;
+}
 
 /* Leaderboard */
 .leaderboard-card {
@@ -346,7 +491,7 @@ onMounted(async () => {
   background: rgba(20, 18, 40, 0.95);
   backdrop-filter: blur(20px);
   border-radius: 24px;
-  border: 1px solid rgba(255,255,255,0.08);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   overflow: hidden;
   max-width: 920px;
   margin: 0 auto;
@@ -363,7 +508,7 @@ onMounted(async () => {
   text-transform: uppercase;
   letter-spacing: 0.8px;
   color: #a5b4fc;
-  border-bottom: 1px solid rgba(255,255,255,0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .leader-table td {
@@ -444,7 +589,7 @@ onMounted(async () => {
   font-weight: 700;
   font-size: 15px;
   cursor: pointer;
-  border-top: 1px solid rgba(255,255,255,0.08);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .show-more:hover {
