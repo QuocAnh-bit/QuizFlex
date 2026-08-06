@@ -29,6 +29,8 @@ export const createEcho = () => {
     wssPort: Number(import.meta.env.VITE_REVERB_PORT || 8080),
     forceTLS: reverbScheme() === 'https',
     enabledTransports: ['ws', 'wss'],
+    unavailableTimeout: 2000,
+    maxReconnectionAttempts: 2,
     authEndpoint: `${apiOrigin()}/broadcasting/auth`,
     authorizer: (channel) => ({
       authorize: (socketId, callback) => {

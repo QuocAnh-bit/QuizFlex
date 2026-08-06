@@ -574,8 +574,11 @@ router.beforeEach(async (to) => {
     }
   }
 
-  if (user && user.is_locked && !isAuthLayout && to.path !== "/account-locked") {
-    return { path: "/account-locked" };
+  if (user && user.is_locked) {
+    if (to.path !== "/account-locked") {
+      return { path: "/account-locked" };
+    }
+    return true;
   }
 
   if (user && isAuthLayout) {

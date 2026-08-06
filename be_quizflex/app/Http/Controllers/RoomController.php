@@ -736,17 +736,14 @@ class RoomController extends Controller
 
     private function formatRoom(Room $room, bool $includeRelations = false): array
     {
-        $membersCount = $room->members_count ?? null;
+        $membersCount = $room->getAttribute('members_count');
         if ($membersCount === null && $room->relationLoaded('members')) {
             $membersCount = $room->members
                 ->filter(fn (RoomMember $member) => (int) $member->user_id !== (int) $room->host_id && $member->status === 'active')
                 ->count();
         }
         if ($membersCount === null) {
-            $membersCount = RoomMember::where('room_id', $room->id)
-                ->where('user_id', '!=', $room->host_id)
-                ->where('status', 'active')
-                ->count();
+            $membersCount = 0;
         }
 
         $data = [

@@ -12,6 +12,29 @@ const api = axios.create({
   },
 });
 
+const memoryCache = new Map();
+
+export const withMemoryCache = async (key, fetcher, ttlMs = 15000) => {
+  const cached = memoryCache.get(key);
+  const now = Date.now();
+  if (cached && now - cached.timestamp < ttlMs) {
+    return cached.data;
+  }
+  const freshData = await fetcher();
+  memoryCache.set(key, { data: freshData, timestamp: now });
+  return freshData;
+};
+
+export const clearMemoryCache = (keyPrefix = "") => {
+  if (!keyPrefix) {
+    memoryCache.clear();
+    return;
+  }
+  for (const key of memoryCache.keys()) {
+    if (key.startsWith(keyPrefix)) memoryCache.delete(key);
+  }
+};
+
 export const importOcrQuiz = (payload) => {
   return api.post("/ocr/import-quiz", payload);
 };
@@ -200,8 +223,10 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (err) {
         processQueue(err, null);
-        authApi.clearSession();
-        window.location.href = "/login";
+        if (err.response?.status === 401 || err.response?.status === 403 || !tokenStorage.get()) {
+          authApi.clearSession();
+          window.location.href = "/login";
+        }
         return Promise.reject(err);
       } finally {
         isRefreshing = false;
@@ -278,7 +303,19 @@ export const authApi = {
 
   async lockedInfo() {
     const { data } = await api.get("/auth/locked-info");
-    return unwrap(data);
+    const info = unwrap(data);
+    if (info && typeof info === "object") {
+      const current = currentUserStorage.get();
+      if (current) {
+        currentUserStorage.set({
+          ...current,
+          is_locked: Boolean(info.is_locked),
+          locked_reason: info.locked_reason ?? current.locked_reason,
+          locked_at: info.locked_at ?? current.locked_at,
+        });
+      }
+    }
+    return info;
   },
 
   async updateProfile(payload = {}) {
@@ -432,8 +469,11 @@ const prepareQuizPayload = (payload) =>
 
 export const quizzesApi = {
   async list(params = {}) {
-    const { data } = await api.get("/quizzes", { params });
-    return unwrapCollection(data);
+    const cacheKey = `quizzes_list_${JSON.stringify(params)}`;
+    return withMemoryCache(cacheKey, async () => {
+      const { data } = await api.get("/quizzes", { params });
+      return unwrapCollection(data);
+    }, 15000);
   },
 
   async get(id) {
@@ -596,8 +636,10 @@ export const unlockRequestsApi = {
 
 export const adminDashboardApi = {
   async overview() {
-    const { data } = await api.get("/admin/dashboard/overview");
-    return unwrap(data);
+    return withMemoryCache("admin_dashboard_overview", async () => {
+      const { data } = await api.get("/admin/dashboard/overview");
+      return unwrap(data);
+    }, 15000);
   },
 };
 
@@ -712,26 +754,33 @@ export const aiQuizApi = {
 
 export const homeworkApi = {
   async getHomeworkRooms(params = {}) {
-    const { data } = await api.get("/rooms", { params });
-    return unwrapCollection(data);
+    const cacheKey = `homework_rooms_${JSON.stringify(params)}`;
+    return withMemoryCache(cacheKey, async () => {
+      const { data } = await api.get("/rooms", { params });
+      return unwrapCollection(data);
+    }, 15000);
   },
 
   async createHomeworkRoom(payload) {
+    clearMemoryCache("homework_rooms");
     const { data } = await api.post("/rooms", payload);
     return unwrap(data);
   },
 
   async updateHomeworkRoom(roomId, payload) {
+    clearMemoryCache("homework_rooms");
     const { data } = await api.patch(`/rooms/${roomId}`, payload)
     return unwrap(data)
   },
 
   async joinHomeworkRoom(code) {
+    clearMemoryCache("homework_rooms");
     const { data } = await api.post("/rooms/join", { code });
     return unwrap(data);
   },
 
   async leaveHomeworkRoom(roomId) {
+    clearMemoryCache("homework_rooms");
     const { data } = await api.post(`/rooms/${roomId}/leave`)
     return unwrap(data)
   },
@@ -946,8 +995,10 @@ export const liveRoomApi = {
 
 export const gamificationApi = {
   async getLeaderboard() {
-    const { data } = await api.get("/leaderboard");
-    return unwrapCollection(data);
+    return withMemoryCache("leaderboard", async () => {
+      const { data } = await api.get("/leaderboard");
+      return unwrapCollection(data);
+    }, 15000);
   },
 };
 

@@ -54,8 +54,18 @@
         </div>
 
         <div class="mt-6">
-          <div v-if="isLoading" class="rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface-soft)] p-10 text-center text-sm font-bold text-[var(--muted)]">Đang tải dữ liệu phân tích...</div>
-          <div v-else-if="errorMessage" class="rounded-[1.5rem] border border-rose-500/30 bg-rose-500/10 p-5 text-sm font-bold text-rose-300">{{ errorMessage }}</div>
+          <AppLoadingState 
+            v-if="isLoading" 
+            title="Đang tải dữ liệu phân tích..." 
+            message="Vui lòng chờ trong giây lát để hệ thống tổng hợp tiến trình học tập của bạn."
+            icon="📈"
+          />
+          <AppErrorState 
+            v-else-if="errorMessage" 
+            title="Không thể tải dữ liệu phân tích"
+            :message="errorMessage" 
+            @retry="loadAnalytics"
+          />
           <div v-else-if="lineSeries.length === 0" class="rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface-soft)] p-10 text-center text-sm font-bold text-[var(--muted)]">Chưa có kết quả hoàn thành để hiển thị biểu đồ. Hoàn thành ít nhất một quiz để xem tiến trình.</div>
           <div v-else class="overflow-hidden rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface-soft)] p-5">
             <div class="overflow-x-auto">
@@ -122,6 +132,8 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
+import AppLoadingState from '@/components/common/AppLoadingState.vue'
+import AppErrorState from '@/components/common/AppErrorState.vue'
 import { attemptsApi } from '@/services/api'
 
 const attempts = ref([])
