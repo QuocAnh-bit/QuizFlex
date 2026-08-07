@@ -84,7 +84,8 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
-import { notificationApi } from '@/services/api'
+import { notificationApi, currentUserStorage } from '@/services/api'
+import { getEcho } from '@/echo'
 
 const router = useRouter()
 const isOpen = ref(false)
@@ -94,6 +95,7 @@ const bellContainer = ref(null)
 // State thông báo
 const notifications = ref([])
 const unreadCount = ref(0)
+let notificationChannel = null
 
 const toggleDropdown = () => {
   isOpen.value = !isOpen.value
@@ -128,6 +130,7 @@ const handleReadNotification = async (item) => {
     unreadCount.value = Math.max(0, unreadCount.value - 1)
     try {
       await notificationApi.markAsRead(item.id)
+      window.dispatchEvent(new CustomEvent('notifications-updated'))
     } catch (error) {
       console.error('Lỗi khi đánh dấu đã đọc', error)
     }
@@ -148,6 +151,7 @@ const markAllAsRead = async () => {
   if (hadUnread) {
     try {
       await notificationApi.markAllAsRead()
+      window.dispatchEvent(new CustomEvent('notifications-updated'))
     } catch (error) {
       console.error('Lỗi khi đánh dấu tất cả đã đọc', error)
     }
@@ -156,10 +160,34 @@ const markAllAsRead = async () => {
 
 const getIcon = (type) => {
   const icons = {
+    // Quiz
+    'quiz_moderated': '📝',
+    // Room Member status
+    'room_join_request': '👋',
+    'room_member_approved': '✅',
+    'room_member_rejected': '❌',
+    'room_member_kicked': '🚷',
+    'room_dissolved': '🏚️',
+    'room_banned': '🚫',
+    'room_unbanned': '🔓',
+    // Homework
+    'homework_assigned': '📚',
+    'homework_submitted': '📤',
+    'homework_evaluated': '💯',
+    'homework_attempt_reset': '🔄',
+    // Account / Security
+    'account_locked': '🔒',
+    'account_unlocked': '🔓',
+    'unlock_request_created': '🔑',
+    'unlock_request_approved': '✔️',
+    'unlock_request_rejected': '❌',
+    // Others
+    'payment_success': '💳',
+    'report_created': '🚨',
     'report_resolved': '✅',
     'report_action': '🚨',
-    'system': '🔔',
-    'achievement': '🏆'
+    'achievement_unlocked': '🏆',
+    'system': '🔔'
   }
   return icons[type] || '📩'
 }
@@ -175,13 +203,70 @@ const formatTime = (isoString) => {
   return date.toLocaleDateString('vi-VN')
 }
 
+const subscribeRealtimeNotifications = () => {
+  try {
+    const user = currentUserStorage.get()
+    if (!user?.id) return
+
+    const echo = getEcho()
+    notificationChannel = echo.private(`user.${user.id}`)
+    
+    notificationChannel.notification((notification) => {
+      const newNotification = {
+        id: notification.id,
+        type: notification.type || 'system',
+        title: notification.title || '',
+        message: notification.message || '',
+        action: notification.action || 'view',
+        action_link: notification.action_link || null,
+        metadata: notification.metadata || {},
+        is_read: false,
+        created_at: new Date().toISOString()
+      }
+
+      // Tránh duplicate thông báo
+      if (notifications.value.some(n => n.id === newNotification.id)) {
+        return
+      }
+
+      notifications.value.unshift(newNotification)
+      if (notifications.value.length > 20) {
+        notifications.value.pop()
+      }
+
+      unreadCount.value++
+    })
+  } catch (error) {
+    console.error('Lỗi khi đăng ký nhận thông báo realtime:', error)
+  }
+}
+
+const unsubscribeRealtimeNotifications = () => {
+  if (notificationChannel) {
+    try {
+      notificationChannel.stopListening('.Illuminate\\Notifications\\Events\\BroadcastNotificationCreated')
+    } catch (e) {
+      console.warn('Không thể hủy đăng ký Echo event:', e)
+    }
+    notificationChannel = null
+  }
+}
+
+const handleNotificationsUpdated = () => {
+  fetchNotifications()
+}
+
 onMounted(() => {
   window.addEventListener('click', closeDropdown)
+  window.addEventListener('notifications-updated', handleNotificationsUpdated)
   fetchNotifications()
+  subscribeRealtimeNotifications()
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('click', closeDropdown)
+  window.removeEventListener('notifications-updated', handleNotificationsUpdated)
+  unsubscribeRealtimeNotifications()
 })
 </script>
 

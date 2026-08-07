@@ -1209,11 +1209,24 @@ export const reportApi = {
 };
 
 export const notificationApi = {
-  async list() {
-    const { data } = await api.get("/notifications");
+  async list(params) {
+    const { data } = await api.get("/notifications", { params });
+    const items = unwrapCollection(data);
+    const unreadCount = data?.unread_count ?? 0;
+    
+    const innerData = data?.data;
+    const pagination = innerData?.current_page ? {
+      currentPage: innerData.current_page,
+      lastPage: innerData.last_page,
+      total: innerData.total,
+      perPage: innerData.per_page,
+      nextPageUrl: innerData.next_page_url,
+    } : null;
+
     return {
-      items: unwrapCollection(data),
-      unreadCount: data?.unread_count ?? 0,
+      items,
+      unreadCount,
+      pagination,
     };
   },
 
@@ -1226,7 +1239,11 @@ export const notificationApi = {
     const { data } = await api.put("/notifications/read-all");
     return data;
   },
- 
+
+  async deleteAll() {
+    const { data } = await api.delete("/notifications");
+    return data;
+  },
 };
 
 export default api;

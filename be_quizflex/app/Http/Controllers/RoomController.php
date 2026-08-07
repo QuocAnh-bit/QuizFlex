@@ -5,11 +5,20 @@ namespace App\Http\Controllers;
 use App\Models\Room;
 use App\Models\RoomAllowedMember;
 use App\Models\RoomMember;
+use App\Models\User;
+use App\Models\RoomAssignment;
+use App\Models\QuizAttempt;
+use App\Notifications\RoomJoinRequested;
+use App\Notifications\RoomMemberApproved;
+use App\Notifications\RoomMemberRejected;
+use App\Notifications\RoomMemberKicked;
+use App\Notifications\RoomDissolved;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Notification;
 
 class RoomController extends Controller
 {
@@ -217,6 +226,12 @@ class RoomController extends Controller
                     'joined_at' => now(),
                 ])->save();
 
+                // Gửi thông báo cho Host
+                $host = User::find($room->host_id);
+                if ($host) {
+                    $host->notify(new RoomJoinRequested($room, $existingMember, $user));
+                }
+
                 return response()->json([
                     'success' => false,
                     'code' => 'JOIN_PENDING',
@@ -261,6 +276,12 @@ class RoomController extends Controller
                         'status' => 'pending',
                         'joined_at' => now(),
                     ])->save();
+
+                    // Gửi thông báo cho Host
+                    $host = User::find($room->host_id);
+                    if ($host) {
+                        $host->notify(new RoomJoinRequested($room, $existingMember, $user));
+                    }
 
                     return response()->json([
                         'success' => false,
@@ -346,6 +367,12 @@ class RoomController extends Controller
                 'joined_at' => now(),
             ]);
 
+            // Gửi thông báo cho Host
+            $host = User::find($room->host_id);
+            if ($host) {
+                $host->notify(new RoomJoinRequested($room, $member, $user));
+            }
+
             return response()->json([
                 'success' => false,
                 'code' => 'JOIN_PENDING',
@@ -394,11 +421,11 @@ class RoomController extends Controller
             ->latest('joined_at')
             ->get();
 
-        $assignedCount = \App\Models\RoomAssignment::where('room_id', $room->id)
+        $assignedCount = RoomAssignment::where('room_id', $room->id)
             ->whereIn('status', ['published', 'closed'])
             ->count();
 
-        $attemptsGrouped = \App\Models\QuizAttempt::where('room_id', $room->id)
+        $attemptsGrouped = QuizAttempt::where('room_id', $room->id)
             ->whereIn('status', ['completed', 'expired'])
             ->whereNotNull('assignment_id')
             ->get()
@@ -479,6 +506,11 @@ class RoomController extends Controller
             }
         }
 
+        // Gửi thông báo cho thành viên bị xóa
+        if ($memberUser) {
+            $memberUser->notify(new RoomMemberKicked($room, $member));
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Đã xóa thành viên khỏi phòng.',
@@ -548,8 +580,21 @@ class RoomController extends Controller
         // Chỉ Host mới được phép giải tán phòng – kiểm tra ở Backend
         Gate::forUser($user)->authorize('dissolve', $room);
 
+        // Lấy danh sách thành viên đang hoạt động (ngoại trừ host) để gửi thông báo
+        $activeMembers = RoomMember::where('room_id', $room->id)
+            ->where('status', 'active')
+            ->where('user_id', '!=', $room->host_id)
+            ->with('user')
+            ->get();
+
         // Soft Delete – toàn bộ dữ liệu liên quan vẫn được giữ nguyên
         $room->delete();
+
+        // Gửi thông báo cho các thành viên
+        $users = $activeMembers->map(fn($m) => $m->user)->filter();
+        if ($users->isNotEmpty()) {
+            Notification::send($users, new RoomDissolved($room, $activeMembers->first()));
+        }
 
         return response()->json([
             'success' => true,
@@ -764,11 +809,11 @@ class RoomController extends Controller
         ];
 
         if ($includeRelations) {
-            $assignedCount = \App\Models\RoomAssignment::where('room_id', $room->id)
+            $assignedCount = RoomAssignment::where('room_id', $room->id)
                 ->whereIn('status', ['published', 'closed'])
                 ->count();
 
-            $attemptsGrouped = \App\Models\QuizAttempt::where('room_id', $room->id)
+            $attemptsGrouped = QuizAttempt::where('room_id', $room->id)
                 ->whereIn('status', ['completed', 'expired'])
                 ->whereNotNull('assignment_id')
                 ->get()
@@ -874,6 +919,12 @@ class RoomController extends Controller
             }
         }
 
+        // Gửi thông báo cho thành viên được duyệt
+        $recipient = User::find($member->user_id);
+        if ($recipient) {
+            $recipient->notify(new RoomMemberApproved($room, $member));
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Phê duyệt thành viên thành công.',
@@ -908,7 +959,14 @@ class RoomController extends Controller
             ], 422);
         }
 
+        $recipient = User::find($member->user_id);
+        $memberId = $member->id;
+
         $member->delete(); // Xóa hẳn bản ghi RoomMember để họ có thể gửi lại yêu cầu nếu muốn
+
+        if ($recipient) {
+            $recipient->notify(new RoomMemberRejected($room, $memberId));
+        }
 
         return response()->json([
             'success' => true,

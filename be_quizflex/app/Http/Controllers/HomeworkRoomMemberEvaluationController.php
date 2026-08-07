@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\RoomMember;
 use App\Models\RoomMemberEvaluation;
 use App\Models\QuizAttempt;
+use App\Notifications\HomeworkEvaluated;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 
@@ -123,6 +124,9 @@ class HomeworkRoomMemberEvaluationController extends Controller
                 'comment' => $data['comment'] ?? null,
             ]
         );
+
+        // Gửi thông báo cho học viên
+        $user->notify(new HomeworkEvaluated($room, null, null, $evaluation, true));
 
         return response()->json([
             'success' => true,

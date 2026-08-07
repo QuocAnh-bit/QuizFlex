@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Room;
 use App\Models\QuizAttempt;
 use App\Models\RoomSubmissionEvaluation;
+use App\Models\User;
+use App\Models\RoomAssignment;
+use App\Notifications\HomeworkEvaluated;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 
@@ -85,6 +88,16 @@ class HomeworkSubmissionEvaluationController extends Controller
                 'comment' => $data['comment'] ?? null,
             ]
         );
+
+        // Gửi thông báo cho học viên
+        $recipient = User::find($submission->user_id);
+        if ($recipient) {
+            $assignment = $submission->assignment;
+            if (!$assignment && $submission->assignment_id) {
+                $assignment = RoomAssignment::find($submission->assignment_id);
+            }
+            $recipient->notify(new HomeworkEvaluated($room, $assignment, $submission, $evaluation, false));
+        }
 
         return response()->json([
             'success' => true,

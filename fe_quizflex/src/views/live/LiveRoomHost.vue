@@ -215,11 +215,14 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, inject } from 'vue'
 import { useRoute } from 'vue-router'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import { getEcho } from '@/echo'
 import { currentUserStorage, liveRoomApi } from '@/services/api'
+
+const showConfirm = inject('showConfirm')
+const showToast = inject('showToast')
 
 const route = useRoute()
 const liveRoomId = computed(() => route.params.liveRoomId)
@@ -503,8 +506,21 @@ const startLive = async () => {
 }
 
 const finishLive = async () => {
-  if (!window.confirm('Bạn có chắc muốn kết thúc live room không?')) return
+  if (showConfirm) {
+    showConfirm(
+      'Kết thúc phòng thi đấu',
+      'Bạn có chắc muốn kết thúc phòng thi đấu này không? Trận đấu đang diễn ra sẽ kết thúc và lưu điểm.',
+      async () => {
+        await executeFinishLive()
+      }
+    )
+  } else {
+    if (!window.confirm('Bạn có chắc muốn kết thúc trận đấu không?')) return
+    await executeFinishLive()
+  }
+}
 
+const executeFinishLive = async () => {
   isActionLoading.value = true
   errorMessage.value = ''
   try {
@@ -516,8 +532,14 @@ const finishLive = async () => {
       live_room: data.live_room || liveRoom.value,
       leaderboard: data.leaderboard || monitor.value.leaderboard || [],
     }
+    if (showToast) {
+      showToast('Đã kết thúc trận đấu thành công.', 'success')
+    }
   } catch (error) {
-    errorMessage.value = error.message || 'Không finish được live room.'
+    errorMessage.value = error.message || 'Không kết thúc được trận đấu.'
+    if (showToast) {
+      showToast(errorMessage.value, 'error')
+    }
   } finally {
     isActionLoading.value = false
   }

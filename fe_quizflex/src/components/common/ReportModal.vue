@@ -45,7 +45,7 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, inject } from 'vue'
 import { reportApi } from '@/services/api'
 
 const props = defineProps({
@@ -60,6 +60,8 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['close', 'success'])
+
+const showToast = inject('showToast')
 
 const form = reactive({
   reason: '',
@@ -84,7 +86,9 @@ const submitReport = async () => {
       reason: form.reason,
       description: form.description
     })
-    alert('Cảm ơn bạn đã báo cáo. Quản trị viên sẽ xử lý sớm nhất!')
+    if (showToast) {
+      showToast('Cảm ơn bạn đã báo cáo. Quản trị viên sẽ xử lý sớm nhất!', 'success')
+    }
     emit('success')
     closeModal()
   } catch (error) {

@@ -175,10 +175,13 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, inject } from 'vue'
 import { useRoute } from 'vue-router'
 import VisibilityBadge from '@/components/common/VisibilityBadge.vue'
 import { normalizeQuizCard, quizzesApi } from '@/services/api'
+
+const showConfirm = inject('showConfirm')
+const showToast = inject('showToast')
 
 const route = useRoute()
 const questionBase = computed(() => route.path.startsWith('/dashboard') ? '/dashboard/questions' : '/admin/questions')
@@ -266,13 +269,33 @@ const loadQuizzes = async () => {
 }
 
 const deleteQuiz = async (id) => {
-  if (!window.confirm('Xóa mềm quiz này?')) return
+  const message = 'Chuyển vào thùng rác?'
+  if (showConfirm) {
+    showConfirm(
+      'Chuyển Quiz này vào thùng rác?',
+      message,
+      async () => {
+        await executeDeleteQuiz(id)
+      }
+    )
+  } else {
+    if (!window.confirm(message)) return
+    await executeDeleteQuiz(id)
+  }
+}
 
+const executeDeleteQuiz = async (id) => {
   try {
     await quizzesApi.remove(id)
     quizzes.value = quizzes.value.filter((quiz) => quiz.id !== id)
+    if (showToast) {
+      showToast('Đã chuyển Quiz vào thùng rác thành công.', 'success')
+    }
   } catch (error) {
-    errorMessage.value = `Xóa thất bại: ${error.message}`
+    errorMessage.value = `Chuyển vào thùng rác thất bại: ${error.message}`
+    if (showToast) {
+      showToast(errorMessage.value, 'error')
+    }
   }
 }
 const loadTrash = async()=>{
@@ -317,82 +340,103 @@ const loadTrash = async()=>{
 }
 const toggleVisibility = async (quiz) => {
   const action = quiz.is_public ? 'ẩn' : 'hiện lại'
+  const message = `Bạn có chắc muốn ${action} quiz này?`
 
-  if (!window.confirm(`Bạn có chắc muốn ${action} quiz này?`)) return
+  if (showConfirm) {
+    showConfirm(
+      'Cập nhật trạng thái hiển thị',
+      message,
+      async () => {
+        await executeToggleVisibility(quiz)
+      }
+    )
+  } else {
+    if (!window.confirm(message)) return
+    await executeToggleVisibility(quiz)
+  }
+}
 
+const executeToggleVisibility = async (quiz) => {
   try {
     await quizzesApi.toggleVisibility(quiz.id)
-
-    // Cập nhật trạng thái ngay trên giao diện
     quiz.is_public = !quiz.is_public
-
-    // Cập nhật visibility để badge đổi theo
     quiz.visibility = quiz.is_public ? 'public' : 'private'
+    if (showToast) {
+      showToast('Cập nhật trạng thái hiển thị thành công.', 'success')
+    }
   } catch (error) {
     errorMessage.value = `Cập nhật thất bại: ${error.message}`
+    if (showToast) {
+      showToast(errorMessage.value, 'error')
+    }
   }
 }
 
 const filteredQuizzes = computed(() => {
   return quizzes.value.filter((quiz) => tagFilter.value === 'all' || quiz.tag === tagFilter.value)
 })
-const restoreQuiz = async(id)=>{
+const restoreQuiz = async (id) => {
+  const message = 'Khôi phục quiz này?'
 
-
- if(!confirm('Khôi phục quiz này?'))
- return
-
-
-
- try{
-
-
-   await quizzesApi.restore(id)
-
-
-   await loadTrash()
-
-
-
- }catch(error){
-
-
-   errorMessage.value =
-   `Khôi phục thất bại: ${error.message}`
-
-
- }
-
-
+  if (showConfirm) {
+    showConfirm(
+      'Khôi phục Quiz',
+      message,
+      async () => {
+        await executeRestoreQuiz(id)
+      }
+    )
+  } else {
+    if (!confirm(message)) return
+    await executeRestoreQuiz(id)
+  }
 }
-const forceDeleteQuiz = async(id)=>{
 
+const executeRestoreQuiz = async (id) => {
+  try {
+    await quizzesApi.restore(id)
+    await loadTrash()
+    if (showToast) {
+      showToast('Khôi phục Quiz thành công.', 'success')
+    }
+  } catch (error) {
+    errorMessage.value = `Khôi phục thất bại: ${error.message}`
+    if (showToast) {
+      showToast(errorMessage.value, 'error')
+    }
+  }
+}
 
- if(!confirm('Xóa vĩnh viễn quiz này?'))
- return
+const forceDeleteQuiz = async (id) => {
+  const message = 'Xóa vĩnh viễn quiz này?'
 
+  if (showConfirm) {
+    showConfirm(
+      'Xóa vĩnh viễn Quiz',
+      message,
+      async () => {
+        await executeForceDeleteQuiz(id)
+      }
+    )
+  } else {
+    if (!confirm(message)) return
+    await executeForceDeleteQuiz(id)
+  }
+}
 
-
- try{
-
-
-   await quizzesApi.forceDelete(id)
-
-
-   await loadTrash()
-
-
-
- }catch(error){
-
-
-   errorMessage.value =
-   `Xóa thất bại: ${error.message}`
-
-
- }
-
-
+const executeForceDeleteQuiz = async (id) => {
+  try {
+    await quizzesApi.forceDelete(id)
+    await loadTrash()
+    if (showToast) {
+      showToast('Đã xóa vĩnh viễn Quiz.', 'success')
+    }
+  } catch (error) {
+    errorMessage.value = `Xóa vĩnh viễn thất bại: ${error.message}`
+    if (showToast) {
+      showToast(errorMessage.value, 'error')
+    }
+  }
 }
 onMounted(async () => {
   applyRouteFilters()
