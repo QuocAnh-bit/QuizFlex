@@ -27,7 +27,6 @@ import AdminLayout from "@/layouts/AdminLayout.vue";
 import UserLayout from "@/layouts/UserLayout.vue";
 import AuthLayout from "@/layouts/AuthLayout.vue";
 
-import AppCursor from "@/components/common/AppCursor.vue";
 import AppLoading from "@/components/common/AppLoading.vue";
 import { authApi, currentUserStorage } from "@/services/api";
 import { getEcho, disconnectEcho } from "@/echo.js";
@@ -39,7 +38,6 @@ const isLoading = ref(true);
 const showLockedToast = ref(false);
 const lockedCountdown = ref(5);
 let lockedCountdownInterval = null
-let lockPollInterval = null
 let accountChannel = null
 
 const subscribeAccountChannel = () => {
@@ -74,7 +72,6 @@ const triggerLockedOverlay = () => {
   if (route.path === '/account-locked') return
   showLockedToast.value = true
   lockedCountdown.value = 5
-  if (lockPollInterval) { clearInterval(lockPollInterval); lockPollInterval = null }
   lockedCountdownInterval = setInterval(() => {
     lockedCountdown.value--
     if (lockedCountdown.value <= 0) {
@@ -90,22 +87,6 @@ const goToAppeal = () => {
   if (route.path !== '/account-locked') {
     router.push('/account-locked')
   }
-}
-
-const startLockPolling = () => {
-  if (lockPollInterval) return
-  lockPollInterval = setInterval(async () => {
-    if (showLockedToast.value) return
-    if (route.path === '/account-locked') return
-    const user = currentUserStorage.get()
-    if (!user?.id) return
-    try {
-      const fresh = await authApi.lockedInfo()
-      if (fresh?.is_locked) triggerLockedOverlay()
-    } catch {
-      // ignore
-    }
-  }, 30000)
 }
 
 let loadingTimer = null;
@@ -153,17 +134,13 @@ onMounted(() => {
   window.addEventListener('quizflex-user-updated', (e) => {
     try {
       unsubscribeAccountChannel()
-      if (lockPollInterval) { clearInterval(lockPollInterval); lockPollInterval = null }
       if (e.detail) {
         subscribeAccountChannel()
-        startLockPolling()
       }
     } catch {
       // ignore
     }
   })
-
-  startLockPolling()
 
   removeBeforeGuard = router.beforeEach((to, from, next) => {
     if (to.fullPath !== from.fullPath) {
@@ -184,7 +161,6 @@ onBeforeUnmount(() => {
   window.removeEventListener('quizflex-account-locked', triggerLockedOverlay)
   unsubscribeAccountChannel()
   disconnectEcho()
-  if (lockPollInterval) clearInterval(lockPollInterval)
   if (lockedCountdownInterval) clearInterval(lockedCountdownInterval)
   clearTimeout(loadingTimer);
   clearTimeout(forceCloseTimer);

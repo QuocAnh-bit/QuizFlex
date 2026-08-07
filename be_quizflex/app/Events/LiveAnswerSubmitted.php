@@ -44,7 +44,6 @@ class LiveAnswerSubmitted implements ShouldBroadcastNow
             'answered_count' => $summary['answered_count'],
             'player_finished' => $summary['player_finished'],
             'player' => $summary,
-            'leaderboard' => $payloadService->leaderboard($player->liveRoom),
         ];
     }
 }

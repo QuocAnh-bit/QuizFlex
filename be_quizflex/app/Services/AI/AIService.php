@@ -948,7 +948,7 @@ PROMPT;
         );
     }
 
-    private function requestJsonPayload(string $prompt, int $maxTokens = 2000): array
+    private function requestJsonPayload(string $prompt, int $maxTokens = 8000): array
     {
         $payload = [
             'model' => $this->model,

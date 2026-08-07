@@ -14,7 +14,7 @@ class LiveLeaderboardUpdated implements ShouldBroadcastNow
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public function __construct(private readonly LiveRoom $liveRoom)
+    public function __construct(private readonly LiveRoom $liveRoom, private readonly ?array $leaderboard = null)
     {
     }
 
@@ -35,7 +35,7 @@ class LiveLeaderboardUpdated implements ShouldBroadcastNow
         return [
             'type' => 'leaderboard_updated',
             'live_room_id' => $this->liveRoom->id,
-            'leaderboard' => $payloadService->leaderboard($this->liveRoom),
+            'leaderboard' => $this->leaderboard ?? $payloadService->leaderboard($this->liveRoom),
             'updated_at' => now()->toIso8601String(),
         ];
     }

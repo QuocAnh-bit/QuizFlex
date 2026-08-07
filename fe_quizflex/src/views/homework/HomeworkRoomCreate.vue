@@ -40,10 +40,10 @@
 </template>
 
 <script setup>
-import { reactive, ref } from 'vue'
+import { reactive, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import StatCard from '@/components/cards/StatCard.vue'
-import { homeworkApi } from '@/services/api'
+import { homeworkApi, currentUserStorage } from '@/services/api'
 
 const router = useRouter()
 const form = reactive({
@@ -54,6 +54,15 @@ const form = reactive({
 const isSubmitting = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
+
+const currentUser = currentUserStorage.get()
+
+onMounted(() => {
+  const role = String(currentUser?.role || 'free').toLowerCase()
+  if (!['admin', 'plus', 'pro', 'ultra'].includes(role)) {
+    router.replace('/upgrade')
+  }
+})
 
 const submitForm = async () => {
   errorMessage.value = ''
