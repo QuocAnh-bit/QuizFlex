@@ -714,7 +714,7 @@
 
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppLoadingState from '@/components/common/AppLoadingState.vue'
 import AppErrorState from '@/components/common/AppErrorState.vue'
@@ -781,6 +781,19 @@ const activeSettingsTab = ref('general')
 const whitelistSearchQuery = ref('')
 const isExportingGradebook = ref(false)
 const memberSearchQuery = ref('')
+
+watch(
+  () => route.query,
+  (newQuery) => {
+    if (newQuery.tab) {
+      activeSettingsTab.value = newQuery.tab
+    }
+    if (newQuery.status) {
+      memberTab.value = newQuery.status
+    }
+  },
+  { immediate: true }
+)
 
 const filteredAllowedMembers = computed(() => {
   const query = whitelistSearchQuery.value.trim().toLowerCase()
@@ -869,6 +882,16 @@ const filteredPendingMembers = computed(() => {
 const currentMember = computed(() => {
   return members.value.find((m) => Number(m.user_id) === Number(currentUser?.id))
 })
+
+watch(
+  () => [route.query.open_member_evaluation, currentMember.value],
+  ([openEval, member]) => {
+    if (openEval === '1' && member) {
+      openMemberDetail(member)
+    }
+  },
+  { immediate: true }
+)
 
 const sortedAssignments = computed(() => {
   return [...assignments.value].sort((a, b) => {

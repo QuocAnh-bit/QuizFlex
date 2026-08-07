@@ -4,6 +4,7 @@ namespace App\Services\Payment;
 
 use App\Models\Payment;
 use App\Models\User;
+use App\Notifications\PaymentSuccess;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -467,6 +468,12 @@ class PaymentService
         }
 
         $user->save();
+
+        try {
+            $user->notify(new PaymentSuccess($payment, $matchedPlan));
+        } catch (\Exception $e) {
+            Log::error('Failed to notify payment success', ['error' => $e->getMessage()]);
+        }
 
         Log::info('User upgraded to VIP successfully', [
             'user_id' => $user->id,

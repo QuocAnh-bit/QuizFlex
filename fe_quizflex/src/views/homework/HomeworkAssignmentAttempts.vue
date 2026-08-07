@@ -172,7 +172,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import AppLoadingState from '@/components/common/AppLoadingState.vue'
 import AppErrorState from '@/components/common/AppErrorState.vue'
@@ -231,6 +231,13 @@ const loadAttempts = async () => {
     ])
     room.value = roomData
     attempts.value = attemptsData
+
+    if (route.query.attempt_id) {
+      const attempt = attemptsData.find(a => Number(a.id) === Number(route.query.attempt_id))
+      if (attempt) {
+        openEvaluation(attempt)
+      }
+    }
   } catch (error) {
     errorMessage.value = error.message || 'Bạn không có quyền xem danh sách bài nộp.'
   } finally {
@@ -299,6 +306,18 @@ const resetAttempt = async (attempt) => {
     isResetting.value = null
   }
 }
+
+watch(
+  () => route.query.attempt_id,
+  (newAttemptId) => {
+    if (newAttemptId && attempts.value.length) {
+      const attempt = attempts.value.find(a => Number(a.id) === Number(newAttemptId))
+      if (attempt) {
+        openEvaluation(attempt)
+      }
+    }
+  }
+)
 
 onMounted(loadAttempts)
 </script>

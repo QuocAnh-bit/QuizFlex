@@ -7,6 +7,7 @@ use App\Models\Payment;
 use App\Models\Quiz;
 use App\Models\QuizAttempt;
 use App\Models\User;
+use App\Notifications\AccountModerated;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -228,6 +229,8 @@ class UserController extends Controller
 
         broadcast(new AccountStatusChanged($user, 'locked', $user->locked_reason));
 
+        $user->notify(new AccountModerated('lock', $user->locked_reason));
+
         return response()->json(['success' => true, 'message' => 'Tài khoản đã được khóa.', 'data' => $this->formatUser($user)]);
     }
 
@@ -250,6 +253,8 @@ class UserController extends Controller
         $user->loadCount(['quizzes', 'attempts']);
 
         broadcast(new AccountStatusChanged($user, 'unlocked'));
+
+        $user->notify(new AccountModerated('unlock'));
 
         return response()->json(['success' => true, 'message' => 'Tài khoản đã được mở khóa.', 'data' => $this->formatUser($user)]);
     }
