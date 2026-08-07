@@ -7,18 +7,18 @@ return new class extends Migration
 {
     public function up(): void
     {
-        DB::table('rooms')
-            ->whereNotIn('status', ['waiting', 'in_progress', 'finished', 'banned'])
-            ->update(['status' => 'waiting']);
-
         DB::statement("
             ALTER TABLE rooms
             MODIFY COLUMN status ENUM(
+                'active',
+                'archived',
                 'waiting',
                 'in_progress',
                 'finished',
+                'closed',
+                'removed',
                 'banned'
-            ) NOT NULL DEFAULT 'waiting'
+            ) NOT NULL DEFAULT 'active'
         ");
     }
 
@@ -27,10 +27,14 @@ return new class extends Migration
         DB::statement("
             ALTER TABLE rooms
             MODIFY COLUMN status ENUM(
+                'active',
+                'archived',
                 'waiting',
                 'in_progress',
-                'finished'
-            ) NOT NULL DEFAULT 'waiting'
+                'finished',
+                'closed',
+                'removed'
+            ) NOT NULL DEFAULT 'active'
         ");
     }
 };
