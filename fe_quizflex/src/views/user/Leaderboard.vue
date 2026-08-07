@@ -123,7 +123,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick } from "vue";
+import { ref, onMounted } from "vue";
 import AppLoadingState from "@/components/common/AppLoadingState.vue";
 import { gamificationApi, currentUserStorage } from "@/services/api";
 
