@@ -146,12 +146,15 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, inject } from 'vue'
 import { useRoute } from 'vue-router'
 import AppLoadingState from '@/components/common/AppLoadingState.vue'
 import AppErrorState from '@/components/common/AppErrorState.vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import { formatSeconds, homeworkApi, normalizeQuestion } from '@/services/api'
+
+const showConfirm = inject('showConfirm')
+const showToast = inject('showToast')
 
 const route = useRoute()
 const roomId = computed(() => route.params.roomId)
@@ -273,8 +276,25 @@ const submitAttempt = async (autoSubmit = false) => {
       ? `Bạn vẫn còn ${unanswered} câu chưa trả lời. Bạn có chắc muốn nộp bài không?`
       : 'Bạn có chắc muốn nộp bài không?'
 
-  if (message && !window.confirm(message)) return
+  if (message) {
+    if (showConfirm) {
+      showConfirm(
+        'Nộp bài tập',
+        message,
+        async () => {
+          await executeSubmitAttempt()
+        }
+      )
+    } else {
+      if (!window.confirm(message)) return
+      await executeSubmitAttempt()
+    }
+  } else {
+    await executeSubmitAttempt()
+  }
+}
 
+const executeSubmitAttempt = async () => {
   isSubmitting.value = true
   errorMessage.value = ''
   clearInterval(timer)
@@ -285,8 +305,14 @@ const submitAttempt = async (autoSubmit = false) => {
     result.value = data
     submitMessage.value = data.message || 'Bài homework đã được nộp.'
     sessionStorage.removeItem(attemptStorageKey.value)
+    if (showToast) {
+      showToast('Nộp bài thành công!', 'success')
+    }
   } catch (error) {
     errorMessage.value = `Không nộp được bài: ${resolveHomeworkError(error)}`
+    if (showToast) {
+      showToast(errorMessage.value, 'error')
+    }
     startTimer()
   } finally {
     isSubmitting.value = false

@@ -714,10 +714,23 @@
 
 
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch, inject } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppLoadingState from '@/components/common/AppLoadingState.vue'
 import AppErrorState from '@/components/common/AppErrorState.vue'
+
+const showConfirm = inject('showConfirm')
+const showToast = inject('showToast')
+
+const confirmAndExecute = (title, message, action) => {
+  if (showConfirm) {
+    showConfirm(title, message, action)
+  } else {
+    if (window.confirm(message)) {
+      action()
+    }
+  }
+}
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import { currentUserStorage, homeworkApi } from '@/services/api'
 
@@ -834,10 +847,13 @@ const saveEvaluation = async () => {
     })
     evaluationData.value = data
     
-    // update statistics locally in list if host changes evaluation, though stats themselves come from assignments/attempts
-    alert('Đã lưu đánh giá thành công.')
+    if (showToast) {
+      showToast('Đã lưu đánh giá thành công.', 'success')
+    }
   } catch (error) {
-    alert(`Không lưu được đánh giá: ${error.message}`)
+    if (showToast) {
+      showToast(`Không lưu được đánh giá: ${error.message}`, 'error')
+    }
   } finally {
     isSavingEvaluation.value = false
   }
@@ -1022,7 +1038,7 @@ const handleImportFile = async (e) => {
         // CHỈ đọc Sheet đầu tiên
         const firstSheetName = workbook.SheetNames[0]
         if (!firstSheetName) {
-          alert('File Excel không có sheet nào.')
+          if (showToast) showToast('File Excel không có sheet nào.', 'warning')
           return
         }
         const worksheet = workbook.Sheets[firstSheetName]
@@ -1074,10 +1090,10 @@ const handleImportFile = async (e) => {
       }
       reader.readAsArrayBuffer(file)
     } catch (err) {
-      alert(`Không đọc được file Excel: ${err.message}`)
+      if (showToast) showToast(`Không đọc được file Excel: ${err.message}`, 'error')
     }
   } else {
-    alert('Định dạng tệp không được hỗ trợ. Vui lòng tải lên file Excel (.xlsx, .xls) hoặc CSV (.csv)')
+    if (showToast) showToast('Định dạng tệp không được hỗ trợ. Vui lòng tải lên file Excel (.xlsx, .xls) hoặc CSV (.csv)', 'warning')
   }
   
   e.target.value = ''
@@ -1168,7 +1184,7 @@ const exportGradebookExcel = async () => {
     const roomNameClean = (room.value?.name || 'phong-hoc').replace(/[^a-zA-Z0-9 Vietnamese_]/g, '-').trim()
     XLSX.writeFile(workbook, `bang-diem-${roomNameClean}.xlsx`)
   } catch (error) {
-    alert(`Không xuất được bảng điểm: ${error.message}`)
+    if (showToast) showToast(`Không xuất được bảng điểm: ${error.message}`, 'error')
   } finally {
     isExportingGradebook.value = false
   }
@@ -1189,7 +1205,7 @@ const extractEmailsFromText = (text) => {
   const matchedEmails = text.match(emailRegex) || []
   
   if (!matchedEmails.length) {
-    alert('Không tìm thấy bất kỳ địa chỉ email nào trong tệp tin vừa tải lên.')
+    if (showToast) showToast('Không tìm thấy bất kỳ địa chỉ email nào trong tệp tin vừa tải lên.', 'warning')
     return
   }
   
@@ -1198,12 +1214,12 @@ const extractEmailsFromText = (text) => {
   const allEmails = [...new Set([...currentEmails, ...uniqueEmails])]
   
   allowedEmailText.value = allEmails.join('\n')
-  alert(`Đã trích xuất và thêm ${uniqueEmails.length} email mới vào danh sách nhập ở trên. Vui lòng kiểm tra lại và nhấn "Thêm email" để lưu.`)
+  if (showToast) showToast(`Đã trích xuất và thêm ${uniqueEmails.length} email mới vào danh sách nhập ở trên. Vui lòng kiểm tra lại và nhấn "Thêm email" để lưu.`, 'success')
 }
 
 const extractEmailsFromList = (emailList) => {
   if (!emailList.length) {
-    alert('Không tìm thấy bất kỳ địa chỉ email nào trong tệp tin vừa tải lên.')
+    if (showToast) showToast('Không tìm thấy bất kỳ địa chỉ email nào trong tệp tin vừa tải lên.', 'warning')
     return
   }
   
@@ -1212,23 +1228,29 @@ const extractEmailsFromList = (emailList) => {
   const allEmails = [...new Set([...currentEmails, ...uniqueEmails])]
   
   allowedEmailText.value = allEmails.join('\n')
-  alert(`Đã tự động dò tìm cột email và trích xuất thành công ${uniqueEmails.length} email học sinh. Vui lòng kiểm tra lại danh sách ở trên và nhấn "Thêm email" để lưu.`)
+  if (showToast) showToast(`Đã tự động dò tìm cột email và trích xuất thành công ${uniqueEmails.length} email học sinh. Vui lòng kiểm tra lại danh sách ở trên và nhấn "Thêm email" để lưu.`, 'success')
 }
 
 const removeAllowedMember = async (allowedMemberId) => {
   allowedMembersError.value = ''
   allowedMembersMessage.value = ''
 
-  if (!window.confirm('Xóa email này khỏi danh sách được phép tham gia?')) return
-
-  try {
-    await homeworkApi.removeAllowedMember(roomId.value, allowedMemberId)
-    allowedMembers.value = allowedMembers.value.filter((member) => Number(member.id) !== Number(allowedMemberId))
-    selectedAllowedIds.value = selectedAllowedIds.value.filter((id) => Number(id) !== Number(allowedMemberId))
-    allowedMembersMessage.value = 'Đã xóa email khỏi danh sách.'
-  } catch (error) {
-    allowedMembersError.value = `Không xóa được email: ${error.message}`
-  }
+  confirmAndExecute(
+    'Xóa email khỏi danh sách',
+    'Xóa email này khỏi danh sách được phép tham gia?',
+    async () => {
+      try {
+        await homeworkApi.removeAllowedMember(roomId.value, allowedMemberId)
+        allowedMembers.value = allowedMembers.value.filter((member) => Number(member.id) !== Number(allowedMemberId))
+        selectedAllowedIds.value = selectedAllowedIds.value.filter((id) => Number(id) !== Number(allowedMemberId))
+        allowedMembersMessage.value = 'Đã xóa email khỏi danh sách.'
+        if (showToast) showToast(allowedMembersMessage.value, 'success')
+      } catch (error) {
+        allowedMembersError.value = `Không xóa được email: ${error.message}`
+        if (showToast) showToast(allowedMembersError.value, 'error')
+      }
+    }
+  )
 }
 
 const isAllAllowedSelected = computed(() => {
@@ -1245,40 +1267,59 @@ const toggleSelectAllAllowed = (e) => {
 
 const removeSelectedAllowedMembers = async () => {
   if (!selectedAllowedIds.value.length) return
-  if (!window.confirm(`Xóa ${selectedAllowedIds.value.length} email đã chọn khỏi Whitelist?`)) return
-
-  try {
-    await homeworkApi.removeAllowedMembersBatch(roomId.value, selectedAllowedIds.value)
-    allowedMembers.value = allowedMembers.value.filter((m) => !selectedAllowedIds.value.includes(m.id))
-    selectedAllowedIds.value = []
-    allowedMembersMessage.value = 'Đã xóa các email được chọn.'
-  } catch (error) {
-    allowedMembersError.value = `Không xóa được các email: ${error.message}`
-  }
+  confirmAndExecute(
+    'Xóa các email đã chọn',
+    `Xóa ${selectedAllowedIds.value.length} email đã chọn khỏi Whitelist?`,
+    async () => {
+      try {
+        await homeworkApi.removeAllowedMembersBatch(roomId.value, selectedAllowedIds.value)
+        allowedMembers.value = allowedMembers.value.filter((m) => !selectedAllowedIds.value.includes(m.id))
+        selectedAllowedIds.value = []
+        allowedMembersMessage.value = 'Đã xóa các email được chọn.'
+        if (showToast) showToast(allowedMembersMessage.value, 'success')
+      } catch (error) {
+        allowedMembersError.value = `Không xóa được các email: ${error.message}`
+        if (showToast) showToast(allowedMembersError.value, 'error')
+      }
+    }
+  )
 }
 
 const clearAllAllowedMembers = async () => {
   if (!allowedMembers.value.length) return
-  if (!window.confirm('CẢNH BÁO: Bạn có chắc chắn muốn xóa TOÀN BỘ email khỏi danh sách Whitelist? Hành động này không thể hoàn tác.')) return
-
-  try {
-    await homeworkApi.clearAllowedMembers(roomId.value)
-    allowedMembers.value = []
-    selectedAllowedIds.value = []
-    allowedMembersMessage.value = 'Đã xóa toàn bộ danh sách email.'
-  } catch (error) {
-    allowedMembersError.value = `Không xóa được danh sách email: ${error.message}`
-  }
+  confirmAndExecute(
+    'Xóa toàn bộ Whitelist',
+    'CẢNH BÁO: Bạn có chắc chắn muốn xóa TOÀN BỘ email khỏi danh sách Whitelist? Hành động này không thể hoàn tác.',
+    async () => {
+      try {
+        await homeworkApi.clearAllowedMembers(roomId.value)
+        allowedMembers.value = []
+        selectedAllowedIds.value = []
+        allowedMembersMessage.value = 'Đã xóa toàn bộ danh sách email.'
+        if (showToast) showToast(allowedMembersMessage.value, 'success')
+      } catch (error) {
+        allowedMembersError.value = `Không xóa được danh sách email: ${error.message}`
+        if (showToast) showToast(allowedMembersError.value, 'error')
+      }
+    }
+  )
 }
 
 const removeMember = async (member) => {
-  if (!window.confirm(`Xóa thành viên "${member.user?.name || member.user_id}" khỏi Homework room này?`)) return
-  try {
-    await homeworkApi.removeRoomMember(roomId.value, member.id)
-    members.value = members.value.filter((m) => Number(m.id) !== Number(member.id))
-  } catch (error) {
-    errorMessage.value = `Không xóa được thành viên: ${error.message}`
-  }
+  confirmAndExecute(
+    'Xóa thành viên',
+    `Xóa thành viên "${member.user?.name || member.user_id}" khỏi Homework room này?`,
+    async () => {
+      try {
+        await homeworkApi.removeRoomMember(roomId.value, member.id)
+        members.value = members.value.filter((m) => Number(m.id) !== Number(member.id))
+        if (showToast) showToast('Đã xóa thành viên khỏi room.', 'success')
+      } catch (error) {
+        errorMessage.value = `Không xóa được thành viên: ${error.message}`
+        if (showToast) showToast(errorMessage.value, 'error')
+      }
+    }
+  )
 }
 
 const setMemberTab = (tab) => {
@@ -1315,41 +1356,50 @@ const approveMemberRequest = async (member) => {
     pendingMembers.value = pendingMembers.value.filter((m) => Number(m.id) !== Number(member.id))
     const membersData = await homeworkApi.getRoomMembers(roomId.value, { status: 'active' })
     members.value = membersData
-    alert('Đã duyệt thành viên thành công.')
+    if (showToast) showToast('Đã duyệt thành viên thành công.', 'success')
   } catch (error) {
-    alert(`Không phê duyệt được: ${error.message}`)
+    if (showToast) showToast(`Không phê duyệt được: ${error.message}`, 'error')
   } finally {
     isApproving.value = null
   }
 }
 
 const rejectMemberRequest = async (member) => {
-  if (!window.confirm(`Từ chối yêu cầu tham gia của "${member.user?.name || member.user_id}"?`)) return
-  isRejecting.value = member.id
-  try {
-    await homeworkApi.rejectRoomMember(roomId.value, member.id)
-    pendingMembers.value = pendingMembers.value.filter((m) => Number(m.id) !== Number(member.id))
-    alert('Đã từ chối yêu cầu tham gia.')
-  } catch (error) {
-    alert(`Lỗi khi từ chối: ${error.message}`)
-  } finally {
-    isRejecting.value = null
-  }
+  confirmAndExecute(
+    'Từ chối yêu cầu',
+    `Từ chối yêu cầu tham gia của "${member.user?.name || member.user_id}"?`,
+    async () => {
+      isRejecting.value = member.id
+      try {
+        await homeworkApi.rejectRoomMember(roomId.value, member.id)
+        pendingMembers.value = pendingMembers.value.filter((m) => Number(m.id) !== Number(member.id))
+        if (showToast) showToast('Đã từ chối yêu cầu tham gia.', 'success')
+      } catch (error) {
+        if (showToast) showToast(`Lỗi khi từ chối: ${error.message}`, 'error')
+      } finally {
+        isRejecting.value = null
+      }
+    }
+  )
 }
 
 const leaveRoom = async () => {
-  if (!window.confirm('Bạn có chắc chắn muốn rời khỏi phòng Homework này?')) return
-
-  isLeavingRoom.value = true
-  try {
-    await homeworkApi.leaveHomeworkRoom(roomId.value)
-    alert('Đã rời phòng thành công.')
-    router.push('/homework-rooms')
-  } catch (error) {
-    alert(`Không rời được phòng: ${error.message}`)
-  } finally {
-    isLeavingRoom.value = false
-  }
+  confirmAndExecute(
+    'Rời phòng',
+    'Bạn có chắc chắn muốn rời khỏi phòng Homework này?',
+    async () => {
+      isLeavingRoom.value = true
+      try {
+        await homeworkApi.leaveHomeworkRoom(roomId.value)
+        if (showToast) showToast('Đã rời phòng thành công.', 'success')
+        router.push('/homework-rooms')
+      } catch (error) {
+        if (showToast) showToast(`Không rời được phòng: ${error.message}`, 'error')
+      } finally {
+        isLeavingRoom.value = false
+      }
+    }
+  )
 }
 
 const confirmDissolve = async () => {

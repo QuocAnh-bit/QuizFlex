@@ -172,12 +172,15 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch, inject } from 'vue'
 import { useRoute } from 'vue-router'
 import AppLoadingState from '@/components/common/AppLoadingState.vue'
 import AppErrorState from '@/components/common/AppErrorState.vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import { currentUserStorage, homeworkApi } from '@/services/api'
+
+const showConfirm = inject('showConfirm')
+const showToast = inject('showToast')
 
 const route = useRoute()
 const roomId = computed(() => route.params.roomId)
@@ -284,24 +287,47 @@ const saveEvaluation = async () => {
       attempts.value[idx].evaluation = data
     }
 
-    alert('Đã lưu nhận xét bài nộp thành công.')
+    if (showToast) {
+      showToast('Đã lưu nhận xét bài nộp thành công.', 'success')
+    }
   } catch (error) {
-    alert(`Không lưu được nhận xét: ${error.message}`)
+    if (showToast) {
+      showToast(`Không lưu được nhận xét: ${error.message}`, 'error')
+    }
   } finally {
     isSavingEvaluation.value = false
   }
 }
 
 const resetAttempt = async (attempt) => {
-  if (!confirm('Xác nhận xóa kết quả làm bài của học viên này? Thao tác này không thể hoàn tác.')) return
+  const message = 'Xác nhận xóa kết quả làm bài của học viên này? Thao tác này không thể hoàn tác.'
+  
+  if (showConfirm) {
+    showConfirm(
+      'Xóa kết quả làm bài',
+      message,
+      async () => {
+        await executeResetAttempt(attempt)
+      }
+    )
+  } else {
+    if (!confirm(message)) return
+    await executeResetAttempt(attempt)
+  }
+}
 
+const executeResetAttempt = async (attempt) => {
   isResetting.value = attempt.id
   try {
     const res = await homeworkApi.resetRoomAssignmentAttempt(assignmentId.value, attempt.id)
-    alert(res.message || 'Đã reset lượt làm bài thành công. Học viên có thể làm lại từ đầu.')
+    if (showToast) {
+      showToast(res.message || 'Đã reset lượt làm bài thành công. Học viên có thể làm lại từ đầu.', 'success')
+    }
     await loadAttempts()
   } catch (error) {
-    alert(error.message || 'Không reset được lượt làm bài.')
+    if (showToast) {
+      showToast(error.message || 'Không reset được lượt làm bài.', 'error')
+    }
   } finally {
     isResetting.value = null
   }
