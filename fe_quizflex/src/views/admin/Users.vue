@@ -53,7 +53,7 @@
             Thùng rác
           </button>
         </div>
-        <p class="text-xs text-[var(--muted)]">Quản lý toàn bộ người dùng, tìm kiếm, lọc, xóa mềm và khôi phục.</p>
+        <!-- <p class="text-xs text-[var(--muted)]">Quản lý toàn bộ người dùng, tìm kiếm, lọc, xóa mềm và khôi phục.</p> -->
       </div>
 
       <div v-if="viewMode === 'active'" class="space-y-6 p-5">

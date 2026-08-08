@@ -115,7 +115,43 @@
         </div>
       </div>
 
-      <!-- 5.2 removed: Radar skill chart intentionally omitted per user request -->
+      <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-card)]">
+  <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">5.2 Năng lực theo chủ đề</p>
+  <h2 class="mt-2 text-2xl font-black text-[var(--text)]">Điểm trung bình theo chủ đề</h2>
+
+  <div v-if="categoryStats.length === 0" class="mt-6 rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface-soft)] p-10 text-center text-sm font-bold text-[var(--muted)]">
+    Chưa có đủ dữ liệu để phân tích theo chủ đề.
+  </div>
+
+  <div v-else class="mt-6 grid gap-4">
+    <div v-for="item in categoryStats" :key="item.name" class="grid gap-2">
+      <div class="flex items-center justify-between text-sm font-bold">
+        <span class="text-[var(--text)]">{{ item.name }}</span>
+        <span class="text-[var(--muted)]">{{ item.average }}% &middot; {{ item.count }} bài</span>
+      </div>
+      <div class="h-3 w-full overflow-hidden rounded-full bg-[var(--surface-soft)]">
+        <div
+          class="h-full rounded-full"
+          :style="{
+            width: item.average + '%',
+            background: item.average >= 70 ? 'linear-gradient(90deg,#34d399,#10b981)' : item.average >= 40 ? 'linear-gradient(90deg,#fbbf24,#f59e0b)' : 'linear-gradient(90deg,#f87171,#ef4444)',
+          }"
+        ></div>
+      </div>
+    </div>
+  </div>
+
+  <div v-if="strongestCategory || weakestCategory" class="mt-6 grid gap-3 sm:grid-cols-2">
+    <div v-if="strongestCategory" class="rounded-[1.5rem] border border-emerald-500/25 bg-emerald-500/10 p-4">
+      <p class="text-xs font-black uppercase tracking-[0.2em] text-emerald-400">Mạnh nhất</p>
+      <p class="mt-2 text-lg font-black text-[var(--text)]">{{ strongestCategory.name }} &middot; {{ strongestCategory.average }}%</p>
+    </div>
+    <div v-if="weakestCategory" class="rounded-[1.5rem] border border-rose-500/25 bg-rose-500/10 p-4">
+      <p class="text-xs font-black uppercase tracking-[0.2em] text-rose-400">Cần cải thiện</p>
+      <p class="mt-2 text-lg font-black text-[var(--text)]">{{ weakestCategory.name }} &middot; {{ weakestCategory.average }}%</p>
+    </div>
+  </div>
+</div>
     </div>
   </section>
 </template>
@@ -229,7 +265,28 @@ const areaPath = computed(() => {
   return `${path} L ${points[points.length - 1].x.toFixed(2)} ${baseY} L ${points[0].x.toFixed(2)} ${baseY} Z`
 })
 
-// Radar (5.2) removed per user request - related computed properties omitted
+const categoryStats = computed(() => {
+  const groups = {}
+
+  completedAttempts.value.forEach((attempt) => {
+    const name = attempt.quiz?.category?.trim() || 'Chưa phân loại'
+    if (!groups[name]) {
+      groups[name] = { name, totalScore: 0, count: 0 }
+    }
+    groups[name].totalScore += Number(attempt.score_percent || 0)
+    groups[name].count += 1
+  })
+
+  return Object.values(groups)
+    .map((group) => ({ ...group, average: Math.round(group.totalScore / group.count) }))
+    .sort((a, b) => b.average - a.average)
+})
+
+const strongestCategory = computed(() => categoryStats.value[0] || null)
+const weakestCategory = computed(() => {
+  if (categoryStats.value.length < 2) return null
+  return categoryStats.value[categoryStats.value.length - 1]
+})
 
 const quickComment = computed(() => {
   if (!groupedData.value.length) {
@@ -238,15 +295,21 @@ const quickComment = computed(() => {
 
   const first = groupedData.value[0].average
   const last = groupedData.value[groupedData.value.length - 1].average
+
+  let comment = ''
   if (last >= first + 8) {
-    return 'Xu hướng tiến bộ tốt: điểm số đang tăng. Tiếp tục giữ nhịp học và ôn tập đều đặn.'
+    comment = 'Xu hướng tiến bộ tốt: điểm số đang tăng. Tiếp tục giữ nhịp học và ôn tập đều đặn.'
+  } else if (last <= first - 8) {
+    comment = 'Điểm số có dấu hiệu giảm. Nên quay lại các chủ đề yếu và làm lại quiz để củng cố.'
+  } else {
+    comment = 'Điểm số ổn định.'
   }
 
-  if (last <= first - 8) {
-    return 'Điểm số có dấu hiệu giảm. Nên quay lại các chủ đề yếu và làm lại quiz để củng cố.'
+  if (weakestCategory.value && weakestCategory.value.name !== strongestCategory.value?.name) {
+    comment += ` Hãy tập trung ôn thêm chủ đề "${weakestCategory.value.name}" (đang ở mức ${weakestCategory.value.average}%).`
   }
 
-  return 'Điểm số ổn định. Hãy tập trung vào các chủ đề có điểm trung bình thấp hơn để cân bằng năng lực.'
+  return comment
 })
 
 const loadAnalytics = async () => {
