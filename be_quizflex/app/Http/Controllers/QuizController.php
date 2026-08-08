@@ -341,7 +341,7 @@ public function toggleVisibility($id)
             'questions.*.id' => ['nullable', 'integer', 'exists:questions,id'],
             'questions.*.content' => ['nullable', 'string'],
             'questions.*.text' => ['nullable', 'string'],
-            'questions.*.type' => ['nullable', Rule::in(['single_choice', 'multiple_choice', 'true_false'])],
+            'questions.*.type' => ['nullable', Rule::in(['single_choice', 'multi_choice', 'fill_blank'])],
             'questions.*.points' => ['nullable', 'integer', 'min:1', 'max:1000'],
             'questions.*.order' => ['nullable', 'integer', 'min:0'],
             'questions.*.correct' => ['nullable'],

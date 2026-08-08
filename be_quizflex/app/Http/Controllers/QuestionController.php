@@ -110,7 +110,7 @@ class QuestionController extends Controller
             'content' => [$isUpdate ? 'nullable' : 'required_without:text', 'string'],
             'text' => [$isUpdate ? 'nullable' : 'required_without:content', 'string'],
             'image_url' => ['nullable', 'string', 'max:255'],
-            'type' => ['nullable', Rule::in(['single_choice', 'multiple_choice', 'true_false'])],
+            'type' => ['nullable', Rule::in(['single_choice', 'multi_choice', 'fill_blank'])],
             'order' => ['nullable', 'integer', 'min:0'],
             'points' => ['nullable', 'integer', 'min:1', 'max:1000'],
             'correct' => ['nullable'],
