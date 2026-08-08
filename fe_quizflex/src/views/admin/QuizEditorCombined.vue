@@ -1140,6 +1140,20 @@ const handleQuestionImage = async (event, question) => {
   const file = event.target.files?.[0];
   if (!file) return;
 
+  if (!file.type.startsWith("image/")) {
+    errorMessage.value = "File đính kèm phải là ảnh.";
+    showToast(errorMessage.value, "error");
+    event.target.value = "";
+    return;
+  }
+
+  if (file.size > 4 * 1024 * 1024) {
+    errorMessage.value = "Ảnh câu hỏi tối đa 4MB.";
+    showToast(errorMessage.value, "error");
+    event.target.value = "";
+    return;
+  }
+
   const preview = await fileToDataUrl(file);
 
   if (!question.images) question.images = [];
@@ -1345,6 +1359,14 @@ const makePayload = () => {
 
 const validateBeforeSave = () => {
   if (!form.title.trim()) return "Bạn chưa nhập tiêu đề quiz.";
+
+  const duration = Number(form.durationMinutes);
+  if (!Number.isFinite(duration) || duration < 1 || duration > 1440)
+    return "Thời gian làm bài phải từ 1 đến 1440 phút.";
+
+  if (form.visibility === "group" && !form.roomCode.trim()) {
+    return "Quiz dạng group cần có room code.";
+  }
 
   if (form.visibility === "group" && !form.roomCode.trim()) {
     return "Quiz dạng group cần có room code.";

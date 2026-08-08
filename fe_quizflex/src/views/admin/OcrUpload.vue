@@ -294,6 +294,7 @@
               v-model="quizInfo.title"
               class="mt-2 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm font-semibold text-[var(--text)] outline-none"
               placeholder="Ví dụ: Ôn tập Toán 12 chương 1"
+              maxlength="255"
               @input="markDirty"
             />
           </div>
@@ -334,6 +335,7 @@
                 v-model.number="quizInfo.duration"
                 type="number"
                 min="1"
+                max="1440"
                 class="w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm font-semibold text-[var(--text)] outline-none"
                 @input="markDirty"
               />
@@ -351,6 +353,7 @@
               v-model.number="quizInfo.default_points"
               type="number"
               min="1"
+              max="1000"
               class="mt-2 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm font-semibold text-[var(--text)] outline-none"
               @input="markDirty"
             />
@@ -1058,6 +1061,11 @@ const isUploading = ref(false);
 const errorMessage = ref("");
 const loadingText = ref("Đang tải file...");
 const progressTimer = ref(null);
+const ALLOWED_OCR_TYPES = [
+  "image/png", "image/jpeg", "image/jpg", "image/webp", "image/bmp", "image/tiff",
+  "application/pdf",
+];
+const MAX_OCR_FILE_SIZE = 20 * 1024 * 1024;
 
 const currentView = ref("upload");
 const ocrMode = ref("normal");
@@ -1462,6 +1470,18 @@ const handleQuestionImage = async (event, question) => {
   const file = event.target.files?.[0];
   if (!file) return;
 
+  if (!file.type.startsWith("image/")) {
+    showToast("File đính kèm phải là ảnh.", "error");
+    event.target.value = "";
+    return;
+  }
+
+  if (file.size > 4 * 1024 * 1024) {
+    showToast("Ảnh câu hỏi tối đa 4MB.", "error");
+    event.target.value = "";
+    return;
+  }
+
   const preview = await fileToDataUrl(file);
 
   if (!question.images) question.images = [];
@@ -1575,6 +1595,18 @@ const handleFile = async (event) => {
 
   const file = event.target.files?.[0];
   if (!file) return;
+
+  if (!ALLOWED_OCR_TYPES.includes(file.type)) {
+    errorMessage.value = "Định dạng file không được hỗ trợ. Chỉ chấp nhận PNG, JPG, JPEG, WEBP, BMP, TIFF, PDF.";
+    event.target.value = "";
+    return;
+  }
+
+  if (file.size > MAX_OCR_FILE_SIZE) {
+    errorMessage.value = "File vượt quá dung lượng tối đa 20MB.";
+    event.target.value = "";
+    return;
+  }
 
   fileName.value = file.name;
   isUploading.value = true;
@@ -1701,13 +1733,65 @@ const removeQuestion = (index) => {
   markDirty();
 };
 
-const saveQuestions = async () => {
-  const payload = buildQuizPayload();
+const validateBeforeSave = () => {
+  const title = quizInfo.value.title.trim();
+  if (!title) return "Vui lòng nhập tên bộ đề trước khi lưu.";
+  if (title.length > 255) return "Tên bộ đề tối đa 255 ký tự.";
 
-  if (!payload.quiz.title.trim()) {
-    showToast("Vui lòng nhập tên bộ đề trước khi lưu.", "error");
+  const duration = Number(quizInfo.value.duration);
+  if (!Number.isFinite(duration) || duration < 1 || duration > 1440) {
+    return "Thời gian làm bài phải từ 1 đến 1440 phút.";
+  }
+
+  const points = Number(quizInfo.value.default_points);
+  if (!Number.isFinite(points) || points < 1 || points > 1000) {
+    return "Điểm mặc định mỗi câu phải từ 1 đến 1000.";
+  }
+
+  if (questions.value.length === 0) return "Bộ đề cần ít nhất 1 câu hỏi.";
+
+  for (const [index, q] of questions.value.entries()) {
+    const questionText = getQuestionText(q);
+    if (!questionText.trim()) return `Câu ${index + 1} chưa có nội dung.`;
+
+    if (q.type !== "fill_blank") {
+      const options = {};
+      Object.keys(q.options || {}).forEach((key) => {
+        options[key] =
+          q.editor_mode === "math"
+            ? blocksToString(q.option_blocks[key])
+            : q.options[key];
+      });
+
+      if (Object.values(options).some((value) => !String(value).trim())) {
+        return `Câu ${index + 1} còn đáp án trống.`;
+      }
+
+      if (q.type === "single_choice" && !q.correct_answer) {
+        return `Câu ${index + 1} chưa chọn đáp án đúng.`;
+      }
+
+      if (q.type === "multi_choice" && (!Array.isArray(q.correct_answer) || !q.correct_answer.length)) {
+        return `Câu ${index + 1} chưa chọn đáp án đúng.`;
+      }
+    } else {
+      if (!Array.isArray(q.correct_answer) || !q.correct_answer.some((answer) => String(answer).trim())) {
+        return `Câu ${index + 1} chưa có đáp án điền đúng.`;
+      }
+    }
+  }
+
+  return "";
+};
+
+const saveQuestions = async () => {
+  const validationError = validateBeforeSave();
+  if (validationError) {
+    showToast(validationError, "error");
     return;
   }
+
+  const payload = buildQuizPayload();
 
   try {
     saving.value = true;
@@ -1744,6 +1828,14 @@ const generateAiSuggestions = async (key) => {
   ) {
     showToast("Vui lòng chọn ít nhất 1 câu để AI có dữ liệu gợi ý.", "error");
     return;
+  }
+
+  if (key !== "analyze_quiz") {
+    const count = Number(aiOptions.value.count);
+    if (!Number.isFinite(count) || count < 1 || count > 20) {
+      showToast("Số câu AI tạo phải từ 1 đến 20.", "error");
+      return;
+    }
   }
 
   try {

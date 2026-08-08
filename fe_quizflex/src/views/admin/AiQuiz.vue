@@ -196,6 +196,7 @@ const router = useRouter()
 const questionBase = computed(() => route.path.startsWith('/dashboard') ? '/dashboard/questions' : '/admin/questions')
 
 const prompt = ref('')
+const MAX_PROMPT_LENGTH = 2000
 const settings = ref({
   count: 10,
   difficulty: 'medium',
@@ -354,8 +355,15 @@ const pollJob = async () => {
 }
 
 const generateQuiz = async () => {
-  if (!prompt.value.trim()) {
+  const trimmedPrompt = prompt.value.trim()
+
+  if (!trimmedPrompt) {
     errorMessage.value = 'Bạn cần nhập prompt để AI sinh quiz.'
+    return
+  }
+
+  if (trimmedPrompt.length > MAX_PROMPT_LENGTH) {
+    errorMessage.value = `Prompt quá dài (tối đa ${MAX_PROMPT_LENGTH} ký tự, hiện có ${trimmedPrompt.length}).`
     return
   }
 
@@ -372,7 +380,7 @@ const generateQuiz = async () => {
 
   try {
     const response = await aiApi.generate({
-      prompt: prompt.value.trim(),
+      prompt: trimmedPrompt,
       count: settings.value.count,
       difficulty: settings.value.difficulty,
       language: settings.value.language,
