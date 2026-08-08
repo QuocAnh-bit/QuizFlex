@@ -122,6 +122,7 @@
                   <textarea 
                     v-model="evaluationForm.comment"
                     class="field min-h-24 w-full resize-y text-sm"
+                    maxlength="1000"
                     placeholder="Nhập nhận xét cho bài làm này (Ví dụ: Trình bày tốt, làm bài nghiêm túc...)"
                   ></textarea>
                 </div>
@@ -171,6 +172,7 @@ const attempts = ref([])
 const isLoading = ref(false)
 const errorMessage = ref('')
 const isResetting = ref(null)
+const MAX_EVALUATION_COMMENT_LENGTH = 1000
 
 const currentUser = currentUserStorage.get()
 const canManageRoom = computed(() => currentUser?.role === 'admin' || Number(room.value?.host_id) === Number(currentUser?.id))
@@ -247,18 +249,21 @@ const closeEvaluation = () => {
 const saveEvaluation = async () => {
   if (!selectedAttempt.value) return
 
+  const trimmedComment = evaluationForm.value.comment.trim()
+  if (trimmedComment.length > MAX_EVALUATION_COMMENT_LENGTH) {
+    alert(`Nhận xét tối đa ${MAX_EVALUATION_COMMENT_LENGTH} ký tự.`)
+    return
+  }
+
   isSavingEvaluation.value = true
   try {
     const data = await homeworkApi.saveSubmissionEvaluation(roomId.value, selectedAttempt.value.id, {
-      comment: evaluationForm.value.comment,
+      comment: trimmedComment,
     })
     evaluationData.value = data
 
-    // Update locally
     const idx = attempts.value.findIndex(a => a.id === selectedAttempt.value.id)
-    if (idx !== -1) {
-      attempts.value[idx].evaluation = data
-    }
+    if (idx !== -1) attempts.value[idx].evaluation = data
 
     alert('Đã lưu nhận xét bài nộp thành công.')
   } catch (error) {
