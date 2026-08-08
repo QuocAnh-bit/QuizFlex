@@ -293,7 +293,8 @@
             <li>Không thể tham gia Room</li>
           </ul>
         </div>
-        <textarea v-if="lockDialogMode === 'lock'" v-model="lockReason" class="mt-4 min-h-[96px] w-full rounded-2xl border border-[var(--border)] bg-[var(--input-bg)] px-4 py-3 text-sm text-[var(--text)] outline-none" placeholder="Lý do khóa (không bắt buộc)"></textarea>
+        <textarea v-if="lockDialogMode === 'lock'" v-model="lockReason" maxlength="500" class="mt-4 min-h-[96px] w-full rounded-2xl border border-[var(--border)] bg-[var(--input-bg)] px-4 py-3 text-sm text-[var(--text)] outline-none" placeholder="Lý do khóa (không bắt buộc)"></textarea>
+        <span v-if="lockReasonError" class="mt-2 block text-xs font-bold text-rose-400">{{ lockReasonError }}</span>
         <div class="mt-5 flex gap-3">
           <button class="flex-1 rounded-full border border-[var(--border)] bg-[var(--surface-soft)] px-4 py-2 text-sm font-black text-[var(--text)]" type="button" @click="showLockDialog = false">Hủy</button>
           <button class="flex-1 rounded-full bg-[var(--primary)] px-4 py-2 text-sm font-black text-white" type="button" :disabled="isSavingLock" @click="confirmLockAction">
@@ -322,6 +323,7 @@ const showLockDialog = ref(false)
 const lockDialogMode = ref('lock')
 const lockReason = ref('')
 const isSavingLock = ref(false)
+const lockReasonError = ref('')
 const appeals = ref([])
 const isAppealLoading = ref(false)
 
@@ -427,16 +429,24 @@ const goBack = () => router.push({ name: 'admin-users' })
 const openLockDialog = (mode) => {
   lockDialogMode.value = mode
   lockReason.value = ''
+  lockReasonError.value = ''
   showLockDialog.value = true
 }
 
 const confirmLockAction = async () => {
   if (!user.value) return
+
+  if (lockDialogMode.value === 'lock' && lockReason.value.trim().length > 500) {
+    lockReasonError.value = 'Lý do khóa tối đa 500 ký tự.'
+    return
+  }
+  lockReasonError.value = ''
+
   isSavingLock.value = true
   errorMessage.value = ''
   try {
     if (lockDialogMode.value === 'lock') {
-      await usersApi.lock(user.value.id, { reason: lockReason.value })
+      await usersApi.lock(user.value.id, { reason: lockReason.value.trim() })
     } else {
       await usersApi.unlock(user.value.id)
     }

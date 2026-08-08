@@ -86,7 +86,8 @@
           <div v-if="selectedRequest.status === 'pending'" class="space-y-4">
             <div>
               <label class="text-sm font-black text-[var(--text)]" for="admin-note">Admin Note</label>
-              <textarea id="admin-note" v-model="adminNote" rows="4" class="mt-2 w-full rounded-[1.25rem] border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-sm font-medium text-[var(--text)] outline-none transition focus:border-[var(--primary)]" placeholder="Nhập ghi chú..."></textarea>
+              <textarea id="admin-note" v-model="adminNote" rows="4" maxlength="1000" class="mt-2 w-full rounded-[1.25rem] border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-sm font-medium text-[var(--text)] outline-none transition focus:border-[var(--primary)]" placeholder="Nhập ghi chú... (bắt buộc khi từ chối)"></textarea>
+              <span v-if="adminNoteError" class="mt-2 block text-xs font-bold text-rose-400">{{ adminNoteError }}</span>
             </div>
             <div class="flex flex-wrap gap-3">
               <button class="btn-primary" type="button" :disabled="isActionLoading" @click="approveRequest">Duyệt</button>
@@ -110,6 +111,7 @@ const adminNote = ref('')
 const errorMessage = ref('')
 const isLoading = ref(false)
 const isActionLoading = ref(false)
+const adminNoteError = ref('')
 
 const filteredRequests = computed(() => {
   if (statusFilter.value === 'all') return requests.value
@@ -137,6 +139,7 @@ const loadRequests = async () => {
 const selectRequest = async (item) => {
   selectedRequest.value = item
   adminNote.value = ''
+  adminNoteError.value = ''
   try {
     const payload = await unlockRequestsApi.adminGet(item.id)
     const data = payload?.data || payload || null
@@ -150,9 +153,18 @@ const selectRequest = async (item) => {
 
 const approveRequest = async () => {
   if (!selectedRequest.value) return
+
+  const trimmedNote = adminNote.value.trim()
+  if (trimmedNote.length > 1000) {
+    adminNoteError.value = 'Ghi chú tối đa 1000 ký tự.'
+    return
+  }
+  adminNoteError.value = ''
+
   isActionLoading.value = true
   try {
-    await unlockRequestsApi.approve(selectedRequest.value.id, { admin_note: adminNote.value })
+    await unlockRequestsApi.approve(selectedRequest.value.id, { admin_note: trimmedNote })
+    adminNote.value = ''
     await loadRequests()
   } catch (error) {
     errorMessage.value = error.message || 'Không thể duyệt kháng cáo.'
@@ -163,9 +175,22 @@ const approveRequest = async () => {
 
 const rejectRequest = async () => {
   if (!selectedRequest.value) return
+
+  const trimmedNote = adminNote.value.trim()
+  if (!trimmedNote) {
+    adminNoteError.value = 'Vui lòng nhập lý do từ chối để người dùng biết vì sao kháng cáo bị từ chối.'
+    return
+  }
+  if (trimmedNote.length > 1000) {
+    adminNoteError.value = 'Ghi chú tối đa 1000 ký tự.'
+    return
+  }
+  adminNoteError.value = ''
+
   isActionLoading.value = true
   try {
-    await unlockRequestsApi.reject(selectedRequest.value.id, { admin_note: adminNote.value })
+    await unlockRequestsApi.reject(selectedRequest.value.id, { admin_note: trimmedNote })
+    adminNote.value = ''
     await loadRequests()
   } catch (error) {
     errorMessage.value = error.message || 'Không thể từ chối kháng cáo.'
