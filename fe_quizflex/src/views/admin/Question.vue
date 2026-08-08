@@ -269,10 +269,10 @@ const loadQuizzes = async () => {
 }
 
 const deleteQuiz = async (id) => {
-  const message = 'Chuyển vào thùng rác?'
+  const message = 'Chuyển Quiz này vào thùng rác?'
   if (showConfirm) {
     showConfirm(
-      'Chuyển Quiz này vào thùng rác?',
+      'Chuyển vào thùng rác',
       message,
       async () => {
         await executeDeleteQuiz(id)

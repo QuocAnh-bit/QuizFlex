@@ -479,7 +479,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, inject } from 'vue'
 import { useRouter } from 'vue-router'
 import { currentUserStorage, normalizeUser, unlockRequestsApi, usersApi } from '@/services/api'
 
@@ -515,6 +515,7 @@ const showEditModal = ref(false)
 const showPassword = ref(false)
 const editingUser = reactive({ id: null, name: '', email: '', role: 'user', plan: 'free', plan_started_at: null, plan_expires_at: null, password: '' })
 const currentUser = ref(currentUserStorage.get())
+const showConfirm = inject('showConfirm')
 
 const confirmModal = reactive({ show: false, message: '', onConfirm: () => {} })
 const ocrQuotaForPlan = (plan) => ({ ultra: '∞', pro: '50', plus: '10', free: '0' }[plan] || '0')
@@ -568,9 +569,13 @@ const syncCurrentUser = (event) => {
 }
 
 const openConfirm = (message, onConfirm) => {
-  confirmModal.message = message
-  confirmModal.onConfirm = () => { confirmModal.show = false; onConfirm() }
-  confirmModal.show = true
+  if (showConfirm) {
+    showConfirm('Xác nhận', message, onConfirm)
+  } else {
+    confirmModal.message = message
+    confirmModal.onConfirm = () => { confirmModal.show = false; onConfirm() }
+    confirmModal.show = true
+  }
 }
 
 const loadUsers = async () => {

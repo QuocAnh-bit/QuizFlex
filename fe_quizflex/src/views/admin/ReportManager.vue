@@ -75,69 +75,19 @@
       </table>
       <div v-if="isLoading" class="text-center py-10 text-[var(--muted)] font-bold">Đang tải dữ liệu...</div>
     </div>
-
-    <!-- Custom Confirm Modal -->
-    <transition name="fade">
-      <div v-if="confirmModal.isOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
-        <div class="w-full max-w-md rounded-[2.5rem] border border-[var(--border-strong)] bg-[var(--surface)] p-6 shadow-[0_24px_70px_rgba(0,0,0,0.5)] backdrop-blur-2xl transition-all scale-100">
-          <div class="flex items-center gap-3 text-rose-400 mb-4">
-            <span class="text-2xl">⚠️</span>
-            <h3 class="text-xl font-black text-[var(--text)]">{{ confirmModal.title }}</h3>
-          </div>
-          <p class="text-sm leading-6 text-[var(--muted)] mb-6">{{ confirmModal.message }}</p>
-          <div class="flex justify-end gap-3">
-            <button @click="confirmModal.isOpen = false" class="btn-ghost px-5 py-2">Hủy</button>
-            <button @click="triggerConfirmAction" class="rounded-full bg-rose-500 hover:bg-rose-600 px-5 py-2 text-xs font-black text-white transition hover:-translate-y-0.5">
-              Xác nhận
-            </button>
-          </div>
-        </div>
-      </div>
-    </transition>
-
-    <!-- Custom Toast Message -->
-    <transition name="slide-up">
-      <div v-if="toast.isOpen" class="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-2xl border px-4 py-3 shadow-lg backdrop-blur-xl transition-all"
-           :class="toast.type === 'success' ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400 shadow-[0_12px_40px_rgba(16,185,129,0.1)]' : 'border-rose-500/30 bg-rose-500/10 text-rose-400 shadow-[0_12px_40px_rgba(244,63,94,0.1)]'">
-        <span class="text-base">{{ toast.type === 'success' ? '✅' : '❌' }}</span>
-        <span class="text-sm font-bold">{{ toast.message }}</span>
-      </div>
-    </transition>
   </section>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue' // Thêm onUnmounted
+import { ref, onMounted, onUnmounted, inject } from 'vue'
 import api, { reportApi } from '@/services/api' 
+
+const showToast = inject('showToast')
+const showConfirm = inject('showConfirm')
 
 const reports = ref([])
 const isLoading = ref(true)
-let pollingInterval = null // Biến lưu trữ bộ đếm giờ
-
-// Toast & Modal UI State
-const confirmModal = ref({ isOpen: false, title: '', message: '', action: null })
-const toast = ref({ isOpen: false, message: '', type: 'success' })
-
-const showToast = (message, type = 'success') => {
-  toast.value.message = message
-  toast.value.type = type
-  toast.value.isOpen = true
-  setTimeout(() => { toast.value.isOpen = false }, 3000)
-}
-
-const showConfirm = (title, message, action) => {
-  confirmModal.value.title = title
-  confirmModal.value.message = message
-  confirmModal.value.action = action
-  confirmModal.value.isOpen = true
-}
-
-const triggerConfirmAction = async () => {
-  confirmModal.value.isOpen = false
-  if (confirmModal.value.action) {
-    await confirmModal.value.action()
-  }
-}
+let pollingInterval = null
 
 // Data Fetching
 // Thêm tham số isBackground để phân biệt tải lần đầu và tải ngầm
@@ -147,7 +97,7 @@ const fetchReports = async (isBackground = false) => {
     reports.value = await reportApi.listAdmin()
   } catch (error) {
     console.error("Lỗi khi lấy danh sách báo cáo:", error)
-    if (!isBackground) showToast('Không thể tải danh sách báo cáo', 'error')
+    if (!isBackground && showToast) showToast('Không thể tải danh sách báo cáo', 'error')
   } finally {
     if (!isBackground) isLoading.value = false
   }
@@ -159,37 +109,41 @@ const updateStatus = async (id, status) => {
     ? 'Bạn có chắc chắn muốn đánh dấu báo cáo này là "Đã xử lý"?' 
     : 'Bạn muốn bỏ qua và không xử lý báo cáo này?'
     
-  showConfirm('Xác nhận thao tác', confirmMsg, async () => {
-    try {
-      await reportApi.updateAdminStatus(id, status)
-      const index = reports.value.findIndex(r => r.id === id)
-      if (index !== -1) reports.value[index].status = status
-      showToast('Cập nhật trạng thái thành công')
-    } catch (error) {
-      showToast('Có lỗi xảy ra khi cập nhật!', 'error')
-    }
-  })
+  if (showConfirm) {
+    showConfirm('Xác nhận thao tác', confirmMsg, async () => {
+      try {
+        await reportApi.updateAdminStatus(id, status)
+        const index = reports.value.findIndex(r => r.id === id)
+        if (index !== -1) reports.value[index].status = status
+        if (showToast) showToast('Cập nhật trạng thái thành công')
+      } catch (error) {
+        if (showToast) showToast('Có lỗi xảy ra khi cập nhật!', 'error')
+      }
+    })
+  }
 }
 
 // Xử lý Xóa Quiz trực tiếp từ Report
 const deleteQuiz = (quizId, reportId) => {
-  showConfirm(
-    'Xác nhận xóa Quiz',
-    'Bạn có chắc chắn muốn xóa mềm Quiz vi phạm này không? Khi xóa Quiz, báo cáo này cũng sẽ được đánh dấu là "Đã xử lý".',
-    async () => {
-      try {
-        await api.delete(`/admin/quizzes/${quizId}`)
-        
-        await reportApi.updateAdminStatus(reportId, 'resolved')
-        const index = reports.value.findIndex(r => r.id === reportId)
-        if (index !== -1) reports.value[index].status = 'resolved'
+  if (showConfirm) {
+    showConfirm(
+      'Xác nhận xóa Quiz',
+      'Bạn có chắc chắn muốn xóa mềm Quiz vi phạm này không? Khi xóa Quiz, báo cáo này cũng sẽ được đánh dấu là "Đã xử lý".',
+      async () => {
+        try {
+          await api.delete(`/admin/quizzes/${quizId}`)
+          
+          await reportApi.updateAdminStatus(reportId, 'resolved')
+          const index = reports.value.findIndex(r => r.id === reportId)
+          if (index !== -1) reports.value[index].status = 'resolved'
 
-        showToast('Đã xóa Quiz vi phạm thành công', 'success')
-      } catch (error) {
-        showToast('Xóa Quiz thất bại: ' + (error.response?.data?.message || error.message), 'error')
+          if (showToast) showToast('Đã xóa Quiz vi phạm thành công', 'success')
+        } catch (error) {
+          if (showToast) showToast('Xóa Quiz thất bại: ' + (error.response?.data?.message || error.message), 'error')
+        }
       }
-    }
-  )
+    )
+  }
 }
 
 // Helpers cho UI
@@ -226,24 +180,3 @@ onUnmounted(() => {
   if (pollingInterval) clearInterval(pollingInterval)
 })
 </script>
-
-<style scoped>
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.25s ease;
-}
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-
-.slide-up-enter-active,
-.slide-up-leave-active {
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.slide-up-enter-from,
-.slide-up-leave-to {
-  opacity: 0;
-  transform: translateY(20px);
-}
-</style>
