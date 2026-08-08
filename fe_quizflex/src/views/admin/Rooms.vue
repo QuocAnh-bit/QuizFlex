@@ -16,12 +16,6 @@
       </div>
     </div>
 
-    <div v-if="actionMessage" class="rounded-[1.5rem] border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm font-bold text-emerald-300">
-      {{ actionMessage }}
-    </div>
-    <div v-if="actionError" class="rounded-[1.5rem] border border-rose-500/30 bg-rose-500/10 p-4 text-sm font-bold text-rose-300">
-      {{ actionError }}
-    </div>
 
     <!-- Tabs filter: Tất cả / Đã xóa -->
     <div class="flex gap-2 border-b border-[var(--border)] pb-3">
@@ -532,10 +526,10 @@ const softDeleteHomeworkRoom = async (room) => {
         await adminRoomApi.softDeleteHomeworkRoom(room.id)
         removeListRoom(homeworkState, room.id)
         if (detailData.value?.room && Number(detailData.value.room.id) === Number(room.id)) closeDetail()
-        actionMessage.value = 'Đã xóa mềm Homework room.'
+        actionMessage.value = 'Đã chuyển phòng bài tập vào thùng rác.'
         if (showToast) showToast(actionMessage.value, 'success')
       } catch (error) {
-        actionError.value = error.message || 'Không xóa mềm được Homework room.'
+        actionError.value = error.message || 'Không chuyển phòng bài tập vào thùng rác được.'
         if (showToast) showToast(actionError.value, 'error')
       } finally {
         roomActionLoading.value = ''
@@ -555,10 +549,10 @@ const softDeleteLiveRoom = async (room) => {
         await adminRoomApi.softDeleteLiveRoom(room.id)
         removeListRoom(liveState, room.id)
         if (detailData.value?.room && Number(detailData.value.room.id) === Number(room.id)) closeDetail()
-        actionMessage.value = 'Đã xóa mềm Live room.'
+        actionMessage.value = 'Đã chuyển phòng thi đấu này vào thùng rác.'
         if (showToast) showToast(actionMessage.value, 'success')
       } catch (error) {
-        actionError.value = error.message || 'Không xóa mềm được Live room.'
+        actionError.value = error.message || 'Không chuyển phòng thi đấu vào thùng rác được.'
         if (showToast) showToast(actionError.value, 'error')
       } finally {
         roomActionLoading.value = ''
@@ -577,10 +571,10 @@ const restoreHomeworkRoom = async (room) => {
       try {
         await adminRoomApi.restoreHomeworkRoom(room.id)
         removeListRoom(homeworkState, room.id)
-        actionMessage.value = 'Đã khôi phục Homework room.'
+        actionMessage.value = 'Đã khôi phục phòng bài tập.'
         if (showToast) showToast(actionMessage.value, 'success')
       } catch (error) {
-        actionError.value = error.message || 'Không khôi phục được Homework room.'
+        actionError.value = error.message || 'Không khôi phục được phòng bài tập.'
         if (showToast) showToast(actionError.value, 'error')
       } finally {
         roomActionLoading.value = ''
@@ -593,16 +587,16 @@ const forceDeleteHomeworkRoom = async (room) => {
   resetActionNotice()
   confirmAndExecute(
     'Xóa vĩnh viễn',
-    `XÓA VĨNH VIỄN phòng Homework "${room.name || room.id}"?\n\nHành động này KHÔNG THỂ hoàn tác. Toàn bộ dữ liệu phòng, bài tập, và kết quả sẽ bị xóa hoàn toàn.`,
+    `XÓA VĨNH VIỄN phòng bài tập "${room.name || room.id}"?\n\nHành động này KHÔNG THỂ hoàn tác. Toàn bộ dữ liệu phòng, bài tập, và kết quả sẽ bị xóa hoàn toàn.`,
     async () => {
       roomActionLoading.value = `homework:${room.id}`
       try {
         await adminRoomsApi.forceDeleteHomework(room.id)
         removeListRoom(homeworkState, room.id)
-        actionMessage.value = 'Đã xóa vĩnh viễn Homework room.'
+        actionMessage.value = 'Đã xóa vĩnh viễn phòng bài tập.'
         if (showToast) showToast(actionMessage.value, 'success')
       } catch (error) {
-        actionError.value = error.message || 'Không xóa vĩnh viễn được Homework room.'
+        actionError.value = error.message || 'Không xóa vĩnh viễn được phòng bài tập.'
         if (showToast) showToast(actionError.value, 'error')
       } finally {
         roomActionLoading.value = ''
@@ -621,10 +615,10 @@ const restoreLiveRoom = async (room) => {
       try {
         await adminRoomApi.restoreLiveRoom(room.id)
         removeListRoom(liveState, room.id)
-        actionMessage.value = 'Đã khôi phục Live room.'
+        actionMessage.value = 'Đã khôi phục phòng thi đấu.'
         if (showToast) showToast(actionMessage.value, 'success')
       } catch (error) {
-        actionError.value = error.message || 'Không khôi phục được Live room.'
+        actionError.value = error.message || 'Không khôi phục được phòng thi đấu.'
         if (showToast) showToast(actionError.value, 'error')
       } finally {
         roomActionLoading.value = ''
