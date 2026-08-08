@@ -116,24 +116,17 @@
       </div>
     </transition>
 
-    <!-- Custom Toast Message -->
-    <transition name="slide-up">
-      <div v-if="toast.isOpen" class="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-2xl border px-4 py-3 shadow-lg backdrop-blur-xl transition-all"
-           :class="toast.type === 'success' ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400 shadow-[0_12px_40px_rgba(16,185,129,0.1)]' : 'border-rose-500/30 bg-rose-500/10 text-rose-400 shadow-[0_12px_40px_rgba(244,63,94,0.1)]'">
-        <span class="text-base">{{ toast.type === 'success' ? '✅' : '❌' }}</span>
-        <span class="text-sm font-bold">{{ toast.message }}</span>
-      </div>
-    </transition>
   </section>
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
+import { ref, onMounted, onBeforeUnmount, computed, inject } from 'vue'
 import { useRouter } from 'vue-router'
 import { notificationApi, currentUserStorage } from '@/services/api'
 import { getEcho } from '@/echo'
 
 const router = useRouter()
+const showToast = inject('showToast')
 const notifications = ref([])
 const isLoading = ref(false)
 const errorMessage = ref('')
@@ -141,15 +134,7 @@ const currentPage = ref(1)
 const lastPage = ref(1)
 const isConfirmModalOpen = ref(false)
 const isDeleting = ref(false)
-const toast = ref({ isOpen: false, message: '', type: 'success' })
 let notificationChannel = null
-
-const showToast = (message, type = 'success') => {
-  toast.value.message = message
-  toast.value.type = type
-  toast.value.isOpen = true
-  setTimeout(() => { toast.value.isOpen = false }, 3000)
-}
 
 const openDeleteConfirmModal = () => {
   isConfirmModalOpen.value = true
@@ -351,13 +336,4 @@ onBeforeUnmount(() => {
   opacity: 0;
 }
 
-.slide-up-enter-active,
-.slide-up-leave-active {
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.slide-up-enter-from,
-.slide-up-leave-to {
-  opacity: 0;
-  transform: translateY(20px);
-}
 </style>

@@ -1104,19 +1104,7 @@
     </div>
   </Teleport>
 
-  <!-- Custom Toast Message -->
-  <div
-    v-if="toast.isOpen"
-    class="fixed bottom-24 right-6 z-50 flex items-center gap-3 rounded-2xl border px-4 py-3 shadow-lg backdrop-blur-xl transition-all duration-300"
-    :class="
-      toast.type === 'success'
-        ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400 shadow-[0_12px_40px_rgba(16,185,129,0.1)]'
-        : 'border-rose-500/30 bg-rose-500/10 text-rose-400 shadow-[0_12px_40px_rgba(244,63,94,0.1)]'
-    "
-  >
-    <span class="text-base">{{ toast.type === "success" ? "✅" : "❌" }}</span>
-    <span class="text-sm font-bold">{{ toast.message }}</span>
-  </div>
+
 </template>
 
 <script setup>
@@ -1128,6 +1116,7 @@ import "mathlive/static.css";
 import { importOcrQuiz, ocrApi, aiQuizApi } from "@/services/api";
 
 const showConfirm = inject('showConfirm');
+const showToast = inject('showToast');
 
 const route = useRoute();
 const router = useRouter();
@@ -1158,21 +1147,7 @@ const aiSuggestions = ref([]);
 const aiLoading = ref(false);
 const validationErrors = ref({});
 
-const toast = ref({
-  isOpen: false,
-  message: "",
-  type: "success",
-});
-let toastTimer = null;
-const showToast = (message, type = "success") => {
-  if (toastTimer) clearTimeout(toastTimer);
-  toast.value.message = message;
-  toast.value.type = type;
-  toast.value.isOpen = true;
-  toastTimer = setTimeout(() => {
-    toast.value.isOpen = false;
-  }, 3000);
-};
+
 
 const aiOptions = ref({
   action: "similar",
