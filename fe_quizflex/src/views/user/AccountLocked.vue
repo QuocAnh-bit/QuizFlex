@@ -69,6 +69,7 @@
           id="appeal-message"
           v-model="message"
           rows="6"
+          maxlength="1000"
           class="mt-3 w-full rounded-[1.25rem] border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-sm font-medium text-[var(--text)] outline-none transition focus:border-[var(--primary)]"
           placeholder="Tôi nghĩ tài khoản của tôi bị khóa nhầm..."
         />
@@ -101,6 +102,7 @@
           id="appeal-message"
           v-model="message"
           rows="6"
+          maxlength="1000"
           class="mt-3 w-full rounded-[1.25rem] border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-sm font-medium text-[var(--text)] outline-none transition focus:border-[var(--primary)]"
           placeholder="Tôi nghĩ tài khoản của tôi bị khóa nhầm..."
         />
@@ -120,6 +122,7 @@
           id="appeal-message"
           v-model="message"
           rows="6"
+          maxlength="1000"
           class="mt-3 w-full rounded-[1.25rem] border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-sm font-medium text-[var(--text)] outline-none transition focus:border-[var(--primary)]"
           placeholder="Tôi nghĩ tài khoản của tôi bị khóa nhầm..."
         />
@@ -193,17 +196,21 @@ const reloadUnlockRequest = async () => {
   }
 }
 
+const validateAppealMessage = (value) => {
+  const trimmed = value.trim()
+  if (!trimmed) return 'Vui lòng nhập nội dung kháng cáo.'
+  if (trimmed.length < 10) return 'Nội dung kháng cáo tối thiểu 10 ký tự.'
+  if (trimmed.length > 1000) return 'Nội dung kháng cáo tối đa 1000 ký tự.'
+  return ''
+}
+
 const submitAppeal = async () => {
   errorMessage.value = ''
   successMessage.value = ''
 
-  if (!message.value.trim()) {
-    errorMessage.value = 'Vui lòng nhập nội dung kháng cáo.'
-    return
-  }
-
-  if (message.value.trim().length < 10) {
-    errorMessage.value = 'Nội dung kháng cáo tối thiểu 10 ký tự.'
+  const validationError = validateAppealMessage(message.value)
+  if (validationError) {
+    errorMessage.value = validationError
     return
   }
 

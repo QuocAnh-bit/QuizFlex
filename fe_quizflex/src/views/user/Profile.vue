@@ -98,7 +98,8 @@
 
           <label class="grid gap-2 text-xs font-black uppercase tracking-wider text-[var(--text)]">
             Họ và tên
-            <input v-model="profile.name" class="field text-sm font-bold" />
+            <input v-model="profile.name" class="field text-sm font-bold" maxlength="100" />
+            <span v-if="nameError" class="text-xs font-bold text-rose-400 normal-case tracking-normal">{{ nameError }}</span>
           </label>
 
           <label class="grid gap-2 text-xs font-black uppercase tracking-wider text-[var(--text)]">
@@ -549,12 +550,14 @@ const removeAvatar = () => {
   clearAvatarInput()
 }
 
+const ALLOWED_AVATAR_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp']
+
 const handleAvatarFileChange = (event) => {
   const [file] = event.target.files || []
   if (!file) return
 
-  if (!file.type.startsWith('image/')) {
-    errorMessage.value = 'Avatar phải là file ảnh.'
+  if (!ALLOWED_AVATAR_TYPES.includes(file.type)) {
+    errorMessage.value = 'Avatar chỉ chấp nhận định dạng PNG, JPG hoặc WEBP.'
     event.target.value = ''
     return
   }
@@ -583,6 +586,15 @@ const loadProfileFromApi = async () => {
   }
 }
 
+const nameError = ref('')
+
+const validateName = (value) => {
+  const trimmed = (value || '').trim()
+  if (!trimmed) return 'Vui lòng nhập họ tên.'
+  if (trimmed.length > 100) return 'Họ tên tối đa 100 ký tự.'
+  return ''
+}
+
 const saveProfile = async () => {
   if (!tokenStorage.get()) {
     errorMessage.value = 'Bạn cần đăng nhập trước khi lưu hồ sơ.'
@@ -595,7 +607,7 @@ const saveProfile = async () => {
 
   try {
     const saved = await authApi.updateProfile({
-      name: profile.name,
+      name: profile.name.trim(),
       avatar_file: avatarFile.value || undefined,
       remove_avatar: removeAvatarFlag.value,
     })

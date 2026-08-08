@@ -213,13 +213,45 @@ const startCountdown = () => {
   }, 1000)
 }
 
-const validate = () => { 
-  errors.fullName = form.fullName.trim() ? '' : 'Vui lòng nhập họ tên.'; // kiểm tra định dạng dữ liệu của người dùng nhập vào
-  errors.username = form.username.trim().length >= 3 ? '' : 'Username tối thiểu 3 ký tự.'; 
-  errors.email = !form.email ? 'Email không được để trống.' : !/^\S+@\S+\.\S+$/.test(form.email) ? 'Email chưa đúng định dạng.' : ''; 
-  errors.password = form.password.length >= 8 ? '' : 'Mật khẩu tối thiểu 8 ký tự.'; 
-  errors.acceptTerms = form.acceptTerms ? '' : 'Bạn cần đồng ý điều khoản.'; 
-  return Object.values(errors).every((error) => !error) 
+const validateFullName = (value) => {
+  const trimmed = value.trim()
+  if (!trimmed) return 'Vui lòng nhập họ tên.'
+  if (trimmed.length > 100) return 'Họ tên tối đa 100 ký tự.'
+  return ''
+}
+
+const validateUsername = (value) => {
+  const trimmed = value.trim()
+  if (trimmed.length < 3) return 'Username tối thiểu 3 ký tự.'
+  if (trimmed.length > 20) return 'Username tối đa 20 ký tự.'
+  if (!/^[a-zA-Z0-9_]+$/.test(trimmed)) return 'Username chỉ được chứa chữ cái, số và dấu gạch dưới (_), không dấu cách.'
+  return ''
+}
+
+const validateEmail = (value) => {
+  const trimmed = value.trim()
+  if (!trimmed) return 'Email không được để trống.'
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) return 'Email chưa đúng định dạng.'
+  return ''
+}
+
+const validatePassword = (value) => {
+  if (value.length < 8) return 'Mật khẩu tối thiểu 8 ký tự.'
+  return ''
+}
+
+const validateOtp = (value) => {
+  if (!/^\d{6}$/.test(value.trim())) return 'Mã OTP yêu cầu đầy đủ 6 chữ số.'
+  return ''
+}
+
+const validate = () => {
+  errors.fullName = validateFullName(form.fullName)
+  errors.username = validateUsername(form.username)
+  errors.email = validateEmail(form.email)
+  errors.password = validatePassword(form.password)
+  errors.acceptTerms = form.acceptTerms ? '' : 'Bạn cần đồng ý điều khoản.'
+  return Object.values(errors).every((error) => !error)
 }
 
 const handleRegister = async () => {
@@ -228,9 +260,9 @@ const handleRegister = async () => {
   isSubmitting.value = true
   try {
     await authApi.register({
-      name: form.fullName,
-      username: form.username,
-      email: form.email,
+      name: form.fullName.trim(),
+      username: form.username.trim(),
+      email: form.email.trim(),
       password: form.password,
       role: 'FREE',
     })
@@ -295,11 +327,9 @@ const handleVerifyOtp = async () => {
   otpError.value = ''
   successMessage.value = ''
   
-  const fullOtp = otpDigits.value.join('').trim() // ghép 6 ô OTP thành 1 chuỗi
-  if (fullOtp.length !== 6) {
-    otpError.value = 'Mã OTP yêu cầu đầy đủ 6 chữ số.'
-    return
-  }
+  const fullOtp = otpDigits.value.join('').trim()
+  otpError.value = validateOtp(fullOtp)
+  if (otpError.value) return
 
   isVerifyingOtp.value = true
   try {

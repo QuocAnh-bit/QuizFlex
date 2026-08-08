@@ -328,7 +328,24 @@ onMounted(async () => {
   }
 })
 
-const validate = () => { errors.email = !form.email ? 'Email không được để trống.' : !/^\S+@\S+\.\S+$/.test(form.email) ? 'Email chưa đúng định dạng.' : ''; errors.password = !form.password ? 'Mật khẩu không được để trống.' : form.password.length < 6 ? 'Mật khẩu tối thiểu 6 ký tự.' : ''; return !errors.email && !errors.password }
+const validateEmail = (value) => {
+  const trimmed = value.trim()
+  if (!trimmed) return 'Email không được để trống.'
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) return 'Email chưa đúng định dạng.'
+  return ''
+}
+
+const validatePassword = (value) => {
+  if (!value) return 'Mật khẩu không được để trống.'
+  if (value.length < 6) return 'Mật khẩu tối thiểu 6 ký tự.'
+  return ''
+}
+
+const validate = () => {
+  errors.email = validateEmail(form.email)
+  errors.password = validatePassword(form.password)
+  return !errors.email && !errors.password
+}
 
 const safeRedirect = (value) => {
   if (!value || typeof value !== 'string') return ''
@@ -341,7 +358,7 @@ const handleLogin = async () => {
   if (!validate()) return
   isSubmitting.value = true
   try {
-    const user = await authApi.login({ email: form.email, password: form.password })
+    const user = await authApi.login({ email: form.email.trim(), password: form.password })
     successMessage.value = 'Đăng nhập thành công.'
     localStorage.setItem('quizflex_last_login_method', 'password')
 
