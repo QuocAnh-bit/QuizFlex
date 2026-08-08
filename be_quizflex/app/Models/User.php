@@ -144,4 +144,13 @@ class User extends Authenticatable implements JWTSubject
     {
         return ['role' => $this->getRole()];
     }
+
+    /**
+     * The channels the user receives notification broadcasts on.
+     */
+    public function receivesBroadcastNotificationsOn(): string
+    {
+        return 'user.' . $this->id;
+    }
 }
+

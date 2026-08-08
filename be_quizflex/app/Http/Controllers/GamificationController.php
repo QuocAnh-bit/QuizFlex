@@ -8,6 +8,7 @@ use App\Models\Badge;
 use App\Models\UserBadge;
 use App\Models\User;
 use App\Models\QuizAttempt;
+use App\Notifications\AchievementUnlocked;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -178,8 +179,16 @@ class GamificationController extends Controller
             };
 
             if ($earned) {
-                UserBadge::create(['user_id' => $userId, 'badge_id' => $badge->id, 'earned_at' => now()]);
-                $newBadges[] = $badge;
+                $alreadyExists = UserBadge::where('user_id', $userId)->where('badge_id', $badge->id)->exists();
+                if (!$alreadyExists) {
+                    UserBadge::create(['user_id' => $userId, 'badge_id' => $badge->id, 'earned_at' => now()]);
+                    $newBadges[] = $badge;
+
+                    $recipient = User::find($userId);
+                    if ($recipient) {
+                        $recipient->notify(new AchievementUnlocked($badge));
+                    }
+                }
             }
         });
 

@@ -4,8 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\ReportTicket;
 use App\Notifications\QuizModerated;
+use App\Models\User;
+use App\Notifications\ReportCreated;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Notification;
 
 class ReportTicketController extends Controller
 {
@@ -27,6 +30,14 @@ class ReportTicketController extends Controller
             'description' => $request->description,
             'status' => 'pending',
         ]);
+
+        $reporter = Auth::user();
+        if ($reporter) {
+            $admins = User::where('role', 'admin')->get();
+            if ($admins->isNotEmpty()) {
+                Notification::send($admins, new ReportCreated($report, $reporter));
+            }
+        }
 
         return response()->json([
             'success' => true,

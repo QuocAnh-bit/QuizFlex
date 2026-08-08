@@ -1104,28 +1104,19 @@
     </div>
   </Teleport>
 
-  <!-- Custom Toast Message -->
-  <div
-    v-if="toast.isOpen"
-    class="fixed bottom-24 right-6 z-50 flex items-center gap-3 rounded-2xl border px-4 py-3 shadow-lg backdrop-blur-xl transition-all duration-300"
-    :class="
-      toast.type === 'success'
-        ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400 shadow-[0_12px_40px_rgba(16,185,129,0.1)]'
-        : 'border-rose-500/30 bg-rose-500/10 text-rose-400 shadow-[0_12px_40px_rgba(244,63,94,0.1)]'
-    "
-  >
-    <span class="text-base">{{ toast.type === "success" ? "✅" : "❌" }}</span>
-    <span class="text-sm font-bold">{{ toast.message }}</span>
-  </div>
+
 </template>
 
 <script setup>
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, inject } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import draggable from "vuedraggable";
 import "mathlive";
 import "mathlive/static.css";
 import { importOcrQuiz, ocrApi, aiQuizApi } from "@/services/api";
+
+const showConfirm = inject('showConfirm');
+const showToast = inject('showToast');
 
 const route = useRoute();
 const router = useRouter();
@@ -1156,21 +1147,7 @@ const aiSuggestions = ref([]);
 const aiLoading = ref(false);
 const validationErrors = ref({});
 
-const toast = ref({
-  isOpen: false,
-  message: "",
-  type: "success",
-});
-let toastTimer = null;
-const showToast = (message, type = "success") => {
-  if (toastTimer) clearTimeout(toastTimer);
-  toast.value.message = message;
-  toast.value.type = type;
-  toast.value.isOpen = true;
-  toastTimer = setTimeout(() => {
-    toast.value.isOpen = false;
-  }, 3000);
-};
+
 
 const aiOptions = ref({
   action: "similar",
@@ -1856,51 +1833,62 @@ const handleFile = async (event) => {
   }
 };
 
-const confirmLoseChanges = () => {
-  if (!isDirty.value) return true;
+const confirmAndRun = (action) => {
+  if (!isDirty.value) {
+    action();
+    return;
+  }
 
-  return window.confirm(
-    "Bạn đang có thay đổi chưa lưu. Tiếp tục sẽ mất dữ liệu.",
-  );
+  if (showConfirm) {
+    showConfirm(
+      "Xác nhận rời đi",
+      "Bạn đang có thay đổi chưa lưu. Tiếp tục sẽ mất dữ liệu.",
+      action
+    );
+  } else {
+    if (window.confirm("Bạn đang có thay đổi chưa lưu. Tiếp tục sẽ mất dữ liệu.")) {
+      action();
+    }
+  }
 };
 
 const goBackUpload = () => {
-  if (!confirmLoseChanges()) return;
-
-  currentView.value = "upload";
+  confirmAndRun(() => {
+    currentView.value = "upload";
+  });
 };
 
 const resetFile = () => {
   if (isUploading.value) return;
-  if (!confirmLoseChanges()) return;
+  confirmAndRun(() => {
+    stopFakeProgress();
 
-  stopFakeProgress();
+    fileName.value = "";
+    progress.value = 0;
+    errorMessage.value = "";
+    isUploading.value = false;
+    loadingText.value = "Đang tải file...";
+    questions.value = [];
+    showReadyMessage.value = false;
+    currentView.value = "upload";
+    isDirty.value = false;
+    quizInfo.value = {
+      title: "",
+      description: "",
+      subject: "",
+      grade: "",
+      duration: 45,
+      default_points: 10,
+      status: "draft",
+    };
 
-  fileName.value = "";
-  progress.value = 0;
-  errorMessage.value = "";
-  isUploading.value = false;
-  loadingText.value = "Đang tải file...";
-  questions.value = [];
-  showReadyMessage.value = false;
-  currentView.value = "upload";
-  isDirty.value = false;
-  quizInfo.value = {
-    title: "",
-    description: "",
-    subject: "",
-    grade: "",
-    duration: 45,
-    default_points: 10,
-    status: "draft",
-  };
+    sessionStorage.removeItem("quizflex_questions");
+    sessionStorage.removeItem("quizflex_quiz_payload");
 
-  sessionStorage.removeItem("quizflex_questions");
-  sessionStorage.removeItem("quizflex_quiz_payload");
-
-  if (fileInput.value) {
-    fileInput.value.value = "";
-  }
+    if (fileInput.value) {
+      fileInput.value.value = "";
+    }
+  });
 };
 
 const addQuestion = async (type = "single_choice") => {

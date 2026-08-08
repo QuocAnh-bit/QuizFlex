@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, inject } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/services/api'
 
@@ -9,21 +9,7 @@ const router = useRouter()
 const loading = ref(false)
 const saving = ref(false)
 
-const toast = ref({
-  isOpen: false,
-  message: '',
-  type: 'success'
-})
-
-const showToast = (message, type = 'success') => {
-  toast.value.message = message
-  toast.value.type = type
-  toast.value.isOpen = true
-
-  setTimeout(() => {
-    toast.value.isOpen = false
-  }, 3000)
-}
+const showToast = inject('showToast')
 
 const form = ref({
   title: '',
@@ -576,35 +562,7 @@ onMounted(fetchQuiz)
 
 </div>
 
-<transition name="slide-up">
 
-  <div
-
-    v-if="toast.isOpen"
-
-    class="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-2xl border px-4 py-3 shadow-lg backdrop-blur-xl"
-
-    :class="toast.type==='success'
-      ?'border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
-      :'border-rose-500/30 bg-rose-500/10 text-rose-400'"
-
-  >
-
-    <span>
-
-      {{ toast.type==='success' ? '✅' : '❌' }}
-
-    </span>
-
-    <span class="font-bold">
-
-      {{ toast.message }}
-
-    </span>
-
-  </div>
-
-</transition>
 
 </section>
 
@@ -713,16 +671,7 @@ textarea.field{
   cursor:pointer;
 }
 
-.slide-up-enter-active,
-.slide-up-leave-active{
-  transition:all .3s cubic-bezier(.16,1,.3,1);
-}
 
-.slide-up-enter-from,
-.slide-up-leave-to{
-  opacity:0;
-  transform:translateY(20px);
-}
 
 @media(max-width:768px){
 
