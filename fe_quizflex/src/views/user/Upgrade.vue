@@ -171,6 +171,7 @@
             <button 
               v-else
               @click="openCheckout(plan)"
+              :disabled="currentUser && !upgradeCostsLoaded"
               class="w-full h-12 flex items-center justify-center font-black rounded-full transition duration-300 active:scale-[0.98]"
               :class="plan.popular
                 ? 'bg-gradient-to-r from-[var(--primary)] to-[var(--accent)] text-white hover:shadow-[0_16px_36px_rgba(155,44,255,0.3)]'
@@ -721,6 +722,8 @@ const plans = ref([
   }
 ])
 
+const upgradeCostsLoaded = ref(false)
+
 const fetchUpgradeCosts = async () => {
   if (!currentUser.value) return
   try {
@@ -739,6 +742,8 @@ const fetchUpgradeCosts = async () => {
     }
   } catch (error) {
     console.error('Failed to fetch upgrade costs:', error)
+  } finally {
+    upgradeCostsLoaded.value = true
   }
 }
 
