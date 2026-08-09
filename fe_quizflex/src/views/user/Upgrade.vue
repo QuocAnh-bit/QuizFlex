@@ -33,7 +33,7 @@
           </span>
           <h3 class="text-xl md:text-2xl font-black text-[var(--text)]">Dùng thử Gói Plus Miễn Phí 7 Ngày</h3>
           <p class="text-sm text-[var(--muted)] mt-1 font-semibold leading-relaxed">
-            Trải nghiệm đầy đủ đặc quyền của gói **Plus** (tạo phòng Live, Homework và OCR scan) để tăng tốc học tập.<br>
+            Trải nghiệm đầy đủ đặc quyền của gói **Plus** (tạo phòng thi đấu, phòng bài tập và OCR scan) để tăng tốc học tập.<br>
             Nhận ngay **+20 lượt AI** sinh đề. Sử dụng một lần duy nhất cho mỗi tài khoản.
           </p>
         </div>
@@ -453,7 +453,7 @@
               </div>
               <div class="flex items-start gap-2.5">
                 <span class="text-emerald-400 mt-0.5">✨</span>
-                <span class="font-bold leading-normal">Tạo phòng Live thi đấu nhóm & phòng Homework.</span>
+                <span class="font-bold leading-normal">Tạo phòng thi đấu nhóm & phòng bài tập.</span>
               </div>
             </div>
             
@@ -673,7 +673,7 @@ const plans = ref([
       'Scan tài liệu OCR (10 lượt/tháng)',
       'Mở khóa Quiz Riêng tư',
       'Tạo phòng Realtime nhóm (max 20 người)',
-      'Tạo phòng Homework (max 5 phòng)'
+      'Tạo phòng bài tập (max 5 phòng)'
     ]
   },
   {
@@ -693,7 +693,7 @@ const plans = ref([
       'Scan tài liệu OCR (50 lượt/tháng)',
       'Mở khóa Quiz Riêng tư',
       'Tạo phòng Realtime lớn (max 100 người)',
-      'Tạo phòng Homework (max 20 phòng)',
+      'Tạo phòng bài tập (max 20 phòng)',
       'Hỗ trợ xuất đề ra PDF/Excel',
       'Badge Pro nổi bật'
     ]
@@ -715,7 +715,7 @@ const plans = ref([
       'Scan tài liệu OCR không giới hạn',
       'Mở khóa Quiz Riêng tư',
       'Tạo phòng Realtime cực đại (max 500 người)',
-      'Tạo phòng Homework không giới hạn',
+      'Tạo phòng bài tập không giới hạn',
       'Hỗ trợ xuất đề PDF/Excel',
       'Badge Ultra lấp lánh cạnh tên'
     ]

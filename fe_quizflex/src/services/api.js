@@ -656,6 +656,11 @@ export const adminDashboardApi = {
 };
 
 export const adminRoomApi = {
+  async getRoomStats() {
+    const { data } = await api.get("/admin/rooms/stats");
+    return unwrap(data);
+  },
+
   async getHomeworkRooms(params = {}) {
     const { data } = await api.get("/admin/rooms/homework", { params });
     return unwrap(data);
@@ -670,8 +675,6 @@ export const adminRoomApi = {
     const { data } = await api.get(`/admin/rooms/homework/${id}`);
     return unwrap(data);
   },
-
-
 
   async softDeleteHomeworkRoom(id) {
     const { data } = await api.delete(`/admin/rooms/homework/${id}`);
@@ -704,8 +707,6 @@ export const adminRoomApi = {
     const { data } = await api.get(`/admin/rooms/live/${id}`);
     return unwrap(data);
   },
-
-
 
   async softDeleteLiveRoom(id) {
     const { data } = await api.delete(`/admin/rooms/live/${id}`);
@@ -741,9 +742,15 @@ export const adminRoomApi = {
     const { data } = await api.delete(`/admin/rooms/homework/${id}/force`);
     return data;
   },
+
+  async forceDeleteLiveRoom(id) {
+    const { data } = await api.delete(`/admin/rooms/live/${id}/force`);
+    return data;
+  },
 };
 
 export const adminRoomsApi = {
+  getStats: adminRoomApi.getRoomStats,
   listHomework: adminRoomApi.getHomeworkRooms,
   getHomework: adminRoomApi.getHomeworkRoomDetail,
   softDeleteHomework: adminRoomApi.softDeleteHomeworkRoom,
@@ -756,6 +763,7 @@ export const adminRoomsApi = {
   softDeleteLive: adminRoomApi.softDeleteLiveRoom,
   banLive: adminRoomApi.banLiveRoom,
   unbanLive: adminRoomApi.unbanLiveRoom,
+  forceDeleteLive: adminRoomApi.forceDeleteLiveRoom,
 };
 
 export const aiQuizApi = {

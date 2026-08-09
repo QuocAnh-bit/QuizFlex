@@ -239,7 +239,7 @@
           <!-- Live Room Limit Card -->
           <div class="group relative overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--surface)]/70 p-6 shadow-sm backdrop-blur-xl transition duration-300 hover:border-[var(--border-strong)] hover:shadow-[var(--shadow-soft)]">
             <div class="flex items-center justify-between">
-              <span class="text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">LIVE ROOM HOSTING</span>
+              <span class="text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">PHÒNG THI ĐẤU</span>
               <span class="h-2.5 w-2.5 rounded-full" :class="limitsInfo.liveRoomAllowed ? 'bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.8)]' : 'bg-rose-500'"></span>
             </div>
             <h4 class="mt-4 font-black text-base text-[var(--text)]">Phòng Thi Trực Tiếp</h4>
@@ -251,7 +251,7 @@
           <!-- Homework Rooms Card -->
           <div class="group relative overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--surface)]/70 p-6 shadow-sm backdrop-blur-xl transition duration-300 hover:border-[var(--border-strong)] hover:shadow-[var(--shadow-soft)]">
             <div class="flex items-center justify-between">
-              <span class="text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">HOMEWORK HUB</span>
+              <span class="text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">PHÒNG BÀI TẬP</span>
               <span class="h-2.5 w-2.5 rounded-full" :class="limitsInfo.homeworkAllowed ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]' : 'bg-rose-500'"></span>
             </div>
             <h4 class="mt-4 font-black text-base text-[var(--text)]">Phòng Bài Tập Lớp Học</h4>
