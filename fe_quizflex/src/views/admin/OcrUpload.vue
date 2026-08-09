@@ -300,11 +300,19 @@
                 min="1"
                 max="1440"
                 class="w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm font-semibold text-[var(--text)] outline-none"
-                @input="markDirty"
+                :class="getValidationClass('quiz.duration')"
+                data-validation-key="quiz.duration"
+                @input="handleValidatedInput('quiz.duration')"
               />
 
               <span class="text-sm font-bold text-[var(--muted)]">phút</span>
             </div>
+            <p
+              v-if="validationErrors['quiz.duration']"
+              class="mt-2 text-xs font-bold text-rose-400"
+            >
+              {{ validationErrors["quiz.duration"] }}
+            </p>
           </div>
 
           <div>
@@ -318,8 +326,16 @@
               min="1"
               max="1000"
               class="mt-2 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm font-semibold text-[var(--text)] outline-none"
-              @input="markDirty"
+              :class="getValidationClass('quiz.default_points')"
+              data-validation-key="quiz.default_points"
+              @input="handleValidatedInput('quiz.default_points')"
             />
+            <p
+              v-if="validationErrors['quiz.default_points']"
+              class="mt-2 text-xs font-bold text-rose-400"
+            >
+              {{ validationErrors["quiz.default_points"] }}
+            </p>
           </div>
 
           <div>
@@ -2338,13 +2354,10 @@ const validateBeforeSave = () => {
 
 // Lưu bộ đề qua API và chuyển sang trang danh sách.
 const saveQuestions = async () => {
-  const validationError = validateBeforeSave();
-  if (validationError) {
-    showToast(validationError, "error");
-    return;
-  }
-
   const payload = buildQuizPayload();
+
+  const isValid = await validateQuizPayload(payload);
+  if (!isValid) return;
 
   try {
     saving.value = true;
