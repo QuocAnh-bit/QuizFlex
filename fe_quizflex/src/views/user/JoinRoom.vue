@@ -36,16 +36,21 @@ const errorMessage = ref('')
 
 const joinRoom = async () => {
   errorMessage.value = ''
-  const code = roomCode.value.trim()
+  const code = roomCode.value.trim().toUpperCase()
   
   if (!code) {
     errorMessage.value = 'Bạn chưa nhập room code.'
     return
   }
+
+  if (code.length > 12) {
+    errorMessage.value = 'Room code không hợp lệ.'
+    return
+  }
   
   try {
     const data = await quizzesApi.list({ search: code, visibility: 'group' })
-    const found = data.map(normalizeQuizCard).find((room) => room.roomCode?.toLowerCase() === code.toLowerCase())
+    const found = data.map(normalizeQuizCard).find((room) => room.roomCode?.toUpperCase() === code)
     
     if (!found) {
       errorMessage.value = 'Không tìm thấy room code này.'

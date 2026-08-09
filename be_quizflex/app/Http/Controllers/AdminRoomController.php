@@ -11,6 +11,8 @@ use App\Models\QuizAttempt;
 use App\Models\Room;
 use App\Models\RoomAssignment;
 use App\Models\RoomMember;
+use App\Models\User;
+use App\Notifications\RoomModerated;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -614,6 +616,11 @@ class AdminRoomController extends Controller
     {
         $room->forceFill(['status' => 'banned'])->save();
 
+        $host = User::find($room->host_id);
+        if ($host) {
+            $host->notify(new RoomModerated($room->id, $room->name, 'homework', 'ban'));
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Đã khóa phòng học.',
@@ -624,6 +631,11 @@ class AdminRoomController extends Controller
     public function unbanHomework(Room $room)
     {
         $room->forceFill(['status' => 'active'])->save();
+
+        $host = User::find($room->host_id);
+        if ($host) {
+            $host->notify(new RoomModerated($room->id, $room->name, 'homework', 'unban'));
+        }
 
         return response()->json([
             'success' => true,
@@ -649,6 +661,11 @@ class AdminRoomController extends Controller
             LiveLeaderboardUpdated::dispatch($liveRoom);
         }
 
+        $host = User::find($liveRoom->host_id);
+        if ($host) {
+            $host->notify(new RoomModerated($liveRoom->id, $liveRoom->title, 'live', 'ban'));
+        }
+
         $liveRoom->loadCount([
             'players as player_count' => fn (Builder $query) => $query
                 ->where('status', 'joined')
@@ -672,6 +689,11 @@ class AdminRoomController extends Controller
 
             return $liveRoom->fresh(['host:id,name,email', 'quiz:id,title']);
         });
+
+        $host = User::find($liveRoom->host_id);
+        if ($host) {
+            $host->notify(new RoomModerated($liveRoom->id, $liveRoom->title, 'live', 'unban'));
+        }
 
         $liveRoom->loadCount([
             'players as player_count' => fn (Builder $query) => $query

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted, inject } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/services/api'
 
@@ -9,21 +9,7 @@ const router = useRouter()
 const loading = ref(false)
 const saving = ref(false)
 
-const toast = ref({
-  isOpen: false,
-  message: '',
-  type: 'success'
-})
-
-const showToast = (message, type = 'success') => {
-  toast.value.message = message
-  toast.value.type = type
-  toast.value.isOpen = true
-
-  setTimeout(() => {
-    toast.value.isOpen = false
-  }, 3000)
-}
+const showToast = inject('showToast')
 
 const form = ref({
   title: '',
@@ -33,6 +19,12 @@ const form = ref({
   visibility: 'public',
   questions: []
 })
+
+const SUPPORTED_TYPES = ['single_choice']
+
+const hasUnsupportedQuestionTypes = computed(() =>
+  form.value.questions.some((q) => !SUPPORTED_TYPES.includes(q.type))
+)
 
 const fetchQuiz = async () => {
   try {
@@ -47,7 +39,7 @@ const fetchQuiz = async () => {
       description: quiz.description || '',
       category: quiz.category || '',
       difficulty: quiz.difficulty || 'medium',
-      visibility: quiz.is_public ? 'public' : 'private',
+      visibility: quiz.room_code ? 'group' : (quiz.is_public ? 'public' : 'private'),
 
       questions: (quiz.questions || []).map(q => ({
         id: q.id,
@@ -155,7 +147,40 @@ const setCorrect=(question,answer)=>{
 
 }
 
+const validateBeforeSave = () => {
+  if (!form.value.title.trim()) return 'Bạn chưa nhập tên quiz.'
+
+  if (form.value.questions.length === 0) return 'Quiz cần ít nhất 1 câu hỏi.'
+
+  for (const [index, question] of form.value.questions.entries()) {
+    if (!question.content.trim()) return `Câu ${index + 1} chưa có nội dung.`
+
+    if (question.answers.length < 2) return `Câu ${index + 1} cần ít nhất 2 đáp án.`
+
+    if (question.answers.some((answer) => !answer.content.trim())) {
+      return `Câu ${index + 1} còn đáp án trống.`
+    }
+
+    if (!question.answers.some((answer) => answer.is_correct)) {
+      return `Câu ${index + 1} chưa chọn đáp án đúng.`
+    }
+  }
+
+  return ''
+}
+
 const saveQuiz = async () => {
+
+  const validationError = validateBeforeSave()
+  if (validationError) {
+    showToast(validationError, 'error')
+    return
+  }
+
+  if (hasUnsupportedQuestionTypes.value) {
+    showToast('Quiz này có câu hỏi "Nhiều đáp án" hoặc "Điền đáp án" — vui lòng sửa bằng Quiz Editor chính để tránh mất dữ liệu.', 'error')
+    return
+  }
 
   try{
 
@@ -163,11 +188,11 @@ const saveQuiz = async () => {
 
       await api.put(`/quizzes/${route.params.id}`,{
 
-          title:form.value.title,
+          title: form.value.title.trim(),
 
-          description:form.value.description,
+          description: form.value.description.trim(),
 
-          category:form.value.category,
+          category: form.value.category.trim(),
 
           difficulty:form.value.difficulty,
 
@@ -181,7 +206,7 @@ const saveQuiz = async () => {
 
       setTimeout(()=>{
 
-          router.push('/admin/quizzes')
+          router.push('/admin/report-tickets')
 
       },1200)
 
@@ -404,6 +429,10 @@ onMounted(fetchQuiz)
 
   </div>
 
+  <div v-if="hasUnsupportedQuestionTypes" class="mt-4 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm font-bold text-amber-400">
+    ⚠️ Quiz này có câu hỏi dạng "Nhiều đáp án" hoặc "Điền đáp án" — trang này chưa hỗ trợ sửa đầy đủ. Dùng Quiz Editor chính để tránh mất dữ liệu khi lưu.
+  </div>
+
   <!-- Nội dung -->
 
   <div>
@@ -448,20 +477,16 @@ onMounted(fetchQuiz)
       <select
         class="field w-full"
         v-model="question.type"
+        :disabled="question.type !== 'single_choice'"
       >
         <option value="single_choice">
           Một đáp án
         </option>
-
-        <option value="multiple_choice">
-          Nhiều đáp án
-        </option>
-
-        <option value="true_false">
-          Đúng / Sai
-        </option>
-
       </select>
+
+      <p v-if="question.type !== 'single_choice'" class="mt-2 text-xs font-bold text-amber-500">
+        ⚠️ Loại câu hỏi này chưa được hỗ trợ sửa ở trang này. Vui lòng dùng Quiz Editor chính.
+      </p>
 
     </div>
 
@@ -538,7 +563,7 @@ onMounted(fetchQuiz)
 
 </div>
 
-<div class="pt-8 border-t border-[var(--border)]">
+<!-- <div class="pt-8 border-t border-[var(--border)]">
 
   <div class="flex gap-3">
 
@@ -546,7 +571,7 @@ onMounted(fetchQuiz)
 
       class="btn-primary"
 
-      :disabled="saving"
+      :disabled="saving || hasUnsupportedQuestionTypes"
 
       @click="saveQuiz"
 
@@ -570,41 +595,21 @@ onMounted(fetchQuiz)
 
   </div>
 
-</div>
+</div> -->
 
 </article>
 
 </div>
-
-<transition name="slide-up">
-
-  <div
-
-    v-if="toast.isOpen"
-
-    class="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-2xl border px-4 py-3 shadow-lg backdrop-blur-xl"
-
-    :class="toast.type==='success'
-      ?'border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
-      :'border-rose-500/30 bg-rose-500/10 text-rose-400'"
-
-  >
-
-    <span>
-
-      {{ toast.type==='success' ? '✅' : '❌' }}
-
-    </span>
-
-    <span class="font-bold">
-
-      {{ toast.message }}
-
-    </span>
-
+  <div class="fixed bottom-4 right-4 z-[60] flex flex-col gap-2 rounded-[1.4rem] border border-[var(--border)] bg-[var(--surface)]/95 p-3 shadow-[var(--shadow-card)] backdrop-blur-xl">
+    <RouterLink to="/admin/report-tickets" class="btn-ghost !px-4 !py-2 text-xs text-center">
+      Hủy
+    </RouterLink>
+    <button class="btn-primary !px-4 !py-2 text-xs" type="button" :disabled="saving || hasUnsupportedQuestionTypes" @click="saveQuiz">
+      {{ saving ? 'Đang lưu...' : '💾 Lưu thay đổi' }}
+    </button>
   </div>
 
-</transition>
+
 
 </section>
 
@@ -713,16 +718,7 @@ textarea.field{
   cursor:pointer;
 }
 
-.slide-up-enter-active,
-.slide-up-leave-active{
-  transition:all .3s cubic-bezier(.16,1,.3,1);
-}
 
-.slide-up-enter-from,
-.slide-up-leave-to{
-  opacity:0;
-  transform:translateY(20px);
-}
 
 @media(max-width:768px){
 

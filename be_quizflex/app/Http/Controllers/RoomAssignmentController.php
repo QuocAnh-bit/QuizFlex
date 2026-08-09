@@ -8,6 +8,10 @@ use App\Models\QuizAttempt;
 use App\Models\Room;
 use App\Models\RoomAssignment;
 use App\Models\RoomMember;
+use App\Models\User;
+use App\Notifications\HomeworkAssigned;
+use App\Notifications\HomeworkSubmitted;
+use App\Notifications\HomeworkAttemptReset;
 use App\Services\QuestionOrderService;
 use App\Services\QuizGradingService;
 use Illuminate\Http\Request;
@@ -15,6 +19,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Notification;
 
 class RoomAssignmentController extends Controller
 {
@@ -84,6 +89,19 @@ class RoomAssignmentController extends Controller
             'shuffle_questions' => $data['shuffle_questions'] ?? false,
             'shuffle_answers' => $data['shuffle_answers'] ?? false,
         ])->load(['quiz:id,title,description,time_limit_seconds', 'assigner:id,name', 'room']);
+
+        if ($assignment->status === 'published') {
+            $activeMembers = RoomMember::with('user')
+                ->where('room_id', $room->id)
+                ->where('status', 'active')
+                ->where('user_id', '!=', $room->host_id)
+                ->get();
+
+            $users = $activeMembers->map(fn($m) => $m->user)->filter();
+            if ($users->isNotEmpty()) {
+                Notification::send($users, new HomeworkAssigned($room, $assignment));
+            }
+        }
 
         return response()->json([
             'success' => true,
@@ -252,6 +270,12 @@ class RoomAssignmentController extends Controller
             ];
         });
 
+        $host = User::find($assignment->room->host_id);
+        $student = $request->user();
+        if ($host) {
+            $host->notify(new HomeworkSubmitted($assignment->room, $assignment, $attempt, $student));
+        }
+
         return response()->json([
             'success' => true,
             'message' => $expired ? 'Bài nộp đã quá hạn.' : 'Nộp bài thành công',
@@ -304,10 +328,17 @@ class RoomAssignmentController extends Controller
             ], 422);
         }
 
+        $recipient = User::find($attempt->user_id);
+        $attemptId = $attempt->id;
+
         DB::transaction(function () use ($attempt) {
             $attempt->evaluation()->delete();
             $attempt->delete();
         });
+
+        if ($recipient) {
+            $recipient->notify(new HomeworkAttemptReset($assignment->room, $assignment, $attemptId));
+        }
 
         return response()->json([
             'success' => true,

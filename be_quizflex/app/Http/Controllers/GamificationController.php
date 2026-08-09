@@ -8,6 +8,7 @@ use App\Models\Badge;
 use App\Models\UserBadge;
 use App\Models\User;
 use App\Models\QuizAttempt;
+use App\Notifications\AchievementUnlocked;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -62,20 +63,22 @@ class GamificationController extends Controller
     // Bảng xếp hạng
     public function leaderboard()
     {
-        $leaderboard = UserXp::whereHas('user')
-            ->with('user:id,name')
-            ->orderByDesc('xp')
-            ->take(50)
-            ->get()
-            ->map(function ($item, $index) {
-                return [
-                    'rank' => $index + 1,
-                    'user_id' => $item->user_id,
-                    'name' => optional($item->user)->name ?? 'Người dùng ẩn danh',
-                    'xp' => $item->xp,
-                    'level' => $item->level,
-                ];
-            });
+        $leaderboard = \Illuminate\Support\Facades\Cache::remember('gamification_leaderboard', 15, function () {
+            return UserXp::whereHas('user')
+                ->with('user:id,name')
+                ->orderByDesc('xp')
+                ->take(50)
+                ->get()
+                ->map(function ($item, $index) {
+                    return [
+                        'rank' => $index + 1,
+                        'user_id' => $item->user_id,
+                        'name' => optional($item->user)->name ?? 'Người dùng ẩn danh',
+                        'xp' => $item->xp,
+                        'level' => $item->level,
+                    ];
+                });
+        });
 
         return response()->json($leaderboard);
     }
@@ -83,7 +86,11 @@ class GamificationController extends Controller
     // Danh sách tất cả badge
     public function badges()
     {
-        return response()->json(Badge::all());
+        $badges = \Illuminate\Support\Facades\Cache::remember('gamification_badges', 60, function () {
+            return Badge::all();
+        });
+
+        return response()->json($badges);
     }
 
     // Helper: Tính level từ XP (mỗi level cần thêm 100 XP)
@@ -172,8 +179,16 @@ class GamificationController extends Controller
             };
 
             if ($earned) {
-                UserBadge::create(['user_id' => $userId, 'badge_id' => $badge->id, 'earned_at' => now()]);
-                $newBadges[] = $badge;
+                $alreadyExists = UserBadge::where('user_id', $userId)->where('badge_id', $badge->id)->exists();
+                if (!$alreadyExists) {
+                    UserBadge::create(['user_id' => $userId, 'badge_id' => $badge->id, 'earned_at' => now()]);
+                    $newBadges[] = $badge;
+
+                    $recipient = User::find($userId);
+                    if ($recipient) {
+                        $recipient->notify(new AchievementUnlocked($badge));
+                    }
+                }
             }
         });
 

@@ -1,97 +1,63 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, inject } from 'vue'
 import { RouterLink } from 'vue-router'
 import api from '@/services/api'
+
+const showToast = inject('showToast')
+const showConfirm = inject('showConfirm')
 
 const quizzes = ref([])
 const loading = ref(false)
 
-const confirmModal = ref({
-  isOpen: false,
-  title: '',
-  message: '',
-  action: null
-})
-
-const toast = ref({
-  isOpen: false,
-  message: '',
-  type: 'success'
-})
-
-const showToast = (message, type = 'success') => {
-  toast.value.message = message
-  toast.value.type = type
-  toast.value.isOpen = true
-  setTimeout(() => {
-    toast.value.isOpen = false
-  }, 3000)
-}
-
-const showConfirm = (title, message, action) => {
-  confirmModal.value.title = title
-  confirmModal.value.message = message
-  confirmModal.value.action = action
-  confirmModal.value.isOpen = true
-}
-
-const triggerConfirmAction = async () => {
-  confirmModal.value.isOpen = false
-  if (confirmModal.value.action) {
-    await confirmModal.value.action()
-  }
-}
-
 const fetchTrash = async () => {
   try {
     loading.value = true
-
     const res = await api.get('/admin/quizzes/trash')
-
-    console.log(res.data) // thêm để kiểm tra
-
     quizzes.value = res.data.data || []
-
   } catch (error) {
     console.error(error)
-    showToast('Không tải được thùng rác', 'error')
+    if (showToast) showToast('Không tải được thùng rác', 'error')
   } finally {
     loading.value = false
   }
 }
 
 const restoreQuiz = (id) => {
-  showConfirm(
-    'Khôi phục Quiz',
-    'Bạn có muốn khôi phục lại bộ quiz này về trạng thái hoạt động không?',
-    async () => {
-      try {
-        await api.post(`/admin/quizzes/${id}/restore`)
-        showToast('Khôi phục thành công', 'success')
-        fetchTrash()
-      } catch (error) {
-        console.error(error)
-        showToast('Khôi phục thất bại', 'error')
+  if (showConfirm) {
+    showConfirm(
+      'Khôi phục Quiz',
+      'Bạn có muốn khôi phục lại bộ quiz này về trạng thái hoạt động không?',
+      async () => {
+        try {
+          await api.post(`/admin/quizzes/${id}/restore`)
+          if (showToast) showToast('Khôi phục thành công', 'success')
+          fetchTrash()
+        } catch (error) {
+          console.error(error)
+          if (showToast) showToast('Khôi phục thất bại', 'error')
+        }
       }
-    }
-  )
+    )
+  }
 }
 
 const forceDeleteQuiz = (id) => {
-  showConfirm(
-    'Xóa vĩnh viễn',
-    'Bạn có chắc chắn muốn xóa vĩnh viễn bộ quiz này? Hành động này không thể hoàn tác!',
-    async () => {
-      try {
-        await api.delete(`/admin/quizzes/${id}/force-delete`)
-        showToast('Đã xóa vĩnh viễn', 'success')
-        fetchTrash()
-      } catch (error) {
-        console.error(error)
-        showToast('Xóa thất bại', 'error')
+  if (showConfirm) {
+    showConfirm(
+      'Xóa vĩnh viễn',
+      'Bạn có chắc chắn muốn xóa vĩnh viễn bộ quiz này? Hành động này không thể hoàn tác!',
+      async () => {
+        try {
+          await api.delete(`/admin/quizzes/${id}/force-delete`)
+          if (showToast) showToast('Đã xóa vĩnh viễn', 'success')
+          fetchTrash()
+        } catch (error) {
+          console.error(error)
+          if (showToast) showToast('Xóa thất bại', 'error')
+        }
       }
-    }
-  )
+    )
+  }
 }
 
 onMounted(() => {
@@ -163,56 +129,5 @@ onMounted(() => {
       </table>
       <div v-if="loading" class="text-center py-10 text-[var(--muted)] font-bold">Đang tải dữ liệu...</div>
     </div>
-
-    <!-- Custom Confirm Modal -->
-    <transition name="fade">
-      <div v-if="confirmModal.isOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
-        <div class="w-full max-w-md rounded-[2.5rem] border border-[var(--border-strong)] bg-[var(--surface)] p-6 shadow-[0_24px_70px_rgba(0,0,0,0.5)] backdrop-blur-2xl transition-all scale-100">
-          <div class="flex items-center gap-3 text-rose-400 mb-4">
-            <span class="text-2xl">⚠️</span>
-            <h3 class="text-xl font-black text-[var(--text)]">{{ confirmModal.title }}</h3>
-          </div>
-          <p class="text-sm leading-6 text-[var(--muted)] mb-6">{{ confirmModal.message }}</p>
-          <div class="flex justify-end gap-3">
-            <button @click="confirmModal.isOpen = false" class="btn-ghost px-5 py-2">
-              Hủy
-            </button>
-            <button @click="triggerConfirmAction" class="rounded-full bg-rose-500 hover:bg-rose-600 px-5 py-2 text-xs font-black text-white transition hover:-translate-y-0.5">
-              Xác nhận
-            </button>
-          </div>
-        </div>
-      </div>
-    </transition>
-
-    <!-- Custom Toast Message -->
-    <transition name="slide-up">
-      <div v-if="toast.isOpen" class="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-2xl border px-4 py-3 shadow-lg backdrop-blur-xl transition-all"
-           :class="toast.type === 'success' ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400 shadow-[0_12px_40px_rgba(16,185,129,0.1)]' : 'border-rose-500/30 bg-rose-500/10 text-rose-400 shadow-[0_12px_40px_rgba(244,63,94,0.1)]'">
-        <span class="text-base">{{ toast.type === 'success' ? '✅' : '❌' }}</span>
-        <span class="text-sm font-bold">{{ toast.message }}</span>
-      </div>
-    </transition>
   </section>
 </template>
-
-<style scoped>
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.25s ease;
-}
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-
-.slide-up-enter-active,
-.slide-up-leave-active {
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.slide-up-enter-from,
-.slide-up-leave-to {
-  opacity: 0;
-  transform: translateY(20px);
-}
-</style>

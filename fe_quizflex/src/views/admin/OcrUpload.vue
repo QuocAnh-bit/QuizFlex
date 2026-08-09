@@ -219,7 +219,7 @@
     </aside>
   </section>
 
-  <section v-else class="grid gap-6">
+  <section v-else class="grid gap-6 pb-28">
     <article
       class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-soft)] backdrop-blur-2xl"
     >
@@ -293,9 +293,18 @@
             <input
               v-model="quizInfo.title"
               class="mt-2 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm font-semibold text-[var(--text)] outline-none"
+              :class="getValidationClass('quiz.title')"
+              data-validation-key="quiz.title"
               placeholder="Ví dụ: Ôn tập Toán 12 chương 1"
-              @input="markDirty"
+              maxlength="255"
+              @input="handleValidatedInput('quiz.title')"
             />
+            <p
+              v-if="validationErrors['quiz.title']"
+              class="mt-2 text-xs font-bold text-rose-400"
+            >
+              {{ validationErrors["quiz.title"] }}
+            </p>
           </div>
 
           <div>
@@ -334,6 +343,7 @@
                 v-model.number="quizInfo.duration"
                 type="number"
                 min="1"
+                max="1440"
                 class="w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm font-semibold text-[var(--text)] outline-none"
                 @input="markDirty"
               />
@@ -351,6 +361,7 @@
               v-model.number="quizInfo.default_points"
               type="number"
               min="1"
+              max="1000"
               class="mt-2 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm font-semibold text-[var(--text)] outline-none"
               @input="markDirty"
             />
@@ -604,7 +615,9 @@
         <div
           v-for="(q, index) in questions"
           :key="q.id"
-          class="rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface-soft)] p-5"
+          class="scroll-mb-28 rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface-soft)] p-5"
+          :class="getQuestionValidationClass(q)"
+          :data-question-id="q.id"
         >
           <div class="flex flex-wrap items-center justify-between gap-3">
             <div class="flex flex-wrap items-center gap-2">
@@ -708,13 +721,17 @@
             v-model="q.question"
             rows="3"
             class="mt-3 w-full resize-none rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm font-semibold leading-7 text-[var(--text)] outline-none"
+            :class="getValidationClass(questionValidationKey(q))"
+            :data-validation-key="questionValidationKey(q)"
             :style="getNormalTextareaStyle(q.question)"
-            @input="markDirty"
+            @input="handleValidatedInput(questionValidationKey(q))"
           ></textarea>
 
           <div
             v-else
             class="mt-3 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4"
+            :class="getValidationClass(questionValidationKey(q))"
+            :data-validation-key="questionValidationKey(q)"
           >
             <draggable
               v-model="q.question_blocks"
@@ -734,7 +751,7 @@
                     class="editor-text-input"
                     placeholder="Nhập chữ..."
                     :style="getTextBlockStyle(block.value)"
-                    @input="markDirty"
+                    @input="handleValidatedInput(questionValidationKey(q))"
                   ></textarea>
 
                   <math-field
@@ -744,7 +761,12 @@
                     virtual-keyboard-mode="manual"
                     class="editor-math-field"
                     @input="
-                      updateMathBlock(q.question_blocks, blockIndex, $event)
+                      updateMathBlock(
+                        q.question_blocks,
+                        blockIndex,
+                        $event,
+                        questionValidationKey(q),
+                      )
                     "
                   />
 
@@ -777,6 +799,13 @@
               </button>
             </div>
           </div>
+
+          <p
+            v-if="validationErrors[questionValidationKey(q)]"
+            class="mt-2 text-xs font-bold text-rose-400"
+          >
+            {{ validationErrors[questionValidationKey(q)] }}
+          </p>
 
           <div
             v-if="q.images?.length"
@@ -823,13 +852,17 @@
                 v-model="q.options[optionKey]"
                 rows="1"
                 class="mt-2 w-full resize-none rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm font-semibold leading-6 text-[var(--text)] outline-none"
+                :class="getValidationClass(optionValidationKey(q, optionKey))"
+                :data-validation-key="optionValidationKey(q, optionKey)"
                 :style="getNormalTextareaStyle(q.options[optionKey])"
-                @input="markDirty"
+                @input="handleValidatedInput(optionValidationKey(q, optionKey))"
               ></textarea>
 
               <div
                 v-else
                 class="mt-2 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-3"
+                :class="getValidationClass(optionValidationKey(q, optionKey))"
+                :data-validation-key="optionValidationKey(q, optionKey)"
               >
                 <draggable
                   v-model="q.option_blocks[optionKey]"
@@ -849,7 +882,11 @@
                         class="editor-text-input"
                         placeholder="Nhập chữ..."
                         :style="getTextBlockStyle(block.value)"
-                        @input="markDirty"
+                        @input="
+                          handleValidatedInput(
+                            optionValidationKey(q, optionKey),
+                          )
+                        "
                       ></textarea>
 
                       <math-field
@@ -863,6 +900,7 @@
                             q.option_blocks[optionKey],
                             blockIndex,
                             $event,
+                            optionValidationKey(q, optionKey),
                           )
                         "
                       />
@@ -898,10 +936,22 @@
                   </button>
                 </div>
               </div>
+
+              <p
+                v-if="validationErrors[optionValidationKey(q, optionKey)]"
+                class="mt-2 text-xs font-bold text-rose-400"
+              >
+                {{ validationErrors[optionValidationKey(q, optionKey)] }}
+              </p>
             </div>
           </div>
 
-          <div v-if="q.type === 'single_choice'" class="mt-4">
+          <div
+            v-if="q.type === 'single_choice'"
+            class="mt-4 rounded-2xl"
+            :class="getAnswerValidationClass(q)"
+            :data-validation-key="answerValidationKey(q)"
+          >
             <label class="text-xs font-black uppercase text-[var(--muted)]">
               Đáp án đúng
             </label>
@@ -909,7 +959,7 @@
             <select
               v-model="q.correct_answer"
               class="mt-2 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm font-bold text-[var(--text)] outline-none"
-              @change="markDirty"
+              @change="handleValidatedInput(answerValidationKey(q))"
             >
               <option :value="null">Chưa chọn</option>
 
@@ -921,9 +971,20 @@
                 {{ optionKey }}
               </option>
             </select>
+            <p
+              v-if="validationErrors[answerValidationKey(q)]"
+              class="mt-2 text-xs font-bold text-rose-400"
+            >
+              {{ validationErrors[answerValidationKey(q)] }}
+            </p>
           </div>
 
-          <div v-else-if="q.type === 'multi_choice'" class="mt-4">
+          <div
+            v-else-if="q.type === 'multi_choice'"
+            class="mt-4 rounded-2xl p-1"
+            :class="getAnswerValidationClass(q)"
+            :data-validation-key="answerValidationKey(q)"
+          >
             <label class="text-xs font-black uppercase text-[var(--muted)]">
               Đáp án đúng nhiều lựa chọn
             </label>
@@ -938,15 +999,26 @@
                   type="checkbox"
                   :value="optionKey"
                   v-model="q.correct_answer"
-                  @change="markDirty"
+                  @change="handleValidatedInput(answerValidationKey(q))"
                 />
 
                 {{ optionKey }}
               </label>
             </div>
+            <p
+              v-if="validationErrors[answerValidationKey(q)]"
+              class="mt-2 text-xs font-bold text-rose-400"
+            >
+              {{ validationErrors[answerValidationKey(q)] }}
+            </p>
           </div>
 
-          <div v-else class="mt-4">
+          <div
+            v-else
+            class="mt-4 rounded-2xl p-1"
+            :class="getAnswerValidationClass(q)"
+            :data-validation-key="answerValidationKey(q)"
+          >
             <label class="text-xs font-black uppercase text-[var(--muted)]">
               Các đáp án điền đúng
             </label>
@@ -963,7 +1035,7 @@
                   class="w-full resize-none rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm font-semibold leading-6 text-[var(--text)] outline-none"
                   :style="getNormalTextareaStyle(q.correct_answer[answerIndex])"
                   placeholder="Nhập một đáp án đúng..."
-                  @input="markDirty"
+                  @input="handleValidatedInput(answerValidationKey(q))"
                 ></textarea>
 
                 <button
@@ -976,6 +1048,13 @@
               </div>
             </div>
 
+            <p
+              v-if="validationErrors[answerValidationKey(q)]"
+              class="mt-2 text-xs font-bold text-rose-400"
+            >
+              {{ validationErrors[answerValidationKey(q)] }}
+            </p>
+
             <button
               type="button"
               class="mt-3 rounded-full bg-[var(--chip-active)] px-3 py-1 text-xs font-black text-[var(--text)]"
@@ -986,8 +1065,12 @@
           </div>
         </div>
       </div>
+    </article>
+  </section>
 
-      <div class="mt-8 flex flex-wrap gap-3">
+  <Teleport to="body">
+    <div v-if="currentView === 'edit'" class="editor-save-bar">
+      <div class="editor-save-actions">
         <button
           class="btn-ghost"
           type="button"
@@ -1012,35 +1095,31 @@
           + Điền đáp án
         </button>
 
-        <button class="btn-primary" type="button" @click="saveQuestions">
-          Lưu câu hỏi
+        <button
+          class="btn-primary"
+          type="button"
+          :disabled="saving"
+          @click="saveQuestions"
+        >
+          {{ saving ? "Đang lưu..." : "Lưu câu hỏi" }}
         </button>
       </div>
-    </article>
-  </section>
+    </div>
+  </Teleport>
 
-  <!-- Custom Toast Message -->
-  <div
-    v-if="toast.isOpen"
-    class="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-2xl border px-4 py-3 shadow-lg backdrop-blur-xl transition-all duration-300"
-    :class="
-      toast.type === 'success'
-        ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400 shadow-[0_12px_40px_rgba(16,185,129,0.1)]'
-        : 'border-rose-500/30 bg-rose-500/10 text-rose-400 shadow-[0_12px_40px_rgba(244,63,94,0.1)]'
-    "
-  >
-    <span class="text-base">{{ toast.type === 'success' ? '✅' : '❌' }}</span>
-    <span class="text-sm font-bold">{{ toast.message }}</span>
-  </div>
+
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, inject } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import draggable from "vuedraggable";
 import "mathlive";
 import "mathlive/static.css";
 import { importOcrQuiz, ocrApi, aiQuizApi } from "@/services/api";
+
+const showConfirm = inject('showConfirm');
+const showToast = inject('showToast');
 
 const route = useRoute();
 const router = useRouter();
@@ -1058,6 +1137,11 @@ const isUploading = ref(false);
 const errorMessage = ref("");
 const loadingText = ref("Đang tải file...");
 const progressTimer = ref(null);
+const ALLOWED_OCR_TYPES = [
+  "image/png", "image/jpeg", "image/jpg", "image/webp", "image/bmp", "image/tiff",
+  "application/pdf",
+];
+const MAX_OCR_FILE_SIZE = 20 * 1024 * 1024;
 
 const currentView = ref("upload");
 const ocrMode = ref("normal");
@@ -1069,22 +1153,9 @@ const isDirty = ref(false);
 const selectedQuestionIds = ref([]);
 const aiSuggestions = ref([]);
 const aiLoading = ref(false);
+const validationErrors = ref({});
 
-const toast = ref({
-  isOpen: false,
-  message: "",
-  type: "success",
-});
-let toastTimer = null;
-const showToast = (message, type = "success") => {
-  if (toastTimer) clearTimeout(toastTimer);
-  toast.value.message = message;
-  toast.value.type = type;
-  toast.value.isOpen = true;
-  toastTimer = setTimeout(() => {
-    toast.value.isOpen = false;
-  }, 3000);
-};
+
 
 const aiOptions = ref({
   action: "similar",
@@ -1139,6 +1210,150 @@ const suggestions = [
 
 const markDirty = () => {
   isDirty.value = true;
+};
+
+const questionValidationKey = (question) => `question:${question.id}:content`;
+const optionValidationKey = (question, optionKey) =>
+  `question:${question.id}:option:${optionKey}`;
+const answerValidationKey = (question) =>
+  `question:${question.id}:correct_answer`;
+
+const getValidationClass = (key) =>
+  validationErrors.value[key] ? "validation-error" : "";
+
+const getAnswerValidationClass = (question) =>
+  getValidationClass(answerValidationKey(question));
+
+const getQuestionValidationClass = (question) => {
+  const prefix = `question:${question.id}:`;
+  return Object.keys(validationErrors.value).some((key) =>
+    key.startsWith(prefix),
+  )
+    ? "question-validation-error"
+    : "";
+};
+
+const clearValidationError = (key) => {
+  if (!validationErrors.value[key]) return;
+
+  const nextErrors = { ...validationErrors.value };
+  delete nextErrors[key];
+  validationErrors.value = nextErrors;
+};
+
+const handleValidatedInput = (key) => {
+  clearValidationError(key);
+  markDirty();
+};
+
+const scrollToValidationError = async (key) => {
+  await nextTick();
+
+  const target = Array.from(
+    document.querySelectorAll("[data-validation-key]"),
+  ).find((element) => element.dataset.validationKey === key);
+
+  if (!target) return;
+
+  target.scrollIntoView({ behavior: "smooth", block: "center" });
+
+  window.setTimeout(() => {
+    const focusTarget = target.matches("input, textarea, select, math-field")
+      ? target
+      : target.querySelector("input, textarea, select, math-field");
+
+    focusTarget?.focus({ preventScroll: true });
+  }, 450);
+};
+
+const showValidationErrors = async (errors) => {
+  validationErrors.value = errors;
+  const firstKey = Object.keys(errors)[0];
+
+  if (firstKey) {
+    showToast(errors[firstKey], "error");
+    await scrollToValidationError(firstKey);
+  }
+
+  return Boolean(firstKey);
+};
+
+const validateQuizPayload = async (payload) => {
+  const errors = {};
+
+  if (!payload.quiz.title.trim()) {
+    errors["quiz.title"] = "Vui lòng nhập tên bộ đề.";
+  }
+
+  payload.questions.forEach((question, index) => {
+    const sourceQuestion = questions.value[index];
+    if (!sourceQuestion) return;
+
+    if (!String(question.question || "").trim()) {
+      errors[questionValidationKey(sourceQuestion)] =
+        `Vui lòng nhập nội dung câu ${index + 1}.`;
+    }
+
+    if (question.type !== "fill_blank") {
+      Object.entries(question.options || {}).forEach(([optionKey, value]) => {
+        if (!String(value || "").trim()) {
+          errors[optionValidationKey(sourceQuestion, optionKey)] =
+            `Vui lòng nhập đáp án ${optionKey} của câu ${index + 1}.`;
+        }
+      });
+    }
+
+    const hasCorrectAnswer =
+      question.type === "single_choice"
+        ? Boolean(question.correct_answer)
+        : Array.isArray(question.correct_answer) &&
+          question.correct_answer.some((answer) => String(answer || "").trim());
+
+    if (!hasCorrectAnswer) {
+      errors[answerValidationKey(sourceQuestion)] =
+        `Vui lòng chọn hoặc nhập đáp án đúng cho câu ${index + 1}.`;
+    }
+  });
+
+  return !(await showValidationErrors(errors));
+};
+
+const mapServerValidationKey = (serverKey) => {
+  if (serverKey === "title" || serverKey === "quiz.title") {
+    return "quiz.title";
+  }
+
+  const questionMatch = serverKey.match(/^questions\.(\d+)(?:\.(.*))?$/);
+  if (!questionMatch) return null;
+
+  const question = questions.value[Number(questionMatch[1])];
+  if (!question) return null;
+
+  const field = questionMatch[2] || "question";
+  const optionMatch = field.match(/^options\.([A-Za-z0-9_-]+)$/);
+
+  if (optionMatch) {
+    return optionValidationKey(question, optionMatch[1]);
+  }
+
+  if (/^(correct_answer|answers)(\.|$)/.test(field)) {
+    return answerValidationKey(question);
+  }
+
+  return questionValidationKey(question);
+};
+
+const applyServerValidationErrors = async (serverErrors = {}) => {
+  const errors = {};
+
+  Object.entries(serverErrors).forEach(([serverKey, messages]) => {
+    const key = mapServerValidationKey(serverKey);
+    if (!key || errors[key]) return;
+
+    errors[key] = Array.isArray(messages) ? messages[0] : String(messages);
+  });
+
+  return showValidationErrors(errors);
 };
 
 const beforeUnloadHandler = (event) => {
@@ -1405,9 +1620,9 @@ const addMathBlock = (blocks) => {
   markDirty();
 };
 
-const updateMathBlock = (blocks, index, event) => {
+const updateMathBlock = (blocks, index, event, validationKey = null) => {
   blocks[index].value = event.target.value;
-  markDirty();
+  validationKey ? handleValidatedInput(validationKey) : markDirty();
 };
 
 const getTextBlockStyle = (value = "") => {
@@ -1461,6 +1676,18 @@ const fileToDataUrl = (file) => {
 const handleQuestionImage = async (event, question) => {
   const file = event.target.files?.[0];
   if (!file) return;
+
+  if (!file.type.startsWith("image/")) {
+    showToast("File đính kèm phải là ảnh.", "error");
+    event.target.value = "";
+    return;
+  }
+
+  if (file.size > 4 * 1024 * 1024) {
+    showToast("Ảnh câu hỏi tối đa 4MB.", "error");
+    event.target.value = "";
+    return;
+  }
 
   const preview = await fileToDataUrl(file);
 
@@ -1576,6 +1803,18 @@ const handleFile = async (event) => {
   const file = event.target.files?.[0];
   if (!file) return;
 
+  if (!ALLOWED_OCR_TYPES.includes(file.type)) {
+    errorMessage.value = "Định dạng file không được hỗ trợ. Chỉ chấp nhận PNG, JPG, JPEG, WEBP, BMP, TIFF, PDF.";
+    event.target.value = "";
+    return;
+  }
+
+  if (file.size > MAX_OCR_FILE_SIZE) {
+    errorMessage.value = "File vượt quá dung lượng tối đa 20MB.";
+    event.target.value = "";
+    return;
+  }
+
   fileName.value = file.name;
   isUploading.value = true;
   errorMessage.value = "";
@@ -1626,74 +1865,115 @@ const handleFile = async (event) => {
   }
 };
 
-const confirmLoseChanges = () => {
-  if (!isDirty.value) return true;
+const confirmAndRun = (action) => {
+  if (!isDirty.value) {
+    action();
+    return;
+  }
 
-  return window.confirm(
-    "Bạn đang có thay đổi chưa lưu. Tiếp tục sẽ mất dữ liệu.",
-  );
+  if (showConfirm) {
+    showConfirm(
+      "Xác nhận rời đi",
+      "Bạn đang có thay đổi chưa lưu. Tiếp tục sẽ mất dữ liệu.",
+      action
+    );
+  } else {
+    if (window.confirm("Bạn đang có thay đổi chưa lưu. Tiếp tục sẽ mất dữ liệu.")) {
+      action();
+    }
+  }
 };
 
 const goBackUpload = () => {
-  if (!confirmLoseChanges()) return;
-
-  currentView.value = "upload";
+  confirmAndRun(() => {
+    currentView.value = "upload";
+  });
 };
 
 const resetFile = () => {
   if (isUploading.value) return;
-  if (!confirmLoseChanges()) return;
+  confirmAndRun(() => {
+    stopFakeProgress();
 
-  stopFakeProgress();
+    fileName.value = "";
+    progress.value = 0;
+    errorMessage.value = "";
+    isUploading.value = false;
+    loadingText.value = "Đang tải file...";
+    questions.value = [];
+    showReadyMessage.value = false;
+    currentView.value = "upload";
+    isDirty.value = false;
+    quizInfo.value = {
+      title: "",
+      description: "",
+      subject: "",
+      grade: "",
+      duration: 45,
+      default_points: 10,
+      status: "draft",
+    };
 
-  fileName.value = "";
-  progress.value = 0;
-  errorMessage.value = "";
-  isUploading.value = false;
-  loadingText.value = "Đang tải file...";
-  questions.value = [];
-  showReadyMessage.value = false;
-  currentView.value = "upload";
-  isDirty.value = false;
-  quizInfo.value = {
-    title: "",
-    description: "",
-    subject: "",
-    grade: "",
-    duration: 45,
-    default_points: 10,
-    status: "draft",
-  };
+    sessionStorage.removeItem("quizflex_questions");
+    sessionStorage.removeItem("quizflex_quiz_payload");
 
-  sessionStorage.removeItem("quizflex_questions");
-  sessionStorage.removeItem("quizflex_quiz_payload");
-
-  if (fileInput.value) {
-    fileInput.value.value = "";
-  }
+    if (fileInput.value) {
+      fileInput.value.value = "";
+    }
+  });
 };
 
-const addQuestion = (type = "single_choice") => {
-  questions.value.push(
-    normalizeQuestion({
-      type,
-      question: "",
-      options:
-        type === "fill_blank"
-          ? null
-          : {
-              A: "",
-              B: "",
-              C: "",
-              D: "",
-            },
-      correct_answer:
-        type === "multi_choice" ? [] : type === "fill_blank" ? [""] : null,
-      images: [],
-    }),
-  );
+const addQuestion = async (type = "single_choice") => {
+  const newQuestion = normalizeQuestion({
+    type,
+    question: "",
+    options:
+      type === "fill_blank"
+        ? null
+        : {
+            A: "",
+            B: "",
+            C: "",
+            D: "",
+          },
+    correct_answer:
+      type === "multi_choice" ? [] : type === "fill_blank" ? [""] : null,
+    images: [],
+  });
+
+  questions.value.push(newQuestion);
 
   markDirty();
+
+  await nextTick();
+
+  const newQuestionElement = Array.from(
+    document.querySelectorAll("[data-question-id]"),
+  ).find((element) => element.dataset.questionId === String(newQuestion.id));
+
+  if (!newQuestionElement) return;
+
+  newQuestionElement.scrollIntoView({
+    behavior: "smooth",
+    block: "end",
+  });
+
+  window.setTimeout(() => {
+    const questionInput = Array.from(
+      newQuestionElement.querySelectorAll("[data-validation-key]"),
+    ).find(
+      (element) =>
+        element.dataset.validationKey === questionValidationKey(newQuestion),
+    );
+
+    const focusTarget = questionInput?.matches(
+      "input, textarea, select, math-field",
+    )
+      ? questionInput
+      : questionInput?.querySelector("input, textarea, select, math-field");
+
+    focusTarget?.focus({ preventScroll: true });
+  }, 450);
 };
 
 const removeQuestion = (index) => {
@@ -1701,13 +1981,65 @@ const removeQuestion = (index) => {
   markDirty();
 };
 
-const saveQuestions = async () => {
-  const payload = buildQuizPayload();
+const validateBeforeSave = () => {
+  const title = quizInfo.value.title.trim();
+  if (!title) return "Vui lòng nhập tên bộ đề trước khi lưu.";
+  if (title.length > 255) return "Tên bộ đề tối đa 255 ký tự.";
 
-  if (!payload.quiz.title.trim()) {
-    showToast("Vui lòng nhập tên bộ đề trước khi lưu.", "error");
+  const duration = Number(quizInfo.value.duration);
+  if (!Number.isFinite(duration) || duration < 1 || duration > 1440) {
+    return "Thời gian làm bài phải từ 1 đến 1440 phút.";
+  }
+
+  const points = Number(quizInfo.value.default_points);
+  if (!Number.isFinite(points) || points < 1 || points > 1000) {
+    return "Điểm mặc định mỗi câu phải từ 1 đến 1000.";
+  }
+
+  if (questions.value.length === 0) return "Bộ đề cần ít nhất 1 câu hỏi.";
+
+  for (const [index, q] of questions.value.entries()) {
+    const questionText = getQuestionText(q);
+    if (!questionText.trim()) return `Câu ${index + 1} chưa có nội dung.`;
+
+    if (q.type !== "fill_blank") {
+      const options = {};
+      Object.keys(q.options || {}).forEach((key) => {
+        options[key] =
+          q.editor_mode === "math"
+            ? blocksToString(q.option_blocks[key])
+            : q.options[key];
+      });
+
+      if (Object.values(options).some((value) => !String(value).trim())) {
+        return `Câu ${index + 1} còn đáp án trống.`;
+      }
+
+      if (q.type === "single_choice" && !q.correct_answer) {
+        return `Câu ${index + 1} chưa chọn đáp án đúng.`;
+      }
+
+      if (q.type === "multi_choice" && (!Array.isArray(q.correct_answer) || !q.correct_answer.length)) {
+        return `Câu ${index + 1} chưa chọn đáp án đúng.`;
+      }
+    } else {
+      if (!Array.isArray(q.correct_answer) || !q.correct_answer.some((answer) => String(answer).trim())) {
+        return `Câu ${index + 1} chưa có đáp án điền đúng.`;
+      }
+    }
+  }
+
+  return "";
+};
+
+const saveQuestions = async () => {
+  const validationError = validateBeforeSave();
+  if (validationError) {
+    showToast(validationError, "error");
     return;
   }
+
+  const payload = buildQuizPayload();
 
   try {
     saving.value = true;
@@ -1724,7 +2056,16 @@ const saveQuestions = async () => {
   } catch (error) {
     console.error(error);
 
-    showToast(error?.response?.data?.message || "Có lỗi xảy ra khi lưu bộ đề.", "error");
+    const handledValidation = await applyServerValidationErrors(
+      error?.response?.data?.errors,
+    );
+
+    if (!handledValidation) {
+      showToast(
+        error?.response?.data?.message || "Có lỗi xảy ra khi lưu bộ đề.",
+        "error",
+      );
+    }
   } finally {
     saving.value = false;
   }
@@ -1744,6 +2085,14 @@ const generateAiSuggestions = async (key) => {
   ) {
     showToast("Vui lòng chọn ít nhất 1 câu để AI có dữ liệu gợi ý.", "error");
     return;
+  }
+
+  if (key !== "analyze_quiz") {
+    const count = Number(aiOptions.value.count);
+    if (!Number.isFinite(count) || count < 1 || count > 20) {
+      showToast("Số câu AI tạo phải từ 1 đến 20.", "error");
+      return;
+    }
   }
 
   try {
@@ -1824,6 +2173,38 @@ const normalizeAiQuestion = (q) => {
 </script>
 
 <style scoped>
+.editor-save-bar {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 40;
+  border-top: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  padding: 0.85rem 1.25rem;
+  box-shadow: 0 -12px 40px rgba(15, 23, 42, 0.12);
+  backdrop-filter: blur(18px);
+}
+
+.editor-save-actions {
+  display: flex;
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.validation-error {
+  border-color: rgb(244 63 94) !important;
+  box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.16) !important;
+}
+
+.question-validation-error {
+  border-color: rgba(244, 63, 94, 0.55) !important;
+}
+
 .math-block-row {
   display: flex;
   flex-wrap: wrap;

@@ -10,15 +10,36 @@
         </div>
         <div class="flex flex-wrap gap-3">
           <router-link class="btn-ghost" to="/homework-rooms/join">Tham gia bằng mã</router-link>
-          <router-link class="btn-primary" to="/homework-rooms/create">Tạo room</router-link>
+          <router-link v-if="canCreateHomeworkRoom" class="btn-primary" to="/homework-rooms/create">Tạo room</router-link>
+          <router-link v-else class="btn-primary" to="/upgrade">Nâng cấp tài khoản</router-link>
         </div>
       </div>
     </article>
 
-    <div v-if="isLoading" class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-10 text-center text-sm font-bold text-[var(--muted)]">Đang tải room homework...</div>
+    <!-- Skeleton loading UI -->
+    <div v-if="isLoading && !rooms.length" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <div v-for="i in 3" :key="i" class="animate-pulse rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow-card)]">
+        <div class="flex items-start justify-between gap-3">
+          <div class="w-2/3 space-y-2">
+            <div class="h-6 w-3/4 rounded-lg bg-[var(--surface-soft)]"></div>
+            <div class="h-4 w-full rounded-lg bg-[var(--surface-soft)]"></div>
+          </div>
+          <div class="h-6 w-16 rounded-full bg-[var(--surface-soft)]"></div>
+        </div>
+        <div class="mt-5 grid grid-cols-2 gap-3">
+          <div class="h-14 rounded-2xl bg-[var(--surface-soft)]"></div>
+          <div class="h-14 rounded-2xl bg-[var(--surface-soft)]"></div>
+        </div>
+        <div class="mt-5 flex items-center justify-between">
+          <div class="h-6 w-20 rounded-full bg-[var(--surface-soft)]"></div>
+          <div class="h-9 w-24 rounded-xl bg-[var(--surface-soft)]"></div>
+        </div>
+      </div>
+    </div>
+
     <div v-if="errorMessage" class="rounded-[2rem] border border-rose-500/30 bg-rose-500/10 p-5 text-sm font-bold text-rose-300">{{ errorMessage }}</div>
 
-    <div v-if="!isLoading && rooms.length" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+    <div v-if="rooms.length" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
       <article v-for="room in rooms" :key="room.id" class="group rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow-card)] transition duration-300 hover:-translate-y-1 hover:border-[var(--border-strong)]">
         <div class="flex items-start justify-between gap-3">
           <div>
@@ -52,14 +73,15 @@
       <p class="mx-auto mt-3 max-w-xl text-sm leading-7 text-[var(--muted)]">Tạo room mới hoặc tham gia room bằng mã được chia sẻ.</p>
       <div class="mt-6 flex justify-center gap-3">
         <router-link class="btn-ghost" to="/homework-rooms/join">Tham gia bằng mã</router-link>
-        <router-link class="btn-primary" to="/homework-rooms/create">Tạo room</router-link>
+        <router-link v-if="canCreateHomeworkRoom" class="btn-primary" to="/homework-rooms/create">Tạo room</router-link>
+        <router-link v-else class="btn-primary" to="/upgrade">Nâng cấp tài khoản</router-link>
       </div>
     </article>
   </section>
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, computed } from 'vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import { currentUserStorage, homeworkApi } from '@/services/api'
 
@@ -67,6 +89,11 @@ const rooms = ref([])
 const isLoading = ref(false)
 const errorMessage = ref('')
 const currentUser = currentUserStorage.get()
+
+const canCreateHomeworkRoom = computed(() => {
+  const role = String(currentUser?.role || 'free').toLowerCase()
+  return ['admin', 'plus', 'pro', 'ultra'].includes(role)
+})
 
 const roleForRoom = (room) => {
   if (Number(room.host_id) === Number(currentUser?.id)) return 'Host'

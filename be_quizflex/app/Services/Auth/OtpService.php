@@ -29,7 +29,7 @@ class OtpService
             'email' => $email,
             'otp_code' => Hash::make($rawOtp),
             'attempts' => 0,
-            'expires_at' => Carbon::now()->addMinutes($this->expireMinutes),
+            'expires_at' => Carbon::now()->addMinutes($this->expireMinutes), // thời điểm hết hạn mã OTP
             'created_at' => Carbon::now(),
             'updated_at' => Carbon::now(),
         ]);
@@ -39,7 +39,7 @@ class OtpService
 
         // 4. Gửi email chứa OTP cho người dùng (bọc trong try-catch để tránh chặn luồng HTTP khi SMTP lỗi)
         try {
-            Mail::to($email)->send(new SendOtpMail($rawOtp, $type));
+            Mail::to($email)->send(new SendOtpMail($rawOtp, $type)); 
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::warning("Could not send OTP email to {$email}. Error: " . $e->getMessage());
         }

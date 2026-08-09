@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Events\AccountStatusChanged;
 use App\Models\UnlockRequest;
 use App\Models\User;
+use App\Notifications\AccountModerated;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -175,9 +176,18 @@ class UnlockRequestController extends Controller
 
         $user = $unlockRequest->user;
         if ($user) {
-            $userController = app(UserController::class);
-            $userController->unlock($user);
+            $user->forceFill([
+                'is_locked'     => false,
+                'locked_at'     => null,
+                'locked_reason' => null,
+                'locked_by'     => null,
+            ])->save();
+
+            $user->load(['lockedBy']);
+            $user->loadCount(['quizzes', 'attempts']);
             broadcast(new AccountStatusChanged($user, 'unlocked'));
+
+            $user->notify(new AccountModerated('unlock_approved'));
         }
 
         return response()->json([
@@ -203,6 +213,11 @@ class UnlockRequestController extends Controller
             'reviewed_at' => now(),
             'admin_note' => trim((string) ($data['admin_note'] ?? '')) ?: null,
         ])->save();
+
+        $user = $unlockRequest->user;
+        if ($user) {
+            $user->notify(new AccountModerated('unlock_rejected', $unlockRequest->admin_note));
+        }
 
         return response()->json([
             'success' => true,

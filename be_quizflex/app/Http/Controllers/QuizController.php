@@ -250,71 +250,71 @@ class QuizController extends Controller
     //         'message' => 'Đã xóa mềm quiz',
     //     ]);
     // }
-public function destroy(Quiz $quiz)
-{
-    $currentUser = auth('api')->user();
+    public function destroy(Quiz $quiz)
+    {
+        $currentUser = auth('api')->user();
 
-    // Chỉ người tạo quiz mới được xóa
-    if (!$currentUser || $quiz->user_id !== $currentUser->id) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Bạn không có quyền xóa quiz này.'
-        ], 403);
-    }
+        // Chỉ người tạo quiz mới được xóa
+        if (!$currentUser || $quiz->user_id !== $currentUser->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn không có quyền xóa quiz này.'
+            ], 403);
+        }
 
-    if ($quiz->trashed()) {
+        if ($quiz->trashed()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Quiz đã được xóa mềm trước đó.',
+            ]);
+        }
+
+        $quiz->delete();
+
         return response()->json([
             'success' => true,
-            'message' => 'Quiz đã được xóa mềm trước đó.',
+            'message' => 'Đã xóa mềm quiz',
         ]);
     }
+    public function toggleVisibility($id)
+    {
+        $user = auth('api')->user();
 
-    $quiz->delete();
+        // Chỉ admin mới được ẩn/hiện quiz
+        if (!$user || strtolower($user->role) !== 'admin') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn không có quyền thực hiện thao tác này.'
+            ], 403);
+        }
 
-    return response()->json([
-        'success' => true,
-        'message' => 'Đã xóa mềm quiz',
-    ]);
-}
-public function toggleVisibility($id)
-{
-    $user = auth('api')->user();
+        $quiz = Quiz::findOrFail($id);
 
-    // Chỉ admin mới được ẩn/hiện quiz
-    if (!$user || strtolower($user->role) !== 'admin') {
+        // Đảo trạng thái public/private
+        $quiz->is_public = !$quiz->is_public;
+        $quiz->save();
+
+        // Gửi thông báo cho người tạo quiz
+        $owner = User::find($quiz->user_id);
+
+        if ($owner) {
+            $owner->notify(new QuizModerated(
+                $quiz,
+                $quiz->is_public ? 'shown' : 'hidden'
+            ));
+        }
+
         return response()->json([
-            'success' => false,
-            'message' => 'Bạn không có quyền thực hiện thao tác này.'
-        ], 403);
+            'success' => true,
+            'message' => $quiz->is_public
+                ? 'Quiz đã được hiển thị lại'
+                : 'Quiz đã được ẩn do vi phạm',
+            'data' => [
+                'id' => $quiz->id,
+                'is_public' => $quiz->is_public,
+            ]
+        ]);
     }
-
-    $quiz = Quiz::findOrFail($id);
-
-    // Đảo trạng thái public/private
-    $quiz->is_public = !$quiz->is_public;
-    $quiz->save();
-
-    // Gửi thông báo cho người tạo quiz
-    $owner = User::find($quiz->user_id);
-
-    if ($owner) {
-        $owner->notify(new QuizModerated(
-            $quiz,
-            $quiz->is_public ? 'shown' : 'hidden'
-        ));
-    }
-
-    return response()->json([
-        'success' => true,
-        'message' => $quiz->is_public
-            ? 'Quiz đã được hiển thị lại'
-            : 'Quiz đã được ẩn do vi phạm',
-        'data' => [
-            'id' => $quiz->id,
-            'is_public' => $quiz->is_public,
-        ]
-    ]);
-}
     private function validateQuizPayload(Request $request, bool $isUpdate = false): array
     {
         return $request->validate([
@@ -341,7 +341,7 @@ public function toggleVisibility($id)
             'questions.*.id' => ['nullable', 'integer', 'exists:questions,id'],
             'questions.*.content' => ['nullable', 'string'],
             'questions.*.text' => ['nullable', 'string'],
-            'questions.*.type' => ['nullable', Rule::in(['single_choice', 'multiple_choice', 'true_false'])],
+            'questions.*.type' => ['nullable', Rule::in(['single_choice', 'multi_choice', 'fill_blank'])],
             'questions.*.points' => ['nullable', 'integer', 'min:1', 'max:1000'],
             'questions.*.order' => ['nullable', 'integer', 'min:0'],
             'questions.*.correct' => ['nullable'],
@@ -736,16 +736,16 @@ public function toggleVisibility($id)
     public function adminShow($id)
     {
         $quiz = Quiz::withTrashed()
-        ->with([
-            'user:id,name,email',
-            'questions.answers',
-            'attempts.user:id,name'
-        ])
-        ->withCount([
-            'questions',
-            'attempts'
-        ])
-        ->findOrFail($id);
+            ->with([
+                'user:id,name,email',
+                'questions.answers',
+                'attempts.user:id,name'
+            ])
+            ->withCount([
+                'questions',
+                'attempts'
+            ])
+            ->findOrFail($id);
 
         $averageScore = round(
             $quiz->attempts()->avg('score') ?? 0,
@@ -763,66 +763,66 @@ public function toggleVisibility($id)
     }
 
     // Thùng rác
- public function trash()
-{
-    $user =Auth::user();
+    public function trash()
+    {
+        $user = Auth::user();
 
 
-    $quizzes = Quiz::onlyTrashed()
-        ->where('user_id', $user->id)
-        ->with('user')
-        ->latest()
-        ->get();
+        $quizzes = Quiz::onlyTrashed()
+            ->where('user_id', $user->id)
+            ->with('user')
+            ->latest()
+            ->get();
 
-    return response()->json([
-        'success' => true,
-        'data' => $quizzes
-    ]);
-}
+        return response()->json([
+            'success' => true,
+            'data' => $quizzes
+        ]);
+    }
     // Khôi phục quiz
-  public function restore($id)
-{
-    $admin = Auth::user();
+    public function restore($id)
+    {
+        $admin = Auth::user();
 
-    $quiz = Quiz::onlyTrashed()
-        ->where('id', $id)
-        ->where('user_id', $admin->id)
-        ->firstOrFail();
+        $quiz = Quiz::onlyTrashed()
+            ->where('id', $id)
+            ->where('user_id', $admin->id)
+            ->firstOrFail();
 
-    $quiz->restore();
+        $quiz->restore();
 
-    return response()->json([
-        'message' => 'Khôi phục thành công',
-        'data' => $quiz
-    ]);
-}
+        return response()->json([
+            'message' => 'Khôi phục thành công',
+            'data' => $quiz
+        ]);
+    }
     // Xóa vĩnh viễn
- public function forceDelete($id)
-{
-    $admin = Auth::user();
+    public function forceDelete($id)
+    {
+        $admin = Auth::user();
 
-    $quiz = Quiz::onlyTrashed()
-        ->where('id',$id)
-        ->where('user_id',$admin->id)
-        ->firstOrFail();
+        $quiz = Quiz::onlyTrashed()
+            ->where('id', $id)
+            ->where('user_id', $admin->id)
+            ->firstOrFail();
 
-    $quiz->forceDelete();
+        $quiz->forceDelete();
 
-    return response()->json([
-        'message'=>'Đã xóa vĩnh viễn'
-    ]);
-}
-public function adminTrash()
-{
-    $admin = Auth::user();
+        return response()->json([
+            'message' => 'Đã xóa vĩnh viễn'
+        ]);
+    }
+    public function adminTrash()
+    {
+        $admin = Auth::user();
 
-    $quizzes = Quiz::onlyTrashed()
-        ->where('user_id', $admin->id)
-        ->with('user')
-        ->get();
+        $quizzes = Quiz::onlyTrashed()
+            ->where('user_id', $admin->id)
+            ->with('user')
+            ->get();
 
-    return response()->json([
-        'data' => $quizzes
-    ]);
-}
+        return response()->json([
+            'data' => $quizzes
+        ]);
+    }
 }

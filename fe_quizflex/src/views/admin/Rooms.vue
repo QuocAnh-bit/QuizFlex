@@ -16,12 +16,6 @@
       </div>
     </div>
 
-    <div v-if="actionMessage" class="rounded-[1.5rem] border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm font-bold text-emerald-300">
-      {{ actionMessage }}
-    </div>
-    <div v-if="actionError" class="rounded-[1.5rem] border border-rose-500/30 bg-rose-500/10 p-4 text-sm font-bold text-rose-300">
-      {{ actionError }}
-    </div>
 
     <!-- Tabs filter: Tất cả / Đã xóa -->
     <div class="flex gap-2 border-b border-[var(--border)] pb-3">
@@ -312,8 +306,21 @@
 </template>
 
 <script setup>
-import { computed, defineComponent, h, onMounted, onBeforeUnmount, reactive, ref } from 'vue'
+import { computed, defineComponent, h, onMounted, onBeforeUnmount, reactive, ref, inject } from 'vue'
 import { adminRoomApi, adminRoomsApi } from '@/services/api'
+
+const showConfirm = inject('showConfirm')
+const showToast = inject('showToast')
+
+const confirmAndExecute = (title, message, action) => {
+  if (showConfirm) {
+    showConfirm(title, message, action)
+  } else {
+    if (window.confirm(message)) {
+      action()
+    }
+  }
+}
 
 
 const props = defineProps({
@@ -510,162 +517,214 @@ const resetActionNotice = () => {
 
 const softDeleteHomeworkRoom = async (room) => {
   resetActionNotice()
-  if (!window.confirm('Xóa mềm Homework room này? Phòng sẽ bị ẩn khỏi danh sách mặc định nhưng dữ liệu vẫn được giữ lại.')) return
-
-  roomActionLoading.value = `homework:${room.id}`
-  try {
-    await adminRoomApi.softDeleteHomeworkRoom(room.id)
-    removeListRoom(homeworkState, room.id)
-    if (detailData.value?.room && Number(detailData.value.room.id) === Number(room.id)) closeDetail()
-    actionMessage.value = 'Đã xóa mềm Homework room.'
-  } catch (error) {
-    actionError.value = error.message || 'Không xóa mềm được Homework room.'
-  } finally {
-    roomActionLoading.value = ''
-  }
+  confirmAndExecute(
+    'Chuyển vào thùng rác',
+    'Chuyển phòng bài tập này vào thùng rác? Phòng sẽ bị ẩn khỏi danh sách mặc định nhưng dữ liệu vẫn được giữ lại.',
+    async () => {
+      roomActionLoading.value = `homework:${room.id}`
+      try {
+        await adminRoomApi.softDeleteHomeworkRoom(room.id)
+        removeListRoom(homeworkState, room.id)
+        if (detailData.value?.room && Number(detailData.value.room.id) === Number(room.id)) closeDetail()
+        actionMessage.value = 'Đã chuyển phòng bài tập vào thùng rác.'
+        if (showToast) showToast(actionMessage.value, 'success')
+      } catch (error) {
+        actionError.value = error.message || 'Không chuyển phòng bài tập vào thùng rác được.'
+        if (showToast) showToast(actionError.value, 'error')
+      } finally {
+        roomActionLoading.value = ''
+      }
+    }
+  )
 }
-
-
 
 const softDeleteLiveRoom = async (room) => {
   resetActionNotice()
-  if (!window.confirm('Xóa mềm Live room này? Dữ liệu player và câu trả lời vẫn được giữ lại.')) return
-
-  roomActionLoading.value = `live:${room.id}`
-  try {
-    await adminRoomApi.softDeleteLiveRoom(room.id)
-    removeListRoom(liveState, room.id)
-    if (detailData.value?.room && Number(detailData.value.room.id) === Number(room.id)) closeDetail()
-    actionMessage.value = 'Đã xóa mềm Live room.'
-  } catch (error) {
-    actionError.value = error.message || 'Không xóa mềm được Live room.'
-  } finally {
-    roomActionLoading.value = ''
-  }
+  confirmAndExecute(
+    'Chuyển vào thùng rác',
+    'Chuyển phòng thi đấu này vào thùng rác? Phòng sẽ bị ẩn khỏi danh sách mặc định nhưng dữ liệu vẫn được giữ lại.',
+    async () => {
+      roomActionLoading.value = `live:${room.id}`
+      try {
+        await adminRoomApi.softDeleteLiveRoom(room.id)
+        removeListRoom(liveState, room.id)
+        if (detailData.value?.room && Number(detailData.value.room.id) === Number(room.id)) closeDetail()
+        actionMessage.value = 'Đã chuyển phòng thi đấu này vào thùng rác.'
+        if (showToast) showToast(actionMessage.value, 'success')
+      } catch (error) {
+        actionError.value = error.message || 'Không chuyển phòng thi đấu vào thùng rác được.'
+        if (showToast) showToast(actionError.value, 'error')
+      } finally {
+        roomActionLoading.value = ''
+      }
+    }
+  )
 }
 
 const restoreHomeworkRoom = async (room) => {
   resetActionNotice()
-  if (!window.confirm(`Khôi phục Homework room "${room.name || room.id}"?`)) return
-
-  roomActionLoading.value = `homework:${room.id}`
-  try {
-    await adminRoomApi.restoreHomeworkRoom(room.id)
-    removeListRoom(homeworkState, room.id)
-    actionMessage.value = 'Đã khôi phục Homework room.'
-  } catch (error) {
-    actionError.value = error.message || 'Không khôi phục được Homework room.'
-  } finally {
-    roomActionLoading.value = ''
-  }
+  confirmAndExecute(
+    'Khôi phục',
+    `Khôi phục phòng bài tập "${room.name || room.id}"?`,
+    async () => {
+      roomActionLoading.value = `homework:${room.id}`
+      try {
+        await adminRoomApi.restoreHomeworkRoom(room.id)
+        removeListRoom(homeworkState, room.id)
+        actionMessage.value = 'Đã khôi phục phòng bài tập.'
+        if (showToast) showToast(actionMessage.value, 'success')
+      } catch (error) {
+        actionError.value = error.message || 'Không khôi phục được phòng bài tập.'
+        if (showToast) showToast(actionError.value, 'error')
+      } finally {
+        roomActionLoading.value = ''
+      }
+    }
+  )
 }
 
 const forceDeleteHomeworkRoom = async (room) => {
   resetActionNotice()
-  if (!window.confirm(`XÓA VĨNH VIỄN phòng Homework "${room.name || room.id}"?\n\nHành động này KHÔNG THỂ hoàn tác. Toàn bộ dữ liệu phòng, bài tập, và kết quả sẽ bị xóa hoàn toàn.`)) return
-
-  roomActionLoading.value = `homework:${room.id}`
-  try {
-    await adminRoomsApi.forceDeleteHomework(room.id)
-    removeListRoom(homeworkState, room.id)
-    actionMessage.value = 'Đã xóa vĩnh viễn Homework room.'
-  } catch (error) {
-    actionError.value = error.message || 'Không xóa vĩnh viễn được Homework room.'
-  } finally {
-    roomActionLoading.value = ''
-  }
+  confirmAndExecute(
+    'Xóa vĩnh viễn',
+    `XÓA VĨNH VIỄN phòng bài tập "${room.name || room.id}"?\n\nHành động này KHÔNG THỂ hoàn tác. Toàn bộ dữ liệu phòng, bài tập, và kết quả sẽ bị xóa hoàn toàn.`,
+    async () => {
+      roomActionLoading.value = `homework:${room.id}`
+      try {
+        await adminRoomsApi.forceDeleteHomework(room.id)
+        removeListRoom(homeworkState, room.id)
+        actionMessage.value = 'Đã xóa vĩnh viễn phòng bài tập.'
+        if (showToast) showToast(actionMessage.value, 'success')
+      } catch (error) {
+        actionError.value = error.message || 'Không xóa vĩnh viễn được phòng bài tập.'
+        if (showToast) showToast(actionError.value, 'error')
+      } finally {
+        roomActionLoading.value = ''
+      }
+    }
+  )
 }
 
 const restoreLiveRoom = async (room) => {
   resetActionNotice()
-  if (!window.confirm(`Khôi phục Live room "${room.title || room.id}"?`)) return
-
-  roomActionLoading.value = `live:${room.id}`
-  try {
-    await adminRoomApi.restoreLiveRoom(room.id)
-    removeListRoom(liveState, room.id)
-    actionMessage.value = 'Đã khôi phục Live room.'
-  } catch (error) {
-    actionError.value = error.message || 'Không khôi phục được Live room.'
-  } finally {
-    roomActionLoading.value = ''
-  }
+  confirmAndExecute(
+    'Khôi phục',
+    `Khôi phục phòng thi đấu "${room.title || room.id}"?`,
+    async () => {
+      roomActionLoading.value = `live:${room.id}`
+      try {
+        await adminRoomApi.restoreLiveRoom(room.id)
+        removeListRoom(liveState, room.id)
+        actionMessage.value = 'Đã khôi phục phòng thi đấu.'
+        if (showToast) showToast(actionMessage.value, 'success')
+      } catch (error) {
+        actionError.value = error.message || 'Không khôi phục được phòng thi đấu.'
+        if (showToast) showToast(actionError.value, 'error')
+      } finally {
+        roomActionLoading.value = ''
+      }
+    }
+  )
 }
 
 const banHomeworkRoom = async (room) => {
   resetActionNotice()
-  if (!window.confirm(`Khóa phòng Homework "${room.name || room.id}"? Học sinh và Host sẽ không thể thực hiện các thao tác nghiệp vụ.`)) return
-
-  roomActionLoading.value = `homework:${room.id}`
-  try {
-    const updatedRoom = await adminRoomApi.banHomeworkRoom(room.id)
-    updateListRoom(homeworkState, updatedRoom)
-    if (detailData.value?.room && Number(detailData.value.room.id) === Number(room.id)) {
-      detailData.value = { ...detailData.value, room: { ...detailData.value.room, ...updatedRoom } }
+  confirmAndExecute(
+    'Khóa phòng',
+    `Khóa phòng bài tập "${room.name || room.id}"? Học sinh và Host sẽ không thể thực hiện các thao tác nghiệp vụ.`,
+    async () => {
+      roomActionLoading.value = `homework:${room.id}`
+      try {
+        const updatedRoom = await adminRoomApi.banHomeworkRoom(room.id)
+        updateListRoom(homeworkState, updatedRoom)
+        if (detailData.value?.room && Number(detailData.value.room.id) === Number(room.id)) {
+          detailData.value = { ...detailData.value, room: { ...detailData.value.room, ...updatedRoom } }
+        }
+        actionMessage.value = 'Đã khóa phòng học (Ban).'
+        if (showToast) showToast(actionMessage.value, 'success')
+      } catch (error) {
+        actionError.value = error.message || 'Không khóa được phòng học.'
+        if (showToast) showToast(actionError.value, 'error')
+      } finally {
+        roomActionLoading.value = ''
+      }
     }
-    actionMessage.value = 'Đã khóa phòng học (Ban).'
-  } catch (error) {
-    actionError.value = error.message || 'Không khóa được phòng học.'
-  } finally {
-    roomActionLoading.value = ''
-  }
+  )
 }
 
 const unbanHomeworkRoom = async (room) => {
   resetActionNotice()
-  if (!window.confirm(`Mở khóa phòng Homework "${room.name || room.id}"?`)) return
-
-  roomActionLoading.value = `homework:${room.id}`
-  try {
-    const updatedRoom = await adminRoomApi.unbanHomeworkRoom(room.id)
-    updateListRoom(homeworkState, updatedRoom)
-    if (detailData.value?.room && Number(detailData.value.room.id) === Number(room.id)) {
-      detailData.value = { ...detailData.value, room: { ...detailData.value.room, ...updatedRoom } }
+  confirmAndExecute(
+    'Mở khóa phòng',
+    `Mở khóa phòng bài tập "${room.name || room.id}"?`,
+    async () => {
+      roomActionLoading.value = `homework:${room.id}`
+      try {
+        const updatedRoom = await adminRoomApi.unbanHomeworkRoom(room.id)
+        updateListRoom(homeworkState, updatedRoom)
+        if (detailData.value?.room && Number(detailData.value.room.id) === Number(room.id)) {
+          detailData.value = { ...detailData.value, room: { ...detailData.value.room, ...updatedRoom } }
+        }
+        actionMessage.value = 'Đã mở khóa phòng học.'
+        if (showToast) showToast(actionMessage.value, 'success')
+      } catch (error) {
+        actionError.value = error.message || 'Không mở khóa được phòng học.'
+        if (showToast) showToast(actionError.value, 'error')
+      } finally {
+        roomActionLoading.value = ''
+      }
     }
-    actionMessage.value = 'Đã mở khóa phòng học.'
-  } catch (error) {
-    actionError.value = error.message || 'Không mở khóa được phòng học.'
-  } finally {
-    roomActionLoading.value = ''
-  }
+  )
 }
 
 const banLiveRoom = async (room) => {
   resetActionNotice()
-  if (!window.confirm(`Khóa phòng trực tuyến "${room.title || room.id}"? Trận đấu đang diễn ra sẽ lập tức bị kết thúc và đóng băng.`)) return
-
-  roomActionLoading.value = `live:${room.id}`
-  try {
-    const updatedRoom = await adminRoomApi.banLiveRoom(room.id)
-    updateListRoom(liveState, updatedRoom)
-    if (detailData.value?.room && Number(detailData.value.room.id) === Number(room.id)) {
-      detailData.value = { ...detailData.value, room: { ...detailData.value.room, ...updatedRoom } }
+  confirmAndExecute(
+    'Khóa phòng',
+    `Khóa phòng thi đấu "${room.title || room.id}"? Trận đấu đang diễn ra sẽ lập tức bị kết thúc và đóng băng.`,
+    async () => {
+      roomActionLoading.value = `live:${room.id}`
+      try {
+        const updatedRoom = await adminRoomApi.banLiveRoom(room.id)
+        updateListRoom(liveState, updatedRoom)
+        if (detailData.value?.room && Number(detailData.value.room.id) === Number(room.id)) {
+          detailData.value = { ...detailData.value, room: { ...detailData.value.room, ...updatedRoom } }
+        }
+        actionMessage.value = 'Đã khóa phòng trực tuyến (Ban).'
+        if (showToast) showToast(actionMessage.value, 'success')
+      } catch (error) {
+        actionError.value = error.message || 'Không khóa được phòng trực tuyến.'
+        if (showToast) showToast(actionError.value, 'error')
+      } finally {
+        roomActionLoading.value = ''
+      }
     }
-    actionMessage.value = 'Đã khóa phòng trực tuyến (Ban).'
-  } catch (error) {
-    actionError.value = error.message || 'Không khóa được phòng trực tuyến.'
-  } finally {
-    roomActionLoading.value = ''
-  }
+  )
 }
 
 const unbanLiveRoom = async (room) => {
   resetActionNotice()
-  if (!window.confirm(`Mở khóa phòng trực tuyến "${room.title || room.id}"?`)) return
-
-  roomActionLoading.value = `live:${room.id}`
-  try {
-    const updatedRoom = await adminRoomApi.unbanLiveRoom(room.id)
-    updateListRoom(liveState, updatedRoom)
-    if (detailData.value?.room && Number(detailData.value.room.id) === Number(room.id)) {
-      detailData.value = { ...detailData.value, room: { ...detailData.value.room, ...updatedRoom } }
+  confirmAndExecute(
+    'Mở khóa phòng',
+    `Mở khóa phòng thi đấu "${room.title || room.id}"?`,
+    async () => {
+      roomActionLoading.value = `live:${room.id}`
+      try {
+        const updatedRoom = await adminRoomApi.unbanLiveRoom(room.id)
+        updateListRoom(liveState, updatedRoom)
+        if (detailData.value?.room && Number(detailData.value.room.id) === Number(room.id)) {
+          detailData.value = { ...detailData.value, room: { ...detailData.value.room, ...updatedRoom } }
+        }
+        actionMessage.value = 'Đã mở khóa phòng trực tuyến.'
+        if (showToast) showToast(actionMessage.value, 'success')
+      } catch (error) {
+        actionError.value = error.message || 'Không mở khóa được phòng trực tuyến.'
+        if (showToast) showToast(actionError.value, 'error')
+      } finally {
+        roomActionLoading.value = ''
+      }
     }
-    actionMessage.value = 'Đã mở khóa phòng trực tuyến.'
-  } catch (error) {
-    actionError.value = error.message || 'Không mở khóa được phòng trực tuyến.'
-  } finally {
-    roomActionLoading.value = ''
-  }
+  )
 }
 
 const activeDropdown = ref(null)

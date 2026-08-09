@@ -17,11 +17,15 @@ return new class extends Migration
         DB::statement("
             ALTER TABLE rooms
             MODIFY COLUMN status ENUM(
+                'active',
+                'archived',
                 'waiting',
                 'in_progress',
                 'finished',
+                'closed',
+                'removed',
                 'banned'
-            ) NOT NULL DEFAULT 'waiting'
+            ) NOT NULL DEFAULT 'active'
         ");
     }
 
@@ -30,10 +34,14 @@ return new class extends Migration
         DB::statement("
             ALTER TABLE rooms
             MODIFY COLUMN status ENUM(
+                'active',
+                'archived',
                 'waiting',
                 'in_progress',
-                'finished'
-            ) NOT NULL DEFAULT 'waiting'
+                'finished',
+                'closed',
+                'removed'
+            ) NOT NULL DEFAULT 'active'
         ");
     }
 };

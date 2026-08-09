@@ -1,76 +1,90 @@
 <template>
   <section class="mx-auto max-w-4xl py-6 md:py-10">
-    <!-- Header Navigation & Quiz Info -->
-    <div class="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-[var(--border)] pb-4">
-      <div class="flex flex-wrap items-center gap-3">
-        <button 
-          type="button" 
-          class="flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface-soft)] px-4 py-2 text-xs font-black text-[var(--muted)] transition hover:border-[var(--border-strong)] hover:text-[var(--text)] active:scale-95 shadow-sm"
-          @click="goBack"
-        >
-          <span>← Quay lại</span>
-        </button>
+    <!-- 1. LOADING STATE: Ẩn TOÀN BỘ giao diện & dữ liệu cho tới khi tải xong -->
+    <AppLoadingState 
+      v-if="isLoading" 
+      title="Đang chuẩn bị bộ thẻ học tập..." 
+      message="Vui lòng chờ trong giây lát để hệ thống xử lý dữ liệu quiz."
+      icon="⚡"
+    />
 
-        <!-- Compact Audio Controls Pill -->
-        <div class="flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface)] p-1 shadow-sm">
+    <!-- 2. ERROR STATE -->
+    <AppErrorState 
+      v-else-if="errorMessage" 
+      title="Không thể tải bộ thẻ học tập"
+      :message="errorMessage" 
+      @retry="loadQuizDetails"
+    >
+      <template #actions>
+        <button type="button" class="btn-ghost text-xs" @click="goBack">Quay lại</button>
+      </template>
+    </AppErrorState>
+
+    <!-- 3. LOADED STATE: Giao diện (Header) và Dữ liệu (Cards) cùng hiển thị đồng thời -->
+    <template v-else>
+      <!-- Header Navigation & Quiz Info -->
+      <div class="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-[var(--border)] pb-4">
+        <div class="flex flex-wrap items-center gap-3">
           <button 
             type="button" 
-            class="flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition active:scale-95"
-            :class="isAutoPlayAudio ? 'bg-[var(--chip-active)] text-[var(--primary)] font-black' : 'text-[var(--muted)] hover:text-[var(--text)]'"
-            @click="toggleAutoPlayAudio"
-            :title="isAutoPlayAudio ? 'Tự động phát âm thanh: Đang BẬT' : 'Tự động phát âm thanh: Đang TẮT'"
+            class="flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface-soft)] px-4 py-2 text-xs font-black text-[var(--muted)] transition hover:border-[var(--border-strong)] hover:text-[var(--text)] active:scale-95 shadow-sm"
+            @click="goBack"
           >
-            <span>{{ isAutoPlayAudio ? '🔊 Tự phát âm' : '🔇 Tự phát âm' }}</span>
+            <span>← Quay lại</span>
           </button>
 
-          <!-- Multi-speed Audio Rate Toggle (1.0x -> 0.7x -> 0.45x) -->
-          <button 
-            type="button" 
-            class="flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition active:scale-95"
-            :class="audioRate < 1.0 ? 'bg-indigo-500/15 text-indigo-400 font-black' : 'text-[var(--muted)] hover:text-[var(--text)]'"
-            @click="toggleAudioRate"
-            :title="`Tốc độ phát âm: ${audioRate}x (Nhấn để đổi tốc độ)`"
-          >
-            <span v-if="audioRate === 0.45">🐢 Đọc chậm (0.45x)</span>
-            <span v-else-if="audioRate === 0.7">🔉 Đọc vừa (0.7x)</span>
-            <span v-else>⚡ Tốc độ (1.0x)</span>
-          </button>
+          <!-- Compact Audio Controls Pill -->
+          <div class="flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface)] p-1 shadow-sm">
+            <button 
+              type="button" 
+              class="flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition active:scale-95"
+              :class="isAutoPlayAudio ? 'bg-[var(--chip-active)] text-[var(--primary)] font-black' : 'text-[var(--muted)] hover:text-[var(--text)]'"
+              @click="toggleAutoPlayAudio"
+              :title="isAutoPlayAudio ? 'Tự động phát âm thanh: Đang BẬT' : 'Tự động phát âm thanh: Đang TẮT'"
+            >
+              <span>{{ isAutoPlayAudio ? '🔊 Tự phát âm' : '🔇 Tự phát âm' }}</span>
+            </button>
 
-          <button 
-            type="button" 
-            class="flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition active:scale-95"
-            :class="isSoundEffects ? 'bg-amber-500/15 text-amber-400 font-black' : 'text-[var(--muted)] hover:text-[var(--text)]'"
-            @click="toggleSoundEffects"
-            :title="isSoundEffects ? 'Hiệu ứng âm thanh: Đang BẬT' : 'Hiệu ứng âm thanh: Đang TẮT'"
-          >
-            <span>{{ isSoundEffects ? '🔔 Hiệu ứng' : '🔕 Hiệu ứng' }}</span>
-          </button>
+            <!-- Multi-speed Audio Rate Toggle (1.0x -> 0.7x -> 0.45x) -->
+            <button 
+              type="button" 
+              class="flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition active:scale-95"
+              :class="audioRate < 1.0 ? 'bg-indigo-500/15 text-indigo-400 font-black' : 'text-[var(--muted)] hover:text-[var(--text)]'"
+              @click="toggleAudioRate"
+              :title="`Tốc độ phát âm: ${audioRate}x (Nhấn để đổi tốc độ)`"
+            >
+              <span v-if="audioRate === 0.45">🐢 Đọc chậm (0.45x)</span>
+              <span v-else-if="audioRate === 0.7">🔉 Đọc vừa (0.7x)</span>
+              <span v-else>⚡ Tốc độ (1.0x)</span>
+            </button>
+
+            <button 
+              type="button" 
+              class="flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition active:scale-95"
+              :class="isSoundEffects ? 'bg-amber-500/15 text-amber-400 font-black' : 'text-[var(--muted)] hover:text-[var(--text)]'"
+              @click="toggleSoundEffects"
+              :title="isSoundEffects ? 'Hiệu ứng âm thanh: Đang BẬT' : 'Hiệu ứng âm thanh: Đang TẮT'"
+            >
+              <span>{{ isSoundEffects ? '🔔 Hiệu ứng' : '🔕 Hiệu ứng' }}</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="text-right flex flex-col items-end">
+          <h2 class="text-xl font-black text-[var(--text)] line-clamp-1 max-w-md">{{ quizMeta.title }}</h2>
+          <div class="flex items-center gap-2 mt-0.5">
+            <span v-if="!isLoggedIn" class="rounded-full bg-amber-500/15 px-2.5 py-0.5 text-[11px] font-black text-amber-400 border border-amber-500/30">
+              🔒 Khách (Dùng thử 5 thẻ)
+            </span>
+            <span class="text-xs font-bold text-[var(--muted)]">Ôn tập thẻ ghi nhớ</span>
+          </div>
         </div>
       </div>
 
-      <div class="text-right flex flex-col items-end">
-        <h2 class="text-xl font-black text-[var(--text)] line-clamp-1 max-w-md">{{ quizMeta.title }}</h2>
-        <div class="flex items-center gap-2 mt-0.5">
-          <span v-if="!isLoggedIn" class="rounded-full bg-amber-500/15 px-2.5 py-0.5 text-[11px] font-black text-amber-400 border border-amber-500/30">
-            🔒 Khách (Dùng thử 5 thẻ)
-          </span>
-          <span class="text-xs font-bold text-[var(--muted)]">Ôn tập thẻ ghi nhớ</span>
-        </div>
+      <!-- MAIN INTERACTIVE CONTAINER -->
+      <div v-if="questions.length === 0" class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-8 text-center text-sm font-bold text-[var(--muted)] shadow-[var(--shadow-soft)]">
+        Quiz này không có câu hỏi nào để tạo thẻ ghi nhớ.
       </div>
-    </div>
-
-    <!-- MAIN INTERACTIVE CONTAINER -->
-    <div v-if="isLoading" class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-8 text-center text-sm font-bold text-[var(--muted)] shadow-[var(--shadow-soft)]">
-      Đang chuẩn bị bộ thẻ học tập...
-    </div>
-
-    <div v-else-if="errorMessage" class="rounded-2xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm font-bold text-rose-300">
-      {{ errorMessage }}
-    </div>
-
-    <div v-else-if="questions.length === 0" class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-8 text-center text-sm font-bold text-[var(--muted)] shadow-[var(--shadow-soft)]">
-      Quiz này không có câu hỏi nào để tạo thẻ ghi nhớ.
-    </div>
 
     <div v-else-if="isFinished" class="relative overflow-hidden rounded-[2.5rem] border border-[var(--border)] bg-[var(--surface)] p-8 text-center shadow-[var(--shadow-soft)] backdrop-blur-2xl md:p-12">
       <!-- Decorative Orbs -->
@@ -283,6 +297,7 @@
         </button>
       </div>
     </div>
+    </template>
 
     <!-- GUEST LIMIT AUTH MODAL -->
     <div v-if="showGuestLimitModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-fade-in">
@@ -326,6 +341,8 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import AppLoadingState from '@/components/common/AppLoadingState.vue'
+import AppErrorState from '@/components/common/AppErrorState.vue'
 import { normalizeQuestion, normalizeQuizCard, quizzesApi, tokenStorage } from '@/services/api'
 import speechService from '@/services/speechService'
 

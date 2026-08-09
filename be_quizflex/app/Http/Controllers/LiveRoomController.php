@@ -409,15 +409,17 @@ class LiveRoomController extends Controller
             ];
         });
 
+        $liveRoomAfterAnswer = $liveRoom->fresh(['host:id,name,email', 'quiz:id,title']);
+        $payloadService = app(LiveRoomPayloadService::class);
+        $leaderboard = $payloadService->leaderboard($liveRoomAfterAnswer);
+
         if (!$result['already_answered']) {
             LiveAnswerSubmitted::dispatch($result['player']);
             if (!$this->maybeFinishLiveRoom($liveRoom->fresh())) {
-                LiveLeaderboardUpdated::dispatch($liveRoom->fresh());
+                LiveLeaderboardUpdated::dispatch($liveRoom->fresh(), $leaderboard);
             }
         }
 
-        $liveRoomAfterAnswer = $liveRoom->fresh(['host:id,name,email', 'quiz:id,title']);
-        $payloadService = app(LiveRoomPayloadService::class);
         $nextQuestion = $result['has_next_question']
             ? $payloadService->currentQuestionForIndex($liveRoomAfterAnswer, (int) $result['player']->current_question_index)
             : null;
@@ -436,7 +438,7 @@ class LiveRoomController extends Controller
                 'already_answered' => $result['already_answered'],
                 'room_status' => $liveRoomAfterAnswer->status,
                 'next_question' => $nextQuestion,
-                'leaderboard' => $payloadService->leaderboard($liveRoomAfterAnswer),
+                'leaderboard' => $leaderboard,
             ],
         ]);
     }

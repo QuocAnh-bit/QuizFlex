@@ -248,6 +248,17 @@ const routes = [
     component: () => import("@/views/user/Profile.vue"),
     meta: { layout: "user", title: "Hồ sơ cá nhân" },
   },
+  {
+    path: "/notifications",
+    name: "notifications",
+    component: () => import("@/views/user/Notifications.vue"),
+    meta: {
+      layout: "user",
+      title: "Thông báo của tôi",
+      requiresAuth: true,
+      roles: workspaceRoles,
+    },
+  },
 
   {
     path: "/login",
@@ -574,8 +585,11 @@ router.beforeEach(async (to) => {
     }
   }
 
-  if (user && user.is_locked && !isAuthLayout && to.path !== "/account-locked") {
-    return { path: "/account-locked" };
+  if (user && user.is_locked) {
+    if (to.path !== "/account-locked") {
+      return { path: "/account-locked" };
+    }
+    return true;
   }
 
   if (user && isAuthLayout) {
