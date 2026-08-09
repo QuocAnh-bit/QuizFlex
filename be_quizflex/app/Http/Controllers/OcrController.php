@@ -9,6 +9,8 @@ use Illuminate\Http\Request;
 use thiagoalessio\TesseractOCR\TesseractOCR;
 use Smalot\PdfParser\Parser;
 use Spatie\PdfToImage\Pdf;
+use Illuminate\Support\Facades\Auth;
+
 
 class OcrController extends Controller
 {
@@ -39,7 +41,7 @@ class OcrController extends Controller
                 ->where('created_at', '>=', $startOfMonth)
                 ->count();
 
-            $limit = $tier === 'pro' ? 50 : 10;
+            $limit = $tier === 'pro' ? 50 : 50;
 
             if ($scanCount >= $limit) {
                 return response()->json([
@@ -108,18 +110,18 @@ class OcrController extends Controller
             }
             $service = app(AIService::class);
 
-            if ($request->mode === 'math') {
+            // if ($request->mode === 'math') {
 
-                $data = $service->mistralOcrToQuizJson(
-                    $file->getRealPath(),
-                    $file->getClientOriginalExtension()
-                );
-            } else {
+            $data = $service->mistralOcrToQuizJson(
+                $file->getRealPath(),
+                $file->getClientOriginalExtension()
+            );
+            // } else {
 
-                $prompt = QuizPrompt::textToQuizJson($text);
+            //     $prompt = QuizPrompt::textToQuizJson($text);
 
-                $data = $service->parseQuiz($prompt);
-            }
+            //     $data = $service->parseQuiz($prompt);
+            // }
 
             \App\Models\AiLog::create([
                 'user_id' => $user->id,
@@ -195,5 +197,83 @@ class OcrController extends Controller
         $result = $service->suggestQuiz($data);
 
         return response()->json($result);
+    }
+    public function review(
+        Request $request,
+        AIService $service
+    ) {
+        $validated = $request->validate([
+            'quiz' => ['nullable', 'array'],
+
+            'questions' => [
+                'required',
+                'array',
+                'min:1',
+                'max:100',
+            ],
+
+            'questions.*.id' => [
+                'required',
+            ],
+
+            'questions.*.type' => [
+                'nullable',
+                'string',
+            ],
+
+            // Không dùng content nữa
+            'questions.*.question' => [
+                'nullable',
+                'string',
+            ],
+
+            // Không dùng answers nữa
+            'questions.*.options' => [
+                'nullable',
+                'array',
+            ],
+
+            'questions.*.correct_answer' => [
+                'nullable',
+            ],
+        ]);
+
+        $payload = [
+            'quiz' => $validated['quiz'] ?? [],
+
+            'questions' => collect(
+                $validated['questions']
+            )
+                ->values()
+                ->map(function ($question, $index) {
+                    return [
+                        'question_number' => $index + 1,
+
+                        'question_id' => (string) $question['id'],
+
+                        'type' => $question['type'] ?? null,
+
+                        // ĐÚNG key frontend đang gửi
+                        'question' => $question['question'] ?? '',
+
+                        // ĐÚNG key frontend đang gửi
+                        'options' => $question['options'] ?? null,
+
+                        'correct_answer' =>
+                        $question['correct_answer'] ?? null,
+                    ];
+                })
+                ->all(),
+        ];
+
+        $prompt = QuizPrompt::reviewQuizJson($payload);
+
+        $data = $service->reviewQuizCached(
+            $prompt,
+            $payload,
+            Auth::id()
+        );
+
+        return response()->json($data);
     }
 }

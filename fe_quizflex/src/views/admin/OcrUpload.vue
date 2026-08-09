@@ -24,51 +24,6 @@
           quiz.
         </p>
 
-        <div
-          class="mt-6 grid gap-3 rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface-soft)] p-4"
-        >
-          <p
-            class="text-xs font-black uppercase tracking-[0.18em] text-[var(--muted)]"
-          >
-            Chọn loại đề trước khi OCR
-          </p>
-
-          <div class="flex flex-wrap gap-3">
-            <button
-              type="button"
-              class="rounded-full px-4 py-2 text-sm font-black transition disabled:cursor-not-allowed disabled:opacity-50"
-              :disabled="isUploading"
-              :class="
-                ocrMode === 'normal'
-                  ? 'bg-[var(--primary)] text-white'
-                  : 'bg-[var(--chip-active)] text-[var(--muted)]'
-              "
-              @click="ocrMode = 'normal'"
-            >
-              Đề thường
-            </button>
-
-            <button
-              type="button"
-              class="rounded-full px-4 py-2 text-sm font-black transition disabled:cursor-not-allowed disabled:opacity-50"
-              :disabled="isUploading"
-              :class="
-                ocrMode === 'math'
-                  ? 'bg-[var(--primary)] text-white'
-                  : 'bg-[var(--chip-active)] text-[var(--muted)]'
-              "
-              @click="ocrMode = 'math'"
-            >
-              Đề toán / có công thức
-            </button>
-          </div>
-
-          <p class="text-xs leading-6 text-[var(--muted)]">
-            Đề toán sẽ yêu cầu AI bọc công thức bằng $...$ để editor tự render
-            MathLive.
-          </p>
-        </div>
-
         <label
           :class="[
             'mt-6 grid min-h-[260px] place-items-center rounded-[2rem] border-2 border-dashed border-[var(--border-strong)] bg-[var(--chip-active)] p-8 text-center transition duration-300',
@@ -345,11 +300,19 @@
                 min="1"
                 max="1440"
                 class="w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm font-semibold text-[var(--text)] outline-none"
-                @input="markDirty"
+                :class="getValidationClass('quiz.duration')"
+                data-validation-key="quiz.duration"
+                @input="handleValidatedInput('quiz.duration')"
               />
 
               <span class="text-sm font-bold text-[var(--muted)]">phút</span>
             </div>
+            <p
+              v-if="validationErrors['quiz.duration']"
+              class="mt-2 text-xs font-bold text-rose-400"
+            >
+              {{ validationErrors["quiz.duration"] }}
+            </p>
           </div>
 
           <div>
@@ -363,8 +326,16 @@
               min="1"
               max="1000"
               class="mt-2 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm font-semibold text-[var(--text)] outline-none"
-              @input="markDirty"
+              :class="getValidationClass('quiz.default_points')"
+              data-validation-key="quiz.default_points"
+              @input="handleValidatedInput('quiz.default_points')"
             />
+            <p
+              v-if="validationErrors['quiz.default_points']"
+              class="mt-2 text-xs font-bold text-rose-400"
+            >
+              {{ validationErrors["quiz.default_points"] }}
+            </p>
           </div>
 
           <div>
@@ -416,6 +387,15 @@
           </div>
 
           <div class="flex flex-wrap gap-2">
+            <button
+              type="button"
+              class="rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-1 text-xs font-black text-[var(--text)]"
+              :aria-expanded="aiAssistantOpen"
+              @click="aiAssistantOpen = !aiAssistantOpen"
+            >
+              {{ aiAssistantOpen ? "Thu gọn" : "Mở gợi ý" }}
+            </button>
+
             <span
               class="rounded-full bg-[var(--chip-active)] px-3 py-1 text-xs font-black text-[var(--muted)]"
             >
@@ -437,176 +417,194 @@
           </div>
         </div>
 
-        <div v-if="selectedQuestions.length" class="mt-3 flex flex-wrap gap-2">
-          <span
-            v-for="(question, index) in selectedQuestions"
-            :key="question.id"
-            class="rounded-full bg-[var(--chip-active)] px-3 py-1 text-xs font-black text-[var(--muted)]"
-          >
-            Câu {{ getQuestionNumber(question.id) }}
-          </span>
-        </div>
-
-        <div class="mt-4 grid gap-4 md:grid-cols-[1.5fr_1fr_1fr_auto]">
-          <div>
-            <label class="text-xs font-black uppercase text-[var(--muted)]">
-              AI muốn làm gì?
-            </label>
-
-            <select
-              v-model="aiOptions.action"
-              class="mt-2 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm font-bold text-[var(--text)] outline-none"
-            >
-              <option value="similar">Tạo câu tương tự</option>
-              <option value="generate_by_difficulty">Tạo theo độ khó</option>
-              <option value="better_options">Tạo đáp án nhiễu</option>
-              <option value="analyze_quiz">Đánh giá toàn bộ đề</option>
-            </select>
-          </div>
-
-          <div>
-            <label class="text-xs font-black uppercase text-[var(--muted)]">
-              Độ khó
-            </label>
-
-            <select
-              v-model="aiOptions.difficulty"
-              class="mt-2 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm font-bold text-[var(--text)] outline-none"
-              :disabled="aiOptions.action === 'analyze_quiz'"
-            >
-              <option value="easy">Dễ</option>
-              <option value="medium">Trung bình</option>
-              <option value="hard">Khó</option>
-              <option value="advanced">Nâng cao</option>
-            </select>
-          </div>
-
-          <div>
-            <label class="text-xs font-black uppercase text-[var(--muted)]">
-              Số câu
-            </label>
-
-            <input
-              v-model.number="aiOptions.count"
-              type="number"
-              min="1"
-              max="20"
-              class="mt-2 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm font-bold text-[var(--text)] outline-none"
-              :disabled="aiOptions.action === 'analyze_quiz'"
-            />
-          </div>
-
-          <div class="flex items-end">
-            <button
-              type="button"
-              class="btn-primary w-full"
-              @click="generateAiSuggestions(aiOptions.action)"
-            >
-              Tạo gợi ý
-            </button>
-          </div>
-        </div>
         <div
-          v-if="aiLoading"
-          class="mt-5 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm font-bold text-[var(--muted)]"
+          v-show="aiAssistantOpen"
+          ref="aiAssistantContent"
+          class="ai-assistant-content"
         >
-          AI đang xử lý...
-        </div>
-
-        <div v-if="aiSuggestions.length" class="mt-5 grid gap-4">
           <div
-            v-for="item in aiSuggestions"
-            :key="item.id"
-            class="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4"
+            v-if="selectedQuestions.length"
+            class="mt-3 flex flex-wrap gap-2"
           >
-            <template v-if="item.type === 'analysis'">
-              <p class="text-sm font-black text-[var(--primary)]">
-                Đánh giá nhanh bộ đề
-              </p>
+            <span
+              v-for="(question, index) in selectedQuestions"
+              :key="question.id"
+              class="rounded-full bg-[var(--chip-active)] px-3 py-1 text-xs font-black text-[var(--muted)]"
+            >
+              Câu {{ getQuestionNumber(question.id) }}
+            </span>
+          </div>
 
-              <p class="mt-3 text-sm font-bold leading-7 text-[var(--text)]">
-                {{ item.summary }}
-              </p>
+          <div class="mt-4 grid gap-4 md:grid-cols-[1.5fr_1fr_1fr_auto]">
+            <div>
+              <label class="text-xs font-black uppercase text-[var(--muted)]">
+                AI muốn làm gì?
+              </label>
 
-              <div class="mt-3 grid gap-2">
-                <p
-                  v-for="point in item.recommendations"
-                  :key="point"
-                  class="rounded-xl bg-[var(--surface-soft)] p-3 text-xs font-bold leading-6 text-[var(--muted)]"
-                >
-                  {{ point }}
-                </p>
-                <div
-                  v-if="item.actions?.length"
-                  class="mt-4 flex flex-wrap gap-2"
-                >
-                  <button
-                    v-for="actionItem in item.actions"
-                    :key="actionItem.label"
-                    type="button"
-                    class="rounded-full bg-[var(--primary)] px-4 py-2 text-xs font-black text-white"
-                    @click="runAnalysisAction(actionItem)"
-                  >
-                    {{ actionItem.label }}
-                  </button>
-                </div>
-              </div>
-            </template>
-
-            <template v-else>
-              <div class="flex flex-wrap items-center justify-between gap-2">
-                <p class="text-sm font-black text-[var(--primary)]">
-                  {{ item.type_label }}
-                </p>
-
-                <span
-                  class="rounded-full bg-[var(--chip-active)] px-3 py-1 text-xs font-black text-[var(--muted)]"
-                >
-                  {{ item.difficulty_label }}
-                </span>
-              </div>
-
-              <p class="mt-3 text-sm font-bold leading-7 text-[var(--text)]">
-                {{ item.question }}
-              </p>
-
-              <div
-                v-if="item.options"
-                class="mt-3 grid gap-2 text-xs font-bold text-[var(--muted)]"
+              <select
+                v-model="aiOptions.action"
+                class="mt-2 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm font-bold text-[var(--text)] outline-none"
               >
-                <p v-for="(value, key) in item.options" :key="key">
-                  {{ key }}. {{ value }}
-                </p>
-              </div>
+                <option value="similar">Tạo câu tương tự</option>
+                <option value="generate_by_difficulty">Tạo theo độ khó</option>
+                <option value="better_options">Tạo đáp án nhiễu</option>
+              </select>
+            </div>
 
-              <div class="mt-3 rounded-xl bg-[var(--surface-soft)] p-3">
-                <p class="text-xs font-black uppercase text-[var(--muted)]">
-                  💡 Tóm tắt hướng giải
-                </p>
+            <div>
+              <label class="text-xs font-black uppercase text-[var(--muted)]">
+                Độ khó
+              </label>
 
-                <p class="mt-2 text-xs leading-6 text-[var(--muted)]">
-                  {{ item.solution_summary }}
-                </p>
-              </div>
+              <select
+                v-model="aiOptions.difficulty"
+                class="mt-2 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm font-bold text-[var(--text)] outline-none"
+                :disabled="aiOptions.action === 'analyze_quiz'"
+              >
+                <option value="easy">Dễ</option>
+                <option value="medium">Trung bình</option>
+                <option value="hard">Khó</option>
+                <option value="advanced">Nâng cao</option>
+              </select>
+            </div>
 
-              <div class="mt-3 flex flex-wrap gap-2">
-                <span
-                  v-for="point in item.knowledge_points"
-                  :key="point"
-                  class="rounded-full bg-[var(--chip-active)] px-3 py-1 text-xs font-black text-[var(--muted)]"
-                >
-                  {{ point }}
-                </span>
-              </div>
+            <div>
+              <label class="text-xs font-black uppercase text-[var(--muted)]">
+                Số câu
+              </label>
 
+              <input
+                v-model.number="aiOptions.count"
+                type="number"
+                min="1"
+                max="20"
+                class="mt-2 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm font-bold text-[var(--text)] outline-none"
+                :disabled="aiOptions.action === 'analyze_quiz'"
+              />
+            </div>
+
+            <div class="flex items-end">
               <button
                 type="button"
-                class="mt-4 rounded-full bg-[var(--primary)] px-4 py-2 text-xs font-black text-white"
-                @click="applyAiSuggestion(item)"
+                class="btn-primary w-full"
+                @click="generateAiSuggestions(aiOptions.action)"
               >
-                Thêm vào đề
+                Tạo gợi ý
               </button>
-            </template>
+            </div>
+          </div>
+          <div
+            v-if="aiLoading"
+            class="mt-5 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm font-bold text-[var(--muted)]"
+          >
+            AI đang xử lý...
+          </div>
+
+          <div v-if="aiSuggestions.length" class="mt-5 grid gap-4">
+            <div
+              v-for="item in aiSuggestions"
+              :key="item.id"
+              class="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4"
+            >
+              <template v-if="item.type === 'analysis'">
+                <p class="text-sm font-black text-[var(--primary)]">
+                  Đánh giá nhanh bộ đề
+                </p>
+
+                <p class="mt-3 text-sm font-bold leading-7 text-[var(--text)]">
+                  {{ item.summary }}
+                </p>
+
+                <div class="mt-3 grid gap-2">
+                  <p
+                    v-for="point in item.recommendations"
+                    :key="point"
+                    class="rounded-xl bg-[var(--surface-soft)] p-3 text-xs font-bold leading-6 text-[var(--muted)]"
+                  >
+                    {{ point }}
+                  </p>
+                  <div
+                    v-if="item.actions?.length"
+                    class="mt-4 flex flex-wrap gap-2"
+                  >
+                    <button
+                      v-for="actionItem in item.actions"
+                      :key="actionItem.label"
+                      type="button"
+                      class="rounded-full bg-[var(--primary)] px-4 py-2 text-xs font-black text-white"
+                      @click="runAnalysisAction(actionItem)"
+                    >
+                      {{ actionItem.label }}
+                    </button>
+                  </div>
+                </div>
+              </template>
+
+              <template v-else>
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                  <p class="text-sm font-black text-[var(--primary)]">
+                    {{ item.type_label }}
+                  </p>
+
+                  <span
+                    class="rounded-full bg-[var(--chip-active)] px-3 py-1 text-xs font-black text-[var(--muted)]"
+                  >
+                    {{ item.difficulty_label }}
+                  </span>
+                </div>
+
+                <p
+                  data-ai-latex
+                  class="mt-3 text-sm font-bold leading-7 text-[var(--text)]"
+                >
+                  {{ item.question }}
+                </p>
+
+                <div
+                  v-if="item.options"
+                  class="mt-3 grid gap-2 text-xs font-bold text-[var(--muted)]"
+                >
+                  <p
+                    v-for="(value, key) in item.options"
+                    :key="key"
+                    data-ai-latex
+                  >
+                    {{ key }}. {{ value }}
+                  </p>
+                </div>
+
+                <div class="mt-3 rounded-xl bg-[var(--surface-soft)] p-3">
+                  <p class="text-xs font-black uppercase text-[var(--muted)]">
+                    💡 Tóm tắt hướng giải
+                  </p>
+
+                  <p
+                    data-ai-latex
+                    class="mt-2 text-xs leading-6 text-[var(--muted)]"
+                  >
+                    {{ item.solution_summary }}
+                  </p>
+                </div>
+
+                <div class="mt-3 flex flex-wrap gap-2">
+                  <span
+                    v-for="point in item.knowledge_points"
+                    :key="point"
+                    class="rounded-full bg-[var(--chip-active)] px-3 py-1 text-xs font-black text-[var(--muted)]"
+                  >
+                    {{ point }}
+                  </span>
+                </div>
+
+                <button
+                  type="button"
+                  class="mt-4 rounded-full bg-[var(--primary)] px-4 py-2 text-xs font-black text-white"
+                  @click="applyAiSuggestion(item)"
+                >
+                  Thêm vào đề
+                </button>
+              </template>
+            </div>
           </div>
         </div>
       </div>
@@ -616,7 +614,13 @@
           v-for="(q, index) in questions"
           :key="q.id"
           class="scroll-mb-28 rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface-soft)] p-5"
-          :class="getQuestionValidationClass(q)"
+          :class="[
+            getQuestionValidationClass(q),
+            {
+              'ai-review-highlight': aiReviewHighlightId === q.id,
+              'ai-suggestion-highlight': aiSuggestionHighlightId === q.id,
+            },
+          ]"
           :data-question-id="q.id"
         >
           <div class="flex flex-wrap items-center justify-between gap-3">
@@ -1094,7 +1098,20 @@
         >
           + Điền đáp án
         </button>
+        <button
+          class="btn-ghost"
+          type="button"
+          :disabled="aiReviewLoading || saving || !questions.length"
+          @click="reviewQuizWithAi"
+        >
+          <template v-if="aiReviewLoading"> AI đang phân tích... </template>
 
+          <template v-else-if="!aiReviewResult"> ✨ AI Review </template>
+
+          <template v-else-if="aiReviewIsStale"> ⚠️ Xem AI Review cũ </template>
+
+          <template v-else> ✓ Xem AI Review </template>
+        </button>
         <button
           class="btn-primary"
           type="button"
@@ -1106,20 +1123,241 @@
       </div>
     </div>
   </Teleport>
+  <Teleport to="body">
+    <Transition name="ai-review">
+      <div v-if="aiReviewOpen" class="fixed inset-0 z-[60]">
+        <!-- overlay -->
+        <div
+          class="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
+          @click="aiReviewOpen = false"
+        ></div>
 
+        <!-- drawer -->
+        <aside
+          class="absolute bottom-0 right-0 top-0 w-full max-w-[480px] overflow-y-auto border-l border-[var(--border)] bg-[var(--surface)] p-6 shadow-2xl"
+        >
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <p
+                class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]"
+              >
+                AI Review
+              </p>
 
+              <h2 class="mt-2 text-2xl font-black text-[var(--text)]">
+                Phân tích bộ đề
+              </h2>
+
+              <p class="mt-2 text-sm text-[var(--muted)]">
+                AI chỉ đưa ra nhận xét và gợi ý, không tự thay đổi câu hỏi.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              class="grid h-10 w-10 place-items-center rounded-full border border-[var(--border)] bg-[var(--surface-soft)] font-black text-[var(--text)]"
+              @click="aiReviewOpen = false"
+            >
+              ×
+            </button>
+          </div>
+          <div
+            v-if="aiReviewResult && aiReviewIsStale && !aiReviewLoading"
+            class="mt-6 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4"
+          >
+            <div class="flex items-start gap-3">
+              <span class="text-xl"> ⚠️ </span>
+
+              <div class="flex-1">
+                <p class="text-sm font-black text-amber-300">
+                  Quiz đã thay đổi
+                </p>
+
+                <p class="mt-1 text-xs leading-6 text-[var(--muted)]">
+                  Kết quả bên dưới là kết quả phân tích trước khi Quiz được
+                  chỉnh sửa.
+                </p>
+
+                <p class="mt-2 text-xs font-bold text-[var(--muted)]">
+                  Việc xem kết quả cũ không sử dụng thêm AI.
+                </p>
+
+                <button
+                  type="button"
+                  class="mt-4 rounded-full bg-[var(--primary)] px-4 py-2 text-xs font-black text-white disabled:opacity-50"
+                  :disabled="aiReviewLoading"
+                  @click="refreshAiReview"
+                >
+                  ✨ Phân tích lại bằng AI
+                </button>
+              </div>
+            </div>
+          </div>
+          <!-- Loading -->
+          <div
+            v-if="aiReviewLoading"
+            class="mt-8 rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-5"
+          >
+            <p class="font-black text-[var(--text)]">
+              ✨ AI đang đọc toàn bộ Quiz...
+            </p>
+
+            <p class="mt-2 text-sm text-[var(--muted)]">
+              Đang kiểm tra nội dung, phân bố và các câu cần xem lại.
+            </p>
+          </div>
+
+          <template v-else-if="aiReviewResult">
+            <!-- Tổng quan -->
+            <section class="mt-6">
+              <h3 class="text-sm font-black text-[var(--text)]">Tổng quan</h3>
+
+              <div
+                class="mt-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-4"
+              >
+                <p class="text-sm leading-7 text-[var(--muted)]">
+                  {{ aiReviewResult.summary }}
+                </p>
+              </div>
+            </section>
+
+            <!-- Topics -->
+            <section v-if="aiReviewResult.topics?.length" class="mt-6">
+              <h3 class="text-sm font-black text-[var(--text)]">
+                Phân bố nội dung
+              </h3>
+
+              <div class="mt-3 grid gap-2">
+                <div
+                  v-for="topic in aiReviewResult.topics"
+                  :key="topic.name"
+                  class="flex items-center justify-between rounded-xl border border-[var(--border)] bg-[var(--surface-soft)] px-4 py-3"
+                >
+                  <span class="text-sm font-bold text-[var(--text)]">
+                    {{ topic.name }}
+                  </span>
+
+                  <span class="text-xs font-black text-[var(--primary)]">
+                    {{ topic.count }} câu
+                    <template v-if="topic.percentage">
+                      · {{ topic.percentage }}%
+                    </template>
+                  </span>
+                </div>
+              </div>
+            </section>
+
+            <!-- Issues -->
+            <section v-if="aiReviewResult.issues?.length" class="mt-6">
+              <div class="flex items-center justify-between">
+                <h3 class="text-sm font-black text-[var(--text)]">
+                  Điểm nên xem lại
+                </h3>
+
+                <span
+                  class="rounded-full bg-amber-500/10 px-3 py-1 text-xs font-black text-amber-400"
+                >
+                  {{ aiReviewResult.issues.length }}
+                </span>
+              </div>
+
+              <div class="mt-3 grid gap-3">
+                <article
+                  v-for="(issue, index) in aiReviewResult.issues"
+                  :key="`${issue.question_id}-${index}`"
+                  class="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4"
+                >
+                  <div class="flex items-start gap-3">
+                    <span class="text-lg">⚠️</span>
+
+                    <div class="min-w-0 flex-1">
+                      <p
+                        v-if="issue.question_number"
+                        class="text-xs font-black uppercase text-amber-400"
+                      >
+                        Câu {{ issue.question_number }}
+                      </p>
+
+                      <p
+                        class="mt-1 text-sm font-semibold leading-6 text-[var(--text)]"
+                      >
+                        {{ issue.message }}
+                      </p>
+
+                      <button
+                        v-if="issue.question_id"
+                        type="button"
+                        class="mt-3 text-xs font-black text-[var(--primary)]"
+                        @click="
+                          goToReviewQuestion(issue.question_id);
+                          aiReviewOpen = false;
+                        "
+                      >
+                        Đi tới câu →
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              </div>
+            </section>
+
+            <!-- Suggestions -->
+            <section v-if="aiReviewResult.suggestions?.length" class="mt-6">
+              <h3 class="text-sm font-black text-[var(--text)]">
+                Gợi ý cải thiện
+              </h3>
+
+              <div class="mt-3 grid gap-2">
+                <div
+                  v-for="(suggestion, index) in aiReviewResult.suggestions"
+                  :key="index"
+                  class="rounded-xl border border-[var(--border)] bg-[var(--surface-soft)] p-4"
+                >
+                  <p class="text-sm leading-6 text-[var(--muted)]">
+                    💡 {{ suggestion }}
+                  </p>
+                </div>
+              </div>
+            </section>
+          </template>
+        </aside>
+      </div>
+    </Transition>
+  </Teleport>
+  <!-- Custom Toast Message -->
+  <!-- <div
+    v-if="toast.isOpen"
+    class="fixed bottom-24 right-6 z-50 flex items-center gap-3 rounded-2xl border px-4 py-3 shadow-lg backdrop-blur-xl transition-all duration-300"
+    :class="
+      toast.type === 'success'
+        ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400 shadow-[0_12px_40px_rgba(16,185,129,0.1)]'
+        : 'border-rose-500/30 bg-rose-500/10 text-rose-400 shadow-[0_12px_40px_rgba(244,63,94,0.1)]'
+    "
+  >
+    <span class="text-base">{{ toast.type === "success" ? "✅" : "❌" }}</span>
+    <span class="text-sm font-bold">{{ toast.message }}</span>
+  </div> -->
 </template>
 
 <script setup>
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, inject } from "vue";
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  inject,
+} from "vue";
 import { useRoute, useRouter } from "vue-router";
 import draggable from "vuedraggable";
-import "mathlive";
+import { renderMathInElement } from "mathlive";
 import "mathlive/static.css";
 import { importOcrQuiz, ocrApi, aiQuizApi } from "@/services/api";
 
-const showConfirm = inject('showConfirm');
-const showToast = inject('showToast');
+// ==================== 1. KHỞI TẠO VÀ CẤU HÌNH ====================
+
+const showConfirm = inject("showConfirm");
+const showToast = inject("showToast");
 
 const route = useRoute();
 const router = useRouter();
@@ -1130,6 +1368,8 @@ const questionBase = computed(() =>
     : "/admin/questions",
 );
 
+// ==================== 2. TRẠNG THÁI GIAO DIỆN ====================
+
 const fileInput = ref(null);
 const fileName = ref("");
 const progress = ref(0);
@@ -1138,24 +1378,50 @@ const errorMessage = ref("");
 const loadingText = ref("Đang tải file...");
 const progressTimer = ref(null);
 const ALLOWED_OCR_TYPES = [
-  "image/png", "image/jpeg", "image/jpg", "image/webp", "image/bmp", "image/tiff",
+  "image/png",
+  "image/jpeg",
+  "image/jpg",
+  "image/webp",
+  "image/bmp",
+  "image/tiff",
   "application/pdf",
 ];
 const MAX_OCR_FILE_SIZE = 20 * 1024 * 1024;
+const AI_LATEX_RENDER_OPTIONS = {
+  TeX: {
+    processEnvironments: true,
+    delimiters: {
+      inline: [
+        ["\\(", "\\)"],
+        ["$", "$"],
+      ],
+      display: [
+        ["$$", "$$"],
+        ["\\[", "\\]"],
+      ],
+    },
+  },
+};
 
 const currentView = ref("upload");
-const ocrMode = ref("normal");
+const ocrMode = ref("math");
 const questions = ref([]);
 const questionImageInputs = ref([]);
 const showReadyMessage = ref(false);
 const saving = ref(false);
+const aiAssistantOpen = ref(true);
+const aiAssistantContent = ref(null);
+const aiReviewOpen = ref(false);
+const aiReviewLoading = ref(false);
+const aiReviewResult = ref(null);
+const aiReviewHighlightId = ref(null);
+const aiSuggestionHighlightId = ref(null);
+const lastAiReviewQuestions = ref({});
 const isDirty = ref(false);
 const selectedQuestionIds = ref([]);
 const aiSuggestions = ref([]);
 const aiLoading = ref(false);
 const validationErrors = ref({});
-
-
 
 const aiOptions = ref({
   action: "similar",
@@ -1166,15 +1432,6 @@ const aiOptions = ref({
 
 const getQuestionNumber = (id) => {
   return questions.value.findIndex((q) => q.id === id) + 1;
-};
-
-const runAnalysisAction = async (actionItem) => {
-  aiOptions.value.action = actionItem.action;
-  aiOptions.value.difficulty = actionItem.difficulty || "medium";
-  aiOptions.value.count = actionItem.count || 3;
-  aiOptions.value.scope = "all";
-
-  await generateAiSuggestions(actionItem.action);
 };
 
 const selectedQuestions = computed(() => {
@@ -1208,6 +1465,9 @@ const suggestions = [
   "Giữ visibility: Private trước khi duyệt",
 ];
 
+// ==================== 3. VALIDATE VÀ THEO DÕI THAY ĐỔI ====================
+
+// Đánh dấu dữ liệu đã thay đổi nhưng chưa lưu.
 const markDirty = () => {
   isDirty.value = true;
 };
@@ -1246,6 +1506,7 @@ const handleValidatedInput = (key) => {
   markDirty();
 };
 
+// Cuộn đến trường đầu tiên đang lỗi.
 const scrollToValidationError = async (key) => {
   await nextTick();
 
@@ -1266,6 +1527,7 @@ const scrollToValidationError = async (key) => {
   }, 450);
 };
 
+// Hiển thị danh sách lỗi validate trên giao diện.
 const showValidationErrors = async (errors) => {
   validationErrors.value = errors;
   const firstKey = Object.keys(errors)[0];
@@ -1278,6 +1540,7 @@ const showValidationErrors = async (errors) => {
   return Boolean(firstKey);
 };
 
+// Kiểm tra dữ liệu Quiz trước khi gửi lên server.
 const validateQuizPayload = async (payload) => {
   const errors = {};
 
@@ -1318,6 +1581,7 @@ const validateQuizPayload = async (payload) => {
   return !(await showValidationErrors(errors));
 };
 
+// Đổi key validate của server sang key trên giao diện.
 const mapServerValidationKey = (serverKey) => {
   if (serverKey === "title" || serverKey === "quiz.title") {
     return "quiz.title";
@@ -1343,6 +1607,7 @@ const mapServerValidationKey = (serverKey) => {
   return questionValidationKey(question);
 };
 
+// Gắn lỗi server vào đúng câu hỏi hoặc đáp án.
 const applyServerValidationErrors = async (serverErrors = {}) => {
   const errors = {};
 
@@ -1356,6 +1621,9 @@ const applyServerValidationErrors = async (serverErrors = {}) => {
   return showValidationErrors(errors);
 };
 
+// ==================== 4. CẢNH BÁO RỜI TRANG ====================
+
+// Cảnh báo khi reload hoặc đóng tab nếu chưa lưu.
 const beforeUnloadHandler = (event) => {
   if (!isDirty.value) return;
 
@@ -1370,6 +1638,8 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener("beforeunload", beforeUnloadHandler);
 });
+
+// ==================== 5. XỬ LÝ NỘI DUNG TOÁN HỌC ====================
 
 const ocrLines = computed(() => {
   if (!questions.value.length) {
@@ -1395,6 +1665,7 @@ const hasMath = (text = "") => {
   );
 };
 
+// Tách văn bản và công thức LaTeX thành các block sửa riêng.
 const parseBlocks = (text = "") => {
   const value = String(text || "");
   const regex = /\$(.*?)\$/g;
@@ -1423,6 +1694,7 @@ const parseBlocks = (text = "") => {
   return blocks;
 };
 
+// Ghép các block thành chuỗi để lưu dữ liệu.
 const blocksToString = (blocks = []) => {
   return blocks
     .map((block) => {
@@ -1432,6 +1704,8 @@ const blocksToString = (blocks = []) => {
     .join("")
     .trim();
 };
+
+// ==================== 6. CHUẨN HÓA CÂU HỎI ====================
 
 const normalizeOptions = (options, type = "single_choice") => {
   if (type === "fill_blank") return null;
@@ -1459,6 +1733,7 @@ const getQuestionTypeLabel = (type) => {
   return "Một đáp án";
 };
 
+// Chuẩn hóa một câu hỏi về đúng cấu trúc của trình sửa.
 const normalizeQuestion = (item = {}) => {
   const type = item.type || "single_choice";
   const questionText = item.question || "";
@@ -1512,6 +1787,9 @@ const getQuestionText = (question) => {
   return question.question || "";
 };
 
+// ==================== 7. THAO TÁC TRONG TRÌNH SỬA ====================
+
+// Chuyển giữa chế độ nhập thường và chế độ Math.
 const setQuestionMode = (question, mode) => {
   if (!question.allow_math && mode === "math") return;
 
@@ -1533,6 +1811,7 @@ const setQuestionMode = (question, mode) => {
   markDirty();
 };
 
+// Bổ sung đủ các đáp án mặc định khi đổi loại câu hỏi.
 const ensureDefaultOptions = (question) => {
   if (!question.options) {
     question.options = {
@@ -1554,6 +1833,7 @@ const ensureDefaultOptions = (question) => {
   });
 };
 
+// Cập nhật dữ liệu khi thay đổi loại câu hỏi.
 const changeQuestionType = (question) => {
   if (question.type === "fill_blank") {
     question.options = null;
@@ -1655,6 +1935,19 @@ const getMathBlockStyle = (value = "") => {
   };
 };
 
+const removeBlock = (blocks, index) => {
+  blocks.splice(index, 1);
+
+  if (!blocks.length) {
+    blocks.push(createBlock("text", ""));
+  }
+
+  markDirty();
+};
+
+// ==================== 8. ẢNH CỦA CÂU HỎI ====================
+
+// Lưu ref của input ảnh theo vị trí câu hỏi.
 const setQuestionImageInputRef = (el, index) => {
   if (el) questionImageInputs.value[index] = el;
 };
@@ -1673,6 +1966,7 @@ const fileToDataUrl = (file) => {
   });
 };
 
+// Kiểm tra và thêm ảnh vào câu hỏi.
 const handleQuestionImage = async (event, question) => {
   const file = event.target.files?.[0];
   if (!file) return;
@@ -1711,16 +2005,9 @@ const removeQuestionImage = (question, index) => {
   markDirty();
 };
 
-const removeBlock = (blocks, index) => {
-  blocks.splice(index, 1);
+// ==================== 9. TẠO PAYLOAD LƯU QUIZ ====================
 
-  if (!blocks.length) {
-    blocks.push(createBlock("text", ""));
-  }
-
-  markDirty();
-};
-
+// Tạo danh sách câu hỏi để gửi lên API.
 const buildSavePayload = () => {
   return questions.value.map((q) => {
     const question =
@@ -1753,6 +2040,7 @@ const buildSavePayload = () => {
   });
 };
 
+// Tạo payload đầy đủ gồm thông tin Quiz và câu hỏi.
 const buildQuizPayload = () => {
   return {
     quiz: {
@@ -1768,6 +2056,9 @@ const buildQuizPayload = () => {
   };
 };
 
+// ==================== 10. UPLOAD VÀ OCR ====================
+
+// Chạy thanh tiến trình giả trong lúc chờ API OCR.
 const startFakeProgress = () => {
   stopFakeProgress();
 
@@ -1790,6 +2081,7 @@ const startFakeProgress = () => {
   }, 800);
 };
 
+// Dừng thanh tiến trình OCR.
 const stopFakeProgress = () => {
   if (progressTimer.value) {
     clearInterval(progressTimer.value);
@@ -1797,6 +2089,7 @@ const stopFakeProgress = () => {
   }
 };
 
+// Kiểm tra file và gọi API OCR.
 const handleFile = async (event) => {
   if (isUploading.value) return;
 
@@ -1804,7 +2097,8 @@ const handleFile = async (event) => {
   if (!file) return;
 
   if (!ALLOWED_OCR_TYPES.includes(file.type)) {
-    errorMessage.value = "Định dạng file không được hỗ trợ. Chỉ chấp nhận PNG, JPG, JPEG, WEBP, BMP, TIFF, PDF.";
+    errorMessage.value =
+      "Định dạng file không được hỗ trợ. Chỉ chấp nhận PNG, JPG, JPEG, WEBP, BMP, TIFF, PDF.";
     event.target.value = "";
     return;
   }
@@ -1834,13 +2128,17 @@ const handleFile = async (event) => {
     const quizData = responseData.data || responseData.quizOrc || responseData;
 
     questions.value = normalizeQuestions(quizData.questions || []);
+    aiReviewResult.value = null;
+    lastAiReviewQuestions.value = null;
+    aiReviewOpen.value = false;
 
     sessionStorage.setItem(
       "quizflex_questions",
       JSON.stringify(buildSavePayload()),
     );
 
-    isDirty.value = false;
+    // Dữ liệu OCR mới tạo vẫn chưa được lưu vào database.
+    isDirty.value = true;
     showReadyMessage.value = true;
 
     setTimeout(() => {
@@ -1865,6 +2163,9 @@ const handleFile = async (event) => {
   }
 };
 
+// ==================== 11. ĐIỀU HƯỚNG VÀ ĐẶT LẠI ====================
+
+// Xin xác nhận trước khi bỏ dữ liệu chưa lưu.
 const confirmAndRun = (action) => {
   if (!isDirty.value) {
     action();
@@ -1875,21 +2176,25 @@ const confirmAndRun = (action) => {
     showConfirm(
       "Xác nhận rời đi",
       "Bạn đang có thay đổi chưa lưu. Tiếp tục sẽ mất dữ liệu.",
-      action
+      action,
     );
   } else {
-    if (window.confirm("Bạn đang có thay đổi chưa lưu. Tiếp tục sẽ mất dữ liệu.")) {
+    if (
+      window.confirm("Bạn đang có thay đổi chưa lưu. Tiếp tục sẽ mất dữ liệu.")
+    ) {
       action();
     }
   }
 };
 
+// Quay lại màn hình upload OCR.
 const goBackUpload = () => {
   confirmAndRun(() => {
     currentView.value = "upload";
   });
 };
 
+// Xóa file và toàn bộ dữ liệu đang chỉnh sửa.
 const resetFile = () => {
   if (isUploading.value) return;
   confirmAndRun(() => {
@@ -1913,6 +2218,10 @@ const resetFile = () => {
       default_points: 10,
       status: "draft",
     };
+    aiReviewResult.value = null;
+    lastAiReviewQuestions.value = null;
+    aiReviewOpen.value = false;
+    aiReviewHighlightId.value = null;
 
     sessionStorage.removeItem("quizflex_questions");
     sessionStorage.removeItem("quizflex_quiz_payload");
@@ -1923,6 +2232,9 @@ const resetFile = () => {
   });
 };
 
+// ==================== 12. QUẢN LÝ VÀ LƯU CÂU HỎI ====================
+
+// Thêm câu hỏi mới và cuộn xuống vị trí vừa thêm.
 const addQuestion = async (type = "single_choice") => {
   const newQuestion = normalizeQuestion({
     type,
@@ -1976,11 +2288,13 @@ const addQuestion = async (type = "single_choice") => {
   }, 450);
 };
 
+// Xóa một câu hỏi khỏi danh sách.
 const removeQuestion = (index) => {
   questions.value.splice(index, 1);
   markDirty();
 };
 
+// Kiểm tra nhanh dữ liệu trước khi lưu.
 const validateBeforeSave = () => {
   const title = quizInfo.value.title.trim();
   if (!title) return "Vui lòng nhập tên bộ đề trước khi lưu.";
@@ -2019,11 +2333,17 @@ const validateBeforeSave = () => {
         return `Câu ${index + 1} chưa chọn đáp án đúng.`;
       }
 
-      if (q.type === "multi_choice" && (!Array.isArray(q.correct_answer) || !q.correct_answer.length)) {
+      if (
+        q.type === "multi_choice" &&
+        (!Array.isArray(q.correct_answer) || !q.correct_answer.length)
+      ) {
         return `Câu ${index + 1} chưa chọn đáp án đúng.`;
       }
     } else {
-      if (!Array.isArray(q.correct_answer) || !q.correct_answer.some((answer) => String(answer).trim())) {
+      if (
+        !Array.isArray(q.correct_answer) ||
+        !q.correct_answer.some((answer) => String(answer).trim())
+      ) {
         return `Câu ${index + 1} chưa có đáp án điền đúng.`;
       }
     }
@@ -2032,14 +2352,12 @@ const validateBeforeSave = () => {
   return "";
 };
 
+// Lưu bộ đề qua API và chuyển sang trang danh sách.
 const saveQuestions = async () => {
-  const validationError = validateBeforeSave();
-  if (validationError) {
-    showToast(validationError, "error");
-    return;
-  }
-
   const payload = buildQuizPayload();
+
+  const isValid = await validateQuizPayload(payload);
+  if (!isValid) return;
 
   try {
     saving.value = true;
@@ -2071,10 +2389,36 @@ const saveQuestions = async () => {
   }
 };
 
+// ==================== 13. GỢI Ý CÂU HỎI BẰNG AI ====================
+
+// Chạy nhanh hành động AI được đề xuất trong phần phân tích.
+const runAnalysisAction = async (actionItem) => {
+  aiOptions.value.action = actionItem.action;
+  aiOptions.value.difficulty = actionItem.difficulty || "medium";
+  aiOptions.value.count = actionItem.count || 3;
+  aiOptions.value.scope = "all";
+
+  await generateAiSuggestions(actionItem.action);
+};
+
 const clearSelectedQuestions = () => {
   selectedQuestionIds.value = [];
 };
 
+// Render các đoạn LaTeX trong kết quả gợi ý AI.
+const renderAiSuggestionLatex = async () => {
+  await nextTick();
+
+  if (!aiAssistantContent.value) return;
+
+  aiAssistantContent.value
+    .querySelectorAll("[data-ai-latex]")
+    .forEach((element) =>
+      renderMathInElement(element, AI_LATEX_RENDER_OPTIONS),
+    );
+};
+
+// Gọi API để tạo gợi ý AI theo lựa chọn hiện tại.
 const generateAiSuggestions = async (key) => {
   const needSelected = ["similar", "better_options"];
 
@@ -2102,6 +2446,7 @@ const generateAiSuggestions = async (key) => {
     const { data } = await aiQuizApi.suggest(buildAiPayload(key));
 
     aiSuggestions.value = data.suggestions || [];
+    await renderAiSuggestionLatex();
   } catch (error) {
     showToast(error?.response?.data?.message || "AI gợi ý thất bại.", "error");
   } finally {
@@ -2109,27 +2454,271 @@ const generateAiSuggestions = async (key) => {
   }
 };
 
-const applyAiSuggestion = (item) => {
-  if (item.type === "fix" || item.type === "analysis") {
-    showToast("Mock: gợi ý này chỉ để xem, chưa áp dụng trực tiếp.", "error");
+// ==================== 14. AI REVIEW BỘ ĐỀ ====================
+
+// Chuẩn hóa dữ liệu dùng để so sánh các lần review.
+const getQuestionReviewData = (q) => {
+  return normalizeAiQuestion(q);
+};
+
+const getQuestionFingerprint = (q) => {
+  return JSON.stringify(getQuestionReviewData(q));
+};
+
+// Lấy các câu mới hoặc đã chỉnh sửa từ lần review trước.
+const getChangedReviewQuestions = () => {
+  // Chưa từng review -> gửi toàn bộ
+  if (!aiReviewResult.value) {
+    return questions.value;
+  }
+
+  return questions.value.filter((q) => {
+    const previous = lastAiReviewQuestions.value[q.id];
+
+    // Câu mới
+    if (!previous) {
+      return true;
+    }
+
+    // Câu đã sửa
+    return previous !== getQuestionFingerprint(q);
+  });
+};
+
+// Lưu dấu vết các câu vừa được AI review.
+const saveAiReviewQuestionSnapshots = (reviewedQuestions) => {
+  const next = {
+    ...lastAiReviewQuestions.value,
+  };
+
+  reviewedQuestions.forEach((q) => {
+    next[q.id] = getQuestionFingerprint(q);
+  });
+
+  lastAiReviewQuestions.value = next;
+};
+
+// Tạo payload review toàn bộ hoặc các câu đã thay đổi.
+const buildAiReviewPayload = (changedQuestions, fullReview = false) => {
+  const quizPayload = buildQuizPayload();
+
+  return {
+    action: "review",
+
+    mode: fullReview ? "full" : "incremental",
+
+    quiz: quizPayload.quiz,
+
+    questions: changedQuestions.map((q) => normalizeAiQuestion(q)),
+  };
+};
+
+// Kiểm tra kết quả review có cũ hơn dữ liệu hiện tại không.
+const aiReviewIsStale = computed(() => {
+  // Chưa từng Review
+  if (!aiReviewResult.value) {
+    return false;
+  }
+
+  const reviewedIds = Object.keys(lastAiReviewQuestions.value);
+
+  // Số câu hiện tại khác số câu đã Review
+  // => có thêm hoặc xóa câu
+  if (reviewedIds.length !== questions.value.length) {
+    return true;
+  }
+
+  // Kiểm tra từng câu có bị sửa không
+  return questions.value.some((q) => {
+    const previous = lastAiReviewQuestions.value[q.id];
+
+    // Không có snapshot => câu mới
+    if (!previous) {
+      return true;
+    }
+
+    return previous !== getQuestionFingerprint(q);
+  });
+});
+
+// Gọi API review và gộp kết quả khi cần.
+const requestAiReview = async (forceFullReview = false) => {
+  if (!questions.value.length) {
+    showToast("Chưa có câu hỏi để AI phân tích.", "error");
     return;
   }
 
-  questions.value.push(
-    normalizeQuestion({
-      type: item.type || "single_choice",
-      question: item.question,
-      options: item.options,
-      correct_answer: item.correct_answer,
-      images: [],
-    }),
+  const changedQuestions =
+    forceFullReview || !aiReviewResult.value
+      ? questions.value
+      : getChangedReviewQuestions();
+
+  // Không có câu nào thay đổi
+  if (!changedQuestions.length) {
+    aiReviewOpen.value = true;
+
+    showToast("Không có câu hỏi nào thay đổi.", "success");
+
+    return;
+  }
+
+  const isFullReview = forceFullReview || !aiReviewResult.value;
+
+  const payload = buildAiReviewPayload(changedQuestions, isFullReview);
+
+  try {
+    aiReviewOpen.value = true;
+    aiReviewLoading.value = true;
+
+    const { data } = await aiQuizApi.review(payload);
+    saveAiReviewQuestionSnapshots(changedQuestions);
+
+    if (isFullReview) {
+      // Review toàn bộ lần đầu
+      aiReviewResult.value = data;
+    } else {
+      // Merge kết quả mới vào kết quả cũ
+      mergeAiReviewResult(data);
+    }
+  } catch (error) {
+    showToast(
+      error?.response?.data?.message || "AI phân tích Quiz thất bại.",
+      "error",
+    );
+  } finally {
+    aiReviewLoading.value = false;
+  }
+};
+
+// Gộp kết quả review mới với kết quả cũ.
+const mergeAiReviewResult = (newResult) => {
+  if (!aiReviewResult.value) {
+    aiReviewResult.value = newResult;
+    return;
+  }
+
+  const changedIds = new Set(
+    (newResult.reviewed_question_ids || []).map(String),
   );
 
+  const oldIssues = aiReviewResult.value.issues || [];
+
+  const newIssues = newResult.issues || [];
+
+  aiReviewResult.value = {
+    ...aiReviewResult.value,
+
+    issues: [
+      ...oldIssues.filter(
+        (issue) => !changedIds.has(String(issue.question_id)),
+      ),
+
+      ...newIssues,
+    ],
+  };
+};
+
+// Mở kết quả đã có hoặc review lần đầu.
+const reviewQuizWithAi = async () => {
+  if (!questions.value.length) {
+    showToast("Chưa có câu hỏi để AI phân tích.", "error");
+
+    return;
+  }
+
+  // Đã có kết quả rồi
+  // -> chỉ mở drawer
+  // -> KHÔNG gọi API
+  if (aiReviewResult.value) {
+    aiReviewOpen.value = true;
+    return;
+  }
+
+  // Chưa từng review
+  // -> lần đầu mới gọi API
+  await requestAiReview();
+};
+
+// Review lại các câu hỏi đã thay đổi.
+const refreshAiReview = async () => {
+  await requestAiReview();
+};
+
+// Cuộn đến câu hỏi được AI nhắc tới.
+const goToReviewQuestion = async (questionId) => {
+  aiReviewHighlightId.value = questionId;
+
+  await nextTick();
+
+  const element = document.querySelector(`[data-question-id="${questionId}"]`);
+
+  if (!element) return;
+
+  element.scrollIntoView({
+    behavior: "smooth",
+    block: "center",
+  });
+
+  setTimeout(() => {
+    if (aiReviewHighlightId.value === questionId) {
+      aiReviewHighlightId.value = null;
+    }
+  }, 2500);
+};
+
+// ==================== 15. ÁP DỤNG VÀ CHUẨN HÓA DỮ LIỆU AI ====================
+
+// Thêm câu hỏi AI gợi ý vào bộ đề.
+const applyAiSuggestion = async (item) => {
+  if (item.type === "fix" || item.type === "analysis") {
+    showToast("Gợi ý này chỉ để xem, chưa áp dụng trực tiếp.", "error");
+    return;
+  }
+
+  const newQuestion = normalizeQuestion({
+    type: item.type || "single_choice",
+    question: item.question,
+    options: item.options,
+    correct_answer: item.correct_answer,
+    images: [],
+  });
+
+  questions.value.push(newQuestion);
   markDirty();
+
+  // Đánh dấu câu mới để nhấp nháy.
+  aiSuggestionHighlightId.value = newQuestion.id;
+
+  // Chờ Vue render rồi cuộn đến câu mới.
+  await nextTick();
+
+  document
+    .querySelector(`[data-question-id="${newQuestion.id}"]`)
+    ?.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    });
+
+  // Tắt hiệu ứng sau 2,6 giây.
+  window.setTimeout(() => {
+    if (aiSuggestionHighlightId.value === newQuestion.id) {
+      aiSuggestionHighlightId.value = null;
+    }
+  }, 2600);
+
   showToast("Đã thêm câu hỏi vào bộ đề thành công!", "success");
 };
 
+// Tạo payload gửi đến API gợi ý AI.
 const buildAiPayload = (action) => {
+  const sourceQuestions =
+    aiOptions.value.scope === "selected"
+      ? selectedQuestions.value
+      : questions.value;
+  const q = {
+    images: sourceQuestions.flatMap((question) => question.images || []),
+  };
+
   return {
     action,
     quiz: buildQuizPayload(),
@@ -2143,10 +2732,13 @@ const buildAiPayload = (action) => {
       difficulty: aiOptions.value.difficulty,
       scope: aiOptions.value.scope,
       keep_grade_scope: true,
+      has_images: Boolean(q.images?.length),
+      image_count: q.images?.length || 0,
     },
   };
 };
 
+// Chuẩn hóa câu hỏi trước khi gửi cho AI.
 const normalizeAiQuestion = (q) => {
   const question =
     q.editor_mode === "math" ? blocksToString(q.question_blocks) : q.question;
@@ -2303,5 +2895,44 @@ const normalizeAiQuestion = (q) => {
 /* Ẩn menu ⋮ */
 math-field::part(menu-toggle) {
   display: none !important;
+}
+
+.ai-review-highlight {
+  border-color: rgba(168, 85, 247, 0.9) !important;
+  box-shadow:
+    0 0 0 3px rgba(168, 85, 247, 0.18),
+    0 16px 40px rgba(168, 85, 247, 0.12) !important;
+  transition:
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.ai-review-enter-active,
+.ai-review-leave-active {
+  transition: opacity 0.25s ease;
+}
+
+.ai-review-enter-from,
+.ai-review-leave-to {
+  opacity: 0;
+}
+
+.ai-suggestion-highlight {
+  animation: ai-suggestion-flash 0.85s ease-in-out 3;
+}
+
+@keyframes ai-suggestion-flash {
+  0%,
+  100% {
+    border-color: var(--border);
+    box-shadow: none;
+  }
+
+  50% {
+    border-color: rgba(16, 185, 129, 0.95);
+    box-shadow:
+      0 0 0 4px rgba(16, 185, 129, 0.2),
+      0 16px 36px rgba(16, 185, 129, 0.16);
+  }
 }
 </style>

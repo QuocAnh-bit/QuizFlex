@@ -8,6 +8,8 @@ use RuntimeException;
 use Throwable;
 use HelgeSverre\Mistral\Mistral;
 
+use Illuminate\Support\Facades\Cache;
+
 
 class AIService
 {
@@ -755,6 +757,50 @@ PROMPT;
         return $result['payload'];
     }
 
+    public function reviewQuiz(
+        string $prompt
+    ): array {
+        $result = $this->requestJsonPayload(
+            $prompt
+        );
+
+        if (
+            !$this->isReviewQuizValid(
+                $result['payload']
+            )
+        ) {
+            throw new RuntimeException(
+                'AI review JSON structure invalid.'
+            );
+        }
+
+        return $result['payload'];
+    }
+
+    private function isReviewQuizValid(array $data): bool
+    {
+        if (!isset($data['summary']) || !is_string($data['summary'])) {
+            return false;
+        }
+
+        if (!isset($data['topics']) || !is_array($data['topics'])) {
+            return false;
+        }
+
+        if (!isset($data['issues']) || !is_array($data['issues'])) {
+            return false;
+        }
+
+        if (
+            !isset($data['suggestions'])
+            || !is_array($data['suggestions'])
+        ) {
+            return false;
+        }
+
+        return true;
+    }
+
 
     public function suggestQuiz(array $data): array
     {
@@ -980,5 +1026,56 @@ PROMPT;
             unset($payload['response_format']);
             return $this->sendChatCompletion($payload);
         }
+    }
+
+    private function makeReviewHash(
+        array $payload,
+        $userId = null
+    ): string {
+        $json = json_encode(
+            $payload,
+            JSON_UNESCAPED_UNICODE
+                | JSON_UNESCAPED_SLASHES
+        );
+
+        return hash(
+            'sha256',
+            ($userId ?? 'guest') . '|' . $json
+        );
+    }
+
+    public function reviewQuizCached(
+        string $prompt,
+        array $payload,
+        $userId = null
+    ): array {
+        $hash = $this->makeReviewHash(
+            $payload,
+            $userId
+        );
+
+        $cacheKey = 'quizflex:ai-review:' . $hash;
+
+        // Có kết quả giống hệt -> trả cache
+        if (Cache::has($cacheKey)) {
+            $data = Cache::get($cacheKey);
+
+            $data['_cached'] = true;
+
+            return $data;
+        }
+
+        // Chưa có -> mới gọi AI
+        $data = $this->reviewQuiz($prompt);
+
+        Cache::put(
+            $cacheKey,
+            $data,
+            now()->addHours(24)
+        );
+
+        $data['_cached'] = false;
+
+        return $data;
     }
 }

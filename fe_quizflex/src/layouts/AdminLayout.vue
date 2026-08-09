@@ -88,39 +88,43 @@ const expandedGroups = ref(['Quản lý nội dung'])
 
 const reportCount = ref(0);
 const reportBadge = computed(() => reportCount.value)
-let pollingInterval = null
 
 const fetchReportCount = async () => {
   try {
-    // 1. Lấy token từ Local Storage đúng với tên bạn vừa tìm thấy
     const token = localStorage.getItem('quizflex_access_token');
-    
-    // 2. Kẹp token vào header của request
     const { data } = await axios.get('/api/admin/report-tickets/count', {
       headers: {
-        Authorization: `Bearer ${token}` // Backend sẽ kiểm tra thẻ này
+        Authorization: `Bearer ${token}`
       }
     });
-    
-    // 3. Cập nhật số lượng
     reportCount.value = data.count || 0;
   } catch (e) {
     console.error('Lỗi khi lấy số lượng báo cáo:', e);
   }
 }
 
+const handleRealtimeNotification = (e) => {
+  const notification = e.detail
+  if (notification?.type === 'report_created') {
+    reportCount.value++
+  } else if (notification?.type === 'report_resolved' || notification?.type === 'report_action') {
+    fetchReportCount()
+  }
+}
+
+const handleNotificationsUpdated = () => {
+  fetchReportCount()
+}
+
 onMounted(() => {
   fetchReportCount()
-
-  // Cho phép tự động cập nhật ngầm mỗi 10 giây
-  pollingInterval = setInterval(() => {
-    fetchReportCount()
-  }, 10000)
+  window.addEventListener('realtime-notification', handleRealtimeNotification)
+  window.addEventListener('notifications-updated', handleNotificationsUpdated)
 })
 
-// Dọn dẹp bộ đếm khi Admin rời khỏi trang
 onUnmounted(() => {
-  if (pollingInterval) clearInterval(pollingInterval)
+  window.removeEventListener('realtime-notification', handleRealtimeNotification)
+  window.removeEventListener('notifications-updated', handleNotificationsUpdated)
 })
 
 const menu = computed(() => [

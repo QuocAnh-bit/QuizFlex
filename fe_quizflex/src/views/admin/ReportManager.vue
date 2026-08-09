@@ -115,6 +115,7 @@ const updateStatus = async (id, status) => {
         await reportApi.updateAdminStatus(id, status)
         const index = reports.value.findIndex(r => r.id === id)
         if (index !== -1) reports.value[index].status = status
+        window.dispatchEvent(new CustomEvent('notifications-updated'))
         if (showToast) showToast('Cập nhật trạng thái thành công')
       } catch (error) {
         if (showToast) showToast('Có lỗi xảy ra khi cập nhật!', 'error')
@@ -137,6 +138,7 @@ const deleteQuiz = (quizId, reportId) => {
           const index = reports.value.findIndex(r => r.id === reportId)
           if (index !== -1) reports.value[index].status = 'resolved'
 
+          window.dispatchEvent(new CustomEvent('notifications-updated'))
           if (showToast) showToast('Đã xóa Quiz vi phạm thành công', 'success')
         } catch (error) {
           if (showToast) showToast('Xóa Quiz thất bại: ' + (error.response?.data?.message || error.message), 'error')
@@ -166,17 +168,25 @@ const getStatusText = (status) => {
   }
 }
 
+const handleRealtimeNotification = (e) => {
+  const notification = e.detail
+  if (['report_created', 'report_resolved', 'report_action'].includes(notification?.type)) {
+    fetchReports(true)
+  }
+}
+
+const handleNotificationsUpdated = () => {
+  fetchReports(true)
+}
+
 onMounted(() => {
-  fetchReports() // Tải lần đầu có màn hình loading
-  
-  // Thiết lập tự động tải lại ngầm mỗi 10 giây (10000ms)
-  pollingInterval = setInterval(() => {
-    fetchReports(true) // truyền true để không hiện chữ "Đang tải dữ liệu..." 
-  }, 10000)
+  fetchReports()
+  window.addEventListener('realtime-notification', handleRealtimeNotification)
+  window.addEventListener('notifications-updated', handleNotificationsUpdated)
 })
 
 onUnmounted(() => {
-  // Xóa bộ đếm khi Admin chuyển sang trang khác để tránh lỗi bộ nhớ
-  if (pollingInterval) clearInterval(pollingInterval)
+  window.removeEventListener('realtime-notification', handleRealtimeNotification)
+  window.removeEventListener('notifications-updated', handleNotificationsUpdated)
 })
 </script>
