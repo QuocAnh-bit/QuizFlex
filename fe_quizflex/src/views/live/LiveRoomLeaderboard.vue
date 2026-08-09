@@ -1,7 +1,7 @@
 <template>
   <section class="grid gap-6 py-8">
     <div class="flex flex-wrap items-center justify-between gap-3">
-      <router-link class="btn-ghost" to="/live-rooms">Live Room</router-link>
+      <router-link class="btn-ghost" to="/live-rooms">Phòng thi đấu</router-link>
       <button class="btn-ghost" type="button" :disabled="isLoading" @click="loadLeaderboard">
         {{ isLoading ? 'Đang tải...' : 'Tải lại' }}
       </button>
@@ -9,8 +9,8 @@
 
     <article class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-soft)]">
       <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Leaderboard</p>
-      <h1 class="mt-2 text-4xl font-black tracking-[-0.06em] text-[var(--text)]">Bảng xếp hạng live room</h1>
-      <p class="mt-3 text-sm leading-7 text-[var(--muted)]">Chỉ xếp hạng người chơi đã join live room. Host không nằm trong bảng này.</p>
+      <h1 class="mt-2 text-4xl font-black tracking-[-0.06em] text-[var(--text)]">Bảng xếp hạng thi đấu</h1>
+      <p class="mt-3 text-sm leading-7 text-[var(--muted)]">Chỉ xếp hạng người chơi đã tham gia phòng thi đấu. Chủ phòng không nằm trong bảng này.</p>
     </article>
 
     <div v-if="errorMessage" class="rounded-[2rem] border border-rose-500/30 bg-rose-500/10 p-5 text-sm font-bold text-rose-300">{{ errorMessage }}</div>

@@ -60,8 +60,8 @@
         <div class="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[var(--primary)]/15 blur-3xl"></div>
         <div class="relative z-10 flex flex-col justify-between gap-6 xl:flex-row xl:items-end">
           <div>
-            <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Room Homework</p>
-            <h1 class="mt-2 text-4xl font-black tracking-[-0.06em] text-[var(--text)]">{{ room.name || 'Room Homework' }}</h1>
+            <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Phòng bài tập</p>
+            <h1 class="mt-2 text-4xl font-black tracking-[-0.06em] text-[var(--text)]">{{ room.name || 'Phòng bài tập' }}</h1>
             <p class="mt-3 max-w-3xl text-sm leading-7 text-[var(--muted)]">{{ room.description || 'Chưa có mô tả.' }}</p>
           </div>
           <div class="grid gap-2 text-right">
@@ -72,7 +72,7 @@
 
         <div class="relative z-10 mt-6 grid gap-3 md:grid-cols-4">
           <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-4">
-            <p class="text-xs font-bold text-[var(--muted)]">Host</p>
+            <p class="text-xs font-bold text-[var(--muted)]">Chủ phòng</p>
             <p class="mt-1 text-lg font-black text-[var(--text)]">{{ room.host?.name || '-' }}</p>
           </div>
           <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-4">

@@ -22,7 +22,24 @@
               <div :class="['overflow-hidden transition-all duration-300', expandedGroups.includes(group.label) ? 'max-h-[1000px] py-3' : 'max-h-0']">
                 <div class="grid gap-2 px-2">
                   <router-link v-for="item in group.items" :key="item.to" :to="item.to" :class="[getLinkClass(item), 'group transition-all duration-200']">
-                    <span :class="['grid h-9 w-9 place-items-center rounded-2xl text-xs font-black transition-colors duration-300', isItemActive(item) ? 'bg-[var(--primary)] text-white' : 'bg-[var(--surface-soft)] text-[var(--primary)]', 'group-hover:bg-[var(--primary)]', 'group-hover:text-white']">{{ item.icon }}</span>
+                    <span :class="['grid h-9 w-9 place-items-center rounded-2xl text-xs font-black transition-colors duration-300', isItemActive(item) ? 'bg-[var(--primary)] text-white' : 'bg-[var(--surface-soft)] text-[var(--primary)]', 'group-hover:bg-[var(--primary)]', 'group-hover:text-white']">
+                      <template v-if="item.icon === 'homework'">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+                        </svg>
+                      </template>
+                      <template v-else-if="item.icon === 'live'">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9" />
+                          <path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5" />
+                          <circle cx="12" cy="12" r="2" />
+                          <path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5" />
+                          <path d="M19.1 4.9c3.9 3.9 3.9 10.3 0 14.2" />
+                        </svg>
+                      </template>
+                      <template v-else>{{ item.icon }}</template>
+                    </span>
                     <span :class="['transition-colors duration-300', isItemActive(item) ? 'text-[var(--text)]' : 'text-[var(--muted)]', 'group-hover:text-[var(--text)]']">{{ item.label }}</span>
                     <span v-if="(item.label === 'Quản lý báo cáo' && reportCount > 0) || (item.badge !== undefined && item.badge !== null && item.badge !== 0)" class="ml-auto rounded-full border border-[var(--border)] bg-[var(--primary)]/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-[var(--primary)]">
                       {{ item.label === 'Quản lý báo cáo' ? reportCount : item.badge }}
@@ -65,13 +82,9 @@ import { useRoute } from 'vue-router'
 import axios from 'axios'
 import BrandLogo from '@/components/common/BrandLogo.vue'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
-import { unlockRequestsApi } from '@/services/api'
 
 const route = useRoute()
 const expandedGroups = ref(['Quản lý nội dung'])
-const homeworkRoomCount = ref(0)
-const activeLiveRoomCount = ref(0)
-const pendingUnlockCount = ref(0)
 
 const reportCount = ref(0);
 const reportBadge = computed(() => reportCount.value)
@@ -135,8 +148,8 @@ const menu = computed(() => [
   {
     label: 'Phòng học',
     items: [
-      { label: 'Homework rooms', to: '/admin/rooms/homework', icon: 'HW' },
-      { label: 'Live rooms', to: '/admin/rooms/live', icon: 'LR' },
+      { label: 'Phòng bài tập', to: '/admin/rooms/homework', icon: 'homework' },
+      { label: 'Phòng thi đấu', to: '/admin/rooms/live', icon: 'live' },
     ],
   },
   {
@@ -150,33 +163,7 @@ const menu = computed(() => [
   },
 ])
 
-/*
-const roomMenu = computed(() => [
-  {
-    label: 'Homework rooms',
-    to: '/admin/rooms/homework',
-    icon: 'home',
-    badge: homeworkRoomCount.value,
-  },
-  {
-    label: 'Live rooms',
-    to: '/admin/rooms/live',
-    icon: 'broadcast',
-    badge: null,
-    live: activeLiveRoomCount.value > 0,
-  },
-])
-*/
 const pageTitle = computed(() => route.meta.title || 'Dashboard')
-
-const loadPendingUnlockCount = async () => {
-  try {
-    const payload = await unlockRequestsApi.pendingCount()
-    pendingUnlockCount.value = Number(payload?.data?.count || 0)
-  } catch {
-    pendingUnlockCount.value = 0
-  }
-}
 
 const toggleGroup = (groupLabel) => {
   if (expandedGroups.value.includes(groupLabel)) {
@@ -194,6 +181,4 @@ const getLinkClass = (item) => {
   if (!active) return [...base, 'border-transparent', 'text-[var(--muted)]', 'hover:border-[var(--border)]', 'hover:bg-[var(--surface)]', 'hover:text-[var(--text)]']
   return [...base, 'border-[var(--border-strong)]', 'bg-[var(--surface)]', 'text-[var(--text)]']
 }
-
-onMounted(loadPendingUnlockCount)
 </script>

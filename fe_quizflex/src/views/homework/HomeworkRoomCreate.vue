@@ -3,28 +3,28 @@
     <article class="relative overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-soft)] backdrop-blur-2xl">
       <div class="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[var(--primary)]/15 blur-3xl"></div>
       <div class="relative z-10">
-        <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Create</p>
-        <h1 class="mt-2 text-4xl font-black tracking-[-0.06em] text-[var(--text)]">Tạo Room Homework</h1>
+        <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Tạo phòng bài tập</p>
+        <h1 class="mt-2 text-4xl font-black tracking-[-0.06em] text-[var(--text)]">Tạo phòng bài tập</h1>
         <p class="mt-3 max-w-2xl text-sm leading-7 text-[var(--muted)]">Tạo phòng để giao quiz cho thành viên. Mã phòng sẽ được backend sinh tự động.</p>
       </div>
     </article>
 
     <div class="grid gap-4 sm:grid-cols-3">
-      <StatCard value="Code" label="Mã room" hint="Backend sinh tự động" />
-      <StatCard value="Host" label="Quyền quản lý" hint="Host giao bài" />
-      <StatCard value="Assignments" label="Homework" hint="Giao nhiều quiz trong một room" />
+      <StatCard value="Code" label="Mã phòng" hint="Backend sinh tự động" />
+      <StatCard value="Chủ phòng" label="Quyền quản lý" hint="Chủ phòng giao bài" />
+      <StatCard value="Assignments" label="Bài tập" hint="Giao nhiều quiz trong một phòng" />
     </div>
 
     <form class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-card)]" @submit.prevent="submitForm">
       <div class="grid gap-5">
         <label class="grid gap-2">
-          <span class="text-sm font-black text-[var(--text)]">Tên room</span>
+          <span class="text-sm font-black text-[var(--text)]">Tên phòng</span>
           <input v-model.trim="form.name" class="field" maxlength="255" placeholder="VD: Ôn tập chương 1" />
         </label>
 
         <label class="grid gap-2">
           <span class="text-sm font-black text-[var(--text)]">Mô tả</span>
-          <textarea v-model.trim="form.description" class="field min-h-32 resize-y" placeholder="Mô tả ngắn cho thành viên trong room"></textarea>
+          <textarea v-model.trim="form.description" class="field min-h-32 resize-y" placeholder="Mô tả ngắn cho thành viên trong phòng"></textarea>
         </label>
       </div>
 
@@ -33,7 +33,7 @@
 
       <div class="mt-6 flex flex-wrap justify-end gap-3">
         <router-link class="btn-ghost" to="/homework-rooms">Hủy</router-link>
-        <button class="btn-primary" type="submit" :disabled="isSubmitting">{{ isSubmitting ? 'Đang tạo...' : 'Tạo room' }}</button>
+        <button class="btn-primary" type="submit" :disabled="isSubmitting">{{ isSubmitting ? 'Đang tạo...' : 'Tạo phòng' }}</button>
       </div>
     </form>
   </section>

@@ -1,7 +1,7 @@
 <template>
   <section class="grid gap-6 py-8">
     <div class="flex flex-wrap items-center justify-between gap-3">
-      <router-link class="btn-ghost" to="/live-rooms">Live Room</router-link>
+      <router-link class="btn-ghost" to="/live-rooms">Phòng thi đấu</router-link>
       <router-link class="btn-ghost" :to="`/live-rooms/${liveRoomId}/leaderboard`">Leaderboard</router-link>
     </div>
 
@@ -16,9 +16,9 @@
       <article class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-soft)]">
       <div class="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
         <div>
-          <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Host Monitor</p>
-          <h1 class="mt-2 text-4xl font-black tracking-[-0.06em] text-[var(--text)]">{{ liveRoom.title || 'Live Room' }}</h1>
-          <p class="mt-3 text-sm font-bold text-[var(--muted)]">Host chỉ theo dõi phòng, không làm bài.</p>
+          <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Điều khiển chủ phòng</p>
+          <h1 class="mt-2 text-4xl font-black tracking-[-0.06em] text-[var(--text)]">{{ liveRoom.title || 'Phòng thi đấu' }}</h1>
+          <p class="mt-3 text-sm font-bold text-[var(--muted)]">Chủ phòng chỉ theo dõi phòng, không làm bài.</p>
         </div>
         <div class="grid gap-2 text-right">
           <span class="rounded-full bg-[var(--chip-active)] px-4 py-2 text-lg font-black tracking-[0.12em] text-[var(--primary)]">{{ liveRoom.code || '-' }}</span>

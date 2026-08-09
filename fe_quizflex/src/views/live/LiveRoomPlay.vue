@@ -30,13 +30,13 @@
       <template v-else>
         <template v-if="isWaiting">
           <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Waiting</p>
-          <h1 class="mt-2 text-4xl font-black tracking-[-0.06em] text-[var(--text)]">Đang chờ host bắt đầu</h1>
-          <p class="mt-3 text-sm leading-7 text-[var(--muted)]">Trang sẽ tự cập nhật mỗi 10 giây. Khi live bắt đầu, câu hỏi sẽ xuất hiện tại đây.</p>
+          <h1 class="mt-2 text-4xl font-black tracking-[-0.06em] text-[var(--text)]">Đang chờ chủ phòng bắt đầu</h1>
+          <p class="mt-3 text-sm leading-7 text-[var(--muted)]">Trang sẽ tự cập nhật mỗi 10 giây. Khi trận đấu bắt đầu, câu hỏi sẽ xuất hiện tại đây.</p>
         </template>
  
       <template v-if="isFinished">
         <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Finished</p>
-        <h1 class="mt-2 text-4xl font-black tracking-[-0.06em] text-[var(--text)]">{{ roomStatus === 'finished' ? 'Live room đã kết thúc' : 'Bạn đã hoàn thành' }}</h1>
+        <h1 class="mt-2 text-4xl font-black tracking-[-0.06em] text-[var(--text)]">{{ roomStatus === 'finished' ? 'Phòng thi đấu đã kết thúc' : 'Bạn đã hoàn thành' }}</h1>
         <p class="mt-3 text-sm leading-7 text-[var(--muted)]">Điểm hiện tại: {{ progress.current_score ?? 0 }}, số câu đúng: {{ progress.correct_count ?? 0 }}/{{ progress.total_questions ?? 0 }}.</p>
         <router-link class="btn-primary mt-6 inline-flex" :to="`/live-rooms/${liveRoomId}/leaderboard`">Xem leaderboard</router-link>
       </template>

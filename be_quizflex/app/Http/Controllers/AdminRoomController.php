@@ -19,6 +19,43 @@ use Illuminate\Support\Facades\DB;
 
 class AdminRoomController extends Controller
 {
+    public function stats()
+    {
+        $homeworkTotal = Room::where('type', 'homework')->count();
+        $liveTotal = LiveRoom::count();
+        $totalRooms = $homeworkTotal + $liveTotal;
+
+        $homeworkActive = Room::where('type', 'homework')->where('status', 'active')->count();
+        $liveActive = LiveRoom::whereIn('status', ['waiting', 'playing'])->count();
+        $activeTotal = $homeworkActive + $liveActive;
+
+        $homeworkTrash = Room::onlyTrashed()->where('type', 'homework')->count();
+        $liveTrash = LiveRoom::onlyTrashed()->count();
+        $trashTotal = $homeworkTrash + $liveTrash;
+
+        $homeworkPercent = $totalRooms > 0 ? round(($homeworkTotal / $totalRooms) * 100, 1) : 0;
+        $livePercent = $totalRooms > 0 ? round(($liveTotal / $totalRooms) * 100, 1) : 0;
+        $activePercent = $totalRooms > 0 ? round(($activeTotal / $totalRooms) * 100, 1) : 0;
+        $trashGrandTotal = $totalRooms + $trashTotal;
+        $trashPercent = $trashGrandTotal > 0 ? round(($trashTotal / $trashGrandTotal) * 100, 1) : 0;
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Admin rooms statistics',
+            'data' => [
+                'total_rooms' => $totalRooms,
+                'homework_total' => $homeworkTotal,
+                'homework_percent' => $homeworkPercent,
+                'live_total' => $liveTotal,
+                'live_percent' => $livePercent,
+                'active_total' => $activeTotal,
+                'active_percent' => $activePercent,
+                'trash_total' => $trashTotal,
+                'trash_percent' => $trashPercent,
+            ],
+        ]);
+    }
+
     public function homeworkIndex(Request $request)
     {
         $perPage = $this->perPage($request);
@@ -162,7 +199,7 @@ class AdminRoomController extends Controller
         DB::transaction(function () use ($room) {
             // Xóa quiz attempts trước vì không có cascade từ rooms → quiz_attempts
             // (room_submission_evaluations sẽ cascade khi quiz_attempts bị xóa)
-            \App\Models\QuizAttempt::where('room_id', $room->id)->delete();
+            QuizAttempt::where('room_id', $room->id)->delete();
 
             // Force delete phòng – cascade tự động xóa:
             // room_members, room_assignments, room_allowed_members,
@@ -311,6 +348,20 @@ class AdminRoomController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Live room soft deleted.',
+        ]);
+    }
+
+    public function forceDeleteLive($id)
+    {
+        $liveRoom = LiveRoom::onlyTrashed()->findOrFail($id);
+
+        DB::transaction(function () use ($liveRoom) {
+            $liveRoom->forceDelete();
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Live room đã được xóa vĩnh viễn.',
         ]);
     }
 
@@ -646,6 +697,13 @@ class AdminRoomController extends Controller
 
     public function banLive(LiveRoom $liveRoom)
     {
+        if ($liveRoom->status === 'finished' || !is_null($liveRoom->ended_at)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không thể khóa phòng thi đấu đã kết thúc.',
+            ], 422);
+        }
+
         $liveRoom = DB::transaction(function () use ($liveRoom) {
             $oldStatus = $liveRoom->status;
             $liveRoom->forceFill([
