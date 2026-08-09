@@ -566,24 +566,35 @@ async adminTrash() {
   },
 
 
-  async startAttempt(id, payload = {}) {
-    const { data } = await api.post(
-      `/quizzes/${id}/attempts/start`,
-      payload
-    );
+  // BẮT ĐẦU LÀM QUIZ
+    async startAttempt(id, payload = {}) {
+        const { data } = await api.post(
+            `/quizzes/${id}/attempts/start`,
+            payload
+        );
 
-    return unwrap(data);
-  },
+        return unwrap(data);
+    },
 
+    // KIỂM TRA ĐÚNG / SAI
+    async checkAnswer(id, payload) {
+        const { data } = await api.post(
+            `/quizzes/${id}/attempts/check-answer`,
+            payload
+        );
 
-  async submitAttempt(id, payload) {
-    const { data } = await api.post(
-      `/quizzes/${id}/attempts/submit`,
-      payload
-    );
+        return unwrap(data);
+    },
 
-    return unwrap(data);
-  },
+    // NỘP BÀI
+    async submitAttempt(id, payload) {
+        const { data } = await api.post(
+            `/quizzes/${id}/attempts/submit`,
+            payload
+        );
+
+        return unwrap(data);
+    },
 };
 
 export const attemptsApi = {

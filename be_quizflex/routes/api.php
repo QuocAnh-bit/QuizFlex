@@ -179,7 +179,9 @@ Route::delete('/quizzes/{id}/force-delete', [QuizController::class,'forceDelete'
         Route::get('/quiz-attempts', [QuizAttemptController::class, 'index']);
         Route::get('/quiz-attempts/{quizAttempt}', [QuizAttemptController::class, 'show']);
         Route::post('/quizzes/{quiz}/attempts/start', [QuizAttemptController::class, 'start']);
+        Route::post('/quizzes/{quiz}/attempts/check-answer', [QuizAttemptController::class, 'checkAnswer']);
         Route::post('/quizzes/{quiz}/attempts/submit', [QuizAttemptController::class, 'submit']);
+
 
         // Room Homework Routes
         Route::get('/rooms', [RoomController::class, 'index']);

@@ -130,7 +130,56 @@ class QuizAttemptController extends Controller
             ],
         ], 201);
     }
+public function checkAnswer(Request $request, Quiz $quiz)
+{
+    $data = $request->validate([
+        'attempt_id' => ['required', 'integer', 'exists:quiz_attempts,id'],
+        'question_id' => ['required', 'integer', 'exists:questions,id'],
+        'answer_id' => ['required', 'integer', 'exists:answers,id'],
+    ]);
 
+    $user = $request->user();
+
+    // Kiểm tra attempt thuộc đúng quiz
+    $attempt = QuizAttempt::where('id', $data['attempt_id'])
+        ->where('quiz_id', $quiz->id)
+        ->where('user_id', $user->id)
+        ->first();
+
+    if (!$attempt) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Không tìm thấy lượt làm bài hợp lệ.',
+        ], 404);
+    }
+
+    // Không cho kiểm tra nếu attempt đã hoàn thành
+    if ($attempt->status === 'completed') {
+        return response()->json([
+            'success' => false,
+            'message' => 'Lượt làm bài này đã kết thúc.',
+        ], 422);
+    }
+
+    // Kiểm tra answer có thực sự thuộc question hay không
+    $answer = Answer::where('id', $data['answer_id'])
+        ->where('question_id', $data['question_id'])
+        ->first();
+
+    if (!$answer) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Đáp án không thuộc câu hỏi này.',
+        ], 422);
+    }
+
+    return response()->json([
+        'success' => true,
+        'data' => [
+            'is_correct' => (bool) $answer->is_correct,
+        ],
+    ]);
+}
     public function submit(Request $request, Quiz $quiz, QuizGradingService $gradingService)
     {
         $data = $request->validate([

@@ -103,14 +103,19 @@ const subscribeAccountChannel = () => {
 
     const echo = getEcho()
     accountChannel = echo.private(`user.${user.id}`)
-      .listen('.account.status.changed', async (data) => {
-        if (data.is_locked) {
-          triggerLockedOverlay()
-        } else {
-          await authApi.me()
-          window.dispatchEvent(new CustomEvent('quizflex-account-unlocked'))
-        }
-      })
+    
+    accountChannel.listen('.account.status.changed', async (data) => {
+      if (data.is_locked) {
+        triggerLockedOverlay()
+      } else {
+        await authApi.me()
+        window.dispatchEvent(new CustomEvent('quizflex-account-unlocked'))
+      }
+    })
+
+    accountChannel.notification((notification) => {
+      window.dispatchEvent(new CustomEvent('realtime-notification', { detail: notification }))
+    })
   } catch {
     // Reverb không khả dụng, bỏ qua realtime
   }
@@ -118,7 +123,12 @@ const subscribeAccountChannel = () => {
 
 const unsubscribeAccountChannel = () => {
   if (accountChannel) {
-    accountChannel.stopListening('.account.status.changed')
+    try {
+      accountChannel.stopListening('.account.status.changed')
+      accountChannel.stopListening('.Illuminate\\Notifications\\Events\\BroadcastNotificationCreated')
+    } catch (e) {
+      console.warn('Không thể hủy đăng ký Echo event:', e)
+    }
     accountChannel = null
   }
 }
