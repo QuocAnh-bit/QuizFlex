@@ -249,6 +249,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { formatSeconds, normalizeQuestion, quizzesApi } from "@/services/api";
 import MathText from "@/components/MathText.vue";
+import audioService from "@/services/audioService";
 const route = useRoute();
 const router = useRouter();
 
@@ -290,6 +291,45 @@ const selectedAnswer = computed({
     };
   },
 });
+const selectAnswer = async (answerKey) => {
+    const question = currentQuestion.value;
+
+    if (!question?.id || !attemptId.value) return;
+
+    // Lưu đáp án ngay lập tức
+    selectedAnswers.value = {
+        ...selectedAnswers.value,
+        [question.id]: answerKey,
+    };
+
+    // Tìm đáp án tương ứng
+    const answer = question.answers.find(
+        (item) => item.key === answerKey
+    );
+
+    if (!answer?.id) return;
+
+    try {
+        const result = await quizzesApi.checkAnswer(
+            route.params.id,
+            {
+                attempt_id: attemptId.value,
+                question_id: question.id,
+                answer_id: answer.id,
+            }
+        );
+
+        // 🔊 PHÁT NHẠC NGAY SAU KHI BIẾT ĐÚNG / SAI
+        if (result?.is_correct === true) {
+            audioService.playCorrect();
+        } else {
+            audioService.playWrong();
+        }
+
+    } catch (error) {
+        console.error("Check answer error:", error);
+    }
+};
 const progressPercent = computed(() =>
   Math.round(
     ((currentIndex.value + 1) / Math.max(quizQuestions.value.length, 1)) * 100,
@@ -344,7 +384,36 @@ const unansweredCount = computed(() =>
 
 const showConfirmSubmit = ref(false);
 
+// const checkAnswer = async () => {
+//   const questionId = currentQuestion.value.id;
+//   const answerId = selectedAnswer.value;
+
+//   if (!questionId || !answerId) return null;
+
+//   try {
+//     const result = await quizzesApi.checkAnswer(
+//       route.params.id,
+//       attemptId.value,
+//       questionId,
+//       answerId
+//     );
+
+//     if (result.is_correct) {
+//       audioService.playCorrect();
+//     } else {
+//       audioService.playWrong();
+//     }
+
+//     return result;
+//   } catch (error) {
+//     console.error("Check answer error:", error);
+//     return null;
+//   }
+// };
+
 const goNext = async () => {
+  if (!selectedAnswer.value) return;
+
   if (!isLastQuestion.value) {
     currentIndex.value += 1;
     return;
@@ -364,47 +433,66 @@ const confirmSubmit = async () => {
 };
 
 const startTimer = () => {
-  clearInterval(timer);
-  timer = setInterval(async () => {
-    timeLeft.value -= 1;
-    if (timeLeft.value <= 0) {
-      timeLeft.value = 0;
-      clearInterval(timer);
-      await submitAttempt(true);
-    }
-  }, 1000);
+    clearInterval(timer);
+
+    timer = setInterval(async () => {
+        timeLeft.value -= 1;
+
+        // Phát countdown khi còn đúng 3 giây
+        if (timeLeft.value === 3) {
+            audioService.playCountdown();
+        }
+
+        if (timeLeft.value <= 0) {
+            timeLeft.value = 0;
+            clearInterval(timer);
+            await submitAttempt(true);
+        }
+    }, 1000);
 };
 
 const submitAttempt = async (autoSubmit = false) => {
-  if (isSubmitting.value) return;
-  if (!autoSubmit && !quizQuestions.value.length) return;
+    if (isSubmitting.value) return;
+    if (!autoSubmit && !quizQuestions.value.length) return;
 
-  isSubmitting.value = true;
-  errorMessage.value = "";
-  clearInterval(timer);
+    isSubmitting.value = true;
+    errorMessage.value = "";
+    clearInterval(timer);
 
-  try {
-    const result = await quizzesApi.submitAttempt(route.params.id, {
-      attempt_id: attemptId.value,
-      answers: selectedAnswers.value,
-    });
+    try {
+        const result = await quizzesApi.submitAttempt(route.params.id, {
+            attempt_id: attemptId.value,
+            answers: selectedAnswers.value,
+        });
 
-    const id = result.attempt?.id;
-    if (id) {
-      sessionStorage.removeItem(attemptStorageKey.value);
-      router.push(`/results/${id}`);
-      return;
+        console.log("Submit result:", result);
+
+        const id = result.attempt?.id;
+
+        if (id) {
+            sessionStorage.removeItem(attemptStorageKey.value);
+
+            // Phát nhạc finish
+            audioService.playFinish();
+
+            // Chuyển sang trang kết quả sau 1 giây
+            setTimeout(() => {
+                router.push(`/results/${id}`);
+            }, 3000);
+
+            return;
+        }
+
+        errorMessage.value = autoSubmit
+            ? "Đã hết giờ nhưng không nhận được mã kết quả."
+            : "Nộp bài xong nhưng không nhận được mã kết quả.";
+
+    } catch (error) {
+        errorMessage.value = `Không nộp được bài: ${error.message}`;
+        startTimer();
+    } finally {
+        isSubmitting.value = false;
     }
-
-    errorMessage.value = autoSubmit
-      ? "Đã hết giờ nhưng không nhận được mã kết quả."
-      : "Nộp bài xong nhưng không nhận được mã kết quả.";
-  } catch (error) {
-    errorMessage.value = `Không nộp được bài: ${error.message}`;
-    startTimer();
-  } finally {
-    isSubmitting.value = false;
-  }
 };
 
 const loadQuiz = async () => {
@@ -444,7 +532,13 @@ const loadQuiz = async () => {
     isLoading.value = false;
   }
 };
+onMounted(async () => {
+    await loadQuiz();
+    audioService.playLobby();
+});
 
-onMounted(loadQuiz);
-onBeforeUnmount(() => clearInterval(timer));
+onBeforeUnmount(() => {
+    clearInterval(timer);
+    audioService.stopAll();
+});
 </script>

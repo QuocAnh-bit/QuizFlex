@@ -1,67 +1,98 @@
-
-import { Howl, Howler } from 'howler'
+import { Howl, Howler } from "howler";
 
 class AudioService {
     constructor() {
+        this.isFinished = false;
+
         this.sounds = {
             lobby: new Howl({
-                src: ['/sounds/lobby.mp3'],
+                src: ["/sounds/lobby.mp3"],
                 loop: true,
-                volume: 0.3
+                volume: 0.3,
             }),
 
             countdown: new Howl({
-                src: ['/sounds/countdown.mp3'],
-                volume: 1
+                src: ["/sounds/countdown.mp3"],
+                volume: 1,
             }),
 
             correct: new Howl({
-                src: ['/sounds/correct.mp3'],
-                volume: 1
+                src: ["/sounds/correct.mp3"],
+                volume: 1,
             }),
 
             wrong: new Howl({
-                src: ['/sounds/wrong.mp3'],
-                volume: 1
+                src: ["/sounds/wrong.mp3"],
+                volume: 1,
             }),
 
             finish: new Howl({
-                src: ['/sounds/finish.mp3'],
-                volume: 1
-            })
-        }
+                src: ["/sounds/finish.mp3"],
+                volume: 1,
+            }),
+
+            cheering: new Howl({
+                src: ["/sounds/cheering-sound.mp3"],
+                volume: 1,
+            }),
+        };
     }
-playLobby() {
-    this.sounds.lobby.stop()   // nếu đang phát thì dừng trước
-    this.sounds.lobby.play()
-}
-stopLobby() {
-    console.log("STOP LOBBY")
-    Howler.stop()
-}
 
-stopAll() {
-    Object.values(this.sounds).forEach(sound => sound.stop())
-}
-playCountdown() {
-    this.sounds.countdown.stop()
-    this.sounds.countdown.play()
-}
+    playLobby() {
+        if (this.isFinished) return;
 
-playCorrect() {
-    this.sounds.correct.stop()
-    this.sounds.correct.play()
-}
+        this.sounds.lobby.stop();
+        this.sounds.lobby.play();
+    }
 
-playWrong() {
-    this.sounds.wrong.stop()
-    this.sounds.wrong.play()
-}
+    stopLobby() {
+        Howler.stop();
+    }
 
+    stopAll() {
+        Object.values(this.sounds).forEach((sound) => {
+            sound.stop();
+        });
+    }
+
+    playCountdown() {
+        if (this.isFinished) return;
+
+        this.sounds.countdown.stop();
+        this.sounds.countdown.play();
+    }
+
+    playCorrect() {
+        if (this.isFinished) return;
+
+        this.sounds.correct.stop();
+        this.sounds.correct.play();
+    }
+
+    playWrong() {
+        if (this.isFinished) return;
+
+        this.sounds.wrong.stop();
+        this.sounds.wrong.play();
+    }
 playFinish() {
     this.stopAll()
+
+    this.sounds.finish.stop()
+    this.sounds.cheering.stop()
+
+    this.sounds.finish.once("end", () => {
+        this.sounds.cheering.play()
+    })
+
     this.sounds.finish.play()
+}
+
+   playCheering() {
+    this.stopAll();
+    this.sounds.cheering.stop();
+    this.sounds.cheering.play();
 }
 }
 
-export default new AudioService()
+export default new AudioService();
