@@ -85,7 +85,6 @@
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { notificationApi, currentUserStorage } from '@/services/api'
-import { getEcho } from '@/echo'
 
 const router = useRouter()
 const isOpen = ref(false)
@@ -95,11 +94,10 @@ const bellContainer = ref(null)
 // State thông báo
 const notifications = ref([])
 const unreadCount = ref(0)
-let notificationChannel = null
 
 const toggleDropdown = () => {
   isOpen.value = !isOpen.value
-  if (isOpen.value && notifications.value.length === 0) {
+  if (isOpen.value) {
     fetchNotifications()
   }
 }
@@ -203,53 +201,31 @@ const formatTime = (isoString) => {
   return date.toLocaleDateString('vi-VN')
 }
 
-const subscribeRealtimeNotifications = () => {
-  try {
-    const user = currentUserStorage.get()
-    if (!user?.id) return
-
-    const echo = getEcho()
-    notificationChannel = echo.private(`user.${user.id}`)
-    
-    notificationChannel.notification((notification) => {
-      const newNotification = {
-        id: notification.id,
-        type: notification.type || 'system',
-        title: notification.title || '',
-        message: notification.message || '',
-        action: notification.action || 'view',
-        action_link: notification.action_link || null,
-        metadata: notification.metadata || {},
-        is_read: false,
-        created_at: new Date().toISOString()
-      }
-
-      // Tránh duplicate thông báo
-      if (notifications.value.some(n => n.id === newNotification.id)) {
-        return
-      }
-
-      notifications.value.unshift(newNotification)
-      if (notifications.value.length > 20) {
-        notifications.value.pop()
-      }
-
-      unreadCount.value++
-    })
-  } catch (error) {
-    console.error('Lỗi khi đăng ký nhận thông báo realtime:', error)
+const handleRealtimeNotification = (e) => {
+  const notification = e.detail
+  const newNotification = {
+    id: notification.id,
+    type: notification.type || 'system',
+    title: notification.title || '',
+    message: notification.message || '',
+    action: notification.action || 'view',
+    action_link: notification.action_link || null,
+    metadata: notification.metadata || {},
+    is_read: false,
+    created_at: new Date().toISOString()
   }
-}
 
-const unsubscribeRealtimeNotifications = () => {
-  if (notificationChannel) {
-    try {
-      notificationChannel.stopListening('.Illuminate\\Notifications\\Events\\BroadcastNotificationCreated')
-    } catch (e) {
-      console.warn('Không thể hủy đăng ký Echo event:', e)
-    }
-    notificationChannel = null
+  // Tránh duplicate thông báo
+  if (notifications.value.some(n => n.id === newNotification.id)) {
+    return
   }
+
+  notifications.value.unshift(newNotification)
+  if (notifications.value.length > 20) {
+    notifications.value.pop()
+  }
+
+  unreadCount.value++
 }
 
 const handleNotificationsUpdated = () => {
@@ -259,14 +235,14 @@ const handleNotificationsUpdated = () => {
 onMounted(() => {
   window.addEventListener('click', closeDropdown)
   window.addEventListener('notifications-updated', handleNotificationsUpdated)
+  window.addEventListener('realtime-notification', handleRealtimeNotification)
   fetchNotifications()
-  subscribeRealtimeNotifications()
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('click', closeDropdown)
   window.removeEventListener('notifications-updated', handleNotificationsUpdated)
-  unsubscribeRealtimeNotifications()
+  window.removeEventListener('realtime-notification', handleRealtimeNotification)
 })
 </script>
 
