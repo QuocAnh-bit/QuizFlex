@@ -82,10 +82,20 @@ class QuizPolicy
     // }
 
     public function delete(User $user, Quiz $quiz): bool
-{
-    // Chỉ người tạo quiz mới được xóa
-    return $user->id === $quiz->user_id;
-}
+    {
+        // Chủ quiz luôn được xóa quiz của chính mình
+        if ($user->id === $quiz->user_id) {
+            return true;
+        }
+
+        $role = strtolower($user->role ?? 'user');
+        if ($role !== 'admin') {
+            return false;
+        }
+
+        // Admin chỉ được xóa quiz đã từng bị báo cáo vi phạm
+        return \App\Models\ReportTicket::where('quiz_id', $quiz->id)->exists();
+    }
 
     /**
      * Determine whether the user can restore the model.

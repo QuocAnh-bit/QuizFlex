@@ -254,11 +254,17 @@ class QuizController extends Controller
     {
         $currentUser = auth('api')->user();
 
-        // Chỉ người tạo quiz mới được xóa
-        if (!$currentUser || $quiz->user_id !== $currentUser->id) {
+        if (!$currentUser) {
             return response()->json([
                 'success' => false,
-                'message' => 'Bạn không có quyền xóa quiz này.'
+                'message' => 'Bạn cần đăng nhập để thực hiện thao tác này.'
+            ], 401);
+        }
+
+        if (Gate::forUser($currentUser)->denies('delete', $quiz)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn không có quyền xóa quiz này. Admin chỉ được xóa quiz đã bị báo cáo vi phạm.'
             ], 403);
         }
 
