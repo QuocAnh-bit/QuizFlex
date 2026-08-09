@@ -30,11 +30,6 @@ class AudioService {
                 src: ["/sounds/finish.mp3"],
                 volume: 1,
             }),
-
-            cheering: new Howl({
-                src: ["/sounds/cheering-sound.mp3"],
-                volume: 1,
-            }),
         };
     }
 
@@ -75,24 +70,12 @@ class AudioService {
         this.sounds.wrong.stop();
         this.sounds.wrong.play();
     }
-playFinish() {
-    this.stopAll()
-
-    this.sounds.finish.stop()
-    this.sounds.cheering.stop()
-
-    this.sounds.finish.once("end", () => {
-        this.sounds.cheering.play()
-    })
-
-    this.sounds.finish.play()
-}
-
-   playCheering() {
-    this.stopAll();
-    this.sounds.cheering.stop();
-    this.sounds.cheering.play();
-}
+    
+    playFinish() {
+        this.stopAll()
+        this.sounds.finish.stop()
+        this.sounds.finish.play()
+    }
 }
 
 export default new AudioService();
