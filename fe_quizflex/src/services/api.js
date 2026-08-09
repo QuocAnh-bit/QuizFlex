@@ -112,10 +112,12 @@ export const tokenStorage = {
   get() {
     return localStorage.getItem("quizflex_access_token");
   },
-  set(token) { // lưu mã token JWT vào localStorage của trình duyệt
+  set(token) {
+    // lưu mã token JWT vào localStorage của trình duyệt
     localStorage.setItem("quizflex_access_token", token);
   },
-  clear() { // xóa mã token JWT khỏi localStorage
+  clear() {
+    // xóa mã token JWT khỏi localStorage
     localStorage.removeItem("quizflex_access_token");
   },
 };
@@ -131,7 +133,8 @@ export const currentUserStorage = {
       return null;
     }
   },
-  set(user) { // lưu thông tin user dưới khóa quizflex_current_user
+  set(user) {
+    // lưu thông tin user dưới khóa quizflex_current_user
     const normalized = normalizeUserForStorage(user);
     if (!normalized) {
       this.clear();
@@ -224,7 +227,11 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (err) {
         processQueue(err, null);
-        if (err.response?.status === 401 || err.response?.status === 403 || !tokenStorage.get()) {
+        if (
+          err.response?.status === 401 ||
+          err.response?.status === 403 ||
+          !tokenStorage.get()
+        ) {
           authApi.clearSession();
           window.location.href = "/login";
         }
@@ -241,8 +248,11 @@ api.interceptors.response.use(
       error.message ||
       "API request failed";
 
-    if (error.response?.status === 403 && message.toLowerCase().includes('kh\u00f3a')) {
-      window.dispatchEvent(new CustomEvent('quizflex-account-locked'))
+    if (
+      error.response?.status === 403 &&
+      message.toLowerCase().includes("kh\u00f3a")
+    ) {
+      window.dispatchEvent(new CustomEvent("quizflex-account-locked"));
     }
 
     return Promise.reject(new Error(message));
@@ -471,10 +481,14 @@ const prepareQuizPayload = (payload) =>
 export const quizzesApi = {
   async list(params = {}) {
     const cacheKey = `quizzes_list_${JSON.stringify(params)}`;
-    return withMemoryCache(cacheKey, async () => {
-      const { data } = await api.get("/quizzes", { params });
-      return unwrapCollection(data);
-    }, 15000);
+    return withMemoryCache(
+      cacheKey,
+      async () => {
+        const { data } = await api.get("/quizzes", { params });
+        return unwrapCollection(data);
+      },
+      15000,
+    );
   },
 
   async get(id) {
@@ -499,22 +513,15 @@ export const quizzesApi = {
     if (body instanceof FormData) {
       body.append("_method", "PUT");
 
-      const { data } = await api.post(
-        `/quizzes/${id}`,
-        body
-      );
+      const { data } = await api.post(`/quizzes/${id}`, body);
 
       return unwrap(data);
     }
 
-    const { data } = await api.put(
-      `/quizzes/${id}`,
-      body
-    );
+    const { data } = await api.put(`/quizzes/${id}`, body);
 
     return unwrap(data);
   },
-
 
   // USER XÓA MỀM
   async remove(id) {
@@ -522,79 +529,64 @@ export const quizzesApi = {
     return data;
   },
 
-
   // USER + ADMIN xem thùng rác quiz của mình
-async trash() {
-    const { data } = await api.get(
-      "/quizzes/trash"
-    );
+  async trash() {
+    const { data } = await api.get("/quizzes/trash");
 
     return unwrapCollection(data);
-},
+  },
 
-async restore(id) {
-    const { data } = await api.patch(
-      `/quizzes/${id}/restore`
-    );
+  async restore(id) {
+    const { data } = await api.patch(`/quizzes/${id}/restore`);
 
     return unwrap(data);
-},
-
+  },
 
   // ADMIN XÓA VĨNH VIỄN
   async forceDelete(id) {
-    const { data } = await api.delete(
-      `/quizzes/${id}/force-delete`
-    );
+    const { data } = await api.delete(`/quizzes/${id}/force-delete`);
 
     return data;
-},
-// ADMIN xem thùng rác quiz admin tạo
-async adminTrash() {
+  },
+  // ADMIN xem thùng rác quiz admin tạo
+  async adminTrash() {
     const { data } = await api.get("/admin/quizzes/trash");
     return unwrapCollection(data);
-},
-
+  },
 
   // ADMIN ẨN / HIỆN
   async toggleVisibility(id) {
-    const { data } = await api.patch(
-      `/admin/quizzes/${id}/toggle-visibility`
+    const { data } = await api.patch(`/admin/quizzes/${id}/toggle-visibility`);
+
+    return unwrap(data);
+  },
+
+  // BẮT ĐẦU LÀM QUIZ
+  async startAttempt(id, payload = {}) {
+    const { data } = await api.post(`/quizzes/${id}/attempts/start`, payload);
+
+    return unwrap(data);
+  },
+
+  // KIỂM TRA ĐÚNG / SAI
+  async checkAnswer(id, payload) {
+    const { data } = await api.post(
+      `/quizzes/${id}/attempts/check-answer`,
+      payload
     );
 
     return unwrap(data);
   },
 
+  // NỘP BÀI
+  async submitAttempt(id, payload) {
+    const { data } = await api.post(
+      `/quizzes/${id}/attempts/submit`,
+      payload
+    );
 
-  // BẮT ĐẦU LÀM QUIZ
-    async startAttempt(id, payload = {}) {
-        const { data } = await api.post(
-            `/quizzes/${id}/attempts/start`,
-            payload
-        );
-
-        return unwrap(data);
-    },
-
-    // KIỂM TRA ĐÚNG / SAI
-    async checkAnswer(id, payload) {
-        const { data } = await api.post(
-            `/quizzes/${id}/attempts/check-answer`,
-            payload
-        );
-
-        return unwrap(data);
-    },
-
-    // NỘP BÀI
-    async submitAttempt(id, payload) {
-        const { data } = await api.post(
-            `/quizzes/${id}/attempts/submit`,
-            payload
-        );
-
-        return unwrap(data);
-    },
+    return unwrap(data);
+  },
 };
 
 export const attemptsApi = {
@@ -611,17 +603,17 @@ export const attemptsApi = {
 
 export const unlockRequestsApi = {
   async create(payload = {}) {
-    const { data } = await api.post('/unlock-requests', payload);
+    const { data } = await api.post("/unlock-requests", payload);
     return unwrap(data);
   },
 
   async latest() {
-    const { data } = await api.get('/unlock-requests/latest');
+    const { data } = await api.get("/unlock-requests/latest");
     return unwrap(data);
   },
 
   async adminList(params = {}) {
-    const { data } = await api.get('/admin/unlock-requests', { params });
+    const { data } = await api.get("/admin/unlock-requests", { params });
     return unwrap(data);
   },
 
@@ -631,27 +623,37 @@ export const unlockRequestsApi = {
   },
 
   async pendingCount() {
-    const { data } = await api.get('/admin/unlock-requests/pending-count');
+    const { data } = await api.get("/admin/unlock-requests/pending-count");
     return unwrap(data);
   },
 
   async approve(id, payload = {}) {
-    const { data } = await api.post(`/admin/unlock-requests/${id}/approve`, payload);
+    const { data } = await api.post(
+      `/admin/unlock-requests/${id}/approve`,
+      payload,
+    );
     return unwrap(data);
   },
 
   async reject(id, payload = {}) {
-    const { data } = await api.post(`/admin/unlock-requests/${id}/reject`, payload);
+    const { data } = await api.post(
+      `/admin/unlock-requests/${id}/reject`,
+      payload,
+    );
     return unwrap(data);
   },
 };
 
 export const adminDashboardApi = {
   async overview() {
-    return withMemoryCache("admin_dashboard_overview", async () => {
-      const { data } = await api.get("/admin/dashboard/overview");
-      return unwrap(data);
-    }, 15000);
+    return withMemoryCache(
+      "admin_dashboard_overview",
+      async () => {
+        const { data } = await api.get("/admin/dashboard/overview");
+        return unwrap(data);
+      },
+      15000,
+    );
   },
 };
 
@@ -670,8 +672,6 @@ export const adminRoomApi = {
     const { data } = await api.get(`/admin/rooms/homework/${id}`);
     return unwrap(data);
   },
-
-
 
   async softDeleteHomeworkRoom(id) {
     const { data } = await api.delete(`/admin/rooms/homework/${id}`);
@@ -704,8 +704,6 @@ export const adminRoomApi = {
     const { data } = await api.get(`/admin/rooms/live/${id}`);
     return unwrap(data);
   },
-
-
 
   async softDeleteLiveRoom(id) {
     const { data } = await api.delete(`/admin/rooms/live/${id}`);
@@ -762,15 +760,22 @@ export const aiQuizApi = {
   suggest(payload) {
     return api.post("/orc/ai/quiz-suggestions", payload);
   },
+  review(payload) {
+    return api.post("/orc/ai/review", payload);
+  },
 };
 
 export const homeworkApi = {
   async getHomeworkRooms(params = {}) {
     const cacheKey = `homework_rooms_${JSON.stringify(params)}`;
-    return withMemoryCache(cacheKey, async () => {
-      const { data } = await api.get("/rooms", { params });
-      return unwrapCollection(data);
-    }, 15000);
+    return withMemoryCache(
+      cacheKey,
+      async () => {
+        const { data } = await api.get("/rooms", { params });
+        return unwrapCollection(data);
+      },
+      15000,
+    );
   },
 
   async createHomeworkRoom(payload) {
@@ -781,8 +786,8 @@ export const homeworkApi = {
 
   async updateHomeworkRoom(roomId, payload) {
     clearMemoryCache("homework_rooms");
-    const { data } = await api.patch(`/rooms/${roomId}`, payload)
-    return unwrap(data)
+    const { data } = await api.patch(`/rooms/${roomId}`, payload);
+    return unwrap(data);
   },
 
   async joinHomeworkRoom(code) {
@@ -793,8 +798,8 @@ export const homeworkApi = {
 
   async leaveHomeworkRoom(roomId) {
     clearMemoryCache("homework_rooms");
-    const { data } = await api.post(`/rooms/${roomId}/leave`)
-    return unwrap(data)
+    const { data } = await api.post(`/rooms/${roomId}/leave`);
+    return unwrap(data);
   },
 
   async getHomeworkRoom(roomId) {
@@ -864,16 +869,22 @@ export const homeworkApi = {
   },
 
   async removeAllowedMembersBatch(roomId, ids) {
-    const { data } = await api.delete(`/homework-rooms/${roomId}/allowed-members`, {
-      data: { ids }
-    });
+    const { data } = await api.delete(
+      `/homework-rooms/${roomId}/allowed-members`,
+      {
+        data: { ids },
+      },
+    );
     return data;
   },
 
   async clearAllowedMembers(roomId) {
-    const { data } = await api.delete(`/homework-rooms/${roomId}/allowed-members`, {
-      data: { clear_all: true }
-    });
+    const { data } = await api.delete(
+      `/homework-rooms/${roomId}/allowed-members`,
+      {
+        data: { clear_all: true },
+      },
+    );
     return data;
   },
 
@@ -937,12 +948,16 @@ export const homeworkApi = {
   },
 
   async approveRoomMember(roomId, memberId) {
-    const { data } = await api.post(`/rooms/${roomId}/members/${memberId}/approve`);
+    const { data } = await api.post(
+      `/rooms/${roomId}/members/${memberId}/approve`,
+    );
     return unwrap(data);
   },
 
   async rejectRoomMember(roomId, memberId) {
-    const { data } = await api.post(`/rooms/${roomId}/members/${memberId}/reject`);
+    const { data } = await api.post(
+      `/rooms/${roomId}/members/${memberId}/reject`,
+    );
     return unwrap(data);
   },
 
@@ -1007,10 +1022,14 @@ export const liveRoomApi = {
 
 export const gamificationApi = {
   async getLeaderboard() {
-    return withMemoryCache("leaderboard", async () => {
-      const { data } = await api.get("/leaderboard");
-      return unwrapCollection(data);
-    }, 15000);
+    return withMemoryCache(
+      "leaderboard",
+      async () => {
+        const { data } = await api.get("/leaderboard");
+        return unwrapCollection(data);
+      },
+      15000,
+    );
   },
 };
 
@@ -1095,24 +1114,23 @@ export const normalizeQuizCard = (quiz) => ({
 });
 
 export const normalizeUser = (user) => {
-  const normRole = normalizeRole(user?.role)
+  const normRole = normalizeRole(user?.role);
   return {
     ...user,
     role: normRole,
-    roleLabel:
-      user?.role_label ||
-      user?.roleLabel ||
-      roleLabel(normRole),
+    roleLabel: user?.role_label || user?.roleLabel || roleLabel(normRole),
     joinedAt:
       user?.joined_at || user?.created_at
-        ? new Date(user.joined_at || user.created_at).toLocaleDateString("vi-VN")
+        ? new Date(user.joined_at || user.created_at).toLocaleDateString(
+            "vi-VN",
+          )
         : "Chưa rõ",
     aiQuota: user?.ai_quota_remaining ?? 0,
     quizzesCount: user?.quizzes_count ?? 0,
     attemptsCount: user?.attempts_count ?? 0,
     status: user?.status || "active",
-  }
-}
+  };
+};
 
 export const normalizeQuestion = (question) => ({
   id: question.id,
@@ -1206,7 +1224,7 @@ export const reportApi = {
     const { data } = await api.post("/report-tickets", payload);
     return unwrap(data);
   },
-  
+
   // Dành cho Admin: Lấy danh sách
   async listAdmin() {
     const { data } = await api.get("/admin/report-tickets");
@@ -1217,7 +1235,7 @@ export const reportApi = {
   async updateAdminStatus(id, status) {
     const { data } = await api.put(`/admin/report-tickets/${id}`, { status });
     return unwrap(data);
-  }
+  },
 };
 
 export const notificationApi = {
@@ -1225,15 +1243,17 @@ export const notificationApi = {
     const { data } = await api.get("/notifications", { params });
     const items = unwrapCollection(data);
     const unreadCount = data?.unread_count ?? 0;
-    
+
     const innerData = data?.data;
-    const pagination = innerData?.current_page ? {
-      currentPage: innerData.current_page,
-      lastPage: innerData.last_page,
-      total: innerData.total,
-      perPage: innerData.per_page,
-      nextPageUrl: innerData.next_page_url,
-    } : null;
+    const pagination = innerData?.current_page
+      ? {
+          currentPage: innerData.current_page,
+          lastPage: innerData.last_page,
+          total: innerData.total,
+          perPage: innerData.per_page,
+          nextPageUrl: innerData.next_page_url,
+        }
+      : null;
 
     return {
       items,
