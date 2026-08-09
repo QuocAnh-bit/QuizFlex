@@ -171,7 +171,6 @@
             <button 
               v-else
               @click="openCheckout(plan)"
-              :disabled="currentUser && !upgradeCostsLoaded"
               class="w-full h-12 flex items-center justify-center font-black rounded-full transition duration-300 active:scale-[0.98]"
               :class="plan.popular
                 ? 'bg-gradient-to-r from-[var(--primary)] to-[var(--accent)] text-white hover:shadow-[0_16px_36px_rgba(155,44,255,0.3)]'
@@ -747,19 +746,17 @@ const fetchUpgradeCosts = async () => {
   }
 }
 
-onMounted(async () => {
+onMounted(() => {
   if (currentUser.value) {
     loadHistory()
-    try {
-      const latestUser = await authApi.me()
+    fetchUpgradeCosts()
+    
+    authApi.me().then(latestUser => {
       currentUserStorage.set(latestUser)
       currentUser.value = latestUser
-    } catch (error) {
+    }).catch(error => {
       console.error('Failed to sync user state on mount:', error)
-    }
-    
-    // Lấy chi phí nâng cấp động (luôn thực thi)
-    await fetchUpgradeCosts()
+    })
 
     // Tự động mở modal thanh toán nếu có plan truyền qua URL query
     if (route.query.plan) {
