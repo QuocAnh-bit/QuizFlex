@@ -67,6 +67,8 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/ai/generate-quiz', [AIController::class, 'generate']);
     Route::post('/ocr/scan', [OcrController::class, 'scan']);
     Route::post('/orc/ai/quiz-suggestions', [OcrController::class, 'suggest']);
+    Route::post('/orc/ai/review', [OcrController::class, 'review']);
+
     Route::post('/payments/activate-trial', [PaymentController::class, 'activateTrial']);
     Route::get('/payments/upgrade-costs', [PaymentController::class, 'getUpgradeCosts']);
     Route::post('/unlock-requests', [UnlockRequestController::class, 'store']);
@@ -119,31 +121,33 @@ Route::middleware('auth:api')->group(function () {
         // Quản lý quiz cho admin
         Route::middleware('role:admin')->group(function () {
 
-    Route::get(
-        '/admin/quizzes/trash',
-        [QuizController::class,'adminTrash']
-    );
+            Route::get(
+                '/admin/quizzes/trash',
+                [QuizController::class, 'adminTrash']
+            );
 
-    Route::get('/admin/quizzes', [QuizController::class, 'adminIndex']);
+            Route::get('/admin/quizzes', [QuizController::class, 'adminIndex']);
 
-    Route::get('/admin/quizzes/{id}', [QuizController::class, 'adminShow']);
+            Route::get('/admin/quizzes/{id}', [QuizController::class, 'adminShow']);
 
-    Route::delete('/admin/quizzes/{quiz}', [QuizController::class, 'destroy'])
-        ->withTrashed();
+            Route::delete('/admin/quizzes/{quiz}', [QuizController::class, 'destroy'])
+                ->withTrashed();
 
-    Route::patch('/admin/quizzes/{id}/toggle-visibility',
-        [QuizController::class, 'toggleVisibility']
-    );
+            Route::patch(
+                '/admin/quizzes/{id}/toggle-visibility',
+                [QuizController::class, 'toggleVisibility']
+            );
 
-    Route::post('/admin/quizzes/{id}/restore',
-        [QuizController::class, 'restore']
-    );
+            Route::post(
+                '/admin/quizzes/{id}/restore',
+                [QuizController::class, 'restore']
+            );
 
-    Route::delete('/admin/quizzes/{id}/force-delete',
-        [QuizController::class, 'forceDelete']
-    );
-
-});
+            Route::delete(
+                '/admin/quizzes/{id}/force-delete',
+                [QuizController::class, 'forceDelete']
+            );
+        });
     });
 
     Route::middleware('role:free,plus,pro,ultra,admin')->group(function () {
@@ -161,9 +165,9 @@ Route::middleware('auth:api')->group(function () {
         Route::delete('/quizzes/{quiz}', [QuizController::class, 'destroy']);
         Route::post('/ocr/import-quiz', [OcrController::class, 'importQuiz']);
         // User chỉ quản lý quiz của mình
-Route::get('/quizzes/trash', [QuizController::class,'trash']);
-Route::patch('/quizzes/{id}/restore', [QuizController::class,'restore']);
-Route::delete('/quizzes/{id}/force-delete', [QuizController::class,'forceDelete']);
+        Route::get('/quizzes/trash', [QuizController::class, 'trash']);
+        Route::patch('/quizzes/{id}/restore', [QuizController::class, 'restore']);
+        Route::delete('/quizzes/{id}/force-delete', [QuizController::class, 'forceDelete']);
 
         // Protected Question & Answer Routes
         Route::post('/quizzes/{quiz}/questions', [QuestionController::class, 'store']);
