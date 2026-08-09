@@ -158,6 +158,7 @@ export const currentUserStorage = {
 api.interceptors.request.use((config) => {
   const token = tokenStorage.get();
   if (token) {
+    // Tự động đóng dấu chứng minh thư vào mọi request gửi đi
     config.headers.Authorization = `Bearer ${token}`; // gắn token vào header Authorization của mỗi request
   }
   return config;

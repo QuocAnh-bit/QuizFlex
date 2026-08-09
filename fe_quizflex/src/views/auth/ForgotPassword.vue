@@ -51,11 +51,11 @@
           <input
             v-model.trim="form.email"
             type="email"
-            required
             class="field"
             placeholder="nhap-email@example.com"
             :disabled="loading"
           />
+          <span v-if="errors.email" class="text-xs font-bold text-rose-400 normal-case">{{ errors.email }}</span>
         </label>
 
         <button
@@ -102,6 +102,7 @@
             placeholder="123456"
             :disabled="loading"
           />
+          <span v-if="errors.otp" class="text-xs font-bold text-rose-400 normal-case">{{ errors.otp }}</span>
         </label>
 
         <label class="grid gap-2 text-xs font-black uppercase text-[var(--muted)]">
@@ -112,11 +113,12 @@
             name="new-password"
             autocomplete="new-password"
             required
-            minlength="6"
+            minlength="8"
             class="field"
-            placeholder="Tối thiểu 6 ký tự"
+            placeholder="Tối thiểu 8 ký tự"
             :disabled="loading"
           />
+          <span v-if="errors.password" class="text-xs font-bold text-rose-400 normal-case">{{ errors.password }}</span>
         </label>
 
         <label class="grid gap-2 text-xs font-black uppercase text-[var(--muted)]">
@@ -127,11 +129,12 @@
             name="confirm-new-password"
             autocomplete="new-password"
             required
-            minlength="6"
+            minlength="8"
             class="field"
             placeholder="Nhập lại mật khẩu mới"
             :disabled="loading"
           />
+          <span v-if="errors.password_confirmation" class="text-xs font-bold text-rose-400 normal-case">{{ errors.password_confirmation }}</span>
         </label>
 
         <button
@@ -196,6 +199,38 @@ const form = reactive({
   password_confirmation: '',
 })
 
+const errors = reactive({ email: '', otp: '', password: '', password_confirmation: '' })
+
+const validateEmail = (value) => {
+  const trimmed = value.trim()
+  if (!trimmed) return 'Email không được để trống.'
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) return 'Email chưa đúng định dạng.'
+  return ''
+}
+
+const validateOtp = (value) => {
+  if (!/^\d{6}$/.test(value.trim())) return 'Mã OTP phải gồm đúng 6 chữ số.'
+  return ''
+}
+
+const validatePassword = (value) => {
+  if (value.length < 8) return 'Mật khẩu tối thiểu 8 ký tự.'
+  return ''
+}
+
+const validateStep1 = () => {
+  errors.email = validateEmail(form.email)
+  return !errors.email
+}
+
+const validateStep2 = () => {
+  errors.otp = validateOtp(form.otp)
+  errors.password = validatePassword(form.password)
+  errors.password_confirmation =
+    form.password_confirmation !== form.password ? 'Mật khẩu xác nhận không khớp.' : ''
+  return !errors.otp && !errors.password && !errors.password_confirmation
+}
+
 const message = reactive({
   text: '',
   type: 'success',
@@ -219,13 +254,13 @@ const startResendTimer = () => {
 }
 
 const handleSendOtp = async () => {
-  if (!form.email) return
+  if (!validateStep1()) return
 
   loading.value = true
   setMessage('', 'success')
 
   try {
-    const res = await authApi.forgotPasswordSendOtp({ email: form.email })
+    const res = await authApi.forgotPasswordSendOtp({ email: form.email.trim() })
     setMessage(res.message || 'Mã OTP đã được gửi thành công!', 'success')
     form.otp = ''
     form.password = ''
@@ -257,10 +292,7 @@ const handleResendOtp = async () => {
 }
 
 const handleResetPassword = async () => {
-  if (form.password !== form.password_confirmation) {
-    setMessage('Mật khẩu xác nhận không khớp.', 'error')
-    return
-  }
+  if (!validateStep2()) return
 
   loading.value = true
   setMessage('', 'success')
@@ -272,7 +304,6 @@ const handleResetPassword = async () => {
       password: form.password,
       password_confirmation: form.password_confirmation,
     })
-
     setMessage(res.message || 'Đặt lại mật khẩu thành công!', 'success')
     step.value = 3
   } catch (err) {
