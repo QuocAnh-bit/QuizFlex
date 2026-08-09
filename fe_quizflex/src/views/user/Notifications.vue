@@ -10,13 +10,13 @@
           <p class="mt-3 text-sm leading-7 text-[var(--muted)]">Xem và quản lý tất cả các hoạt động, thông báo hệ thống và lời mời.</p>
         </div>
         <div class="flex items-center gap-3 flex-wrap">
-          <button 
+          <!-- <button 
             v-if="hasUnread" 
             @click="markAllAsRead" 
             class="rounded-xl border border-[var(--primary)] bg-[var(--primary)]/10 px-4 py-2 text-xs font-black text-[var(--primary)] transition hover:bg-[var(--primary)] hover:text-white active:scale-95 flex items-center gap-1.5"
           >
             <span>Đánh dấu tất cả đã đọc</span>
-          </button>
+          </button> -->
           
           <button 
             v-if="notifications.length > 0" 
@@ -123,7 +123,6 @@
 import { ref, onMounted, onBeforeUnmount, computed, inject } from 'vue'
 import { useRouter } from 'vue-router'
 import { notificationApi, currentUserStorage } from '@/services/api'
-import { getEcho } from '@/echo'
 
 const router = useRouter()
 const showToast = inject('showToast')
@@ -134,7 +133,6 @@ const currentPage = ref(1)
 const lastPage = ref(1)
 const isConfirmModalOpen = ref(false)
 const isDeleting = ref(false)
-let notificationChannel = null
 
 const openDeleteConfirmModal = () => {
   isConfirmModalOpen.value = true
@@ -272,57 +270,35 @@ const formatTime = (isoString) => {
   return date.toLocaleDateString('vi-VN', { hour: '2-digit', minute: '2-digit' })
 }
 
-const subscribeRealtimeNotifications = () => {
-  try {
-    const user = currentUserStorage.get()
-    if (!user?.id) return
-
-    const echo = getEcho()
-    notificationChannel = echo.private(`user.${user.id}`)
-    
-    notificationChannel.notification((notification) => {
-      const newNotification = {
-        id: notification.id,
-        type: notification.type || 'system',
-        title: notification.title || '',
-        message: notification.message || '',
-        action: notification.action || 'view',
-        action_link: notification.action_link || null,
-        metadata: notification.metadata || {},
-        is_read: false,
-        created_at: new Date().toISOString()
-      }
-
-      // Tránh duplicate thông báo
-      if (notifications.value.some(n => n.id === newNotification.id)) {
-        return
-      }
-
-      notifications.value.unshift(newNotification)
-    })
-  } catch (error) {
-    console.error('Lỗi khi đăng ký nhận thông báo realtime:', error)
+const handleRealtimeNotification = (e) => {
+  const notification = e.detail
+  const newNotification = {
+    id: notification.id,
+    type: notification.type || 'system',
+    title: notification.title || '',
+    message: notification.message || '',
+    action: notification.action || 'view',
+    action_link: notification.action_link || null,
+    metadata: notification.metadata || {},
+    is_read: false,
+    created_at: new Date().toISOString()
   }
-}
 
-const unsubscribeRealtimeNotifications = () => {
-  if (notificationChannel) {
-    try {
-      notificationChannel.stopListening('.Illuminate\\Notifications\\Events\\BroadcastNotificationCreated')
-    } catch (e) {
-      console.warn('Không thể hủy đăng ký Echo event:', e)
-    }
-    notificationChannel = null
+  // Tránh duplicate thông báo
+  if (notifications.value.some(n => n.id === newNotification.id)) {
+    return
   }
+
+  notifications.value.unshift(newNotification)
 }
 
 onMounted(() => {
   fetchNotifications(1)
-  subscribeRealtimeNotifications()
+  window.addEventListener('realtime-notification', handleRealtimeNotification)
 })
 
 onBeforeUnmount(() => {
-  unsubscribeRealtimeNotifications()
+  window.removeEventListener('realtime-notification', handleRealtimeNotification)
 })
 </script>
 
