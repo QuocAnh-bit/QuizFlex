@@ -105,7 +105,7 @@ const routes = [
     component: () => import("@/views/homework/HomeworkRooms.vue"),
     meta: {
       layout: "user",
-      title: "Room Homework",
+      title: "Phòng bài tập",
       requiresAuth: true,
       roles: workspaceRoles,
     },
@@ -116,7 +116,7 @@ const routes = [
     component: () => import("@/views/homework/HomeworkRoomCreate.vue"),
     meta: {
       layout: "user",
-      title: "Tạo room homework",
+      title: "Tạo phòng bài tập",
       requiresAuth: true,
       roles: workspaceRoles,
     },
@@ -127,7 +127,7 @@ const routes = [
     component: () => import("@/views/homework/HomeworkRoomJoin.vue"),
     meta: {
       layout: "user",
-      title: "Tham gia room homework",
+      title: "Tham gia phòng bài tập",
       requiresAuth: true,
       roles: workspaceRoles,
     },
@@ -138,7 +138,7 @@ const routes = [
     component: () => import("@/views/homework/HomeworkRoomDetail.vue"),
     meta: {
       layout: "user",
-      title: "Chi tiết room homework",
+      title: "Chi tiết phòng bài tập",
       requiresAuth: true,
       roles: workspaceRoles,
     },
@@ -160,7 +160,7 @@ const routes = [
     component: () => import("@/views/homework/HomeworkAssignmentAttempts.vue"),
     meta: {
       layout: "user",
-      title: "Bài nộp homework",
+      title: "Bài nộp ",
       requiresAuth: true,
       roles: workspaceRoles,
     },
@@ -171,7 +171,7 @@ const routes = [
     component: () => import("@/views/homework/HomeworkAssignmentTake.vue"),
     meta: {
       layout: "user",
-      title: "Làm bài homework",
+      title: "Làm bài tập",
       requiresAuth: true,
       roles: workspaceRoles,
     },
@@ -182,7 +182,7 @@ const routes = [
     component: () => import("@/views/live/LiveRooms.vue"),
     meta: {
       layout: "user",
-      title: "Live Room",
+      title: "Phòng thi đấu",
       requiresAuth: true,
       roles: workspaceRoles,
     },
@@ -193,7 +193,7 @@ const routes = [
     component: () => import("@/views/live/LiveRoomCreate.vue"),
     meta: {
       layout: "user",
-      title: "Tạo live room",
+      title: "Tạo phòng thi đấu",
       requiresAuth: true,
       roles: workspaceRoles,
     },
@@ -204,7 +204,7 @@ const routes = [
     component: () => import("@/views/live/LiveRoomJoin.vue"),
     meta: {
       layout: "user",
-      title: "Tham gia live room",
+      title: "Tham gia phòng thi đấu",
       requiresAuth: true,
       roles: workspaceRoles,
     },
@@ -215,7 +215,7 @@ const routes = [
     component: () => import("@/views/live/LiveRoomHost.vue"),
     meta: {
       layout: "user",
-      title: "Host live room",
+      title: "Chủ phòng",
       requiresAuth: true,
       roles: workspaceRoles,
     },
@@ -446,7 +446,7 @@ const routes = [
     component: () => import("@/views/admin/Rooms.vue"),
     meta: {
       layout: "admin",
-      title: "Room admin",
+      title: "Quản lý phòng",
       requiresAuth: true,
       roles: adminRoles,
     },
@@ -456,7 +456,7 @@ const routes = [
     component: () => import('@/views/admin/AdminHomeworkRooms.vue'), 
     meta: { 
       layout: 'admin', 
-      title: 'Homework Rooms', 
+      title: 'Quản lý phòng bài tập', 
       requiresAuth: true, 
       roles: adminRoles, 
     },
@@ -466,7 +466,7 @@ const routes = [
     component: () => import('@/views/admin/AdminLiveRooms.vue'), 
     meta: { 
       layout: 'admin', 
-      title: 'Live Rooms', 
+      title: 'Quản lý phòng thi đấu', 
       requiresAuth: true, 
       roles: adminRoles, 
     }, 

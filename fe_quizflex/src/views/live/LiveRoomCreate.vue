@@ -1,20 +1,20 @@
 <template>
   <section class="grid gap-6 py-8">
     <div class="flex flex-wrap items-center justify-between gap-3">
-      <router-link class="btn-ghost" to="/live-rooms">Quay lại Live Room</router-link>
+      <router-link class="btn-ghost" to="/live-rooms">Quay lại Phòng thi đấu</router-link>
       <router-link class="btn-ghost" to="/live-rooms/join">Tham gia bằng mã</router-link>
     </div>
 
     <article class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-soft)]">
-      <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Create Live</p>
-      <h1 class="mt-2 text-4xl font-black tracking-[-0.06em] text-[var(--text)]">Tạo live room</h1>
-      <p class="mt-3 max-w-3xl text-sm leading-7 text-[var(--muted)]">Chọn quiz, tạo mã live room và chuyển sang màn host monitor.</p>
+      <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Phòng thi đấu</p>
+      <h1 class="mt-2 text-4xl font-black tracking-[-0.06em] text-[var(--text)]">Tạo phòng thi đấu</h1>
+      <p class="mt-3 max-w-3xl text-sm leading-7 text-[var(--muted)]">Chọn quiz, tạo mã phòng thi đấu và chuyển sang màn điều khiển của chủ phòng.</p>
     </article>
 
     <div class="grid gap-4 md:grid-cols-3">
-      <StatCard :value="String(quizzes.length)" label="Quiz khả dụng" hint="Dùng để tạo live room" />
+      <StatCard :value="String(quizzes.length)" label="Quiz khả dụng" hint="Dùng để tạo phòng thi đấu" />
       <StatCard value="Realtime" label="Cập nhật" hint="Reverb với polling fallback" />
-      <StatCard value="Host only" label="Điều khiển" hint="Host không nằm trong leaderboard" />
+      <StatCard value="Chủ phòng" label="Điều khiển" hint="Chủ phòng không nằm trong bảng xếp hạng" />
     </div>
 
     <div v-if="errorMessage" class="rounded-[2rem] border border-rose-500/30 bg-rose-500/10 p-5 text-sm font-bold text-rose-300">{{ errorMessage }}</div>
@@ -31,15 +31,15 @@
         </label>
 
         <label class="grid gap-2">
-          <span class="text-sm font-black text-[var(--text)]">Tên live room</span>
+          <span class="text-sm font-black text-[var(--text)]">Tên phòng thi đấu</span>
           <input v-model.trim="form.title" class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] px-4 py-3 text-sm font-bold text-[var(--text)] outline-none focus:border-[var(--border-strong)]" placeholder="Có thể để trống để dùng tên quiz" />
         </label>
       </div>
 
       <div class="mt-6 flex flex-wrap items-center justify-between gap-3">
-        <p class="text-sm font-bold text-[var(--muted)]">{{ quizzes.length ? `${quizzes.length} quiz có thể chọn` : 'Chưa có quiz để tạo live room' }}</p>
+        <p class="text-sm font-bold text-[var(--muted)]">{{ quizzes.length ? `${quizzes.length} quiz có thể chọn` : 'Chưa có quiz để tạo phòng thi đấu' }}</p>
         <button class="btn-primary disabled:cursor-not-allowed disabled:opacity-50" type="submit" :disabled="isLoading || isSubmitting || !quizzes.length">
-          {{ isSubmitting ? 'Đang tạo...' : 'Tạo live room' }}
+          {{ isSubmitting ? 'Đang tạo...' : 'Tạo phòng thi đấu' }}
         </button>
       </div>
     </form>

@@ -83,6 +83,7 @@ Route::middleware('auth:api')->group(function () {
 
     Route::middleware('role:admin')->group(function () {
         Route::get('/admin/dashboard/overview', [AdminDashboardController::class, 'overview']);
+        Route::get('/admin/rooms/stats', [AdminRoomController::class, 'stats']);
         Route::get('/admin/rooms/homework', [AdminRoomController::class, 'homeworkIndex']);
         Route::get('/admin/rooms/homework/trash', [AdminRoomController::class, 'homeworkTrash']);
         Route::delete('/admin/rooms/homework/{room}', [AdminRoomController::class, 'softDeleteHomework'])->withTrashed();
@@ -92,6 +93,7 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/admin/rooms/live', [AdminRoomController::class, 'liveIndex']);
         Route::get('/admin/rooms/live/trash', [AdminRoomController::class, 'liveTrash']);
         Route::delete('/admin/rooms/live/{liveRoom}', [AdminRoomController::class, 'softDeleteLive'])->withTrashed();
+        Route::delete('/admin/rooms/live/{id}/force', [AdminRoomController::class, 'forceDeleteLive']);
         Route::patch('/admin/rooms/live/{id}/restore', [AdminRoomController::class, 'restoreLive']);
         Route::get('/admin/rooms/live/{liveRoom}', [AdminRoomController::class, 'liveShow'])->withTrashed();
         Route::post('/admin/rooms/homework/{room}/ban', [AdminRoomController::class, 'banHomework']);

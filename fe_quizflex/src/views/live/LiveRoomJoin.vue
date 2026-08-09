@@ -1,24 +1,24 @@
 <template>
   <section class="grid gap-6 py-8">
     <div class="flex flex-wrap items-center justify-between gap-3">
-      <router-link class="btn-ghost" to="/live-rooms">Quay lại Live Room</router-link>
-      <router-link class="btn-ghost" to="/live-rooms/create">Tạo live room</router-link>
+      <router-link class="btn-ghost" to="/live-rooms">Quay lại Phòng thi đấu</router-link>
+      <router-link class="btn-ghost" to="/live-rooms/create">Tạo phòng thi đấu</router-link>
     </div>
 
     <article class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-soft)]">
-      <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Join Live</p>
-      <h1 class="mt-2 text-4xl font-black tracking-[-0.06em] text-[var(--text)]">Tham gia live room</h1>
-      <p class="mt-3 max-w-3xl text-sm leading-7 text-[var(--muted)]">Nhập mã phòng do host chia sẻ để vào màn chơi live quiz.</p>
+      <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Phòng thi đấu</p>
+      <h1 class="mt-2 text-4xl font-black tracking-[-0.06em] text-[var(--text)]">Tham gia phòng thi đấu</h1>
+      <p class="mt-3 max-w-3xl text-sm leading-7 text-[var(--muted)]">Nhập mã phòng do chủ phòng chia sẻ để vào màn chơi live quiz.</p>
     </article>
 
     <div class="grid gap-3 md:grid-cols-3">
       <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-4">
         <p class="text-xs font-black uppercase tracking-[0.16em] text-[var(--primary)]">Code</p>
-        <p class="mt-2 text-sm font-bold text-[var(--muted)]">Nhập mã do host chia sẻ.</p>
+        <p class="mt-2 text-sm font-bold text-[var(--muted)]">Nhập mã do chủ phòng chia sẻ.</p>
       </div>
       <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-4">
         <p class="text-xs font-black uppercase tracking-[0.16em] text-[var(--primary)]">Waiting</p>
-        <p class="mt-2 text-sm font-bold text-[var(--muted)]">Chờ host start nếu room chưa bắt đầu.</p>
+        <p class="mt-2 text-sm font-bold text-[var(--muted)]">Chờ chủ phòng bắt đầu nếu phòng chưa bắt đầu.</p>
       </div>
       <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-4">
         <p class="text-xs font-black uppercase tracking-[0.16em] text-[var(--primary)]">Progress</p>
@@ -30,7 +30,7 @@
 
     <form class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-card)]" @submit.prevent="handleJoin">
       <label class="grid gap-2">
-        <span class="text-sm font-black text-[var(--text)]">Mã live room</span>
+        <span class="text-sm font-black text-[var(--text)]">Mã phòng thi đấu</span>
         <input v-model.trim="code" class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] px-4 py-3 text-lg font-black uppercase tracking-[0.12em] text-[var(--text)] outline-none focus:border-[var(--border-strong)]" placeholder="ABC123" maxlength="12" />
       </label>
 
