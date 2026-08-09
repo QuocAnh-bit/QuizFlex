@@ -89,7 +89,7 @@ return [
     |
     */
 
-    'ttl' => (int) env('JWT_TTL', 1440),
+    'ttl' => (int) env('JWT_TTL', 1440), // thời gian sống của access token
 
     /*
     |--------------------------------------------------------------------------

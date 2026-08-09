@@ -59,7 +59,7 @@
 
           <label class="grid gap-2">
             <span class="text-sm font-black text-[var(--text)]">Mô tả</span>
-            <textarea v-model.trim="form.description" class="field min-h-28 resize-y" placeholder="Ghi chú cho thành viên trong room"></textarea>
+            <textarea v-model.trim="form.description" class="field min-h-28 resize-y" maxlength="2000" placeholder="Ghi chú cho thành viên trong room"></textarea>
           </label>
 
           <div class="grid gap-5 md:grid-cols-2">
@@ -184,8 +184,22 @@ const syncTitleFromQuiz = () => {
 const validateForm = () => {
   if (!form.quiz_id) return 'Bạn cần chọn quiz.'
   if (!form.title.trim()) return 'Bạn cần nhập tiêu đề bài giao.'
-  if (Number(form.max_attempts) < 1) return 'Số lần làm tối đa phải từ 1 trở lên.'
-  if (form.duration_minutes && Number(form.duration_minutes) < 1) return 'Thời lượng làm bài phải lớn hơn 0.'
+
+  const maxAttempts = Number(form.max_attempts)
+  if (!Number.isFinite(maxAttempts) || maxAttempts < 1 || maxAttempts > 20) {
+    return 'Số lần làm tối đa phải từ 1 đến 20.'
+  }
+
+  if (form.duration_minutes) {
+    const duration = Number(form.duration_minutes)
+    if (!Number.isFinite(duration) || duration < 1 || duration > 1440) {
+      return 'Thời lượng làm bài phải từ 1 đến 1440 phút.'
+    }
+  }
+
+  const description = (form.description || '').trim()
+  if (description.length > 2000) return 'Mô tả tối đa 2000 ký tự.'
+
   if (form.starts_at && form.deadline_at && new Date(form.deadline_at) < new Date(form.starts_at)) {
     return 'Deadline phải sau hoặc bằng thời gian bắt đầu.'
   }
@@ -195,7 +209,7 @@ const validateForm = () => {
 const buildPayload = () => ({
   quiz_id: Number(form.quiz_id),
   title: form.title.trim(),
-  description: form.description || null,
+  escription: form.description ? form.description.trim() : null,
   starts_at: form.starts_at || null,
   deadline_at: form.deadline_at || null,
   duration_minutes: form.duration_minutes ? Number(form.duration_minutes) : null,

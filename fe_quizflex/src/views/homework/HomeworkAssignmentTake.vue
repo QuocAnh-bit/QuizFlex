@@ -193,7 +193,7 @@ const selectedLabel = computed(() => {
 })
 
 const getSelectedValue = (question = currentQuestion.value) => selectedAnswers.value[question.id]
-const isMultiChoice = (question = currentQuestion.value) => question.type === 'multiple_choice'
+const isMultiChoice = (question = currentQuestion.value) => question.type === 'multi_choice'
 
 const isAnswerSelected = (answer) => {
   const selected = getSelectedValue()

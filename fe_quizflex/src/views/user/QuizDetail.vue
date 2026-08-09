@@ -72,7 +72,7 @@
           <article class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-card)] backdrop-blur-2xl">
             <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Question preview</p>
             <h2 class="mt-2 text-2xl font-black text-[var(--text)]">Danh sách câu hỏi</h2>
-            <div class="mt-5 grid gap-3">
+            <div class="mt-5 grid max-h-[520px] gap-3 overflow-y-auto pr-2 scrollbar-soft">
               <div v-for="(question, index) in questions" :key="question.id" class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-4">
                 <p class="text-xs font-black text-[var(--primary)]">Câu {{ index + 1 }} • {{ question.points }} điểm</p>
                 <p class="mt-2 text-sm font-bold leading-6 text-[var(--text)]">{{ question.question }}</p>
@@ -82,6 +82,7 @@
         </aside>
       </div>
     </Transition>
+
 
     <ReportModal 
       v-if="quiz"

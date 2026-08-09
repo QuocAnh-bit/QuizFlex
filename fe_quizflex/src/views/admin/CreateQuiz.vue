@@ -676,12 +676,22 @@ const makePayload = () => {
 
 const validateBeforeSave = () => {
   if (!form.title.trim()) return "Bạn chưa nhập tiêu đề quiz.";
+
+  const duration = Number(form.durationMinutes);
+  if (!Number.isFinite(duration) || duration < 1 || duration > 1440)
+    return "Thời gian làm bài phải từ 1 đến 1440 phút.";
+
   if (form.visibility === "group" && !form.roomCode.trim())
     return "Quiz dạng group cần có room code.";
   if (questions.value.length === 0) return "Quiz cần ít nhất 1 câu hỏi.";
 
   for (const [index, question] of questions.value.entries()) {
     if (!question.text.trim()) return `Câu ${index + 1} chưa có nội dung.`;
+
+    const points = Number(question.points);
+    if (!Number.isFinite(points) || points < 1 || points > 1000)
+      return `Câu ${index + 1}: điểm phải từ 1 đến 1000.`;
+
     if (question.answers.length < 2)
       return `Câu ${index + 1} cần ít nhất 2 đáp án.`;
     if (question.answers.some((answer) => !answer.text.trim()))

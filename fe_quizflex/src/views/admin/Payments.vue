@@ -635,6 +635,11 @@ const formatDateTime = (value) => {
 }
 
 const exportCsv = () => {
+  const escapeCsvCell = (value) => {
+    const str = String(value ?? '')
+    return `"${str.replace(/"/g, '""')}"`
+  }
+
   const rows = [
     ['Tên khách hàng', 'Email', 'Giao dịch thành công', 'Tổng chi tiêu (VND)', 'Giao dịch lần đầu', 'Giao dịch gần nhất'],
     ...filteredUsers.value.map(u => [
@@ -646,7 +651,7 @@ const exportCsv = () => {
       formatDateTime(lastPurchaseOf(u))
     ])
   ]
-  const csvContent = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n')
+  const csvContent = rows.map(r => r.map(escapeCsvCell).join(',')).join('\n')
   const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' })
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')

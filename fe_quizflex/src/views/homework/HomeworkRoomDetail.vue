@@ -158,7 +158,7 @@
 
             <label class="grid gap-2">
               <span class="text-sm font-black text-[var(--text)]">Mô tả</span>
-              <textarea v-model.trim="settingsForm.description" class="field min-h-20 resize-y" placeholder="Mô tả ngắn của phòng" :disabled="isBanned"></textarea>
+              <textarea v-model.trim="settingsForm.description" class="field min-h-20 resize-y" maxlength="1000" placeholder="Mô tả ngắn của phòng" :disabled="isBanned"></textarea>
             </label>
 
             <div class="flex justify-end gap-3">
@@ -624,6 +624,7 @@
                     <textarea 
                       v-model="evaluationForm.comment"
                       class="field min-h-20 w-full resize-y text-sm"
+                      maxlength="1000"
                       placeholder="Nhập nhận xét thành viên (Ví dụ: Làm bài đầy đủ và nghiêm túc...)"
                     ></textarea>
                   </div>
@@ -739,6 +740,8 @@ const router = useRouter()
 const roomId = computed(() => route.params.roomId)
 const currentUser = currentUserStorage.get()
 
+const MAX_EVALUATION_COMMENT_LENGTH = 1000
+const MAX_IMPORT_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 const room = ref(null)
 const isLeavingRoom = ref(false)
 const members = ref([])
@@ -840,15 +843,22 @@ const closeMemberDetail = () => {
 const saveEvaluation = async () => {
   if (!selectedMember.value) return
 
+  const trimmedComment = evaluationForm.value.comment.trim()
+  if (trimmedComment.length > MAX_EVALUATION_COMMENT_LENGTH) {
+    alert(`Nhận xét tối đa ${MAX_EVALUATION_COMMENT_LENGTH} ký tự.`)
+    return
+  }
+
   isSavingEvaluation.value = true
   try {
     const data = await homeworkApi.saveMemberEvaluation(roomId.value, selectedMember.value.user_id, {
-      comment: evaluationForm.value.comment,
+      comment: trimmedComment,
     })
     evaluationData.value = data
-    
     if (showToast) {
       showToast('Đã lưu đánh giá thành công.', 'success')
+    } else {
+      alert('Đã lưu đánh giá thành công.')
     }
   } catch (error) {
     if (showToast) {
@@ -962,25 +972,37 @@ const loadRoomDetail = async () => {
   }
 }
 
+const validateRoomSettings = () => {
+  const name = settingsForm.value.name.trim()
+  if (!name) return 'Tên room không được để trống.'
+  if (name.length > 255) return 'Tên room tối đa 255 ký tự.'
+
+  const description = (settingsForm.value.description || '').trim()
+  if (description.length > 1000) return 'Mô tả tối đa 1000 ký tự.'
+
+  return ''
+}
+
 const updateRoomSettings = async () => {
   settingsErrorMessage.value = ''
   settingsSuccessMessage.value = ''
 
-  if (!settingsForm.value.name) {
-    settingsErrorMessage.value = 'Tên room không được để trống.'
+  const validationError = validateRoomSettings()
+  if (validationError) {
+    settingsErrorMessage.value = validationError
     return
   }
 
   isUpdatingSettings.value = true
   try {
     const updatedRoom = await homeworkApi.updateHomeworkRoom(roomId.value, {
-      name: settingsForm.value.name,
-      description: settingsForm.value.description || null,
+      name: settingsForm.value.name.trim(),
+      description: settingsForm.value.description?.trim() || null,
       join_policy: settingsForm.value.join_policy,
     })
     room.value = updatedRoom
     settingsSuccessMessage.value = 'Cập nhật cấu hình phòng thành công.'
-    
+
     if (updatedRoom.join_policy === 'email_whitelist' && !allowedMembers.value.length) {
       allowedMembers.value = await homeworkApi.getAllowedMembers(roomId.value)
     }
@@ -995,9 +1017,20 @@ const addAllowedMembers = async () => {
   allowedMembersError.value = ''
   allowedMembersMessage.value = ''
 
+  const rawText = allowedEmailText.value.trim()
+  if (!rawText) {
+    allowedMembersError.value = 'Bạn cần nhập ít nhất một email.'
+    return
+  }
+
   const emails = parseAllowedEmails()
   if (!emails.length) {
-    allowedMembersError.value = 'Bạn cần nhập ít nhất một email.'
+    allowedMembersError.value = 'Không tìm thấy email hợp lệ nào trong nội dung đã nhập. Vui lòng kiểm tra lại định dạng.'
+    return
+  }
+
+  if (emails.length > 500) {
+    allowedMembersError.value = 'Chỉ được thêm tối đa 500 email trong một lần.'
     return
   }
 
@@ -1017,6 +1050,12 @@ const addAllowedMembers = async () => {
 const handleImportFile = async (e) => {
   const file = e.target.files?.[0]
   if (!file) return
+
+  if (file.size > MAX_IMPORT_FILE_SIZE) {
+    alert('File vượt quá dung lượng tối đa 10MB.')
+    e.target.value = ''
+    return
+  }
 
   const fileType = file.name.split('.').pop().toLowerCase()
   

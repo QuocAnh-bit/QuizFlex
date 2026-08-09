@@ -11,7 +11,7 @@
 
     <article class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow-card)] backdrop-blur-2xl">
       <form class="grid gap-4 lg:grid-cols-[minmax(180px,1.4fr)_minmax(180px,1.4fr)_130px_130px_minmax(180px,1.4fr)_150px]" @submit.prevent="createUser">
-        <input v-model="newUser.name" class="field" placeholder="Tên user" />
+        <input v-model="newUser.name" class="field" placeholder="Tên user" maxlength="100" />
         <input v-model="newUser.email" class="field" type="email" placeholder="email@example.com" />
         <select v-model="newUser.role" class="field"><option value="user">User</option><option value="admin">Admin</option></select>
         <select v-if="newUser.role !== 'admin'" v-model="newUser.plan" class="field"><option value="free">Free</option><option value="plus">Plus</option><option value="pro">Pro</option><option value="ultra">Ultra</option></select>
@@ -53,7 +53,7 @@
             Thùng rác
           </button>
         </div>
-        <p class="text-xs text-[var(--muted)]">Quản lý toàn bộ người dùng, tìm kiếm, lọc, xóa mềm và khôi phục.</p>
+        <!-- <p class="text-xs text-[var(--muted)]">Quản lý toàn bộ người dùng, tìm kiếm, lọc, xóa mềm và khôi phục.</p> -->
       </div>
 
       <div v-if="viewMode === 'active'" class="space-y-6 p-5">
@@ -272,7 +272,8 @@
             </div>
             <div class="space-y-2">
               <label class="text-sm font-black text-[var(--text)]">Admin note</label>
-              <textarea v-model="adminNote" rows="3" class="w-full rounded-[1rem] border border-[var(--border)] bg-[var(--surface-soft)] px-4 py-3 text-sm font-medium text-[var(--text)] outline-none transition focus:border-[var(--primary)]" placeholder="Nhập ghi chú..."></textarea>
+              <textarea v-model="adminNote" rows="3" maxlength="1000" class="w-full rounded-[1rem] border border-[var(--border)] bg-[var(--surface-soft)] px-4 py-3 text-sm font-medium text-[var(--text)] outline-none transition focus:border-[var(--primary)]" placeholder="Nhập ghi chú... (bắt buộc khi từ chối)"></textarea>
+              <span v-if="adminNoteError" class="block text-xs font-bold text-rose-400">{{ adminNoteError }}</span>
             </div>
             <div class="flex gap-3">
               <button class="btn-primary" type="button" :disabled="isActionLoading" @click="approveRequest">Duyệt — Mở khóa</button>
@@ -352,6 +353,7 @@
                     </span>
                     <input
                       v-model="editingUser.name"
+                      maxlength="100"
                       class="h-12 w-full rounded-xl border border-gray-200 bg-gray-50 pl-10 pr-4 text-sm text-gray-900 outline-none transition-all placeholder:text-gray-400 focus:border-violet-500 focus:bg-white focus:ring-4 focus:ring-violet-100"
                     />
                   </div>
@@ -505,6 +507,7 @@ const adminNote = ref('')
 const isActionLoading = ref(false)
 const showAppealModal = ref(false)
 const isLoadingAppeal = ref(false)
+const adminNoteError = ref('')
 const router = useRouter()
 const isSaving = ref(false)
 const errorMessage = ref('')
@@ -596,17 +599,46 @@ const loadUsers = async () => {
   }
 }
 
+const validateName = (value) => {
+  const trimmed = (value || '').trim()
+  if (!trimmed) return 'Vui lòng nhập tên.'
+  if (trimmed.length > 100) return 'Tên tối đa 100 ký tự.'
+  return ''
+}
+
+const validateEmail = (value) => {
+  const trimmed = (value || '').trim()
+  if (!trimmed) return 'Email không được để trống.'
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) return 'Email chưa đúng định dạng.'
+  return ''
+}
+
+const validatePassword = (value, required) => {
+  if (!value) return required ? 'Vui lòng nhập mật khẩu.' : ''
+  if (value.length < 8) return 'Mật khẩu tối thiểu 8 ký tự.'
+  return ''
+}
+
 const createUser = async () => {
   errorMessage.value = ''
   successMessage.value = ''
-  if (!newUser.name.trim() || !newUser.email.trim() || !newUser.password.trim()) {
-    errorMessage.value = 'Cần nhập đủ tên, email và mật khẩu.'
+
+  const nameError = validateName(newUser.name)
+  const emailError = validateEmail(newUser.email)
+  const passwordError = validatePassword(newUser.password, true)
+
+  if (nameError || emailError || passwordError) {
+    errorMessage.value = nameError || emailError || passwordError
     return
   }
 
   isSaving.value = true
   try {
-    await usersApi.create({ ...newUser })
+    await usersApi.create({
+      ...newUser,
+      name: newUser.name.trim(),
+      email: newUser.email.trim(),
+    })
     successMessage.value = 'Đã tạo user.'
     newUser.name = ''
     newUser.email = ''
@@ -655,18 +687,23 @@ const selectUserForEdit = (user) => {
 }
 
 const saveUserEdit = async () => {
-  if (!editingUser.name.trim() || !editingUser.email.trim()) {
-    errorMessage.value = 'Vui lòng nhập tên và email.'
+  errorMessage.value = ''
+  successMessage.value = ''
+
+  const nameError = validateName(editingUser.name)
+  const emailError = validateEmail(editingUser.email)
+  const passwordError = validatePassword(editingUser.password, false)
+
+  if (nameError || emailError || passwordError) {
+    errorMessage.value = nameError || emailError || passwordError
     return
   }
 
-  errorMessage.value = ''
-  successMessage.value = ''
   isSaving.value = true
   try {
     const payload = {
-      name: editingUser.name,
-      email: editingUser.email,
+      name: editingUser.name.trim(),
+      email: editingUser.email.trim(),
       plan: editingUser.plan,
     }
     if (!isSubAdmin.value) {
@@ -785,6 +822,7 @@ const openAppealModal = async (user) => {
   selectedLockedUser.value = user
   modalAppealRequest.value = null
   adminNote.value = ''
+  adminNoteError.value = ''
   showAppealModal.value = true
   isLoadingAppeal.value = true
   try {
@@ -800,9 +838,17 @@ const openAppealModal = async (user) => {
 
 const approveRequest = async () => {
   if (!modalAppealRequest.value) return
+
+  const trimmedNote = adminNote.value.trim()
+  if (trimmedNote.length > 1000) {
+    adminNoteError.value = 'Ghi chú tối đa 1000 ký tự.'
+    return
+  }
+  adminNoteError.value = ''
+
   isActionLoading.value = true
   try {
-    await unlockRequestsApi.approve(modalAppealRequest.value.id, { admin_note: adminNote.value })
+    await unlockRequestsApi.approve(modalAppealRequest.value.id, { admin_note: trimmedNote })
     showAppealModal.value = false
     await loadLockedUsers()
     await loadLockedCount()
@@ -815,9 +861,21 @@ const approveRequest = async () => {
 
 const rejectRequest = async () => {
   if (!modalAppealRequest.value) return
+
+  const trimmedNote = adminNote.value.trim()
+  if (!trimmedNote) {
+    adminNoteError.value = 'Vui lòng nhập lý do từ chối để người dùng biết vì sao kháng cáo bị từ chối.'
+    return
+  }
+  if (trimmedNote.length > 1000) {
+    adminNoteError.value = 'Ghi chú tối đa 1000 ký tự.'
+    return
+  }
+  adminNoteError.value = ''
+
   isActionLoading.value = true
   try {
-    await unlockRequestsApi.reject(modalAppealRequest.value.id, { admin_note: adminNote.value })
+    await unlockRequestsApi.reject(modalAppealRequest.value.id, { admin_note: trimmedNote })
     showAppealModal.value = false
     await loadAppealMap()
   } catch (error) {
