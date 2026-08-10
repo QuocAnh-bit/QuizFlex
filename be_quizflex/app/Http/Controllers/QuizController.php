@@ -464,7 +464,13 @@ class QuizController extends Controller
                     'type' => $questionData['type'] ?? 'single_choice',
                     'order' => $questionData['order'] ?? $index,
                     'points' => $questionData['points'] ?? 10,
-                    'image_url' => $questionData['image_url'] ?? null,
+                    'image_url' => is_string($questionData['image_url'] ?? null)
+                        ? $questionData['image_url']
+                        : (is_array($questionData['image_url'] ?? null)
+                            ? ($questionData['image_url']['preview'] ?? $questionData['image_url']['url'] ?? null)
+                            : (is_array($questionData['images'][0] ?? null)
+                                ? ($questionData['images'][0]['preview'] ?? $questionData['images'][0]['url'] ?? null)
+                                : (is_string($questionData['images'][0] ?? null) ? $questionData['images'][0] : null))),
                 ]
             );
 
