@@ -103,11 +103,23 @@ class QuizStoreService
             }
         }
 
+        $imageUrl = null;
+        if (!empty($item['images']) && is_array($item['images'])) {
+            $firstImage = $item['images'][0] ?? null;
+            if (is_array($firstImage)) {
+                $imageUrl = $firstImage['preview'] ?? $firstImage['url'] ?? $firstImage['path'] ?? null;
+            } elseif (is_string($firstImage)) {
+                $imageUrl = $firstImage;
+            }
+        } elseif (is_string($item['image_url'] ?? null)) {
+            $imageUrl = $item['image_url'];
+        }
+
         return [
             'content' => trim((string) ($item['question'] ?? $item['content'] ?? '')),
             'type' => $type,
             'points' => $item['points'] ?? 10,
-            'image_url' => $item['images'][0] ?? $item['image_url'] ?? null,
+            'image_url' => $imageUrl,
             'answers' => $answers,
         ];
     }

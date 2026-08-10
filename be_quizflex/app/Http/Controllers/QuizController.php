@@ -254,11 +254,17 @@ class QuizController extends Controller
     {
         $currentUser = auth('api')->user();
 
-        // Chỉ người tạo quiz mới được xóa
-        if (!$currentUser || $quiz->user_id !== $currentUser->id) {
+        if (!$currentUser) {
             return response()->json([
                 'success' => false,
-                'message' => 'Bạn không có quyền xóa quiz này.'
+                'message' => 'Bạn cần đăng nhập để thực hiện thao tác này.'
+            ], 401);
+        }
+
+        if (Gate::forUser($currentUser)->denies('delete', $quiz)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn không có quyền xóa quiz này. Admin chỉ được xóa quiz đã bị báo cáo vi phạm.'
             ], 403);
         }
 
@@ -341,7 +347,9 @@ class QuizController extends Controller
             'questions.*.id' => ['nullable', 'integer', 'exists:questions,id'],
             'questions.*.content' => ['nullable', 'string'],
             'questions.*.text' => ['nullable', 'string'],
-            'questions.*.type' => ['nullable', Rule::in(['single_choice', 'multi_choice', 'fill_blank'])],
+            'questions.*.image_url' => ['nullable'],
+            'questions.*.images' => ['nullable'],
+            'questions.*.type' => ['nullable', Rule::in(['single_choice', 'multi_choice', 'multiple_choice', 'true_false', 'fill_blank'])],
             'questions.*.points' => ['nullable', 'integer', 'min:1', 'max:1000'],
             'questions.*.order' => ['nullable', 'integer', 'min:0'],
             'questions.*.correct' => ['nullable'],
@@ -464,7 +472,13 @@ class QuizController extends Controller
                     'type' => $questionData['type'] ?? 'single_choice',
                     'order' => $questionData['order'] ?? $index,
                     'points' => $questionData['points'] ?? 10,
-                    'image_url' => $questionData['image_url'] ?? null,
+                    'image_url' => is_string($questionData['image_url'] ?? null)
+                        ? $questionData['image_url']
+                        : (is_array($questionData['image_url'] ?? null)
+                            ? ($questionData['image_url']['preview'] ?? $questionData['image_url']['url'] ?? null)
+                            : (is_array($questionData['images'][0] ?? null)
+                                ? ($questionData['images'][0]['preview'] ?? $questionData['images'][0]['url'] ?? null)
+                                : (is_string($questionData['images'][0] ?? null) ? $questionData['images'][0] : null))),
                 ]
             );
 

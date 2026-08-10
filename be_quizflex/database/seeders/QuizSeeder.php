@@ -1,5 +1,5 @@
 <?php
- 
+
 namespace Database\Seeders;
 
 use App\Models\Quiz;
@@ -104,7 +104,7 @@ class QuizSeeder extends Seeder
                     [
                         'content' => 'Ký hiệu nào thường được dùng để kết thúc một câu lệnh trong các ngôn ngữ như PHP, C, C++ và Java?',
                         'correct' => 'B',
-                        'answers' => ['Dấu hai chấm (:)','Dấu chấm phẩy (;)', 'Dấu chấm (.)', 'Dấu phẩy (,)'],
+                        'answers' => ['Dấu hai chấm (:)', 'Dấu chấm phẩy (;)', 'Dấu chấm (.)', 'Dấu phẩy (,)'],
                     ],
                     [
                         'content' => 'Đâu không phải là một hệ quản trị cơ sở dữ liệu quan hệ (RDBMS)?',
@@ -212,6 +212,167 @@ class QuizSeeder extends Seeder
                 ],
             ],
             [
+                'title' => 'IELTS Academic Vocabulary & Phrasal Verbs',
+                'description' => 'Chinh phục các từ vựng học thuật băng nhóm C1/C2 và các phrasal verbs nâng cao trong đề thi IELTS.',
+                'category' => 'Ngoại ngữ',
+                'tag' => 'IELTS',
+                'difficulty' => 'hard',
+                'is_public' => true,
+                'status' => 'published',
+                'time_limit_seconds' => 720,
+                'icon' => 'IELTS',
+                'badge' => 'ENG',
+                'questions' => [
+                    [
+                        'content' => 'Which word is a synonym of "Substantial" in academic writing?',
+                        'correct' => 'A',
+                        'answers' => ['Significant', 'Tiny', 'Slight', 'Negligible'],
+                    ],
+                    [
+                        'content' => 'Complete the phrasal verb: "The researchers need to ______ out more experiments before reaching a conclusion."',
+                        'correct' => 'C',
+                        'answers' => ['bring', 'take', 'carry', 'put'],
+                    ],
+                    [
+                        'content' => 'Choose the word that means "to make a bad situation worse":',
+                        'correct' => 'B',
+                        'answers' => ['Ameliorate', 'Exacerbate', 'Mitigate', 'Alleviate'],
+                    ],
+                    [
+                        'content' => 'What is the meaning of the idiom "To call it a day"?',
+                        'correct' => 'D',
+                        'answers' => ['To start a new project', 'To celebrate a holiday', 'To work overtime', 'To stop working on something'],
+                    ],
+                    [
+                        'content' => 'Select the correct word: "The new policy had a profound ______ on the local economy."',
+                        'correct' => 'A',
+                        'answers' => ['effect', 'affect', 'effective', 'affection'],
+                    ],
+                    [
+                        'content' => 'Which of the following means "unbelievable or hard to credit"?',
+                        'correct' => 'B',
+                        'answers' => ['Credible', 'Incredible', 'Credulous', 'Incredulous'],
+                    ],
+                ],
+            ],
+            [
+                'title' => 'English Grammar Masterclass: Tenses & Conditionals',
+                'description' => 'Luyện tập chuyên sâu các thì phức hợp, câu điều kiện hỗn hợp và đảo ngữ trong tiếng Anh.',
+                'category' => 'Ngoại ngữ',
+                'tag' => 'Ngữ pháp',
+                'difficulty' => 'medium',
+                'is_public' => true,
+                'status' => 'published',
+                'time_limit_seconds' => 600,
+                'icon' => 'GRAM',
+                'badge' => 'EN',
+                'questions' => [
+                    [
+                        'content' => 'If I ______ harder at university, I would have got a better job.',
+                        'correct' => 'C',
+                        'answers' => ['studied', 'study', 'had studied', 'have studied'],
+                    ],
+                    [
+                        'content' => 'By the time you arrive tomorrow, we ______ the entire project.',
+                        'correct' => 'B',
+                        'answers' => ['will finish', 'will have finished', 'finished', 'are finishing'],
+                    ],
+                    [
+                        'content' => 'Hardly ______ home when the electricity went out.',
+                        'correct' => 'A',
+                        'answers' => ['had I arrived', 'I arrived', 'did I arrive', 'I had arrived'],
+                    ],
+                    [
+                        'content' => 'She suggested that he ______ a doctor immediately.',
+                        'correct' => 'D',
+                        'answers' => ['sees', 'saw', 'is seeing', 'see'],
+                    ],
+                    [
+                        'content' => 'Unless you ______ your reservation in advance, you won\'t get a table.',
+                        'correct' => 'B',
+                        'answers' => ['don\'t make', 'make', 'made', 'will make'],
+                    ],
+                ],
+            ],
+            [
+                'title' => 'Business English & Workplace Communication',
+                'description' => 'Từ vựng và mẫu câu giao tiếp tiếng Anh công sở, viết email chuyên nghiệp và đàm phán thương mại.',
+                'category' => 'Ngoại ngữ',
+                'tag' => 'Thương mại',
+                'difficulty' => 'medium',
+                'is_public' => true,
+                'status' => 'published',
+                'time_limit_seconds' => 600,
+                'icon' => 'BIZ',
+                'badge' => 'ENG',
+                'questions' => [
+                    [
+                        'content' => 'What is the formal opening phrase commonly used in business emails when you don\'t know the recipient\'s name?',
+                        'correct' => 'A',
+                        'answers' => ['Dear Sir or Madam,', 'Hey there,', 'Hi friend,', 'To my boss,'],
+                    ],
+                    [
+                        'content' => 'Choose the professional phrase for "Tôi muốn hoãn cuộc họp lại":',
+                        'correct' => 'C',
+                        'answers' => ['I want to destroy the meeting', 'I stop the meeting now', 'I would like to postpone the meeting', 'I kick the meeting away'],
+                    ],
+                    [
+                        'content' => 'What does "KPI" stand for in business operations?',
+                        'correct' => 'B',
+                        'answers' => ['Key Person Index', 'Key Performance Indicator', 'Knowledge Process Integration', 'Key Product Investment'],
+                    ],
+                    [
+                        'content' => 'Fill in the blank: "Please find attached our latest price ______ for your review."',
+                        'correct' => 'D',
+                        'answers' => ['quote-less', 'quoting', 'quoted', 'quotation'],
+                    ],
+                    [
+                        'content' => 'Which phrase means "to reach an agreement during negotiation"?',
+                        'correct' => 'A',
+                        'answers' => ['To strike a deal', 'To break the bank', 'To call the shots', 'To bite the bullet'],
+                    ],
+                ],
+            ],
+            [
+                'title' => 'TOEIC Test Prep: Essential Practice & Collocations',
+                'description' => 'Bộ đề luyện tập từ vựng, ngữ pháp Part 5 & 6 thường gặp trong kỳ thi TOEIC quốc tế.',
+                'category' => 'Ngoại ngữ',
+                'tag' => 'TOEIC',
+                'difficulty' => 'easy',
+                'is_public' => true,
+                'status' => 'published',
+                'time_limit_seconds' => 500,
+                'icon' => 'TOEIC',
+                'badge' => 'EN',
+                'questions' => [
+                    [
+                        'content' => 'The manager requested that all employees submit their monthly reports ______ Friday afternoon.',
+                        'correct' => 'B',
+                        'answers' => ['until', 'by', 'since', 'for'],
+                    ],
+                    [
+                        'content' => 'Due to severe weather conditions, flight departures have been ______ delayed.',
+                        'correct' => 'A',
+                        'answers' => ['temporarily', 'temporary', 'temporize', 'temporariness'],
+                    ],
+                    [
+                        'content' => 'All passengers are reminded to keep their personal belongings ______ at all times.',
+                        'correct' => 'C',
+                        'answers' => ['attend', 'attending', 'attended', 'attendant'],
+                    ],
+                    [
+                        'content' => 'The company offers an attractive salary package ______ comprehensive healthcare benefits.',
+                        'correct' => 'D',
+                        'answers' => ['along', 'instead of', 'except', 'along with'],
+                    ],
+                    [
+                        'content' => 'Customer satisfaction is our top ______ at QuizFlex Corporation.',
+                        'correct' => 'A',
+                        'answers' => ['priority', 'prior', 'prioritize', 'priorities'],
+                    ],
+                ],
+            ],
+            [
                 'title' => 'Khám phá Vũ trụ & Hệ Mặt Trời',
                 'description' => 'Hành trình thú vị khám phá các hành tinh, các vì sao và những sự kiện thiên văn kỳ vĩ.',
                 'category' => 'Thiên văn học',
@@ -252,6 +413,113 @@ class QuizSeeder extends Seeder
                         'content' => 'Hiện tượng thiên văn xảy ra khi Mặt Trăng đi vào giữa Trái Đất và Mặt Trời, che khuất một phần hoặc toàn bộ ánh sáng Mặt Trời gọi là gì?',
                         'correct' => 'B',
                         'answers' => ['Nguyệt thực', 'Nhật thực', 'Sao băng', 'Hố đen'],
+                    ],
+                ],
+            ],
+            [
+                'title' => 'Ôn thi THPT Quốc Gia - Hóa Học Chuyên sâu',
+                'description' => 'Bộ câu hỏi tổng hợp kiến thức Hóa học hữu cơ, vô cơ và các dạng bài tập este, kim loại.',
+                'category' => 'Hóa học',
+                'tag' => 'THPT QG',
+                'difficulty' => 'hard',
+                'is_public' => true,
+                'status' => 'published',
+                'time_limit_seconds' => 900,
+                'icon' => 'CHEM',
+                'badge' => 'HOA',
+                'questions' => [
+                    [
+                        'content' => 'Chất nào sau đây là este có mùi thơm đặc trưng của chuối chín?',
+                        'correct' => 'A',
+                        'answers' => ['Isoamyl acetat', 'Ethyl acetat', 'Benzyl acetat', 'Methyl fomat'],
+                    ],
+                    [
+                        'content' => 'Kim loại nào sau đây có tính dẫn điện và dẫn nhiệt tốt nhất trong tất cả các kim loại?',
+                        'correct' => 'C',
+                        'answers' => ['Vàng (Au)', 'Đồng (Cu)', 'Bạc (Ag)', 'Nhôm (Al)'],
+                    ],
+                    [
+                        'content' => 'Phương pháp làm mềm nước cứng tạm thời đơn giản nhất bằng cách đun nóng là dựa trên phản ứng phân hủy muối nào?',
+                        'correct' => 'B',
+                        'answers' => ['Muối Clorua', 'Muối Bicarbonat (HCO3-)', 'Muối Sulfat', 'Muối Nitrat'],
+                    ],
+                    [
+                        'content' => 'Thủy ngân (Hg) rơi vãi khi nhiệt kế vỡ có thể được thu gom an toàn bằng cách rắc chất bột nào sau đây?',
+                        'correct' => 'D',
+                        'answers' => ['Bột vôi sống', 'Bột cát', 'Bột muối ăn', 'Bột lưu huỳnh (S)'],
+                    ],
+                    [
+                        'content' => 'Dung dịch làm quỳ tím chuyển sang màu đỏ là dung dịch nào sau đây?',
+                        'correct' => 'A',
+                        'answers' => ['Axit Axetic (CH3COOH)', 'Amoniac (NH3)', 'Anilin (C6H5NH2)', 'Glucozơ'],
+                    ],
+                ],
+            ],
+            [
+                'title' => 'Kinh tế Học & Tài chính Doanh nghiệp',
+                'description' => 'Kiểm tra hiểu biết về các nguyên lý kinh tế vi mô, vĩ mô và tài chính quản trị.',
+                'category' => 'Kinh tế',
+                'tag' => 'Tài chính',
+                'difficulty' => 'medium',
+                'is_public' => true,
+                'status' => 'published',
+                'time_limit_seconds' => 600,
+                'icon' => 'ECO',
+                'badge' => 'FIN',
+                'questions' => [
+                    [
+                        'content' => 'Khi giá của một hàng hóa tăng lên, theo Quy luật Cung Cầu, lượng cầu của người tiêu dùng đối với hàng hóa đó thường sẽ biến động thế nào?',
+                        'correct' => 'B',
+                        'answers' => ['Tăng lên', 'Giảm đi', 'Không thay đổi', 'Bằng 0'],
+                    ],
+                    [
+                        'content' => 'Thuật ngữ GDP trong kinh tế học vĩ mô là viết tắt của cụm từ tiếng Anh nào?',
+                        'correct' => 'A',
+                        'answers' => ['Gross Domestic Product', 'General Domestic Performance', 'Gross Development Price', 'Global Domestic Product'],
+                    ],
+                    [
+                        'content' => 'Hiện tượng mức giá chung của nền kinh tế gia tăng liên tục theo thời gian làm giảm sức mua của đồng tiền gọi là gì?',
+                        'correct' => 'C',
+                        'answers' => ['Suy thoái', 'Thâm hụt', 'Lạm phát', 'Khủng hoảng'],
+                    ],
+                    [
+                        'content' => 'Ngân hàng Trung ương điều chỉnh lãi suất tái chiết khấu nhằm mục đích chính nào?',
+                        'correct' => 'D',
+                        'answers' => ['Thu thuế thu nhập', 'Quản lý giá xăng dầu', 'Tăng số lượng công ty', 'Điều tiết cung tiền và kiểm soát lạm phát'],
+                    ],
+                ],
+            ],
+            [
+                'title' => 'Văn học Việt Nam Hiện đại & Kinh điển',
+                'description' => 'Cùng ôn lại các tác phẩm văn học xuất sắc trong chương trình ngữ văn và nền văn học nước nhà.',
+                'category' => 'Văn học',
+                'tag' => 'Ngữ văn',
+                'difficulty' => 'easy',
+                'is_public' => true,
+                'status' => 'published',
+                'time_limit_seconds' => 600,
+                'icon' => 'LIT',
+                'badge' => 'VAN',
+                'questions' => [
+                    [
+                        'content' => 'Tác phẩm kiệt tác "Truyện Kiều" của Đại thi hào Nguyễn Du ban đầu có tên gốc là gì?',
+                        'correct' => 'A',
+                        'answers' => ['Đoạn Trường Tân Thanh', 'Kim Vân Kiều Truyện', 'Thanh Hiên Thi Tập', 'Nam Âm Tuyệt Xướng'],
+                    ],
+                    [
+                        'content' => 'Hình ảnh nhân vật Tràng đưa cô vợ nhặt về nhà trong cảnh đói thê thảm năm 1945 thuộc tác phẩm nào của nhà văn Kim Lân?',
+                        'correct' => 'C',
+                        'answers' => ['Làng', 'Chí Phèo', 'Vợ Nhặt', 'Tắt Đèn'],
+                    ],
+                    [
+                        'content' => 'Bài thơ "Tây Tiến" khắc họa hình ảnh người lính hào hoa, dũng cảm là sáng tác nổi tiếng của nhà thơ nào?',
+                        'correct' => 'A',
+                        'answers' => ['Quang Dũng', 'Tố Hữu', 'Chế Lan Viên', 'Huy Cận'],
+                    ],
+                    [
+                        'content' => 'Nhân vật nghệ sĩ phếp ảnh Phùng và chiếc thuyền ngoài xa rực rỡ trong sương sớm là nhân vật chính trong tác phẩm của ai?',
+                        'correct' => 'D',
+                        'answers' => ['Nam Cao', 'Nguyễn Tuân', 'Nguyễn Minh Châu', 'Nguyễn Thi'],
                     ],
                 ],
             ],
