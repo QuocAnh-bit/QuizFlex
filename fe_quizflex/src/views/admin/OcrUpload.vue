@@ -370,10 +370,12 @@
         </div>
       </div>
 
+      <!-- AI Assistant -->
       <div
         class="mt-6 rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface-soft)] p-5"
       >
-        <div class="flex flex-wrap items-center justify-between gap-3">
+        <!-- Header -->
+        <div class="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p
               class="text-xs font-black uppercase tracking-[0.18em] text-[var(--primary)]"
@@ -382,27 +384,22 @@
             </p>
 
             <h2 class="mt-1 text-xl font-black text-[var(--text)]">
-              Gợi ý bằng AI
+              Tạo thêm câu hỏi bằng AI
             </h2>
+
+            <p class="mt-1 text-xs leading-6 text-[var(--muted)]">
+              Tạo câu mới dựa trên câu đã chọn hoặc theo mức độ mong muốn.
+            </p>
           </div>
 
-          <div class="flex flex-wrap gap-2">
-            <button
-              type="button"
-              class="rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-1 text-xs font-black text-[var(--text)]"
-              :aria-expanded="aiAssistantOpen"
-              @click="aiAssistantOpen = !aiAssistantOpen"
-            >
-              {{ aiAssistantOpen ? "Thu gọn" : "Mở gợi ý" }}
-            </button>
-
+          <div class="flex flex-wrap items-center gap-2">
             <span
               class="rounded-full bg-[var(--chip-active)] px-3 py-1 text-xs font-black text-[var(--muted)]"
             >
               {{
                 selectedQuestionIds.length
                   ? `Đã chọn ${selectedQuestionIds.length} câu`
-                  : "Toàn bộ đề"
+                  : "Chưa chọn câu"
               }}
             </span>
 
@@ -414,44 +411,124 @@
             >
               Bỏ chọn
             </button>
+
+            <button
+              type="button"
+              class="rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-1 text-xs font-black text-[var(--text)]"
+              :aria-expanded="aiAssistantOpen"
+              @click="aiAssistantOpen = !aiAssistantOpen"
+            >
+              {{ aiAssistantOpen ? "Thu gọn" : "Mở gợi ý" }}
+            </button>
           </div>
         </div>
 
+        <!-- Content -->
         <div
           v-show="aiAssistantOpen"
           ref="aiAssistantContent"
           class="ai-assistant-content"
         >
+          <!-- Selected questions -->
           <div
             v-if="selectedQuestions.length"
-            class="mt-3 flex flex-wrap gap-2"
+            class="mt-4 flex flex-wrap gap-2"
           >
             <span
-              v-for="(question, index) in selectedQuestions"
+              v-for="question in selectedQuestions"
               :key="question.id"
-              class="rounded-full bg-[var(--chip-active)] px-3 py-1 text-xs font-black text-[var(--muted)]"
+              class="rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-1 text-xs font-black text-[var(--muted)]"
             >
               Câu {{ getQuestionNumber(question.id) }}
             </span>
           </div>
 
-          <div class="mt-4 grid gap-4 md:grid-cols-[1.5fr_1fr_1fr_auto]">
-            <div>
-              <label class="text-xs font-black uppercase text-[var(--muted)]">
-                AI muốn làm gì?
-              </label>
+          <!-- Action -->
+          <div class="mt-5">
+            <label
+              class="text-xs font-black uppercase tracking-wide text-[var(--muted)]"
+            >
+              Bạn muốn AI tạo theo cách nào?
+            </label>
 
-              <select
-                v-model="aiOptions.action"
-                class="mt-2 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm font-bold text-[var(--text)] outline-none"
+            <div class="mt-3 grid gap-3 md:grid-cols-2">
+              <!-- Similar -->
+              <button
+                type="button"
+                class="rounded-2xl border p-4 text-left transition"
+                :class="
+                  aiOptions.action === 'similar'
+                    ? 'border-[var(--primary)] bg-[var(--chip-active)]'
+                    : 'border-[var(--border)] bg-[var(--surface)] hover:border-[var(--border-strong)]'
+                "
+                @click="aiOptions.action = 'similar'"
               >
-                <option value="similar">Tạo câu tương tự</option>
-                <option value="generate_by_difficulty">Tạo theo độ khó</option>
-                <option value="better_options">Tạo đáp án nhiễu</option>
-              </select>
-            </div>
+                <div class="flex items-start gap-3">
+                  <span class="text-xl">✨</span>
 
-            <div>
+                  <div>
+                    <p class="text-sm font-black text-[var(--text)]">
+                      Tạo câu tương tự
+                    </p>
+
+                    <p class="mt-1 text-xs leading-5 text-[var(--muted)]">
+                      Dựa trên nội dung và dạng của những câu bạn đã chọn.
+                    </p>
+                  </div>
+                </div>
+              </button>
+
+              <!-- Difficulty -->
+              <button
+                type="button"
+                class="rounded-2xl border p-4 text-left transition"
+                :class="
+                  aiOptions.action === 'generate_by_difficulty'
+                    ? 'border-[var(--primary)] bg-[var(--chip-active)]'
+                    : 'border-[var(--border)] bg-[var(--surface)] hover:border-[var(--border-strong)]'
+                "
+                @click="aiOptions.action = 'generate_by_difficulty'"
+              >
+                <div class="flex items-start gap-3">
+                  <span class="text-xl">🎯</span>
+
+                  <div>
+                    <p class="text-sm font-black text-[var(--text)]">
+                      Tạo theo độ khó
+                    </p>
+
+                    <p class="mt-1 text-xs leading-5 text-[var(--muted)]">
+                      Tạo thêm câu hỏi phù hợp với nội dung bộ đề và mức độ bạn
+                      chọn.
+                    </p>
+                  </div>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          <!-- Similar warning -->
+          <div
+            v-if="aiOptions.action === 'similar' && !selectedQuestions.length"
+            class="mt-4 rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4"
+          >
+            <p class="text-xs font-bold leading-6 text-amber-300">
+              💡 Hãy chọn ít nhất một câu trong bộ đề để AI có dữ liệu tạo câu
+              tương tự.
+            </p>
+          </div>
+
+          <!-- Options -->
+          <div
+            class="mt-5 grid gap-4"
+            :class="
+              aiOptions.action === 'generate_by_difficulty'
+                ? 'md:grid-cols-[1fr_1fr_auto]'
+                : 'md:grid-cols-[1fr_auto]'
+            "
+          >
+            <!-- Difficulty: chỉ hiện khi cần -->
+            <div v-if="aiOptions.action === 'generate_by_difficulty'">
               <label class="text-xs font-black uppercase text-[var(--muted)]">
                 Độ khó
               </label>
@@ -459,7 +536,6 @@
               <select
                 v-model="aiOptions.difficulty"
                 class="mt-2 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm font-bold text-[var(--text)] outline-none"
-                :disabled="aiOptions.action === 'analyze_quiz'"
               >
                 <option value="easy">Dễ</option>
                 <option value="medium">Trung bình</option>
@@ -468,9 +544,10 @@
               </select>
             </div>
 
+            <!-- Count -->
             <div>
               <label class="text-xs font-black uppercase text-[var(--muted)]">
-                Số câu
+                Số câu muốn tạo
               </label>
 
               <input
@@ -479,131 +556,130 @@
                 min="1"
                 max="20"
                 class="mt-2 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm font-bold text-[var(--text)] outline-none"
-                :disabled="aiOptions.action === 'analyze_quiz'"
               />
             </div>
 
+            <!-- Generate -->
             <div class="flex items-end">
               <button
                 type="button"
-                class="btn-primary w-full"
+                class="btn-primary w-full whitespace-nowrap disabled:cursor-not-allowed disabled:opacity-50"
+                :disabled="
+                  aiLoading ||
+                  (aiOptions.action === 'similar' && !selectedQuestions.length)
+                "
                 @click="generateAiSuggestions(aiOptions.action)"
               >
-                Tạo gợi ý
+                {{ aiLoading ? "AI đang tạo..." : "✨ Tạo câu hỏi" }}
               </button>
             </div>
           </div>
+
+          <!-- Loading -->
           <div
             v-if="aiLoading"
-            class="mt-5 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm font-bold text-[var(--muted)]"
+            class="mt-5 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4"
           >
-            AI đang xử lý...
+            <p class="text-sm font-black text-[var(--text)]">
+              ✨ AI đang tạo câu hỏi...
+            </p>
+
+            <p class="mt-1 text-xs text-[var(--muted)]">
+              Quá trình này có thể mất vài giây.
+            </p>
           </div>
 
-          <div v-if="aiSuggestions.length" class="mt-5 grid gap-4">
+          <!-- Result -->
+          <div
+            v-if="!aiLoading && aiSuggestions.length"
+            class="mt-5 grid gap-4"
+          >
             <div
               v-for="item in aiSuggestions"
               :key="item.id"
               class="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4"
             >
-              <template v-if="item.type === 'analysis'">
+              <!-- Header -->
+              <div class="flex flex-wrap items-center justify-between gap-2">
                 <p class="text-sm font-black text-[var(--primary)]">
-                  Đánh giá nhanh bộ đề
+                  {{ item.type_label || "Câu hỏi AI" }}
                 </p>
 
-                <p class="mt-3 text-sm font-bold leading-7 text-[var(--text)]">
-                  {{ item.summary }}
-                </p>
+                <span
+                  v-if="
+                    aiOptions.action === 'generate_by_difficulty' &&
+                    item.difficulty_label
+                  "
+                  class="rounded-full bg-[var(--chip-active)] px-3 py-1 text-xs font-black text-[var(--muted)]"
+                >
+                  {{ item.difficulty_label }}
+                </span>
+              </div>
 
-                <div class="mt-3 grid gap-2">
-                  <p
-                    v-for="point in item.recommendations"
-                    :key="point"
-                    class="rounded-xl bg-[var(--surface-soft)] p-3 text-xs font-bold leading-6 text-[var(--muted)]"
-                  >
-                    {{ point }}
-                  </p>
-                  <div
-                    v-if="item.actions?.length"
-                    class="mt-4 flex flex-wrap gap-2"
-                  >
-                    <button
-                      v-for="actionItem in item.actions"
-                      :key="actionItem.label"
-                      type="button"
-                      class="rounded-full bg-[var(--primary)] px-4 py-2 text-xs font-black text-white"
-                      @click="runAnalysisAction(actionItem)"
-                    >
-                      {{ actionItem.label }}
-                    </button>
-                  </div>
-                </div>
-              </template>
+              <!-- Question -->
+              <p
+                data-ai-latex
+                class="mt-3 text-sm font-bold leading-7 text-[var(--text)]"
+              >
+                {{ item.question }}
+              </p>
 
-              <template v-else>
-                <div class="flex flex-wrap items-center justify-between gap-2">
-                  <p class="text-sm font-black text-[var(--primary)]">
-                    {{ item.type_label }}
-                  </p>
+              <!-- Options -->
+              <div v-if="item.options" class="mt-3 grid gap-2">
+                <div
+                  v-for="(value, key) in item.options"
+                  :key="key"
+                  class="rounded-xl bg-[var(--surface-soft)] px-3 py-2 text-xs font-bold text-[var(--muted)]"
+                >
+                  <span class="mr-1 font-black text-[var(--primary)]">
+                    {{ key }}.
+                  </span>
 
-                  <span
-                    class="rounded-full bg-[var(--chip-active)] px-3 py-1 text-xs font-black text-[var(--muted)]"
-                  >
-                    {{ item.difficulty_label }}
+                  <span data-ai-latex>
+                    {{ value }}
                   </span>
                 </div>
+              </div>
+
+              <!-- Solution summary -->
+              <div
+                v-if="item.solution_summary"
+                class="mt-3 rounded-xl bg-[var(--surface-soft)] p-3"
+              >
+                <p class="text-xs font-black uppercase text-[var(--muted)]">
+                  💡 Hướng giải
+                </p>
 
                 <p
                   data-ai-latex
-                  class="mt-3 text-sm font-bold leading-7 text-[var(--text)]"
+                  class="mt-2 text-xs leading-6 text-[var(--muted)]"
                 >
-                  {{ item.question }}
+                  {{ item.solution_summary }}
                 </p>
+              </div>
 
-                <div
-                  v-if="item.options"
-                  class="mt-3 grid gap-2 text-xs font-bold text-[var(--muted)]"
+              <!-- Knowledge -->
+              <div
+                v-if="item.knowledge_points?.length"
+                class="mt-3 flex flex-wrap gap-2"
+              >
+                <span
+                  v-for="point in item.knowledge_points"
+                  :key="point"
+                  class="rounded-full bg-[var(--chip-active)] px-3 py-1 text-xs font-black text-[var(--muted)]"
                 >
-                  <p
-                    v-for="(value, key) in item.options"
-                    :key="key"
-                    data-ai-latex
-                  >
-                    {{ key }}. {{ value }}
-                  </p>
-                </div>
+                  {{ point }}
+                </span>
+              </div>
 
-                <div class="mt-3 rounded-xl bg-[var(--surface-soft)] p-3">
-                  <p class="text-xs font-black uppercase text-[var(--muted)]">
-                    💡 Tóm tắt hướng giải
-                  </p>
-
-                  <p
-                    data-ai-latex
-                    class="mt-2 text-xs leading-6 text-[var(--muted)]"
-                  >
-                    {{ item.solution_summary }}
-                  </p>
-                </div>
-
-                <div class="mt-3 flex flex-wrap gap-2">
-                  <span
-                    v-for="point in item.knowledge_points"
-                    :key="point"
-                    class="rounded-full bg-[var(--chip-active)] px-3 py-1 text-xs font-black text-[var(--muted)]"
-                  >
-                    {{ point }}
-                  </span>
-                </div>
-
-                <button
-                  type="button"
-                  class="mt-4 rounded-full bg-[var(--primary)] px-4 py-2 text-xs font-black text-white"
-                  @click="applyAiSuggestion(item)"
-                >
-                  Thêm vào đề
-                </button>
-              </template>
+              <!-- Add -->
+              <button
+                type="button"
+                class="mt-4 rounded-full bg-[var(--primary)] px-4 py-2 text-xs font-black text-white"
+                @click="applyAiSuggestion(item)"
+              >
+                + Thêm vào đề
+              </button>
             </div>
           </div>
         </div>
@@ -1272,10 +1348,10 @@
 
                     <div class="min-w-0 flex-1">
                       <p
-                        v-if="issue.question_number"
+                        v-if="issue.question_id"
                         class="text-xs font-black uppercase text-amber-400"
                       >
-                        Câu {{ issue.question_number }}
+                        Câu {{ getQuestionNumber(issue.question_id) }}
                       </p>
 
                       <p
@@ -1431,9 +1507,10 @@ const aiOptions = ref({
 });
 
 const getQuestionNumber = (id) => {
-  return questions.value.findIndex((q) => q.id === id) + 1;
-};
+  const index = questions.value.findIndex((q) => String(q.id) === String(id));
 
+  return index >= 0 ? index + 1 : null;
+};
 const selectedQuestions = computed(() => {
   return questions.value.filter((q) =>
     selectedQuestionIds.value.includes(q.id),
@@ -2420,14 +2497,11 @@ const renderAiSuggestionLatex = async () => {
 
 // Gọi API để tạo gợi ý AI theo lựa chọn hiện tại.
 const generateAiSuggestions = async (key) => {
-  const needSelected = ["similar", "better_options"];
+  const needSelected = ["similar"];
 
-  if (
-    aiOptions.value.scope === "selected" &&
-    needSelected.includes(key) &&
-    !selectedQuestions.value.length
-  ) {
-    showToast("Vui lòng chọn ít nhất 1 câu để AI có dữ liệu gợi ý.", "error");
+  if (key === "similar" && !selectedQuestions.value.length) {
+    showToast("Hãy chọn ít nhất 1 câu để AI tạo câu tương tự.", "error");
+
     return;
   }
 
@@ -2571,15 +2645,13 @@ const requestAiReview = async (forceFullReview = false) => {
     aiReviewLoading.value = true;
 
     const { data } = await aiQuizApi.review(payload);
-    saveAiReviewQuestionSnapshots(changedQuestions);
-
     if (isFullReview) {
-      // Review toàn bộ lần đầu
       aiReviewResult.value = data;
     } else {
-      // Merge kết quả mới vào kết quả cũ
-      mergeAiReviewResult(data);
+      mergeAiReviewResult(data, changedQuestions);
     }
+
+    saveAiReviewQuestionSnapshots(changedQuestions);
   } catch (error) {
     showToast(
       error?.response?.data?.message || "AI phân tích Quiz thất bại.",
@@ -2591,30 +2663,34 @@ const requestAiReview = async (forceFullReview = false) => {
 };
 
 // Gộp kết quả review mới với kết quả cũ.
-const mergeAiReviewResult = (newResult) => {
+const mergeAiReviewResult = (newResult, reviewedQuestions) => {
   if (!aiReviewResult.value) {
     aiReviewResult.value = newResult;
     return;
   }
 
-  const changedIds = new Set(
-    (newResult.reviewed_question_ids || []).map(String),
-  );
+  // Frontend tự biết chính xác câu nào vừa gửi đi Review.
+  // Không phụ thuộc AI trả reviewed_question_ids.
+  const changedIds = new Set(reviewedQuestions.map((q) => String(q.id)));
 
   const oldIssues = aiReviewResult.value.issues || [];
 
   const newIssues = newResult.issues || [];
 
+  // Xóa toàn bộ issue cũ liên quan tới
+  // những câu vừa được Review lại.
+  const remainingOldIssues = oldIssues.filter((issue) => {
+    const questionId = String(issue.question_id ?? "");
+
+    const relatedId = String(issue.related_question_id ?? "");
+
+    return !changedIds.has(questionId) && !changedIds.has(relatedId);
+  });
+
   aiReviewResult.value = {
     ...aiReviewResult.value,
 
-    issues: [
-      ...oldIssues.filter(
-        (issue) => !changedIds.has(String(issue.question_id)),
-      ),
-
-      ...newIssues,
-    ],
+    issues: [...remainingOldIssues, ...newIssues],
   };
 };
 
@@ -2729,8 +2805,9 @@ const buildAiPayload = (action) => {
         : [],
     options: {
       count: aiOptions.value.count || 5,
-      difficulty: aiOptions.value.difficulty,
-      scope: aiOptions.value.scope,
+      difficulty:
+        action === "generate_by_difficulty" ? aiOptions.value.difficulty : null,
+      scope: action === "similar" ? "selected" : "all",
       keep_grade_scope: true,
       has_images: Boolean(q.images?.length),
       image_count: q.images?.length || 0,
@@ -2756,10 +2833,18 @@ const normalizeAiQuestion = (q) => {
 
   return {
     id: q.id,
+
+    question_number: getQuestionNumber(q.id),
+
     type: q.type,
     question,
+
     options: q.type === "fill_blank" ? null : options,
+
     correct_answer: q.correct_answer,
+
+    has_images: Boolean(q.images?.length),
+    image_count: q.images?.length || 0,
   };
 };
 </script>
