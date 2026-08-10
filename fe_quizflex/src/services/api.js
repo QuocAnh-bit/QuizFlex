@@ -20,6 +20,7 @@ export const normalizeRole = (role) => {
   const value = String(role || "guest")
     .trim()
     .toLowerCase();
+  if (value === "user") return "user";
   return ["admin", "plus", "pro", "ultra", "free", "guest"].includes(value)
     ? value
     : "guest";
@@ -28,6 +29,7 @@ export const normalizeRole = (role) => {
 export const roleLabel = (role) =>
   ({
     admin: "Admin",
+    user: "User",
     plus: "Plus",
     pro: "Pro",
     ultra: "Ultra",
@@ -549,6 +551,17 @@ export const attemptsApi = {
   async list(params = {}) {
     const { data } = await api.get("/quiz-attempts", { params });
     return unwrapCollection(data);
+  },
+
+  async listPage(params = {}) {
+    const { data } = await api.get("/quiz-attempts", { params });
+    const page = unwrap(data);
+
+    return {
+      items: unwrapCollection(data),
+      currentPage: Number(page?.current_page || 1),
+      lastPage: Number(page?.last_page || 1),
+    };
   },
 
   async get(id) {

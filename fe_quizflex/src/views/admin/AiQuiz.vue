@@ -68,49 +68,6 @@
               {{ statusLabel }}
             </span>
           </div>
-          <!-- KHU VỰC HIỂN THỊ TIẾN ĐỘ NGẦM (CHỈ HIỆN KHI ĐANG CHẠY) -->
-          <!-- <div v-if="isGenerating || isPolling" class="mt-6 rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface-soft)] p-6">
-            <h3 class="text-xs font-black uppercase tracking-[0.16em] text-[var(--text)] mb-5">Tiến trình xử lý AI</h3>
-
-            
-            <div class="w-full bg-[var(--surface)] rounded-full h-1.5 mb-6 overflow-hidden border border-[var(--border)]">
-              <div class="bg-[var(--primary)] h-1.5 transition-all duration-500 ease-out" :style="{ width: progressPercentage + '%' }"></div>
-            </div>
-
-            
-            <div class="space-y-5 relative before:absolute before:inset-0 before:left-[15px] before:bg-[var(--border)] before:w-[1px]">
-              
-              <div class="flex items-start space-x-4 relative">
-                <div :class="getStepClass('validate_prompt')" class="w-8 h-8 rounded-full flex items-center justify-center z-10 font-bold border-2 text-xs transition-colors duration-300">1</div>
-                <div class="flex-1 pt-1.5">
-                  <p class="text-sm transition-colors duration-300" :class="getTextClass('validate_prompt')">Kiểm tra và tối ưu câu lệnh</p>
-                  <span v-if="currentStep === 'validate_prompt'" class="text-xs text-[var(--primary)] mt-1 block">Đang phân tích...</span>
-                </div>
-              </div>
-              
-              <div class="flex items-start space-x-4 relative">
-                <div :class="getStepClass('calling_ai_api')" class="w-8 h-8 rounded-full flex items-center justify-center z-10 font-bold border-2 text-xs transition-colors duration-300">2</div>
-                <div class="flex-1 pt-1.5">
-                  <p class="text-sm transition-colors duration-300" :class="getTextClass('calling_ai_api')">Gửi dữ liệu và chờ AI phản hồi</p>
-                  <span v-if="currentStep === 'calling_ai_api'" class="text-xs text-[var(--primary)] mt-1 block">AI đang suy nghĩ (Có thể mất 10-20s)...</span>
-                </div>
-              </div>
-              
-              <div class="flex items-start space-x-4 relative">
-                <div :class="getStepClass('parsing_ai_response')" class="w-8 h-8 rounded-full flex items-center justify-center z-10 font-bold border-2 text-xs transition-colors duration-300">3</div>
-                <div class="flex-1 pt-1.5">
-                  <p class="text-sm transition-colors duration-300" :class="getTextClass('parsing_ai_response')">Bóc tách dữ liệu câu hỏi</p>
-                </div>
-              </div>
-              
-              <div class="flex items-start space-x-4 relative">
-                <div :class="getStepClass('saving_to_database')" class="w-8 h-8 rounded-full flex items-center justify-center z-10 font-bold border-2 text-xs transition-colors duration-300">4</div>
-                <div class="flex-1 pt-1.5">
-                  <p class="text-sm transition-colors duration-300" :class="getTextClass('saving_to_database')">Đồng bộ đáp án vào hệ thống</p>
-                </div>
-              </div>
-            </div>
-          </div> -->
           <div v-if="isGenerating || isPolling" class="mt-6 rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface-soft)] p-6">
             <div class="flex items-center justify-between mb-3">
               <p class="text-sm font-bold text-[var(--text)]">{{ currentLabel }}</p>
@@ -223,7 +180,7 @@ const errorMessage = ref('')
 const successMessage = ref('')
 const jobId = ref('')
 const jobStatus = ref('')
-const currentStep = ref('') // <-- Thêm biến này
+const currentStep = ref('')
 const generatedQuiz = ref(null)
 let pollTimer = null
 

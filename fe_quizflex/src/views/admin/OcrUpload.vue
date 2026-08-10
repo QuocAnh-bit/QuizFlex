@@ -1720,7 +1720,6 @@ const saveQuestions = async () => {
     showToast("Lưu bộ đề thành công", "success");
     router.push(questionBase.value);
 
-    console.log("Quiz đã lưu:", data);
   } catch (error) {
     console.error(error);
 

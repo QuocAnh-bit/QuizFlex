@@ -116,8 +116,8 @@
       </div>
 
       <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-card)]">
-  <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">5.2 Năng lực theo chủ đề</p>
-  <h2 class="mt-2 text-2xl font-black text-[var(--text)]">Điểm trung bình theo chủ đề</h2>
+  <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">5.2 Hiệu quả theo chủ đề</p>
+  <h2 class="mt-2 text-2xl font-black text-[var(--text)]">Điểm theo chủ đề</h2>
 
   <div v-if="categoryStats.length === 0" class="mt-6 rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface-soft)] p-10 text-center text-sm font-bold text-[var(--muted)]">
     Chưa có đủ dữ liệu để phân tích theo chủ đề.
@@ -127,7 +127,7 @@
     <div v-for="item in categoryStats" :key="item.name" class="grid gap-2">
       <div class="flex items-center justify-between text-sm font-bold">
         <span class="text-[var(--text)]">{{ item.name }}</span>
-        <span class="text-[var(--muted)]">{{ item.average }}% &middot; {{ item.count }} bài</span>
+        <span class="text-[var(--muted)]">{{ item.average }}% &middot; {{ item.count }} quiz &middot; {{ item.totalPoints }} điểm</span>
       </div>
       <div class="h-3 w-full overflow-hidden rounded-full bg-[var(--surface-soft)]">
         <div
@@ -140,6 +140,10 @@
       </div>
     </div>
   </div>
+
+  <p v-if="categoryStats.length && qualifiedCategoryStats.length < 2" class="mt-6 text-sm leading-6 text-[var(--muted)]">
+    <template v-if="qualifiedCategoryStats.length === 0">Chưa có chủ đề nào đủ dữ liệu để kết luận.</template>
+  </p>
 
   <div v-if="strongestCategory || weakestCategory" class="mt-6 grid gap-3 sm:grid-cols-2">
     <div v-if="strongestCategory" class="rounded-[1.5rem] border border-emerald-500/25 bg-emerald-500/10 p-4">
@@ -265,27 +269,63 @@ const areaPath = computed(() => {
   return `${path} L ${points[points.length - 1].x.toFixed(2)} ${baseY} L ${points[0].x.toFixed(2)} ${baseY} Z`
 })
 
+const normalizeCategory = (category) => {
+  const name = String(category || '').trim().replace(/\s+/g, ' ')
+  const key = name.toLocaleLowerCase('vi-VN')
+  if (!name || ['chưa phân loại', 'general'].includes(key)) return null
+
+  return {
+    key,
+    name,
+  }
+}
+
+// A retake is practice for the same quiz, not a separate assessment of topic mastery.
+const latestAttemptByQuiz = computed(() => {
+  const latest = new Map()
+
+  completedAttempts.value.forEach((attempt) => {
+    const current = latest.get(attempt.quiz_id)
+    const attemptTime = new Date(attempt.finished_at || attempt.started_at || 0).getTime()
+    const currentTime = current ? new Date(current.finished_at || current.started_at || 0).getTime() : -Infinity
+
+    if (!current || attemptTime >= currentTime) latest.set(attempt.quiz_id, attempt)
+  })
+
+  return [...latest.values()]
+})
+
 const categoryStats = computed(() => {
   const groups = {}
 
-  completedAttempts.value.forEach((attempt) => {
-    const name = attempt.quiz?.category?.trim() || 'Chưa phân loại'
-    if (!groups[name]) {
-      groups[name] = { name, totalScore: 0, count: 0 }
+  latestAttemptByQuiz.value.forEach((attempt) => {
+    const category = normalizeCategory(attempt.quiz?.category)
+    if (!category) return
+
+    if (!groups[category.key]) {
+      groups[category.key] = { name: category.name, score: 0, totalPoints: 0, count: 0 }
     }
-    groups[name].totalScore += Number(attempt.score_percent || 0)
-    groups[name].count += 1
+
+    const group = groups[category.key]
+    group.score += Number(attempt.score || 0)
+    group.totalPoints += Number(attempt.total_points || 0)
+    group.count += 1
   })
 
   return Object.values(groups)
-    .map((group) => ({ ...group, average: Math.round(group.totalScore / group.count) }))
-    .sort((a, b) => b.average - a.average)
+    .filter((group) => group.totalPoints > 0)
+    .map((group) => ({ ...group, average: Math.round((group.score * 100) / group.totalPoints) }))
+    .sort((a, b) => b.average - a.average || b.count - a.count)
 })
 
-const strongestCategory = computed(() => categoryStats.value[0] || null)
+const qualifiedCategoryStats = computed(() => categoryStats.value.filter((item) => item.count >= 3 && item.totalPoints >= 20))
+const strongestCategory = computed(() => {
+  if (qualifiedCategoryStats.value.length < 2) return null
+  return qualifiedCategoryStats.value[0]
+})
 const weakestCategory = computed(() => {
-  if (categoryStats.value.length < 2) return null
-  return categoryStats.value[categoryStats.value.length - 1]
+  if (qualifiedCategoryStats.value.length < 2) return null
+  return qualifiedCategoryStats.value[qualifiedCategoryStats.value.length - 1]
 })
 
 const quickComment = computed(() => {
@@ -317,7 +357,18 @@ const loadAnalytics = async () => {
   errorMessage.value = ''
 
   try {
-    attempts.value = await attemptsApi.list({ status: 'completed', per_page: 100 })
+    const allAttempts = []
+    let page = 1
+    let lastPage = 1
+
+    do {
+      const result = await attemptsApi.listPage({ status: 'completed', per_page: 100, page })
+      allAttempts.push(...result.items)
+      page += 1
+      lastPage = result.lastPage
+    } while (page <= lastPage)
+
+    attempts.value = allAttempts
   } catch (error) {
     errorMessage.value = `Không tải được dữ liệu phân tích: ${error.message}`
   } finally {

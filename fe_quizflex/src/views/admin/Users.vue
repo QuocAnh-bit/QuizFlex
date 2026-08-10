@@ -53,7 +53,6 @@
             Thùng rác
           </button>
         </div>
-        <!-- <p class="text-xs text-[var(--muted)]">Quản lý toàn bộ người dùng, tìm kiếm, lọc, xóa mềm và khôi phục.</p> -->
       </div>
 
       <div v-if="viewMode === 'active'" class="space-y-6 p-5">
@@ -620,7 +619,7 @@ const updateRole = async (user) => {
   errorMessage.value = ''
   successMessage.value = ''
   try {
-    const updated = await usersApi.update(user.id, { role: user.role.toUpperCase() })
+    const updated = await usersApi.update(user.id, { role: user.role.toLowerCase() })
     const normalized = normalizeUser(updated)
     const userIndex = users.value.findIndex((u) => u.id === user.id)
     if (userIndex > -1) {
@@ -640,7 +639,8 @@ const selectUserForEdit = (user) => {
   editingUser.id = user.id
   editingUser.name = user.name
   editingUser.email = user.email
-  editingUser.role = user.role
+  // role từ backend là getRole() nên 'free'/'plus'/'pro'/'ultra' = user thường, 'admin' = admin
+  editingUser.role = (user.role === 'admin' || (user.role_label || '').toLowerCase() === 'admin') ? 'admin' : 'user'
   editingUser.plan = user.plan || 'free'
   editingUser.plan_started_at = user.plan_started_at ? user.plan_started_at.slice(0, 16) : null
   editingUser.plan_expires_at = user.plan_expires_at ? user.plan_expires_at.slice(0, 16) : null
@@ -664,8 +664,8 @@ const saveUserEdit = async () => {
       email: editingUser.email,
       plan: editingUser.plan,
     }
-    if (!isSubAdmin.value) {
-      payload.role = editingUser.role
+    if (!isSubAdmin.value && ['admin', 'user'].includes(String(editingUser.role || '').toLowerCase())) {
+      payload.role = String(editingUser.role).toLowerCase()
     }
     if (editingUser.password) {
       payload.password = editingUser.password

@@ -137,7 +137,7 @@ class AIController extends Controller
                 'difficulty' => $job->difficulty,
                 'language' => $job->language,
                 'visibility' => $job->visibility,
-                'current_step' => $job->current_step, // <-- THÊM DÒNG NÀY
+                'current_step' => $job->current_step,
                 'questions_generated' => $job->questions_generated,
                 'quiz_id' => $job->quiz_id,
                 'log_id' => $job->ai_log_id,

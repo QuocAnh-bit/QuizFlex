@@ -425,7 +425,7 @@ public function toggleVisibility($id)
             $isPublic = false;
         }
 
-        $category = $data['category'] ?? $currentQuiz?->category ?? 'General';
+        $category = $this->normalizeCategory($data['category'] ?? $currentQuiz?->category ?? 'General');
 
         return [
             'user_id' => $userId,
@@ -442,6 +442,13 @@ public function toggleVisibility($id)
             'icon' => array_key_exists('icon', $data) ? ($data['icon'] ?: null) : $currentQuiz?->icon,
             'badge' => array_key_exists('badge', $data) ? ($data['badge'] ?: strtoupper(substr($category, 0, 4))) : $currentQuiz?->badge,
         ];
+    }
+
+    private function normalizeCategory(?string $category): string
+    {
+        $normalized = preg_replace('/\s+/u', ' ', trim((string) $category));
+
+        return $normalized !== '' ? $normalized : 'General';
     }
 
     private function syncQuestions(Quiz $quiz, array $questions): void
