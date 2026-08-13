@@ -45,8 +45,7 @@
             <td class="p-4 text-[var(--muted)] max-w-xs truncate" :title="report.description">
               {{ report.description || '--' }}
             </td>
-            <td class="p-4 text-center space-x-3">
-              <!-- Nhóm nút Xử lý Báo cáo -->
+            <!-- <td class="p-4 text-center space-x-3">
               <template v-if="report.status === 'pending'">
                 <button @click="updateStatus(report.id, 'resolved')" class="text-emerald-400 hover:underline font-bold" title="Duyệt và đánh dấu đã xử lý">
                   ✅ Duyệt
@@ -56,7 +55,6 @@
                 </button>
               </template>
               
-              <!-- Nhóm nút Xử lý Quiz (Yêu cầu của Leader) -->
               <span v-if="report.status === 'pending'" class="text-[var(--border-strong)]">|</span>
               
               <RouterLink :to="`/admin/quizzes/${report.quiz_id}/edit`" class="text-amber-400 hover:underline font-bold">
@@ -64,6 +62,24 @@
               </RouterLink>
               <button @click="deleteQuiz(report.quiz_id, report.id)" class="text-rose-400 hover:underline font-bold">
                 Xóa Quiz
+              </button>
+            </td> -->
+
+            <td class="p-4 text-center space-x-3">
+              <template v-if="report.status === 'pending'">
+                <button @click="updateStatus(report.id, 'resolved')" class="text-emerald-400 hover:underline font-bold">✅ Duyệt</button>
+                <button @click="updateStatus(report.id, 'dismissed')" class="text-gray-400 hover:underline font-bold">❌ Bỏ qua</button>
+                <button @click="requestFix(report.id)" class="text-sky-400 hover:underline font-bold">📩 Yêu cầu sửa</button>
+              </template>
+
+              <span v-if="report.status === 'needs_fix'" class="text-xs font-bold text-sky-400">
+                ⏳ Đang chờ chủ quiz sửa
+              </span>
+
+              <span class="text-[var(--border-strong)]">|</span>
+
+              <button @click="deleteQuiz(report.quiz_id, report.id)" class="text-rose-400 hover:underline font-bold">
+                🗑️ Xóa Quiz
               </button>
             </td>
           </tr>
@@ -124,6 +140,25 @@ const updateStatus = async (id, status) => {
   }
 }
 
+const requestFix = (id) => {
+  if (showConfirm) {
+    showConfirm(
+      'Yêu cầu chủ quiz chỉnh sửa',
+      'Hệ thống sẽ gửi thông báo kèm lý do báo cáo tới chủ quiz để họ tự sửa. Tiếp tục?',
+      async () => {
+        try {
+          await reportApi.requestFix(id)
+          const index = reports.value.findIndex(r => r.id === id)
+          if (index !== -1) reports.value[index].status = 'needs_fix'
+          if (showToast) showToast('Đã gửi yêu cầu chỉnh sửa tới chủ quiz')
+        } catch (error) {
+          if (showToast) showToast('Có lỗi xảy ra!', 'error')
+        }
+      }
+    )
+  }
+}
+
 // Xử lý Xóa Quiz trực tiếp từ Report
 const deleteQuiz = (quizId, reportId) => {
   if (showConfirm) {
@@ -153,6 +188,7 @@ const getStatusBadge = (status) => {
   const base = "rounded-full px-3 py-1 text-xs font-black uppercase tracking-wider border inline-block "
   switch (status) {
     case 'pending': return base + "border-amber-500/30 bg-amber-500/10 text-amber-400"
+    case 'needs_fix': return base + "border-sky-500/30 bg-sky-500/10 text-sky-400"
     case 'resolved': return base + "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
     case 'dismissed': return base + "border-gray-500/30 bg-gray-500/10 text-gray-400"
     default: return base + "border-gray-500/30 bg-gray-500/10 text-gray-400"
@@ -162,6 +198,7 @@ const getStatusBadge = (status) => {
 const getStatusText = (status) => {
   switch (status) {
     case 'pending': return 'Chờ xử lý'
+    case 'needs_fix': return 'Chờ chủ quiz sửa'
     case 'resolved': return 'Đã xử lý'
     case 'dismissed': return 'Đã bỏ qua'
     default: return status

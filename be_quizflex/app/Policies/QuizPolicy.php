@@ -62,10 +62,7 @@ class QuizPolicy
      */
     public function update(User $user, Quiz $quiz): bool
     {
-        $role = strtolower($user->role ?? 'user');
-        if ($role === 'admin') {
-            return true;
-        }
+        // Chủ quiz mới được sửa nội dung — Admin không còn tự sửa quiz của user nữa.
         return $user->id == $quiz->user_id;
     }
 

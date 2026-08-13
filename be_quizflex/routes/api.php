@@ -119,6 +119,7 @@ Route::middleware('auth:api')->group(function () {
         // Quản lý báo cáo vi phạm cho admin
         Route::get('/admin/report-tickets', [ReportTicketController::class, 'index']);
         Route::put('/admin/report-tickets/{id}', [ReportTicketController::class, 'update']);
+        Route::put('/admin/report-tickets/{id}/request-fix', [ReportTicketController::class, 'requestFix']);
 
         // Quản lý quiz cho admin
         Route::middleware('role:admin')->group(function () {

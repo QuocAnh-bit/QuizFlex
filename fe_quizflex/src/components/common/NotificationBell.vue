@@ -182,6 +182,7 @@ const getIcon = (type) => {
     // Others
     'payment_success': '💳',
     'report_created': '🚨',
+    'report_quiz_fixed': '🔧',
     'report_resolved': '✅',
     'report_action': '🚨',
     'achievement_unlocked': '🏆',

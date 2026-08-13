@@ -82,6 +82,33 @@ class ReportTicketController extends Controller
             'message' => 'Cập nhật thành công và đã gửi thông báo cho chủ quiz.',
         ]);
     }
+    /**
+     * Admin yêu cầu chủ quiz tự chỉnh sửa nội dung bị báo cáo
+     */
+    public function requestFix($id)
+    {
+        $report = ReportTicket::with('quiz.user')->findOrFail($id);
+
+        if ($report->status !== 'pending') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Chỉ có thể yêu cầu sửa với báo cáo đang chờ xử lý.',
+            ], 422);
+        }
+
+        $report->update(['status' => 'needs_fix']);
+
+        if ($report->quiz && $report->quiz->user) {
+            $report->quiz->user->notify(
+                new QuizModerated($report->quiz, 'needs_fix', $report->reason)
+            );
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Đã gửi yêu cầu chỉnh sửa tới chủ quiz.',
+        ]);
+    }
 
     public function countPending()
     {

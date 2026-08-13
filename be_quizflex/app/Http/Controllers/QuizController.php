@@ -7,6 +7,9 @@ use App\Models\Question;
 use App\Models\Quiz;
 use App\Models\User;
 use App\Notifications\QuizModerated;
+use App\Notifications\ReportFixedByOwner;
+use App\Models\ReportTicket;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -205,12 +208,22 @@ class QuizController extends Controller
             return $quiz->fresh(['user:id,name', 'questions.answers']);
         });
 
-        // NẾU NGƯỜI SỬA KHÔNG PHẢI LÀ CHỦ QUIZ (LÀ ADMIN) -> GỬI THÔNG BÁO 'edited'
+        // CHỦ QUIZ tự sửa & quiz đang có report ở trạng thái 'needs_fix'
+        // -> đưa report về lại 'pending' và báo admin xem lại.
         $currentUserId = auth('api')->id();
-        if ($currentUserId !== null && $currentUserId !== $quiz->user_id) {
-            $owner = User::find($quiz->user_id);
-            if ($owner) {
-                $owner->notify(new QuizModerated($quiz, 'edited'));
+        if ($currentUserId !== null && $currentUserId === $quiz->user_id) {
+            $report = ReportTicket::where('quiz_id', $quiz->id)
+                ->where('status', 'needs_fix')
+                ->latest()
+                ->first();
+
+            if ($report) {
+                $report->update(['status' => 'pending']);
+
+                $admins = User::where('role', 'admin')->get();
+                if ($admins->isNotEmpty()) {
+                    Notification::send($admins, new ReportFixedByOwner($report, $quiz));
+                }
             }
         }
 
@@ -221,35 +234,6 @@ class QuizController extends Controller
         ]);
     }
 
-    // public function destroy(Quiz $quiz)
-    // {
-    //     Gate::forUser(auth('api')->user())->authorize('delete', $quiz);
-
-    //     if ($quiz->trashed()) {
-    //         return response()->json([
-    //             'success' => true,
-    //             'message' => 'Quiz đã được xóa mềm trước đó.',
-    //         ]);
-    //     }
-
-    //     $ownerId = $quiz->user_id; // Lưu lại ID chủ Quiz trước khi xóa
-
-    //     $quiz->delete();
-
-    //     // NẾU NGƯỜI XÓA KHÔNG PHẢI LÀ CHỦ QUIZ (LÀ ADMIN) -> GỬI THÔNG BÁO 'deleted'
-    //     $currentUserId = auth('api')->id();
-    //     if ($currentUserId !== null && $currentUserId !== $ownerId) {
-    //         $owner = User::find($ownerId);
-    //         if ($owner) {
-    //             $owner->notify(new QuizModerated($quiz, 'deleted')); // Gửi trực tiếp biến $quiz vì nó đã bị Soft Delete nhưng vẫn truy cập được dữ liệu
-    //         }
-    //     }
-
-    //     return response()->json([
-    //         'success' => true,
-    //         'message' => 'Đã xóa mềm quiz',
-    //     ]);
-    // }
     public function destroy(Quiz $quiz)
     {
         $currentUser = auth('api')->user();
@@ -275,7 +259,16 @@ class QuizController extends Controller
             ]);
         }
 
+        $ownerId = $quiz->user_id;
+
         $quiz->delete();
+
+        if ($currentUser->id !== $ownerId) {
+            $owner = User::find($ownerId);
+            if ($owner) {
+                $owner->notify(new QuizModerated($quiz, 'deleted'));
+            }
+        }
 
         return response()->json([
             'success' => true,

@@ -1248,6 +1248,11 @@ export const reportApi = {
     const { data } = await api.put(`/admin/report-tickets/${id}`, { status });
     return unwrap(data);
   },
+
+  async requestFix(id) {
+  const { data } = await api.put(`/admin/report-tickets/${id}/request-fix`);
+  return unwrap(data);
+}
 };
 
 export const notificationApi = {
