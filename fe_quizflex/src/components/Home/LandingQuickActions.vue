@@ -1,6 +1,6 @@
 <template>
-  <section class="my-10">
-    <div class="grid gap-6 md:grid-cols-3">
+  <section class="w-full">
+    <div class="grid gap-5 md:grid-cols-3">
       <!-- Card 1: Làm quiz (Purple Accent) -->
       <router-link
         to="/quizzes"
