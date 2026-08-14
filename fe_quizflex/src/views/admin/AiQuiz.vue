@@ -7,8 +7,9 @@
         <h1 class="mt-1 text-2xl font-black text-slate-900 sm:text-3xl">Tạo đề thi bằng AI</h1>
         <p class="mt-1 text-sm text-slate-600">Nhập chủ đề hoặc tài liệu, AI sẽ tự động sinh ngân hàng câu hỏi và tạo quiz hoàn chỉnh.</p>
       </div>
-      <router-link :to="`${questionBase}/ocr`" class="btn-secondary text-xs px-3.5 py-1.5">
-        📄 Chuyển sang OCR từ tài liệu
+      <router-link :to="`${questionBase}/ocr`" class="btn-secondary inline-flex items-center gap-2 text-xs px-3.5 py-1.5">
+        <FileText class="h-3.5 w-3.5" />
+        <span>Chuyển sang OCR từ tài liệu</span>
       </router-link>
     </div>
 
@@ -69,9 +70,9 @@
           <div class="space-y-1">
             <label class="text-[11px] font-bold text-slate-600 block">Hiển thị</label>
             <select v-model="settings.visibility" class="field text-xs">
-              <option value="private">🔒 Private</option>
-              <option value="public">🌐 Public</option>
-              <option value="group">👥 Group</option>
+              <option value="private">Private</option>
+              <option value="public">Public</option>
+              <option value="group">Group</option>
             </select>
           </div>
         </div>

@@ -89,8 +89,10 @@
             <div class="grid grid-cols-2 gap-3 text-xs">
               <div class="rounded-xl border border-slate-100 bg-slate-50 p-3">
                 <span class="text-[10px] font-bold text-slate-400 uppercase block">Trạng thái</span>
-                <b class="font-bold" :class="user?.is_locked ? 'text-red-600' : 'text-emerald-600'">
-                  {{ user?.is_locked ? '🔒 Đang bị khóa' : '🟢 Đang hoạt động' }}
+                <b class="inline-flex items-center gap-1.5 font-bold" :class="user?.is_locked ? 'text-red-600' : 'text-emerald-600'">
+                  <Lock v-if="user?.is_locked" class="h-3.5 w-3.5" />
+                  <CheckCircle2 v-else class="h-3.5 w-3.5" />
+                  <span>{{ user?.is_locked ? 'Đang bị khóa' : 'Đang hoạt động' }}</span>
                 </b>
               </div>
               <div class="rounded-xl border border-slate-100 bg-slate-50 p-3">

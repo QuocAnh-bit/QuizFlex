@@ -108,7 +108,7 @@
           <input
             v-model="searchQuery"
             class="field text-xs min-w-[200px]"
-            placeholder="🔍 Tìm tên hoặc email..."
+            placeholder="Tìm tên hoặc email..."
           />
           <select v-model="sortBy" class="field text-xs">
             <option value="amount_desc">Chi tiêu cao nhất</option>

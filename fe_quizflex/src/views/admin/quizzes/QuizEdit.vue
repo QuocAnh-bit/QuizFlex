@@ -48,9 +48,9 @@
           <div class="space-y-1">
             <label class="text-xs font-bold text-slate-700 block">Hiển thị</label>
             <select v-model="form.visibility" class="field text-xs">
-              <option value="public">🌐 Public</option>
-              <option value="private">🔒 Private</option>
-              <option value="group">👥 Group</option>
+              <option value="public">Public</option>
+              <option value="private">Private</option>
+              <option value="group">Group</option>
             </select>
           </div>
         </div>
@@ -64,8 +64,9 @@
             </button>
           </div>
 
-          <div v-if="hasUnsupportedQuestionTypes" class="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs font-bold text-amber-800">
-            ⚠️ Quiz này có câu hỏi dạng "Nhiều đáp án" hoặc "Điền đáp án" — vui lòng dùng Quiz Editor chính để tránh mất dữ liệu khi lưu.
+          <div v-if="hasUnsupportedQuestionTypes" class="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs font-bold text-amber-800">
+            <TriangleAlert class="mt-0.5 h-4 w-4 shrink-0" />
+            <span>Quiz này có câu hỏi dạng "Nhiều đáp án" hoặc "Điền đáp án" — vui lòng dùng Quiz Editor chính để tránh mất dữ liệu khi lưu.</span>
           </div>
 
           <div class="space-y-4">
@@ -77,7 +78,7 @@
               <div class="flex items-center justify-between border-b border-slate-200/60 pb-2.5">
                 <h3 class="text-xs font-bold text-slate-900">Câu hỏi {{ qIndex + 1 }}</h3>
                 <button class="text-xs font-bold text-red-600 hover:underline" type="button" @click="removeQuestion(qIndex)">
-                  🗑 Xóa câu
+                  Xóa câu
                 </button>
               </div>
 
@@ -144,7 +145,7 @@
             Hủy
           </RouterLink>
           <button class="btn-primary text-xs px-5 py-2" type="button" :disabled="saving || hasUnsupportedQuestionTypes" @click="saveQuiz">
-            {{ saving ? 'Đang lưu...' : '💾 Lưu thay đổi' }}
+            {{ saving ? 'Đang lưu...' : 'Lưu thay đổi' }}
           </button>
         </div>
       </article>
@@ -155,6 +156,7 @@
 <script setup>
 import { ref, computed, onMounted, inject } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { TriangleAlert } from 'lucide-vue-next'
 import api from '@/services/api'
 
 const route = useRoute()

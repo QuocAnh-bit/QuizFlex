@@ -18,7 +18,7 @@
             ← Quay lại
           </RouterLink>
           <RouterLink :to="`/admin/quizzes/${quiz.id}/edit`" class="btn-primary text-xs px-3.5 py-1.5">
-            ✏️ Sửa Quiz
+            Sửa Quiz
           </RouterLink>
         </div>
       </div>
@@ -44,10 +44,12 @@
             <div class="rounded-xl border border-slate-100 bg-slate-50 p-3">
               <span class="block text-[10px] font-bold uppercase text-slate-400">Hiển thị</span>
               <span
-                class="font-bold block mt-0.5"
+                class="mt-0.5 flex items-center gap-1.5 font-bold"
                 :class="quiz.is_public ? 'text-emerald-700' : 'text-slate-600'"
               >
-                {{ quiz.is_public ? '🌐 Công khai (Public)' : '🔒 Riêng tư (Private)' }}
+                <Globe v-if="quiz.is_public" class="h-3.5 w-3.5" />
+                <Lock v-else class="h-3.5 w-3.5" />
+                <span>{{ quiz.is_public ? 'Công khai (Public)' : 'Riêng tư (Private)' }}</span>
               </span>
             </div>
           </div>

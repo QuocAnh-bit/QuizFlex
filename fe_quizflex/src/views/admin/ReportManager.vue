@@ -39,8 +39,9 @@
               </td>
               <td class="py-3.5 px-4 text-center">
                 <span class="font-bold text-red-600 block">{{ report.reason }}</span>
-                <span v-if="report.reason.includes('thô tục') || report.reason.includes('Profanity')" class="text-[9px] text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded font-bold uppercase mt-1 inline-block">
-                  🤖 AI lọc từ
+                <span v-if="report.reason.includes('thô tục') || report.reason.includes('Profanity')" class="mt-1 inline-flex items-center gap-1 rounded bg-amber-50 px-1.5 py-0.5 text-[9px] font-bold uppercase text-amber-700">
+                  <Bot class="h-3 w-3" />
+                  <span>AI lọc từ</span>
                 </span>
               </td>
               <td class="py-3.5 px-4 text-slate-500 max-w-xs truncate" :title="report.description">
@@ -80,6 +81,7 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, inject } from 'vue'
+import { Bot } from 'lucide-vue-next'
 import api, { reportApi } from '@/services/api' 
 
 const showToast = inject('showToast')

@@ -9,7 +9,7 @@
       </div>
       <div class="flex items-center gap-2.5">
         <RouterLink to="/admin/quizzes-trash" class="rounded-lg border border-red-200 bg-red-50 px-3.5 py-1.5 text-xs font-bold text-red-700 hover:bg-red-100 transition">
-          🗑️ Thùng rác
+          Thùng rác
         </RouterLink>
       </div>
     </div>
@@ -20,21 +20,21 @@
         <input
           v-model="filters.search"
           type="text"
-          placeholder="🔍 Tìm theo tên quiz..."
+          placeholder="Tìm theo tên quiz..."
           class="field text-xs"
           @keyup.enter="fetchQuizzes"
         />
         <input
           v-model="filters.creator"
           type="text"
-          placeholder="👤 Tìm theo người tạo..."
+          placeholder="Tìm theo người tạo..."
           class="field text-xs"
           @keyup.enter="fetchQuizzes"
         />
         <input
           v-model="filters.category"
           type="text"
-          placeholder="📁 Tìm theo danh mục..."
+          placeholder="Tìm theo danh mục..."
           class="field text-xs"
           @keyup.enter="fetchQuizzes"
         />
@@ -49,13 +49,13 @@
         </select>
         <select v-model="filters.visibility" class="field text-xs" @change="fetchQuizzes">
           <option value="">Mọi hiển thị</option>
-          <option value="public">🌐 Công khai (Public)</option>
-          <option value="private">🔒 Riêng tư (Private)</option>
+          <option value="public">Công khai (Public)</option>
+          <option value="private">Riêng tư (Private)</option>
         </select>
         <select v-model="filters.ai_generated" class="field text-xs" @change="fetchQuizzes">
           <option value="">Mọi nguồn tạo</option>
-          <option value="1">🤖 AI sinh đề</option>
-          <option value="0">✍️ Thủ công</option>
+          <option value="1">AI sinh đề</option>
+          <option value="0">Thủ công</option>
         </select>
         <button @click="fetchQuizzes" class="btn-primary text-xs py-2.5">
           Tìm kiếm

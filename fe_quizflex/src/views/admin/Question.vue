@@ -42,7 +42,7 @@
         <input 
           v-model="search" 
           class="field text-xs" 
-          placeholder="🔍 Tìm theo tên quiz, tác giả, thẻ tag..." 
+          placeholder="Tìm theo tên quiz, tác giả, thẻ tag..." 
           @keyup.enter="loadQuizzes" 
         />
         <select v-model="difficultyFilter" class="field text-xs" @change="loadQuizzes">
@@ -68,19 +68,21 @@
           v-for="item in visibilityChips" 
           :key="item.value" 
           type="button" 
-          class="rounded-lg border px-3 py-1 text-xs font-bold transition" 
+          class="inline-flex items-center gap-1.5 rounded-lg border px-3 py-1 text-xs font-bold transition" 
           :class="visibilityFilter === item.value ? 'bg-[#7C3AED] text-white border-[#7C3AED]' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'" 
           @click="setVisibility(item.value)"
         >
-          {{ item.label }}
+          <component v-if="item.icon" :is="item.icon" class="h-3.5 w-3.5" />
+          <span>{{ item.label }}</span>
         </button>
         <button 
           type="button" 
-          class="rounded-lg border px-3 py-1 text-xs font-bold transition" 
+          class="flex items-center gap-1.5 rounded-lg border px-3 py-1 text-xs font-bold transition" 
           :class="tagFilter === 'AI' ? 'bg-[#7C3AED] text-white border-[#7C3AED]' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'" 
           @click="tagFilter = tagFilter === 'AI' ? 'all' : 'AI'"
         >
-          🤖 AI Generated
+          <Bot class="h-3.5 w-3.5" />
+          <span>AI Generated</span>
         </button>
       </div>
     </article>
@@ -203,6 +205,7 @@
 <script setup>
 import { computed, onMounted, ref, inject } from 'vue'
 import { useRoute } from 'vue-router'
+import { Bot, Globe, Lock, Users } from 'lucide-vue-next'
 import VisibilityBadge from '@/components/common/VisibilityBadge.vue'
 import { normalizeQuizCard, quizzesApi } from '@/services/api'
 
@@ -222,10 +225,10 @@ const errorMessage = ref('')
 const showTrash = ref(false)
 
 const visibilityChips = [
-  { value: 'all', label: 'Tất cả' },
-  { value: 'public', label: '🌐 Public' },
-  { value: 'private', label: '🔒 Private' },
-  { value: 'group', label: '👥 Group' },
+  { value: 'all', label: 'Tất cả', icon: null },
+  { value: 'public', label: 'Public', icon: Globe },
+  { value: 'private', label: 'Private', icon: Lock },
+  { value: 'group', label: 'Group', icon: Users },
 ]
 
 const tags = computed(() => [...new Set(quizzes.value.map((quiz) => quiz.tag).filter(Boolean))])
