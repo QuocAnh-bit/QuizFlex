@@ -22,12 +22,31 @@ Broadcast::channel('live-room.{liveRoomId}', function ($user, $liveRoomId) {
         return false;
     }
 
-    if ((int) $liveRoom->host_id === (int) $user->id) {
-        return true;
+    $isHost = (int) $liveRoom->host_id === (int) $user->id;
+    $isPlayer = false;
+
+    if (!$isHost) {
+        $isPlayer = LiveRoomPlayer::where('live_room_id', $liveRoom->id)
+            ->where('user_id', $user->id)
+            ->where('status', 'joined')
+            ->exists();
     }
 
-    return LiveRoomPlayer::where('live_room_id', $liveRoom->id)
-        ->where('user_id', $user->id)
-        ->where('status', 'joined')
-        ->exists();
+    if (!$isHost && !$isPlayer) {
+        return false;
+    }
+
+    $tabId = request()->header('X-Tab-Id')
+        ?: request()->input('tab_id')
+        ?: request()->query('tab_id')
+        ?: (string) \Illuminate\Support\Str::uuid();
+
+    return [
+        'id' => $tabId,
+        'tab_id' => $tabId,
+        'user_id' => (int) $user->id,
+        'name' => $user->name,
+        'joined_at' => (int) (microtime(true) * 1000),
+    ];
 });
+

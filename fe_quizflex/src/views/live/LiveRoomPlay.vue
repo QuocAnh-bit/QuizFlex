@@ -1,5 +1,25 @@
 <template>
   <section class="grid gap-6 py-8 xl:grid-cols-[minmax(0,1fr)_360px]">
+    <!-- Modal Cảnh báo Đăng nhập đa Tab / Thiết bị -->
+    <transition name="fade">
+      <div v-if="isDuplicateTab" class="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-md">
+        <div class="w-full max-w-md rounded-[2rem] border border-rose-500/40 bg-[var(--surface)] p-6 shadow-2xl text-center">
+          <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-rose-500/10 text-3xl text-rose-400">
+            ⚠️
+          </div>
+          <h3 class="mt-4 text-xl font-black tracking-tight text-[var(--text)]">Phiên thi đấu bị gián đoạn</h3>
+          <p class="mt-2 text-sm leading-relaxed text-[var(--muted)]">
+            Tài khoản của bạn đang được mở trong một trình duyệt hoặc thiết bị khác. Bạn đã bị đưa ra khỏi phòng thi đấu này.
+          </p>
+          <div class="mt-6">
+            <button type="button" class="btn-primary w-full text-center" @click="confirmAndLeave">
+              Xác nhận và rời phòng
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
     <article class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-soft)]">
       <div v-if="errorMessage" class="mb-5 rounded-2xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm font-bold text-rose-300">{{ errorMessage }}</div>
       
@@ -184,13 +204,14 @@
 
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import StatusBadge from '@/components/common/StatusBadge.vue'
-import { getEcho } from '@/echo'
+import { getEcho, getTabId } from '@/echo'
 import { liveRoomApi, normalizeQuestion, currentUserStorage } from '@/services/api'
 import audioService from '@/services/audioService'
 
 const route = useRoute()
+const router = useRouter()
 const liveRoomId = computed(() => route.params.liveRoomId)
 const progress = ref({})
 const question = ref({ id: 0, question: '', answers: [] })
@@ -204,6 +225,11 @@ const lastRealtimeAt = ref(0)
 const lastAnswerResult = ref(null)
 const floatingPoints = ref(null)
 const currentUser = computed(() => currentUserStorage.get())
+
+// Multi-tab Collision State
+const isDuplicateTab = ref(false)
+const myTabId = getTabId()
+const myJoinedAt = ref(Date.now())
 
 const getAvatarInitial = (name) => {
   if (!name) return '?'
@@ -270,6 +296,7 @@ const rankMessage = computed(() => {
   const aboveName = aboveEntry.user?.name || `User #${aboveEntry.user_id}`
   return `Còn ${gap} điểm để vượt hạng ${aboveEntry.rank} (${aboveName})`
 })
+
 let pollTimer = null
 let leaderboardTimer = null
 let liveChannel = null
@@ -288,7 +315,34 @@ const markRealtime = () => {
 
 const hasRecentRealtime = () => Date.now() - lastRealtimeAt.value < realtimeFreshMs
 
+const confirmAndLeave = () => {
+  leaveRealtime()
+  router.push('/live-rooms')
+}
+
+const getMemberUserId = (m) => Number(m?.user_id ?? m?.info?.user_id ?? (typeof m?.id === 'number' ? m.id : null))
+const getMemberTabId = (m) => String(m?.tab_id ?? m?.info?.tab_id ?? m?.id ?? '')
+const getMemberJoinedAt = (m) => Number(m?.joined_at ?? m?.info?.joined_at ?? 0)
+
+const handleDuplicateSession = () => {
+  if (isDuplicateTab.value) return
+  isDuplicateTab.value = true
+
+  if (pollTimer) {
+    clearInterval(pollTimer)
+    pollTimer = null
+  }
+  if (leaderboardTimer) {
+    clearInterval(leaderboardTimer)
+    leaderboardTimer = null
+  }
+
+  audioService.stopAll()
+  leaveRealtime()
+}
+
 const loadLeaderboard = async (force = false) => {
+  if (isDuplicateTab.value) return
   if (!force && hasRecentRealtime()) return
 
   try {
@@ -307,6 +361,7 @@ const applyQuestionData = (data) => {
 }
 
 const loadCurrentQuestion = async (force = false) => {
+  if (isDuplicateTab.value) return
   if (!force && hasRecentRealtime()) return
 
   try {
@@ -344,52 +399,16 @@ const applyLeaderboardPayload = (leaderboardPayload) => {
   return true
 }
 
-// const handleRoomStarted = async (event) => {
-//   realtimeLog('live.room.started', event)
-//   markRealtime()
-// audioService.stopLobby()
-
-// setTimeout(() => {
-//   audioService.playCountdown()
-// }, 3000)
-
-//   roomStatus.value = event?.status || 'playing'
-//   progress.value = {
-//     ...progress.value,
-//     total_questions: event?.total_questions ?? progress.value.total_questions,
-//     player_current_question_index: progress.value.player_current_question_index ?? 0,
-//     current_question_index: progress.value.current_question_index ?? 0,
-//     player_finished: false,
-//     is_finished: false,
-//   }
-//   if (Array.isArray(event?.leaderboard)) {
-//     leaderboard.value = event.leaderboard
-//   }
-
-//   if (event?.current_question) {
-//     question.value = normalizeQuestion(event.current_question)
-//     selectedAnswerId.value = null
-//     errorMessage.value = ''
-//     return
-//   }
-
-//   await loadCurrentQuestion(true)
-// }
 const handleRoomStarted = async (event) => {
-    realtimeLog('live.room.started', event)
-        console.log("=== ROOM STARTED ===", event)
-
-    audioService.stopLobby()
-
-    roomStatus.value = event?.status || 'playing'
-
-    await loadCurrentQuestion(true)
+  realtimeLog('live.room.started', event)
+  audioService.stopLobby()
+  roomStatus.value = event?.status || 'playing'
+  await loadCurrentQuestion(true)
 }
 
 const handleRoomFinished = async (event) => {
   realtimeLog('live.room.finished', event)
   markRealtime()
-console.log('Finish event', event)
   audioService.playFinish()
 
   roomStatus.value = event?.status || 'finished'
@@ -415,13 +434,51 @@ const handleLeaderboardUpdated = async (event) => {
 }
 
 const subscribeToRealtime = () => {
+  if (isDuplicateTab.value) return
+
   try {
-    liveChannel = getEcho().private(`live-room.${liveRoomId.value}`)
+    myJoinedAt.value = Date.now()
+    liveChannel = getEcho().join(`live-room.${liveRoomId.value}`)
+
     liveChannel
+      .here((members) => {
+        realtimeLog('presence.here', members)
+        const myUserId = Number(currentUser.value?.id || currentUserStorage.get()?.id)
+        if (!myUserId) return
+
+        const myServerMember = (members || []).find((m) => getMemberTabId(m) === myTabId)
+        const myServerJoinedAt = getMemberJoinedAt(myServerMember) || myJoinedAt.value
+
+        // Kiểm tra xem có tab nào cùng user_id được tạo mới hơn không (dựa trên server joined_at)
+        const duplicate = (members || []).find((m) => {
+          const otherUserId = getMemberUserId(m)
+          const otherTabId = getMemberTabId(m)
+          const otherJoinedAt = getMemberJoinedAt(m)
+          return otherUserId === myUserId && otherTabId !== myTabId && otherJoinedAt > myServerJoinedAt
+        })
+
+        if (duplicate) {
+          handleDuplicateSession()
+        }
+      })
+      .joining((member) => {
+        realtimeLog('presence.joining', member)
+        const myUserId = Number(currentUser.value?.id || currentUserStorage.get()?.id)
+        if (!myUserId) return
+
+        const newUserId = getMemberUserId(member)
+        const newTabId = getMemberTabId(member)
+
+        // Khi có tab mới của cùng user_id tham gia -> tab hiện tại (cũ) nhường chỗ và tự động thoát
+        if (newUserId === myUserId && newTabId !== myTabId) {
+          handleDuplicateSession()
+        }
+      })
       .listen('.live.room.started', handleRoomStarted)
       .listen('.live.room.finished', handleRoomFinished)
       .listen('.live.leaderboard.updated', handleLeaderboardUpdated)
-  } catch {
+  } catch (err) {
+    console.error('[realtime] Subscribe presence error:', err)
     liveChannel = null
   }
 }
@@ -434,7 +491,7 @@ const leaveRealtime = () => {
 }
 
 const submitAnswer = async (answerId) => {
-  if (isAnswering.value || isFinished.value || isWaiting.value) return
+  if (isDuplicateTab.value || isAnswering.value || isFinished.value || isWaiting.value) return
   selectedAnswerId.value = answerId
   isAnswering.value = true
   answerMessage.value = ''
@@ -445,7 +502,6 @@ const submitAnswer = async (answerId) => {
     const oldRank = leaderboard.value.find(item => Number(item.user_id) === Number(currentUser.value?.id))?.rank || null
     const result = await liveRoomApi.answerLiveQuestion(liveRoomId.value, answerId)
 
-    // Phát âm thanh
     if (result.is_correct) {
       audioService.playCorrect()
     } else {
@@ -465,9 +521,7 @@ const submitAnswer = async (answerId) => {
     }
     roomStatus.value = result.room_status || roomStatus.value
     
-    // Phát nhạc khi người chơi hoàn thành
     if (result.player_finished || result.room_status === 'finished' || !result.has_next_question) {
-      console.log('PLAY FINISH')
       audioService.playFinish()
     }
     
@@ -517,23 +571,20 @@ const submitAnswer = async (answerId) => {
     isAnswering.value = false
   }
 }
+
 onMounted(async () => {
   audioService.playLobby()
-
   subscribeToRealtime()
-
   await loadCurrentQuestion(true)
 
   pollTimer = setInterval(loadCurrentQuestion, 10000)
   leaderboardTimer = setInterval(loadLeaderboard, 15000)
 })
+
 onBeforeUnmount(() => {
-
   audioService.stopAll()
-
   clearInterval(pollTimer)
   clearInterval(leaderboardTimer)
-
   leaveRealtime()
 })
 </script>
@@ -595,4 +646,14 @@ onBeforeUnmount(() => {
   transform: translateY(-20px);
   opacity: 0;
 }
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
 </style>
+
