@@ -1,136 +1,134 @@
 <template>
-  <section class="grid gap-6 py-8">
-    <div class="flex flex-wrap items-center justify-between gap-3">
-      <router-link class="btn-ghost" :to="`/homework-rooms/${roomId}`">Quay lại room</router-link>
+  <section class="max-w-3xl mx-auto py-4 space-y-6">
+    <div class="flex items-center justify-between">
+      <router-link class="btn-secondary text-xs" :to="`/homework-rooms/${roomId}`">← Quay lại phòng học</router-link>
     </div>
 
-    <div v-if="isLoading" class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-10 text-center text-sm font-bold text-[var(--muted)]">Đang tải dữ liệu giao bài...</div>
-    <div v-if="errorMessage" class="rounded-[2rem] border border-rose-500/30 bg-rose-500/10 p-5 text-sm font-bold text-rose-300">{{ errorMessage }}</div>
+    <div v-if="isLoading" class="card p-10 text-center text-xs font-semibold text-slate-500">
+      Đang tải dữ liệu giao bài...
+    </div>
+    <div v-if="errorMessage" class="rounded-xl border border-red-200 bg-red-50 p-4 text-xs font-bold text-red-700">
+      {{ errorMessage }}
+    </div>
 
     <template v-if="!isLoading && room">
-      <article class="relative overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-soft)] backdrop-blur-2xl">
-        <div class="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[var(--primary)]/15 blur-3xl"></div>
-        <div class="relative z-10 flex flex-col justify-between gap-5 xl:flex-row xl:items-end">
-          <div>
-            <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Assignment</p>
-            <h1 class="mt-2 text-4xl font-black tracking-[-0.06em] text-[var(--text)]">Giao quiz</h1>
-            <p class="mt-3 max-w-2xl text-sm leading-7 text-[var(--muted)]">Chọn quiz và thiết lập thời gian làm bài cho room homework.</p>
-          </div>
-          <div class="grid gap-2 text-right">
-            <span class="text-sm font-black text-[var(--text)]">{{ room.name || 'Room Homework' }}</span>
-            <span class="rounded-full bg-[var(--chip-active)] px-4 py-2 text-sm font-black text-[var(--primary)]">{{ room.code || 'NO CODE' }}</span>
-          </div>
+      <!-- Header -->
+      <div class="card p-6 sm:p-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+        <div>
+          <p class="text-xs font-bold uppercase tracking-wider text-blue-600">Giao bài tập</p>
+          <h1 class="mt-1 text-2xl font-black text-slate-900 sm:text-3xl">Giao quiz vào phòng</h1>
+          <p class="mt-1 text-sm text-slate-600">Chọn bộ câu hỏi và thiết lập thời hạn làm bài cho các thành viên.</p>
         </div>
-      </article>
-
-      <div class="grid gap-4 md:grid-cols-3">
-        <StatCard :value="String(quizzes.length)" label="Quiz có thể giao" hint="Nguồn từ kho quiz hiện có" />
-        <StatCard :value="String(form.max_attempts || 1)" label="Số lần làm" hint="Giới hạn cho mỗi thành viên" />
-        <StatCard :value="form.status" label="Trạng thái" hint="Trạng thái khi tạo assignment" />
+        <div class="text-right">
+          <span class="text-xs font-bold text-slate-900 block">{{ room.name || 'Phòng học' }}</span>
+          <span class="font-mono text-xs font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200 mt-1 inline-block">
+            {{ room.code || 'NO CODE' }}
+          </span>
+        </div>
       </div>
 
-      <article v-if="!canManageRoom" class="rounded-[2rem] border border-amber-500/30 bg-amber-500/10 p-6 text-sm font-bold text-amber-200">
-        Bạn không có quyền giao bài trong room này.
+      <article v-if="!canManageRoom" class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs font-bold text-amber-800">
+        Bạn không có quyền giao bài trong phòng này.
       </article>
 
-      <article v-else-if="!quizzes.length" class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-10 text-center shadow-[var(--shadow-card)]">
-        <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Empty</p>
-        <h2 class="mt-2 text-3xl font-black tracking-[-0.05em] text-[var(--text)]">Chưa có quiz để giao</h2>
-        <p class="mx-auto mt-3 max-w-xl text-sm leading-7 text-[var(--muted)]">Tạo quiz mới hoặc kiểm tra quyền truy cập quiz trước khi giao bài.</p>
-        <router-link class="btn-primary mt-6 inline-flex" to="/dashboard/questions/create">Tạo quiz</router-link>
+      <article v-else-if="!quizzes.length" class="card p-10 text-center text-slate-500 space-y-3">
+        <span class="text-3xl block">📦</span>
+        <h2 class="text-lg font-bold text-slate-800">Chưa có quiz để giao</h2>
+        <p class="text-xs max-w-sm mx-auto">Hãy tạo ít nhất một bộ quiz trong tài khoản của bạn trước khi giao bài.</p>
+        <router-link class="btn-primary text-xs" to="/dashboard/questions/create">Tạo quiz mới →</router-link>
       </article>
 
-      <form v-else class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-card)]" @submit.prevent="submitForm">
-        <div class="grid gap-5">
-          <label class="grid gap-2">
-            <span class="text-sm font-black text-[var(--text)]">Chọn quiz</span>
-            <select v-model="form.quiz_id" class="field" @change="syncTitleFromQuiz">
-              <option value="">Chọn quiz để giao</option>
+      <form v-else class="card p-6 sm:p-8 space-y-5" @submit.prevent="submitForm">
+        <div class="space-y-4">
+          <!-- Quiz Selector -->
+          <label class="grid gap-1.5 text-xs font-bold text-slate-700">
+            Chọn quiz từ kho <span class="text-red-500">*</span>
+            <select v-model="form.quiz_id" class="field text-xs" @change="syncTitleFromQuiz" required>
+              <option value="">-- Chọn bộ quiz muốn giao --</option>
               <option v-for="quiz in quizzes" :key="quiz.id" :value="quiz.id">
-                {{ quiz.title }} · {{ quiz.questions_count ?? quiz.questions?.length ?? 0 }} câu · {{ quiz.status || 'draft' }}
+                {{ quiz.title }} ({{ quiz.questions_count ?? quiz.questions?.length ?? 0 }} câu)
               </option>
             </select>
           </label>
 
-          <label class="grid gap-2">
-            <span class="text-sm font-black text-[var(--text)]">Tiêu đề bài giao</span>
-            <input v-model.trim="form.title" class="field" maxlength="255" placeholder="VD: Bài ôn tập cuối tuần" />
+          <!-- Title -->
+          <label class="grid gap-1.5 text-xs font-bold text-slate-700">
+            Tiêu đề bài tập <span class="text-red-500">*</span>
+            <input v-model.trim="form.title" class="field text-xs" maxlength="255" placeholder="VD: Bài kiểm tra 15 phút - Chương 1" required />
           </label>
 
-          <label class="grid gap-2">
-            <span class="text-sm font-black text-[var(--text)]">Mô tả</span>
-            <textarea v-model.trim="form.description" class="field min-h-28 resize-y" maxlength="2000" placeholder="Ghi chú cho thành viên trong room"></textarea>
+          <!-- Description -->
+          <label class="grid gap-1.5 text-xs font-bold text-slate-700">
+            Ghi chú / Hướng dẫn
+            <textarea v-model.trim="form.description" class="field text-xs min-h-24 resize-y" maxlength="2000" placeholder="Ghi chú thêm cho thành viên trong phòng..."></textarea>
           </label>
 
-          <div class="grid gap-5 md:grid-cols-2">
-            <label class="grid gap-2">
-              <span class="text-sm font-black text-[var(--text)]">Thời gian bắt đầu</span>
-              <input v-model="form.starts_at" class="field" type="datetime-local" />
+          <!-- Timers & Shuffling -->
+          <div class="grid gap-4 sm:grid-cols-2">
+            <label class="grid gap-1.5 text-xs font-bold text-slate-700">
+              Thời gian bắt đầu
+              <input v-model="form.starts_at" class="field text-xs" type="datetime-local" />
             </label>
 
-            <div class="space-y-3">
-    <label class="flex items-center gap-2">
-        <input
-            type="checkbox"
-            v-model="form.shuffle_questions"
-        >
-        <span>Trộn câu hỏi</span>
-    </label>
-
-    <label class="flex items-center gap-2">
-        <input
-            type="checkbox"
-            v-model="form.shuffle_answers"
-        >
-        <span>Trộn đáp án</span>
-    </label>
-</div>
-
-            <label class="grid gap-2">
-              <span class="text-sm font-black text-[var(--text)]">Deadline</span>
-              <input v-model="form.deadline_at" class="field" type="datetime-local" />
+            <label class="grid gap-1.5 text-xs font-bold text-slate-700">
+              Hạn chót nộp bài (Deadline)
+              <input v-model="form.deadline_at" class="field text-xs" type="datetime-local" />
             </label>
           </div>
 
-          <div class="grid gap-5 md:grid-cols-2">
-            <label class="grid gap-2">
-              <span class="text-sm font-black text-[var(--text)]">Thời lượng làm bài</span>
-              <input v-model.number="form.duration_minutes" class="field" min="1" max="1440" type="number" placeholder="Không giới hạn" />
+          <div class="rounded-xl border border-slate-100 bg-slate-50 p-4 space-y-2">
+            <span class="text-xs font-bold text-slate-700 block mb-1">Cấu hình xáo trộn</span>
+            <div class="flex flex-wrap gap-4 text-xs font-semibold text-slate-700">
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" v-model="form.shuffle_questions" class="rounded text-[#7C3AED]" />
+                <span>Xáo trộn thứ tự câu hỏi</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" v-model="form.shuffle_answers" class="rounded text-[#7C3AED]" />
+                <span>Xáo trộn thứ tự đáp án</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="grid gap-4 sm:grid-cols-2">
+            <label class="grid gap-1.5 text-xs font-bold text-slate-700">
+              Thời lượng làm bài (phút)
+              <input v-model.number="form.duration_minutes" class="field text-xs" min="1" max="1440" type="number" placeholder="Để trống = Không giới hạn" />
             </label>
 
-            <label class="grid gap-2">
-              <span class="text-sm font-black text-[var(--text)]">Số lần làm tối đa</span>
-              <input v-model.number="form.max_attempts" class="field" min="1" max="20" type="number" />
+            <label class="grid gap-1.5 text-xs font-bold text-slate-700">
+              Số lần làm tối đa
+              <input v-model.number="form.max_attempts" class="field text-xs" min="1" max="20" type="number" required />
             </label>
           </div>
 
-          <div class="grid gap-5 md:grid-cols-2">
-            <label class="grid gap-2">
-              <span class="text-sm font-black text-[var(--text)]">Hiển thị kết quả</span>
-              <select v-model="form.show_result_mode" class="field">
-                <option value="immediately">Ngay sau khi nộp</option>
-                <option value="after_deadline">Sau deadline</option>
-                <option value="manual">Mở thủ công</option>
+          <div class="grid gap-4 sm:grid-cols-2">
+            <label class="grid gap-1.5 text-xs font-bold text-slate-700">
+              Chế độ hiển thị kết quả
+              <select v-model="form.show_result_mode" class="field text-xs">
+                <option value="immediately">Hiển thị ngay sau khi nộp</option>
+                <option value="after_deadline">Chỉ hiển thị sau deadline</option>
+                <option value="manual">Chủ phòng mở thủ công</option>
               </select>
             </label>
 
-            <label class="grid gap-2">
-              <span class="text-sm font-black text-[var(--text)]">Trạng thái</span>
-              <select v-model="form.status" class="field">
-                <option value="published">Đã mở</option>
-                <option value="draft">Nháp</option>
-                <option value="closed">Đóng</option>
+            <label class="grid gap-1.5 text-xs font-bold text-slate-700">
+              Trạng thái bài giao
+              <select v-model="form.status" class="field text-xs">
+                <option value="published">Đã mở (Published)</option>
+                <option value="draft">Bản nháp (Draft)</option>
+                <option value="closed">Đã đóng (Closed)</option>
               </select>
             </label>
           </div>
         </div>
 
-        <div v-if="successMessage" class="mt-5 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm font-bold text-emerald-300">{{ successMessage }}</div>
-        <div v-if="formError" class="mt-5 rounded-2xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm font-bold text-rose-300">{{ formError }}</div>
+        <div v-if="successMessage" class="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-bold text-emerald-700">{{ successMessage }}</div>
+        <div v-if="formError" class="rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-bold text-red-700">{{ formError }}</div>
 
-        <div class="mt-6 flex flex-wrap justify-end gap-3">
-          <router-link class="btn-ghost" :to="`/homework-rooms/${roomId}`">Hủy</router-link>
-          <button class="btn-primary" type="submit" :disabled="isSubmitting">{{ isSubmitting ? 'Đang giao...' : 'Giao quiz' }}</button>
+        <div class="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-100">
+          <router-link class="btn-secondary text-xs px-4 py-2" :to="`/homework-rooms/${roomId}`">Hủy</router-link>
+          <button class="btn-primary text-xs px-5 py-2" type="submit" :disabled="isSubmitting">{{ isSubmitting ? 'Đang giao...' : 'Giao bài tập' }}</button>
         </div>
       </form>
     </template>
@@ -140,7 +138,6 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import StatCard from '@/components/cards/StatCard.vue'
 import { currentUserStorage, homeworkApi, quizzesApi } from '@/services/api'
 
 const route = useRoute()
@@ -167,7 +164,7 @@ const form = reactive({
   show_result_mode: 'immediately',
   status: 'published',
   shuffle_questions: false,
-shuffle_answers: false,
+  shuffle_answers: false,
 })
 
 const canManageRoom = computed(() => {
@@ -209,14 +206,13 @@ const validateForm = () => {
 const buildPayload = () => ({
   quiz_id: Number(form.quiz_id),
   title: form.title.trim(),
-  escription: form.description ? form.description.trim() : null,
+  description: form.description ? form.description.trim() : null,
   starts_at: form.starts_at || null,
   deadline_at: form.deadline_at || null,
   duration_minutes: form.duration_minutes ? Number(form.duration_minutes) : null,
   max_attempts: Number(form.max_attempts) || 1,
   show_result_mode: form.show_result_mode,
   status: form.status,
-
   shuffle_questions: form.shuffle_questions,
   shuffle_answers: form.shuffle_answers,
 })
@@ -254,11 +250,11 @@ const submitForm = async () => {
 
   try {
     await homeworkApi.createRoomAssignment(roomId.value, buildPayload())
-    successMessage.value = 'Giao quiz thành công.'
-    window.setTimeout(() => router.push(`/homework-rooms/${roomId.value}`), 700)
+    successMessage.value = 'Giao quiz thành công!'
+    window.setTimeout(() => router.push(`/homework-rooms/${roomId.value}`), 600)
   } catch (error) {
     formError.value = error.message?.includes('quyen') || error.message?.includes('quyền')
-      ? 'Bạn không có quyền giao bài trong room này.'
+      ? 'Bạn không có quyền giao bài trong phòng này.'
       : `Không giao được quiz: ${error.message}`
   } finally {
     isSubmitting.value = false

@@ -1,45 +1,48 @@
 <template>
-  <section class="grid gap-6 py-8">
-    <div class="flex flex-wrap items-center justify-between gap-3">
-      <router-link class="btn-ghost" to="/live-rooms">Quay lại Phòng thi đấu</router-link>
-      <router-link class="btn-ghost" to="/live-rooms/create">Tạo phòng thi đấu</router-link>
+  <section class="mx-auto max-w-xl py-8 space-y-6">
+    <div class="flex items-center justify-between">
+      <router-link class="btn-secondary text-xs" to="/live-rooms">← Quay lại</router-link>
+      <router-link class="btn-secondary text-xs" to="/live-rooms/create">Tạo phòng mới</router-link>
     </div>
 
-    <article class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-soft)]">
-      <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Phòng thi đấu</p>
-      <h1 class="mt-2 text-4xl font-black tracking-[-0.06em] text-[var(--text)]">Tham gia phòng thi đấu</h1>
-      <p class="mt-3 max-w-3xl text-sm leading-7 text-[var(--muted)]">Nhập mã phòng do chủ phòng chia sẻ để vào màn chơi live quiz.</p>
-    </article>
-
-    <div class="grid gap-3 md:grid-cols-3">
-      <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-4">
-        <p class="text-xs font-black uppercase tracking-[0.16em] text-[var(--primary)]">Code</p>
-        <p class="mt-2 text-sm font-bold text-[var(--muted)]">Nhập mã do chủ phòng chia sẻ.</p>
+    <article class="card p-6 sm:p-10 text-center space-y-6">
+      <div class="space-y-1">
+        <span class="rounded-full bg-purple-50 border border-purple-200 px-3 py-0.5 text-xs font-bold text-[#7C3AED]">
+          Vào phòng thi đấu
+        </span>
+        <h1 class="text-2xl sm:text-3xl font-black text-slate-900 pt-2">Nhập mã PIN phòng</h1>
+        <p class="text-xs text-slate-600">Nhập mã PIN hiển thị trên màn hình của chủ phòng để tham gia ngay.</p>
       </div>
-      <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-4">
-        <p class="text-xs font-black uppercase tracking-[0.16em] text-[var(--primary)]">Waiting</p>
-        <p class="mt-2 text-sm font-bold text-[var(--muted)]">Chờ chủ phòng bắt đầu nếu phòng chưa bắt đầu.</p>
-      </div>
-      <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-4">
-        <p class="text-xs font-black uppercase tracking-[0.16em] text-[var(--primary)]">Progress</p>
-        <p class="mt-2 text-sm font-bold text-[var(--muted)]">Mỗi player có tiến độ riêng.</p>
-      </div>
-    </div>
 
-    <div v-if="errorMessage" class="rounded-[2rem] border border-rose-500/30 bg-rose-500/10 p-5 text-sm font-bold text-rose-300">{{ errorMessage }}</div>
+      <form class="rounded-2xl border border-slate-200 bg-slate-50 p-6 space-y-4" @submit.prevent="handleJoin">
+        <input
+          v-model.trim="code"
+          class="w-full bg-transparent text-center font-mono text-3xl sm:text-4xl font-black uppercase tracking-[0.2em] text-slate-900 outline-none placeholder:text-slate-300 placeholder:tracking-normal"
+          placeholder="MÃ PIN"
+          maxlength="12"
+          required
+        />
 
-    <form class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-card)]" @submit.prevent="handleJoin">
-      <label class="grid gap-2">
-        <span class="text-sm font-black text-[var(--text)]">Mã phòng thi đấu</span>
-        <input v-model.trim="code" class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] px-4 py-3 text-lg font-black uppercase tracking-[0.12em] text-[var(--text)] outline-none focus:border-[var(--border-strong)]" placeholder="ABC123" maxlength="12" />
-      </label>
-
-      <div class="mt-6 flex justify-end">
-        <button class="btn-primary disabled:cursor-not-allowed disabled:opacity-50" type="submit" :disabled="isSubmitting">
-          {{ isSubmitting ? 'Đang tham gia...' : 'Tham gia' }}
+        <button class="btn-primary w-full py-2.5 text-xs" type="submit" :disabled="isSubmitting">
+          {{ isSubmitting ? 'Đang tham gia...' : 'Vào phòng thi đấu ngay →' }}
         </button>
+      </form>
+
+      <div v-if="errorMessage" class="rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-bold text-red-700 text-left">
+        {{ errorMessage }}
       </div>
-    </form>
+
+      <div class="grid gap-3 text-left sm:grid-cols-2 text-xs">
+        <div class="rounded-xl border border-slate-100 bg-slate-50 p-3 space-y-1">
+          <p class="font-bold text-slate-800">⚡ Thi đấu thời gian thực</p>
+          <p class="text-slate-500 leading-relaxed">Điểm số và thứ hạng được cập nhật ngay lập tức sau mỗi câu trả lời.</p>
+        </div>
+        <div class="rounded-xl border border-slate-100 bg-slate-50 p-3 space-y-1">
+          <p class="font-bold text-slate-800">⏱️ Tốc độ & Độ chính xác</p>
+          <p class="text-slate-500 leading-relaxed">Trả lời nhanh và đúng để nhận điểm thưởng cao hơn.</p>
+        </div>
+      </div>
+    </article>
   </section>
 </template>
 
@@ -59,7 +62,7 @@ const handleJoin = async () => {
 
   const roomCode = String(code.value || '').trim().toUpperCase()
   if (!roomCode) {
-    errorMessage.value = 'Vui lòng nhập mã live room.'
+    errorMessage.value = 'Vui lòng nhập mã phòng.'
     return
   }
 
@@ -73,7 +76,7 @@ const handleJoin = async () => {
     if (!liveRoomId) throw new Error('Response không có live room id.')
     await router.push({ name: 'live-room-play', params: { liveRoomId: String(liveRoomId) } })
   } catch (error) {
-    errorMessage.value = error.message || 'Không tham gia được live room.'
+    errorMessage.value = error.message || 'Không tham gia được phòng thi đấu.'
   } finally {
     isSubmitting.value = false
   }

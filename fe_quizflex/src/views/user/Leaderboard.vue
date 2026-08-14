@@ -1,27 +1,18 @@
 <template>
-  <div class="leaderboard-page">
-    <!-- Background Glows -->
-    <div class="bg-glow glow-1"></div>
-    <div class="bg-glow glow-2"></div>
-    <div class="bg-glow glow-3"></div>
-
-    <!-- Floating Particles -->
-    <div class="particles">
-      <span class="particle p1">✦</span>
-      <span class="particle p2">◆</span>
-      <span class="particle p3">★</span>
-      <span class="particle p4">✧</span>
-      <span class="particle p5">▲</span>
-      <span class="particle p6">◇</span>
-      <span class="particle p7">✦</span>
-      <span class="particle p8">★</span>
-      <span class="particle p9">◆</span>
-      <span class="particle p10">✧</span>
+  <div class="py-4 space-y-8 max-w-5xl mx-auto">
+    <!-- Header -->
+    <div class="card p-6 sm:p-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+      <div>
+        <p class="text-xs font-bold uppercase tracking-wider text-[#7C3AED]">Bảng vàng thành tích</p>
+        <h1 class="mt-1 text-2xl font-black text-slate-900 sm:text-3xl">Bảng xếp hạng QuizFlex</h1>
+        <p class="mt-1 text-sm text-slate-600">Vinh danh các học viên có điểm kinh nghiệm (XP) cao nhất toàn hệ thống.</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="rounded-full bg-amber-50 border border-amber-200 px-3 py-1 text-xs font-bold text-amber-800">
+          🏆 Cập nhật trực tiếp
+        </span>
+      </div>
     </div>
-
-    <!-- Side Decorations -->
-    <div class="side-trophy">🏆</div>
-    <div class="side-chart">📈</div>
 
     <!-- LOADING STATE -->
     <AppLoadingState 
@@ -34,101 +25,120 @@
     <!-- LOADED STATE -->
     <template v-else>
       <!-- Top 3 Podium -->
-      <div class="podium">
-        <!-- Hạng 2 -->
-        <div class="podium-card second">
-          <div class="rank-badge silver">2</div>
-          <div class="avatar silver">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end pt-4">
+        <!-- Rank 2: Silver -->
+        <div class="card p-6 text-center order-2 md:order-1 border-t-4 border-t-slate-400">
+          <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-lg font-black text-slate-700 mb-2">
+            2
+          </div>
+          <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-slate-200 text-xl font-black text-slate-800 mb-3">
             {{ leaderboard[1]?.name?.charAt(0).toUpperCase() || '-' }}
           </div>
-          <h3>{{ leaderboard[1]?.name || 'Trống' }}</h3>
-          <span class="level" v-if="leaderboard[1]">Level {{ leaderboard[1]?.level }}</span>
-          <div class="xp" v-if="leaderboard[1]">🏆 {{ leaderboard[1]?.xp }} XP</div>
+          <h3 class="text-base font-bold text-slate-900 truncate">{{ leaderboard[1]?.name || 'Chưa có' }}</h3>
+          <span class="text-xs text-slate-500 block mt-0.5" v-if="leaderboard[1]">Level {{ leaderboard[1]?.level }}</span>
+          <div class="mt-3 inline-block rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700" v-if="leaderboard[1]">
+            ⚡ {{ leaderboard[1]?.xp }} XP
+          </div>
         </div>
 
-        <!-- Hạng 1 -->
-        <div class="podium-card first">
-          <div class="crown">👑</div>
-          <div class="rank-badge gold">1</div>
-          <div class="avatar gold">
+        <!-- Rank 1: Gold -->
+        <div class="card p-6 sm:p-8 text-center order-1 md:order-2 border-t-4 border-t-amber-500 shadow-md md:-translate-y-2">
+          <div class="text-3xl mb-1">👑</div>
+          <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-amber-100 text-lg font-black text-amber-800 mb-2">
+            1
+          </div>
+          <div class="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-amber-200 text-2xl font-black text-amber-950 mb-3 border-2 border-amber-400">
             {{ leaderboard[0]?.name?.charAt(0).toUpperCase() || '-' }}
           </div>
-          <h2>
-            {{ leaderboard[0]?.name || 'Trống' }}
-            <span v-if="leaderboard[0]?.is_me" class="me-tag">(bạn)</span>
+          <h2 class="text-lg font-black text-slate-900 truncate">
+            {{ leaderboard[0]?.name || 'Chưa có' }}
+            <span v-if="leaderboard[0]?.is_me" class="text-xs text-[#7C3AED] font-bold">(Bạn)</span>
           </h2>
-          <span class="level" v-if="leaderboard[0]">Level {{ leaderboard[0]?.level }}</span>
-          <div class="xp gold-xp" v-if="leaderboard[0]">🏆 {{ leaderboard[0]?.xp }} XP</div>
+          <span class="text-xs text-slate-500 block mt-0.5" v-if="leaderboard[0]">Level {{ leaderboard[0]?.level }}</span>
+          <div class="mt-3 inline-block rounded-full bg-amber-50 border border-amber-200 px-4 py-1 text-sm font-black text-amber-800" v-if="leaderboard[0]">
+            🏆 {{ leaderboard[0]?.xp }} XP
+          </div>
         </div>
 
-        <!-- Hạng 3 -->
-        <div class="podium-card third">
-          <div class="rank-badge bronze">3</div>
-          <div class="avatar bronze">
+        <!-- Rank 3: Bronze -->
+        <div class="card p-6 text-center order-3 border-t-4 border-t-amber-700">
+          <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-amber-50 text-lg font-black text-amber-900 mb-2">
+            3
+          </div>
+          <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-amber-100 text-xl font-black text-amber-900 mb-3">
             {{ leaderboard[2]?.name?.charAt(0).toUpperCase() || '-' }}
           </div>
-          <h3>{{ leaderboard[2]?.name || 'Trống' }}</h3>
-          <span class="level" v-if="leaderboard[2]">Level {{ leaderboard[2]?.level }}</span>
-          <div class="xp" v-if="leaderboard[2]">🏆 {{ leaderboard[2]?.xp }} XP</div>
+          <h3 class="text-base font-bold text-slate-900 truncate">{{ leaderboard[2]?.name || 'Chưa có' }}</h3>
+          <span class="text-xs text-slate-500 block mt-0.5" v-if="leaderboard[2]">Level {{ leaderboard[2]?.level }}</span>
+          <div class="mt-3 inline-block rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700" v-if="leaderboard[2]">
+            ⚡ {{ leaderboard[2]?.xp }} XP
+          </div>
         </div>
       </div>
 
       <!-- Leaderboard Table -->
-      <div class="leaderboard-card">
-        <table class="leader-table">
-          <thead>
-            <tr>
-              <th class="rank-col">#</th>
-              <th class="player-col">Người chơi</th>
-              <th class="xp-col">XP</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="(user, i) in leaderboard.slice(0, visibleCount)"
-              :key="i"
-              class="leader-row"
-              :class="{ me: user.is_me }"
-            >
-              <td class="rank-cell rank-col">
-                <span v-if="i === 0" class="medal">🥇</span>
-                <span v-else-if="i === 1" class="medal">🥈</span>
-                <span v-else-if="i === 2" class="medal">🥉</span>
-                <span v-else class="rank-num">#{{ i + 1 }}</span>
-              </td>
-              <td class="player-cell player-col">
-                <div class="avatar-small">{{ user.name.charAt(0).toUpperCase() }}</div>
-                <div class="player-info">
-                  <div class="name">
-                    {{ user.name }}
-                    <span v-if="user.is_me" class="me-tag">(bạn)</span>
+      <div class="card overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="border-b border-slate-100 bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                <th class="py-3.5 px-5 text-center w-16">Hạng</th>
+                <th class="py-3.5 px-5">Học viên</th>
+                <th class="py-3.5 px-5 text-right w-36">Điểm XP</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 text-xs">
+              <tr
+                v-for="(user, i) in leaderboard.slice(0, visibleCount)"
+                :key="i"
+                class="transition hover:bg-slate-50"
+                :class="user.is_me ? 'bg-purple-50/70 font-semibold' : ''"
+              >
+                <td class="py-3.5 px-5 text-center font-bold">
+                  <span v-if="i === 0" class="text-lg">🥇</span>
+                  <span v-else-if="i === 1" class="text-lg">🥈</span>
+                  <span v-else-if="i === 2" class="text-lg">🥉</span>
+                  <span v-else class="text-slate-500">#{{ i + 1 }}</span>
+                </td>
+                <td class="py-3.5 px-5">
+                  <div class="flex items-center gap-3">
+                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-purple-100 text-xs font-bold text-[#7C3AED]">
+                      {{ user.name.charAt(0).toUpperCase() }}
+                    </div>
+                    <div>
+                      <div class="font-bold text-slate-900">
+                        {{ user.name }}
+                        <span v-if="user.is_me" class="ml-1 text-[11px] text-[#7C3AED] font-bold">(Bạn)</span>
+                      </div>
+                      <div class="text-[11px] text-slate-500 font-normal">Level {{ user.level }}</div>
+                    </div>
                   </div>
-                  <div class="level">Level {{ user.level }}</div>
-                </div>
-              </td>
-              <td class="xp-cell xp-col">
-                {{ user.xp }} XP
-                <span v-if="user.is_me" class="crown-mini">👑</span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+                </td>
+                <td class="py-3.5 px-5 text-right font-black text-[#7C3AED] text-sm">
+                  {{ user.xp }} XP
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
-        <button v-if="leaderboard.length > visibleCount" class="show-more" @click="visibleCount += 10">
-          Xem thêm <span class="chev">⌄</span>
-        </button>
+        <div v-if="leaderboard.length > visibleCount" class="border-t border-slate-100 p-3 text-center">
+          <button class="btn-ghost text-xs w-full" @click="visibleCount += 10">
+            Xem thêm danh sách xếp hạng ↓
+          </button>
+        </div>
       </div>
     </template>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, nextTick } from "vue";
 import AppLoadingState from "@/components/common/AppLoadingState.vue";
 import { gamificationApi, currentUserStorage } from "@/services/api";
 
 const leaderboard = ref([]);
-const visibleCount = ref(5);
+const visibleCount = ref(10);
 const isLoading = ref(true);
 
 onMounted(async () => {
@@ -143,7 +153,6 @@ onMounted(async () => {
       is_me: currentUser && Number(item.user_id) === Number(currentUser.id),
     }));
 
-    // Chờ Vue render xong dữ liệu API rồi mới ẩn loading.
     await nextTick();
   } catch (error) {
     console.error("Failed to load leaderboard:", error);
@@ -152,431 +161,3 @@ onMounted(async () => {
   }
 });
 </script>
-
-<style scoped>
-.loading-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-  background: radial-gradient(
-    circle at 50% 30%,
-    #3b1e6b 0%,
-    #1a0f2e 60%,
-    #12081f 100%
-  );
-  color: #fff;
-}
-
-.loading-overlay p {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-}
-
-.loading-spinner {
-  width: 48px;
-  height: 48px;
-  border: 4px solid rgba(255, 255, 255, 0.25);
-  border-top-color: #fbbf24;
-  border-radius: 50%;
-  animation: loading-spin 0.8s linear infinite;
-}
-
-@keyframes loading-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.leaderboard-page {
-  position: relative;
-  min-height: 100vh;
-  background: radial-gradient(
-    circle at 50% 30%,
-    #3b1e6b 0%,
-    #1a0f2e 60%,
-    #12081f 100%
-  );
-  overflow: hidden;
-  color: white;
-  padding: 40px 20px 100px;
-}
-
-/* Background Glows */
-.bg-glow {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(130px);
-  opacity: 0.45;
-  z-index: 0;
-  pointer-events: none;
-}
-
-.glow-1 {
-  width: 680px;
-  height: 680px;
-  background: #9333ea;
-  top: -200px;
-  left: -200px;
-}
-
-.glow-2 {
-  width: 580px;
-  height: 580px;
-  background: #f59e0b;
-  bottom: -150px;
-  right: -150px;
-}
-
-.glow-3 {
-  width: 420px;
-  height: 420px;
-  background: #c026d3;
-  top: 45%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  opacity: 0.28;
-}
-
-/* Floating Particles */
-.particles {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-}
-
-.particle {
-  position: absolute;
-  font-size: 20px;
-  color: #e0bbff;
-  opacity: 0.65;
-  animation: float-particle 14s linear infinite;
-  text-shadow: 0 0 8px rgba(224, 187, 255, 0.6);
-}
-
-.p1 {
-  top: 12%;
-  left: 8%;
-  animation-delay: 0s;
-}
-.p2 {
-  top: 22%;
-  left: 22%;
-  animation-delay: 1.8s;
-  font-size: 24px;
-}
-.p3 {
-  top: 8%;
-  left: 48%;
-  animation-delay: 3.5s;
-}
-.p4 {
-  top: 35%;
-  left: 68%;
-  animation-delay: 0.8s;
-}
-.p5 {
-  top: 52%;
-  left: 15%;
-  animation-delay: 5.2s;
-}
-.p6 {
-  top: 48%;
-  left: 82%;
-  animation-delay: 2.8s;
-}
-.p7 {
-  top: 68%;
-  left: 28%;
-  animation-delay: 7s;
-  font-size: 18px;
-}
-.p8 {
-  top: 18%;
-  left: 78%;
-  animation-delay: 4.5s;
-}
-.p9 {
-  top: 62%;
-  left: 88%;
-  animation-delay: 6.5s;
-}
-.p10 {
-  top: 25%;
-  left: 5%;
-  animation-delay: 9s;
-}
-
-@keyframes float-particle {
-  0% {
-    transform: translateY(0) rotate(0deg);
-    opacity: 0.65;
-  }
-  100% {
-    transform: translateY(-900px) rotate(720deg);
-    opacity: 0;
-  }
-}
-
-/* Side Decorations */
-.side-trophy {
-  position: absolute;
-  left: 6%;
-  bottom: 12%;
-  font-size: 190px;
-  opacity: 0.11;
-  z-index: 1;
-  filter: drop-shadow(0 0 50px #a855f7);
-  animation: trophy-float 9s ease-in-out infinite;
-}
-
-.side-chart {
-  position: absolute;
-  right: 6%;
-  bottom: 15%;
-  font-size: 150px;
-  opacity: 0.11;
-  z-index: 1;
-  animation: chart-float 11s ease-in-out infinite;
-}
-
-@keyframes trophy-float {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-30px);
-  }
-}
-
-@keyframes chart-float {
-  0%,
-  100% {
-    transform: translateY(0) rotate(3deg);
-  }
-  50% {
-    transform: translateY(-25px) rotate(-3deg);
-  }
-}
-
-/* Podium */
-.podium {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  justify-content: center;
-  align-items: flex-end;
-  gap: 32px;
-  margin: 40px 0 70px;
-}
-
-.podium-card {
-  position: relative;
-  width: 245px;
-  padding: 28px 22px 24px;
-  border-radius: 22px;
-  text-align: center;
-  background: rgba(30, 20, 55, 0.9);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  transition: all 0.4s ease;
-}
-
-.first {
-  width: 280px;
-  padding-top: 55px;
-  transform: translateY(-35px);
-  background: linear-gradient(180deg, #4c1d95, #1e1438);
-  border: 2px solid #fbbf24;
-  box-shadow: 0 0 70px rgba(251, 191, 36, 0.55);
-}
-
-.podium-card:hover {
-  transform: translateY(-12px);
-}
-
-.crown {
-  position: absolute;
-  top: -38px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 52px;
-  filter: drop-shadow(0 12px 18px #fbbf24);
-  animation: crown-bob 2.2s infinite ease-in-out;
-}
-
-@keyframes crown-bob {
-  0%,
-  100% {
-    transform: translateX(-50%) translateY(0);
-  }
-  50% {
-    transform: translateX(-50%) translateY(-10px);
-  }
-}
-
-.rank-badge {
-  position: absolute;
-  top: 16px;
-  left: 16px;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 900;
-  font-size: 16px;
-  color: #111827;
-}
-
-.gold {
-  background: #fbbf24;
-}
-.silver {
-  background: #cbd5e1;
-}
-.bronze {
-  background: #f59e0b;
-}
-
-.avatar {
-  width: 80px;
-  height: 80px;
-  margin: 12px auto;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 30px;
-  font-weight: bold;
-  color: white;
-  box-shadow: 0 0 30px rgba(147, 51, 234, 0.7);
-}
-
-.gold .avatar {
-  width: 92px;
-  height: 92px;
-  font-size: 34px;
-  box-shadow: 0 0 40px #fbbf24;
-}
-
-/* Leaderboard */
-.leaderboard-card {
-  position: relative;
-  z-index: 2;
-  background: rgba(20, 18, 40, 0.95);
-  backdrop-filter: blur(20px);
-  border-radius: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  overflow: hidden;
-  max-width: 920px;
-  margin: 0 auto;
-}
-
-.leader-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.leader-table th {
-  padding: 22px 32px;
-  font-size: 14px;
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-  color: #a5b4fc;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.leader-table td {
-  padding: 20px 32px;
-  vertical-align: middle;
-}
-
-.leader-row {
-  transition: background 0.3s;
-}
-
-.leader-row:hover {
-  background: rgba(168, 85, 247, 0.15);
-}
-
-.leader-row.me {
-  background: linear-gradient(90deg, rgba(168, 85, 247, 0.28), transparent);
-  border-left: 4px solid #a855f7;
-}
-
-/* Align columns and define widths */
-.rank-col {
-  text-align: center;
-  width: 100px;
-}
-
-.player-col {
-  text-align: left;
-}
-
-.xp-col {
-  text-align: right;
-  width: 180px;
-}
-
-.player-cell {
-  display: flex;
-  align-items: center;
-}
-
-.avatar-small {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #8b5cf6, #6d28d9);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
-  margin-right: 18px;
-  flex-shrink: 0;
-  font-size: 18px;
-}
-
-.name {
-  font-weight: 700;
-  font-size: 18px;
-}
-
-.level {
-  font-size: 14.5px;
-  color: #94a3b8;
-  margin-top: 2px;
-}
-
-.xp-cell {
-  font-size: 24px;
-  font-weight: 800;
-  color: #c084fc;
-}
-
-.show-more {
-  width: 100%;
-  padding: 18px;
-  background: transparent;
-  border: none;
-  color: #c4b5fd;
-  font-weight: 700;
-  font-size: 15px;
-  cursor: pointer;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.show-more:hover {
-  background: rgba(168, 85, 247, 0.12);
-}
-</style>

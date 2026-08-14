@@ -1,113 +1,133 @@
 <template>
-  <section class="grid gap-6">
-    <div class="relative overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-soft)] backdrop-blur-2xl">
-      <div class="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[var(--primary)]/15 blur-3xl"></div>
-      <div class="relative z-10">
-        <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Admin UI</p>
-        <h1 class="mt-2 text-4xl font-black tracking-[-0.06em] text-[var(--text)]">Quản lý user</h1>
-        <p class="mt-3 max-w-2xl text-sm leading-7 text-[var(--muted)]">Tạo, tìm kiếm, sửa role và xóa user, thay đổi plan người dùng</p>
+  <section class="max-w-6xl mx-auto py-4 space-y-6">
+    <!-- Header -->
+    <div class="card p-6 sm:p-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+      <div>
+        <p class="text-xs font-bold uppercase tracking-wider text-[#7C3AED]">Quản trị hệ thống</p>
+        <h1 class="mt-1 text-2xl font-black text-slate-900 sm:text-3xl">Quản lý người dùng</h1>
+        <p class="mt-1 text-sm text-slate-600">Thêm mới, tìm kiếm, phân quyền tài khoản, nâng cấp gói và xử lý vi phạm.</p>
       </div>
     </div>
 
-    <article class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow-card)] backdrop-blur-2xl">
-      <form class="grid gap-4 lg:grid-cols-[minmax(180px,1.4fr)_minmax(180px,1.4fr)_130px_130px_minmax(180px,1.4fr)_150px]" @submit.prevent="createUser">
-        <input v-model="newUser.name" class="field" placeholder="Tên user" maxlength="100" />
-        <input v-model="newUser.email" class="field" type="email" placeholder="email@example.com" />
-        <select v-model="newUser.role" class="field"><option value="user">User</option><option value="admin">Admin</option></select>
-        <select v-if="newUser.role !== 'admin'" v-model="newUser.plan" class="field"><option value="free">Free</option><option value="plus">Plus</option><option value="pro">Pro</option><option value="ultra">Ultra</option></select>
-        <input v-model="newUser.password" class="field" type="password" placeholder="Mật khẩu" />
-        <button class="btn-primary w-full" type="submit" :disabled="isSaving">Tạo user</button>
+    <!-- Create User Form Card -->
+    <article class="card p-5 space-y-3">
+      <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400">Thêm người dùng mới</h2>
+      <form class="grid gap-3 sm:grid-cols-2 lg:grid-cols-[1.5fr_1.5fr_120px_120px_1.5fr_140px]" @submit.prevent="createUser">
+        <input v-model="newUser.name" class="field text-xs" placeholder="Họ và tên" maxlength="100" required />
+        <input v-model="newUser.email" class="field text-xs" type="email" placeholder="email@example.com" required />
+        <select v-model="newUser.role" class="field text-xs">
+          <option value="user">User</option>
+          <option value="admin">Admin</option>
+        </select>
+        <select v-if="newUser.role !== 'admin'" v-model="newUser.plan" class="field text-xs">
+          <option value="free">Free</option>
+          <option value="plus">Plus</option>
+          <option value="pro">Pro</option>
+          <option value="ultra">Ultra</option>
+        </select>
+        <input v-model="newUser.password" class="field text-xs" type="password" placeholder="Mật khẩu (>= 8 ký tự)" required />
+        <button class="btn-primary text-xs w-full py-2.5" type="submit" :disabled="isSaving">
+          {{ isSaving ? 'Đang tạo...' : '+ Tạo tài khoản' }}
+        </button>
       </form>
     </article>
 
-    <div v-if="isLoading" class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-10 text-center text-sm font-bold text-[var(--muted)]">Đang tải user...</div>
-    <div v-if="errorMessage" class="rounded-[2rem] border border-rose-500/30 bg-rose-500/10 p-5 text-sm font-bold text-rose-300">{{ errorMessage }}</div>
-    <div v-if="successMessage" class="rounded-[2rem] border border-emerald-500/30 bg-emerald-500/10 p-5 text-sm font-bold text-emerald-300">{{ successMessage }}</div>
+    <!-- Feedback Alerts -->
+    <div v-if="isLoading" class="card p-8 text-center text-xs text-slate-400">Đang tải danh sách người dùng...</div>
+    <div v-if="errorMessage" class="rounded-xl border border-red-200 bg-red-50 p-4 text-xs font-bold text-red-700">{{ errorMessage }}</div>
+    <div v-if="successMessage" class="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-xs font-bold text-emerald-700">{{ successMessage }}</div>
 
-    <article class="overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-card)] backdrop-blur-2xl">
-      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border)] bg-[var(--surface-soft)] p-4">
-        <div class="flex flex-wrap gap-2">
-          <button
-            class="rounded-full px-4 py-2 text-sm font-semibold transition"
-            :class="viewMode === 'active' ? 'bg-[var(--primary)] text-white' : 'bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--surface-soft)]'"
-            type="button"
-            @click="setViewMode('active')"
-          >
-            Người dùng hoạt động
-          </button>
-          <button
-            class="relative rounded-full px-4 py-2 text-sm font-semibold transition"
-            :class="viewMode === 'locked' ? 'bg-[var(--primary)] text-white' : 'bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--surface-soft)]'"
-            type="button"
-            @click="setViewMode('locked')"
-          >
-            Tài khoản bị khóa
-            <span v-if="lockedCount > 0" class="ml-1.5 rounded-full bg-rose-500 px-2 py-0.5 text-[10px] font-black text-white">{{ lockedCount }}</span>
-          </button>
-          <button
-            class="rounded-full px-4 py-2 text-sm font-semibold transition"
-            :class="viewMode === 'trash' ? 'bg-[var(--primary)] text-white' : 'bg-[var(--surface)] text-[var(--muted)] hover:bg-[var(--surface-soft)]'"
-            type="button"
-            @click="setViewMode('trash')"
-          >
-            Thùng rác
-          </button>
-        </div>
-        <!-- <p class="text-xs text-[var(--muted)]">Quản lý toàn bộ người dùng, tìm kiếm, lọc, xóa mềm và khôi phục.</p> -->
+    <!-- Main Table Container -->
+    <article class="card overflow-hidden">
+      <!-- Tabs Navigation -->
+      <div class="flex items-center gap-2 border-b border-slate-100 bg-slate-50/70 p-3 px-5 text-xs font-bold">
+        <button
+          class="rounded-lg px-3.5 py-1.5 transition"
+          :class="viewMode === 'active' ? 'bg-[#7C3AED] text-white shadow-sm' : 'text-slate-600 hover:bg-slate-200/60'"
+          type="button"
+          @click="setViewMode('active')"
+        >
+          Người dùng hoạt động
+        </button>
+        <button
+          class="relative rounded-lg px-3.5 py-1.5 transition flex items-center gap-1.5"
+          :class="viewMode === 'locked' ? 'bg-[#7C3AED] text-white shadow-sm' : 'text-slate-600 hover:bg-slate-200/60'"
+          type="button"
+          @click="setViewMode('locked')"
+        >
+          <span>Tài khoản bị khóa</span>
+          <span v-if="lockedCount > 0" class="rounded-full bg-red-500 px-1.5 py-0.2 text-[10px] font-bold text-white">{{ lockedCount }}</span>
+        </button>
+        <button
+          class="rounded-lg px-3.5 py-1.5 transition"
+          :class="viewMode === 'trash' ? 'bg-[#7C3AED] text-white shadow-sm' : 'text-slate-600 hover:bg-slate-200/60'"
+          type="button"
+          @click="setViewMode('trash')"
+        >
+          Thùng rác
+        </button>
       </div>
 
-      <div v-if="viewMode === 'active'" class="space-y-6 p-5">
-        <div class="grid gap-4 lg:grid-cols-[1fr_200px_120px]">
-          <div class="flex items-center gap-3 rounded-2xl border border-[var(--border)] bg-[var(--input-bg)] px-4 py-3 focus-within:border-[var(--border-strong)]">
-            <span>🔍</span>
-            <input v-model="search" class="w-full bg-transparent text-sm font-semibold text-[var(--text)] outline-none placeholder:text-[var(--muted)]" placeholder="Tìm user theo tên hoặc email" @keyup.enter="loadUsers" />
-          </div>
-          <select v-model="roleFilter" class="field" @change="loadUsers">
+      <!-- Tab 1: Active Users -->
+      <div v-if="viewMode === 'active'" class="p-5 space-y-4">
+        <div class="grid gap-3 sm:grid-cols-[1fr_160px_100px]">
+          <input v-model="search" class="field text-xs" placeholder="Tìm theo tên hoặc email..." @keyup.enter="loadUsers" />
+          <select v-model="roleFilter" class="field text-xs" @change="loadUsers">
             <option value="all">Tất cả role</option>
             <option value="admin">Admin</option>
             <option value="user">User</option>
           </select>
-          <button class="btn-ghost w-full" type="button" @click="loadUsers">Tìm kiếm</button>
+          <button class="btn-secondary text-xs" type="button" @click="loadUsers">Tìm kiếm</button>
         </div>
 
-        <div class="overflow-x-auto rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface)]">
-          <table class="min-w-full text-left">
-            <thead class="border-b border-[var(--border)] bg-[var(--surface-soft)] text-xs font-black uppercase tracking-[0.2em] text-[var(--muted)]">
-              <tr>
-                <th class="px-6 py-4">Người dùng</th>
-                <th class="px-6 py-4">Role</th>
-                <th class="px-6 py-4">Plan</th>
-                <th class="px-6 py-4">Quota AI</th>
-                <th class="px-6 py-4">OCR</th>
-                <th class="px-6 py-4">Quiz</th>
-                <th class="px-6 py-4">Lượt làm</th>
-                <th class="px-6 py-4">Hết hạn gói</th>
-                <th class="px-6 py-4">Hành động</th>
+        <div class="overflow-x-auto rounded-xl border border-slate-100">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="border-b border-slate-100 bg-slate-50 text-slate-400 font-bold uppercase text-[10px]">
+                <th class="py-3 px-4">Người dùng</th>
+                <th class="py-3 px-4">Role</th>
+                <th class="py-3 px-4">Gói VIP</th>
+                <th class="py-3 px-4">AI / OCR</th>
+                <th class="py-3 px-4">Quiz / Lượt</th>
+                <th class="py-3 px-4">Hạn gói</th>
+                <th class="py-3 px-4 text-right">Thao tác</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-[var(--border)]">
-              <tr v-for="user in users" :key="user.id" class="transition hover:bg-[var(--surface-soft)]">
-                <td class="px-6 py-4">
-                  <div class="flex items-center gap-3">
-                    <div class="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--primary)]/10 font-bold text-[var(--primary)]">{{ user.name.charAt(0).toUpperCase() }}</div>
+            <tbody class="divide-y divide-slate-100 font-medium">
+              <tr v-for="user in users" :key="user.id" class="hover:bg-slate-50/70">
+                <td class="py-3.5 px-4">
+                  <div class="flex items-center gap-2.5">
+                    <div class="h-8 w-8 rounded-full bg-purple-100 text-[#7C3AED] font-bold flex items-center justify-center text-xs shrink-0">
+                      {{ user.name.charAt(0).toUpperCase() }}
+                    </div>
                     <div>
-                      <p class="font-semibold text-[var(--text)]">{{ user.name }}</p>
-                      <p class="text-xs text-[var(--muted)]">{{ user.email }}</p>
+                      <p class="font-bold text-slate-900 leading-tight">{{ user.name }}</p>
+                      <p class="text-[11px] text-slate-400">{{ user.email }}</p>
                     </div>
                   </div>
                 </td>
-                <td class="px-6 py-4 text-sm font-semibold">{{ user.role_label || user.role }}</td>
-                <td class="px-6 py-4 text-sm font-semibold">{{ user.plan_label || user.plan }}</td>
-                <td class="px-6 py-4 text-sm font-semibold">{{ user.role === 'admin' ? '∞' : user.aiQuota }}</td>
-                <td class="px-6 py-4 text-sm font-semibold">{{ user.role === 'admin' ? '∞' : ocrQuotaForPlan(user.plan) }}</td>
-                <td class="px-6 py-4 text-sm font-semibold">{{ user.quizzesCount }}</td>
-                <td class="px-6 py-4 text-sm font-semibold">{{ user.attemptsCount }}</td>
-                <td class="px-6 py-4 text-sm text-[var(--muted)]">{{ formatDate(user.plan_expires_at) || '-' }}</td>
-                <td class="px-6 py-4">
-                  <div class="flex flex-wrap gap-2">
-                    <button v-if="canEditRow(user)" class="rounded-full border border-blue-500/30 bg-blue-500/10 px-4 py-2 text-xs font-black text-blue-300" type="button" @click="selectUserForEdit(user)">Sửa</button>
-                    <button class="rounded-full border border-blue-500/30 bg-blue-500/10 px-4 py-2 text-xs font-black text-blue-300" type="button" @click="viewUserDetail(user.id)">Xem</button>
-                    <button v-if="canDeleteRow(user)" class="rounded-full border border-rose-500/30 bg-rose-500/10 px-4 py-2 text-xs font-black text-rose-300" type="button" @click="deleteUser(user.id)">Xóa</button>
+                <td class="py-3.5 px-4">
+                  <span class="rounded px-2 py-0.5 text-[10px] font-bold" :class="user.role === 'admin' ? 'bg-purple-100 text-[#7C3AED]' : 'bg-slate-100 text-slate-600'">
+                    {{ user.role_label || user.role }}
+                  </span>
+                </td>
+                <td class="py-3.5 px-4 font-bold text-slate-700 uppercase text-[10px]">
+                  {{ user.plan_label || user.plan }}
+                </td>
+                <td class="py-3.5 px-4 text-slate-600">
+                  {{ user.role === 'admin' ? '∞' : `${user.aiQuota} / ${ocrQuotaForPlan(user.plan)}` }}
+                </td>
+                <td class="py-3.5 px-4 text-slate-600">
+                  {{ user.quizzesCount }} / {{ user.attemptsCount }}
+                </td>
+                <td class="py-3.5 px-4 text-slate-400 text-[11px]">
+                  {{ formatDate(user.plan_expires_at) || '-' }}
+                </td>
+                <td class="py-3.5 px-4 text-right">
+                  <div class="flex items-center justify-end gap-1.5">
+                    <button v-if="canEditRow(user)" class="btn-secondary text-[11px] px-2.5 py-1" type="button" @click="selectUserForEdit(user)">Sửa</button>
+                    <button class="btn-secondary text-[11px] px-2.5 py-1" type="button" @click="viewUserDetail(user.id)">Xem</button>
+                    <button v-if="canDeleteRow(user)" class="rounded-lg border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 text-[11px] px-2.5 py-1 font-bold" type="button" @click="deleteUser(user.id)">Xóa</button>
                   </div>
                 </td>
               </tr>
@@ -116,131 +136,116 @@
         </div>
       </div>
 
-      <div v-else-if="viewMode === 'locked'" class="space-y-6 p-5">
-        <div class="grid gap-4 lg:grid-cols-[1fr_120px]">
-          <div class="flex items-center gap-3 rounded-2xl border border-[var(--border)] bg-[var(--input-bg)] px-4 py-3 focus-within:border-[var(--border-strong)]">
-            <span>🔍</span>
-            <input v-model="lockedSearch" class="w-full bg-transparent text-sm font-semibold text-[var(--text)] outline-none placeholder:text-[var(--muted)]" placeholder="Tìm user bị khóa" @keyup.enter="loadLockedUsers" />
-          </div>
-          <button class="btn-ghost w-full" type="button" @click="loadLockedUsers">Tìm kiếm</button>
+      <!-- Tab 2: Locked Users -->
+      <div v-else-if="viewMode === 'locked'" class="p-5 space-y-4">
+        <div class="grid gap-3 sm:grid-cols-[1fr_100px]">
+          <input v-model="lockedSearch" class="field text-xs" placeholder="Tìm tài khoản bị khóa..." @keyup.enter="loadLockedUsers" />
+          <button class="btn-secondary text-xs" type="button" @click="loadLockedUsers">Tìm kiếm</button>
         </div>
 
-        <div class="overflow-x-auto rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface)]">
-          <table class="min-w-full text-left">
-            <thead class="border-b border-[var(--border)] bg-[var(--surface-soft)] text-xs font-black uppercase tracking-[0.2em] text-[var(--muted)]">
-              <tr>
-                <th class="px-6 py-4">Người dùng</th>
-                <th class="px-6 py-4">Role</th>
-                <th class="px-6 py-4">Plan</th>
-                <th class="px-6 py-4">Ngày khóa</th>
-                <th class="px-6 py-4">Kháng cáo</th>
-                <th class="px-6 py-4">Trạng thái</th>
-                <th class="px-6 py-4">Hành động</th>
+        <div class="overflow-x-auto rounded-xl border border-slate-100">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="border-b border-slate-100 bg-slate-50 text-slate-400 font-bold uppercase text-[10px]">
+                <th class="py-3 px-4">Người dùng</th>
+                <th class="py-3 px-4">Role / Plan</th>
+                <th class="py-3 px-4">Ngày khóa</th>
+                <th class="py-3 px-4">Kháng cáo</th>
+                <th class="py-3 px-4 text-right">Thao tác</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-[var(--border)]">
+            <tbody class="divide-y divide-slate-100 font-medium">
               <tr v-if="pagedLockedUsers.length === 0">
-                <td colspan="7" class="px-6 py-8 text-center text-sm font-semibold text-[var(--muted)]">Không có tài khoản bị khóa.</td>
+                <td colspan="5" class="py-8 text-center text-slate-400 text-xs">Không có tài khoản nào bị khóa.</td>
               </tr>
-              <tr v-for="user in pagedLockedUsers" :key="user.id" class="transition hover:bg-[var(--surface-soft)]">
-                <td class="px-6 py-4">
-                  <div class="flex items-center gap-3">
-                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-rose-500/10 font-bold text-rose-400">{{ user.name.charAt(0).toUpperCase() }}</div>
+              <tr v-for="user in pagedLockedUsers" :key="user.id" class="hover:bg-slate-50/70">
+                <td class="py-3.5 px-4">
+                  <div class="flex items-center gap-2.5">
+                    <div class="h-8 w-8 rounded-full bg-red-100 text-red-600 font-bold flex items-center justify-center text-xs shrink-0">
+                      {{ user.name.charAt(0).toUpperCase() }}
+                    </div>
                     <div>
-                      <p class="font-semibold text-[var(--text)]">{{ user.name }}</p>
-                      <p class="text-xs text-[var(--muted)]">{{ user.email }}</p>
+                      <p class="font-bold text-slate-900 leading-tight">{{ user.name }}</p>
+                      <p class="text-[11px] text-slate-400">{{ user.email }}</p>
                     </div>
                   </div>
                 </td>
-                <td class="px-6 py-4 text-sm font-semibold">{{ user.role_label || user.role }}</td>
-                <td class="px-6 py-4 text-sm font-semibold">{{ user.plan_label || user.plan }}</td>
-                <td class="px-6 py-4 text-sm text-[var(--muted)] whitespace-nowrap">{{ formatDate(user.locked_at) }}</td>
-                <td class="px-6 py-4">
-                  <span class="rounded-full border px-3 py-1 text-xs font-black" :class="appealBadgeClass(lockedAppealMap[user.id])">
+                <td class="py-3.5 px-4">
+                  <span class="font-bold text-slate-700">{{ user.role_label || user.role }}</span>
+                  <span class="text-slate-400 text-[10px] block uppercase">{{ user.plan_label || user.plan }}</span>
+                </td>
+                <td class="py-3.5 px-4 text-slate-500 text-[11px]">
+                  {{ formatDate(user.locked_at) }}
+                </td>
+                <td class="py-3.5 px-4">
+                  <span class="rounded px-2 py-0.5 text-[10px] font-bold" :class="appealBadgeClass(lockedAppealMap[user.id])">
                     {{ appealLabel(lockedAppealMap[user.id]) }}
                   </span>
                 </td>
-                <td class="px-6 py-4">
-                  <span class="rounded-full border border-rose-500/25 bg-rose-500/10 px-3 py-1 text-xs font-black text-rose-300">Bị khóa</span>
-                </td>
-                <td class="px-6 py-4">
-                  <div class="flex flex-wrap gap-2">
+                <td class="py-3.5 px-4 text-right">
+                  <div class="flex items-center justify-end gap-1.5">
                     <button
                       v-if="lockedAppealMap[user.id] === 'pending'"
-                      class="rounded-full border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-xs font-black text-amber-300"
+                      class="rounded-lg border border-amber-200 bg-amber-50 text-amber-800 text-[11px] px-2.5 py-1 font-bold hover:bg-amber-100"
                       type="button"
                       @click="openAppealModal(user)"
-                    >Xem kháng cáo</button>
-                    <button class="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-xs font-black text-emerald-300" type="button" @click="unlockUser(user.id)">Mở khóa</button>
+                    >
+                      Xem kháng cáo
+                    </button>
+                    <button class="btn-primary text-[11px] px-3 py-1" type="button" @click="unlockUser(user.id)">Mở khóa</button>
                   </div>
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
-
-        <!-- Phân trang -->
-        <div v-if="lockedTotalPages > 1" class="flex items-center justify-center gap-2">
-          <button
-            class="rounded-full border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm font-semibold text-[var(--muted)] transition hover:bg-[var(--surface-soft)] disabled:opacity-40"
-            type="button"
-            :disabled="lockedPage === 1"
-            @click="lockedPage--"
-          >← Trước</button>
-          <span class="text-sm font-semibold text-[var(--muted)]">{{ lockedPage }} / {{ lockedTotalPages }}</span>
-          <button
-            class="rounded-full border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm font-semibold text-[var(--muted)] transition hover:bg-[var(--surface-soft)] disabled:opacity-40"
-            type="button"
-            :disabled="lockedPage === lockedTotalPages"
-            @click="lockedPage++"
-          >Sau →</button>
-        </div>
       </div>
 
-      <div v-else-if="viewMode === 'trash'" class="space-y-6 p-5">
-        <div class="grid gap-4 lg:grid-cols-[1fr_200px_120px]">
-          <div class="flex items-center gap-3 rounded-2xl border border-[var(--border)] bg-[var(--input-bg)] px-4 py-3 focus-within:border-[var(--border-strong)]">
-            <span>🔍</span>
-            <input v-model="trashSearch" class="w-full bg-transparent text-sm font-semibold text-[var(--text)] outline-none placeholder:text-[var(--muted)]" placeholder="Tìm user trong thùng rác" @keyup.enter="loadTrash" />
-          </div>
-          <select v-model="trashRoleFilter" class="field" @change="loadTrash">
+      <!-- Tab 3: Trash -->
+      <div v-else-if="viewMode === 'trash'" class="p-5 space-y-4">
+        <div class="grid gap-3 sm:grid-cols-[1fr_160px_100px]">
+          <input v-model="trashSearch" class="field text-xs" placeholder="Tìm trong thùng rác..." @keyup.enter="loadTrash" />
+          <select v-model="trashRoleFilter" class="field text-xs" @change="loadTrash">
             <option value="all">Tất cả role</option>
             <option value="ADMIN">Admin</option>
             <option value="VIP">VIP</option>
             <option value="USER">User</option>
           </select>
-          <button class="btn-ghost w-full" type="button" @click="loadTrash">Tìm kiếm</button>
+          <button class="btn-secondary text-xs" type="button" @click="loadTrash">Tìm kiếm</button>
         </div>
 
-        <div class="overflow-x-auto rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface)]">
-          <table class="min-w-full text-left">
-            <thead class="border-b border-[var(--border)] bg-[var(--surface-soft)] text-xs font-black uppercase tracking-[0.2em] text-[var(--muted)]">
-              <tr>
-                <th class="px-6 py-4">Người dùng</th>
-                <th class="px-6 py-4">Role</th>
-                <th class="px-6 py-4">VIP hết hạn</th>
-                <th class="px-6 py-4">Xóa vào</th>
-                <th class="px-6 py-4">Hành động</th>
+        <div class="overflow-x-auto rounded-xl border border-slate-100">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="border-b border-slate-100 bg-slate-50 text-slate-400 font-bold uppercase text-[10px]">
+                <th class="py-3 px-4">Người dùng</th>
+                <th class="py-3 px-4">Role</th>
+                <th class="py-3 px-4">Ngày xóa</th>
+                <th class="py-3 px-4 text-right">Thao tác</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-[var(--border)]">
-              <tr v-for="user in trashedUsers" :key="user.id" class="transition hover:bg-[var(--surface-soft)]">
-                <td class="px-6 py-4">
-                  <div class="flex items-center gap-3">
-                    <div class="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--primary)]/10 font-bold text-[var(--primary)]">{{ user.name.charAt(0).toUpperCase() }}</div>
+            <tbody class="divide-y divide-slate-100 font-medium">
+              <tr v-if="trashedUsers.length === 0">
+                <td colspan="4" class="py-8 text-center text-slate-400 text-xs">Thùng rác trống.</td>
+              </tr>
+              <tr v-for="user in trashedUsers" :key="user.id" class="hover:bg-slate-50/70">
+                <td class="py-3.5 px-4">
+                  <div class="flex items-center gap-2.5">
+                    <div class="h-8 w-8 rounded-full bg-slate-100 text-slate-500 font-bold flex items-center justify-center text-xs shrink-0">
+                      {{ user.name.charAt(0).toUpperCase() }}
+                    </div>
                     <div>
-                      <p class="font-semibold text-[var(--text)]">{{ user.name }}</p>
-                      <p class="text-xs text-[var(--muted)]">{{ user.email }}</p>
+                      <p class="font-bold text-slate-900 leading-tight">{{ user.name }}</p>
+                      <p class="text-[11px] text-slate-400">{{ user.email }}</p>
                     </div>
                   </div>
                 </td>
-                <td class="px-6 py-4 text-sm font-semibold">{{ user.role }}</td>
-                <td class="px-6 py-4 text-sm text-[var(--muted)]">{{ formatDate(user.vip_expires_at) || '-' }}</td>
-                <td class="px-6 py-4 text-sm">{{ formatDate(user.deleted_at) }}</td>
-                <td class="px-6 py-4">
-                  <div class="flex flex-wrap gap-2">
-                    <button class="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-xs font-black text-emerald-300" type="button" @click="restoreUser(user.id)">Khôi phục</button>
-                    <button class="rounded-full border border-red-500/30 bg-red-500/10 px-4 py-2 text-xs font-black text-red-300" type="button" @click="forceDeleteUser(user.id)">Xóa vĩnh viễn</button>
+                <td class="py-3.5 px-4 font-bold text-slate-700">{{ user.role }}</td>
+                <td class="py-3.5 px-4 text-slate-400 text-[11px]">{{ formatDate(user.deleted_at) }}</td>
+                <td class="py-3.5 px-4 text-right">
+                  <div class="flex items-center justify-end gap-1.5">
+                    <button class="btn-secondary text-[11px] px-2.5 py-1 text-emerald-700 font-bold" type="button" @click="restoreUser(user.id)">Khôi phục</button>
+                    <button class="rounded-lg border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 text-[11px] px-2.5 py-1 font-bold" type="button" @click="forceDeleteUser(user.id)">Xóa vĩnh viễn</button>
                   </div>
                 </td>
               </tr>
@@ -250,233 +255,96 @@
       </div>
     </article>
 
-    <!-- Appeal Modal -->
-    <Transition enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0" enter-to-class="opacity-100" leave-active-class="transition duration-150 ease-in" leave-from-class="opacity-100" leave-to-class="opacity-0">
-      <div v-if="showAppealModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" @click.self="showAppealModal = false">
-        <div class="w-full max-w-lg rounded-[1.75rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-2xl">
-          <div class="mb-5 flex items-center justify-between">
-            <div>
-              <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Kháng cáo</p>
-              <h3 class="mt-1 text-xl font-black text-[var(--text)]">{{ selectedLockedUser?.name }}</h3>
-            </div>
-            <button type="button" class="rounded-xl border border-[var(--border)] p-2 text-[var(--muted)] hover:bg-[var(--surface-soft)]" @click="showAppealModal = false">
-              <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-            </button>
+    <!-- Appeal Review Modal -->
+    <div v-if="showAppealModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm" @click.self="showAppealModal = false">
+      <div class="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-xl space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div>
+            <span class="text-[10px] font-bold uppercase text-[#7C3AED]">Kháng cáo khóa tài khoản</span>
+            <h3 class="text-base font-bold text-slate-900">{{ selectedLockedUser?.name }}</h3>
           </div>
-          <div v-if="isLoadingAppeal" class="py-8 text-center text-sm font-semibold text-[var(--muted)]">Đang tải...</div>
-          <div v-else-if="modalAppealRequest" class="space-y-4">
-            <div class="rounded-[1.25rem] border border-[var(--border)] bg-[var(--surface-soft)] p-4">
-              <p class="text-xs font-black uppercase tracking-[0.15em] text-[var(--muted)]">Nội dung kháng cáo</p>
-              <p class="mt-2 text-sm leading-7 text-[var(--text)]">{{ modalAppealRequest.message }}</p>
-              <p class="mt-2 text-xs text-[var(--muted)]">Gửi lúc: {{ formatDate(modalAppealRequest.created_at) }}</p>
-            </div>
-            <div class="space-y-2">
-              <label class="text-sm font-black text-[var(--text)]">Admin note</label>
-              <textarea v-model="adminNote" rows="3" maxlength="1000" class="w-full rounded-[1rem] border border-[var(--border)] bg-[var(--surface-soft)] px-4 py-3 text-sm font-medium text-[var(--text)] outline-none transition focus:border-[var(--primary)]" placeholder="Nhập ghi chú... (bắt buộc khi từ chối)"></textarea>
-              <span v-if="adminNoteError" class="block text-xs font-bold text-rose-400">{{ adminNoteError }}</span>
-            </div>
-            <div class="flex gap-3">
-              <button class="btn-primary" type="button" :disabled="isActionLoading" @click="approveRequest">Duyệt — Mở khóa</button>
-              <button class="btn-ghost" type="button" :disabled="isActionLoading" @click="rejectRequest">Từ chối</button>
-            </div>
-          </div>
-          <div v-else class="py-8 text-center text-sm font-semibold text-[var(--muted)]">Không có kháng cáo đang chờ.</div>
+          <button type="button" class="text-slate-400 hover:text-slate-600 text-sm" @click="showAppealModal = false">✕</button>
         </div>
-      </div>
-    </Transition>
 
-    <!-- Confirm Modal -->
-    <div v-if="confirmModal.show" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-      <div class="w-full max-w-sm rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-2xl">
-        <p class="text-base font-bold text-[var(--text)]">{{ confirmModal.message }}</p>
-        <div class="mt-5 flex gap-3">
-          <button class="flex-1 rounded-full bg-rose-500 px-4 py-2 text-sm font-black text-white hover:bg-rose-600 transition" type="button" @click="confirmModal.onConfirm">Xác nhận</button>
-          <button class="btn-ghost flex-1" type="button" @click="confirmModal.show = false">Hủy</button>
+        <div v-if="isLoadingAppeal" class="py-6 text-center text-xs text-slate-400">Đang tải nội dung...</div>
+        <div v-else-if="modalAppealRequest" class="space-y-4 text-xs">
+          <div class="rounded-xl border border-slate-100 bg-slate-50 p-4 space-y-1">
+            <span class="text-[10px] font-bold uppercase text-slate-400">Nội dung kháng cáo</span>
+            <p class="text-slate-800 leading-relaxed text-xs">{{ modalAppealRequest.message }}</p>
+            <span class="text-[10px] text-slate-400 block pt-1">Gửi lúc: {{ formatDate(modalAppealRequest.created_at) }}</span>
+          </div>
+
+          <div class="space-y-1.5">
+            <label class="font-bold text-slate-700 block">Ghi chú của Admin</label>
+            <textarea v-model="adminNote" rows="3" maxlength="1000" class="field text-xs resize-none" placeholder="Nhập lý do hoặc phản hồi (bắt buộc khi từ chối)..."></textarea>
+            <span v-if="adminNoteError" class="text-xs font-bold text-red-600 block">{{ adminNoteError }}</span>
+          </div>
+
+          <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+            <button class="btn-secondary text-xs px-3.5 py-1.5 text-red-700 font-bold" type="button" :disabled="isActionLoading" @click="rejectRequest">Từ chối kháng cáo</button>
+            <button class="btn-primary text-xs px-4 py-1.5" type="button" :disabled="isActionLoading" @click="approveRequest">Duyệt & Mở khóa</button>
+          </div>
         </div>
+        <div v-else class="py-6 text-center text-xs text-slate-400">Không có kháng cáo đang chờ xử lý.</div>
       </div>
     </div>
 
     <!-- Edit User Modal -->
-    <Transition
-      enter-active-class="transition duration-200 ease-out"
-      enter-from-class="opacity-0"
-      enter-to-class="opacity-100"
-      leave-active-class="transition duration-150 ease-in"
-      leave-from-class="opacity-100"
-      leave-to-class="opacity-0"
-    >
-      <div v-if="showEditModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-        <Transition
-          enter-active-class="transition duration-200 ease-out"
-          enter-from-class="opacity-0 scale-95"
-          enter-to-class="opacity-100 scale-100"
-          appear
-        >
-          <div class="w-full max-w-[760px] rounded-2xl border border-gray-200 bg-white shadow-2xl">
-
-            <!-- Header -->
-            <div class="flex items-center justify-between border-b border-gray-100 px-8 py-5">
-              <div class="flex items-center gap-3">
-                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100">
-                  <svg class="h-5 w-5 text-violet-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125" />
-                  </svg>
-                </div>
-                <div>
-                  <h2 class="text-lg font-bold text-gray-900">Chỉnh sửa người dùng</h2>
-                  <p class="text-xs text-gray-400">Cập nhật thông tin tài khoản, quyền hạn và trạng thái VIP.</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                class="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition hover:bg-gray-100 hover:text-gray-600"
-                @click="closeEditModal"
-              >
-                <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            <!-- Form -->
-            <div class="px-8 py-6">
-              <div class="grid gap-5 sm:grid-cols-2">
-
-                <!-- Tên -->
-                <div class="space-y-1.5">
-                  <label class="block text-sm font-semibold text-gray-700">Tên</label>
-                  <div class="relative">
-                    <span class="pointer-events-none absolute inset-y-0 left-3.5 flex items-center">
-                      <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-                      </svg>
-                    </span>
-                    <input
-                      v-model="editingUser.name"
-                      maxlength="100"
-                      class="h-12 w-full rounded-xl border border-gray-200 bg-gray-50 pl-10 pr-4 text-sm text-gray-900 outline-none transition-all placeholder:text-gray-400 focus:border-violet-500 focus:bg-white focus:ring-4 focus:ring-violet-100"
-                    />
-                  </div>
-                </div>
-
-                <!-- Email -->
-                <div class="space-y-1.5">
-                  <label class="block text-sm font-semibold text-gray-700">Email</label>
-                  <div class="relative">
-                    <span class="pointer-events-none absolute inset-y-0 left-3.5 flex items-center">
-                      <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
-                      </svg>
-                    </span>
-                    <input
-                      v-model="editingUser.email"
-                      type="email"
-                      class="h-12 w-full rounded-xl border border-gray-200 bg-gray-50 pl-10 pr-4 text-sm text-gray-900 outline-none transition-all placeholder:text-gray-400 focus:border-violet-500 focus:bg-white focus:ring-4 focus:ring-violet-100"
-                    />
-                  </div>
-                </div>
-
-                <!-- Role -->
-                <div v-if="!isSubAdmin" class="space-y-1.5">
-                  <label class="block text-sm font-semibold text-gray-700">Role</label>
-                  <div class="relative">
-                    <span class="pointer-events-none absolute inset-y-0 left-3.5 flex items-center">
-                      <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
-                      </svg>
-                    </span>
-                    <select
-                      v-model="editingUser.role"
-                      class="h-12 w-full appearance-none rounded-xl border border-gray-200 bg-gray-50 pl-10 pr-4 text-sm text-gray-900 outline-none transition-all focus:border-violet-500 focus:bg-white focus:ring-4 focus:ring-violet-100 disabled:cursor-not-allowed disabled:opacity-60"
-                      :disabled="!canManageRole || isSelf"
-                    >
-                      <option value="user">User</option>
-                      <option value="admin">Admin</option>
-                    </select>
-                  </div>
-                </div>
-
-                <!-- Plan -->
-                <div v-if="editingUser.role !== 'admin'" class="space-y-1.5">
-                  <label class="block text-sm font-semibold text-gray-700">Plan</label>
-                  <div class="relative">
-                    <span class="pointer-events-none absolute inset-y-0 left-3.5 flex items-center">
-                      <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
-                      </svg>
-                    </span>
-                    <select
-                      v-model="editingUser.plan"
-                      class="h-12 w-full appearance-none rounded-xl border border-gray-200 bg-gray-50 pl-10 pr-4 text-sm text-gray-900 outline-none transition-all focus:border-violet-500 focus:bg-white focus:ring-4 focus:ring-violet-100"
-                    >
-                      <option value="free">Free</option>
-                      <option value="plus">Plus</option>
-                      <option value="pro">Pro</option>
-                      <option value="ultra">Ultra</option>
-                    </select>
-                  </div>
-                </div>
-
-                <!-- Mật khẩu mới -->
-                <div class="space-y-1.5">
-                  <label class="block text-sm font-semibold text-gray-700">Mật khẩu mới <span class="font-normal text-gray-400">(để trống nếu không đổi)</span></label>
-                  <div class="relative">
-                    <span class="pointer-events-none absolute inset-y-0 left-3.5 flex items-center">
-                      <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
-                      </svg>
-                    </span>
-                    <input
-                      v-model="editingUser.password"
-                      :type="showPassword ? 'text' : 'password'"
-                      class="h-12 w-full rounded-xl border border-gray-200 bg-gray-50 pl-10 pr-11 text-sm text-gray-900 outline-none transition-all placeholder:text-gray-400 focus:border-violet-500 focus:bg-white focus:ring-4 focus:ring-violet-100"
-                      placeholder="••••••"
-                    />
-                    <button
-                      type="button"
-                      class="absolute inset-y-0 right-3.5 flex items-center text-gray-400 transition hover:text-gray-600"
-                      @click="showPassword = !showPassword"
-                    >
-                      <svg v-if="!showPassword" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                      <svg v-else class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-
-              </div>
-            </div>
-
-            <!-- Footer -->
-            <div class="flex items-center justify-end gap-3 border-t border-gray-100 px-8 py-5">
-              <button
-                type="button"
-                class="h-10 rounded-xl border border-gray-200 bg-white px-5 text-sm font-semibold text-gray-600 transition hover:bg-gray-50"
-                @click="closeEditModal"
-              >
-                Hủy
-              </button>
-              <button
-                type="button"
-                class="flex h-10 items-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-500 px-6 text-sm font-semibold text-white shadow-md shadow-violet-200 transition hover:scale-[1.02] hover:shadow-lg hover:shadow-violet-300 disabled:opacity-60 disabled:hover:scale-100"
-                :disabled="isSaving"
-                @click="saveUserEdit"
-              >
-                <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" />
-                </svg>
-                {{ isSaving ? 'Đang lưu...' : 'Lưu thay đổi' }}
-              </button>
-            </div>
-
+    <div v-if="showEditModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
+      <div class="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-xl space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div>
+            <span class="text-[10px] font-bold uppercase text-[#7C3AED]">Cập nhật thông tin</span>
+            <h3 class="text-base font-bold text-slate-900">Chỉnh sửa người dùng</h3>
           </div>
-        </Transition>
+          <button type="button" class="text-slate-400 hover:text-slate-600 text-sm" @click="closeEditModal">✕</button>
+        </div>
+
+        <form class="space-y-3 text-xs" @submit.prevent="saveUserEdit">
+          <div class="space-y-1">
+            <label class="font-bold text-slate-700 block">Họ và tên</label>
+            <input v-model="editingUser.name" maxlength="100" class="field text-xs" required />
+          </div>
+
+          <div class="space-y-1">
+            <label class="font-bold text-slate-700 block">Email</label>
+            <input v-model="editingUser.email" type="email" class="field text-xs" required />
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div v-if="!isSubAdmin" class="space-y-1">
+              <label class="font-bold text-slate-700 block">Role</label>
+              <select v-model="editingUser.role" class="field text-xs" :disabled="!canManageRole || isSelf">
+                <option value="user">User</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+
+            <div v-if="editingUser.role !== 'admin'" class="space-y-1">
+              <label class="font-bold text-slate-700 block">Gói Plan</label>
+              <select v-model="editingUser.plan" class="field text-xs">
+                <option value="free">Free</option>
+                <option value="plus">Plus</option>
+                <option value="pro">Pro</option>
+                <option value="ultra">Ultra</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="space-y-1">
+            <label class="font-bold text-slate-700 block">Mật khẩu mới (để trống nếu không đổi)</label>
+            <input v-model="editingUser.password" type="password" class="field text-xs" placeholder="••••••••" />
+          </div>
+
+          <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+            <button class="btn-secondary text-xs px-3.5 py-1.5" type="button" @click="closeEditModal">Hủy</button>
+            <button class="btn-primary text-xs px-4 py-1.5" type="submit" :disabled="isSaving">
+              {{ isSaving ? 'Đang lưu...' : 'Lưu thay đổi' }}
+            </button>
+          </div>
+        </form>
       </div>
-    </Transition>
+    </div>
   </section>
 </template>
 
@@ -515,7 +383,6 @@ const successMessage = ref('')
 
 const newUser = reactive({ name: '', email: '', password: '', role: 'user', plan: 'free' })
 const showEditModal = ref(false)
-const showPassword = ref(false)
 const editingUser = reactive({ id: null, name: '', email: '', role: 'user', plan: 'free', plan_started_at: null, plan_expires_at: null, password: '' })
 const currentUser = ref(currentUserStorage.get())
 const showConfirm = inject('showConfirm')
@@ -639,7 +506,7 @@ const createUser = async () => {
       name: newUser.name.trim(),
       email: newUser.email.trim(),
     })
-    successMessage.value = 'Đã tạo user.'
+    successMessage.value = 'Đã tạo user thành công.'
     newUser.name = ''
     newUser.email = ''
     newUser.password = ''
@@ -653,27 +520,8 @@ const createUser = async () => {
   }
 }
 
-const updateRole = async (user) => {
-  errorMessage.value = ''
-  successMessage.value = ''
-  try {
-    const updated = await usersApi.update(user.id, { role: user.role.toUpperCase() })
-    const normalized = normalizeUser(updated)
-    const userIndex = users.value.findIndex((u) => u.id === user.id)
-    if (userIndex > -1) {
-      users.value[userIndex] = normalized
-    }
-    successMessage.value = 'Đã cập nhật role.'
-  } catch (error) {
-    errorMessage.value = `Cập nhật role thất bại: ${error.message}`
-    await loadUsers()
-  }
-}
-
 const selectUserForEdit = (user) => {
-  // ensure we have the latest currentUser from storage
   syncCurrentUser()
-
   editingUser.id = user.id
   editingUser.name = user.name
   editingUser.email = user.email
@@ -682,7 +530,6 @@ const selectUserForEdit = (user) => {
   editingUser.plan_started_at = user.plan_started_at ? user.plan_started_at.slice(0, 16) : null
   editingUser.plan_expires_at = user.plan_expires_at ? user.plan_expires_at.slice(0, 16) : null
   editingUser.password = ''
-  showPassword.value = false
   showEditModal.value = true
 }
 
@@ -776,7 +623,7 @@ const unlockUser = (id) => {
       lockedUsers.value = lockedUsers.value.filter((u) => u.id !== id)
       lockedCount.value = Math.max(0, lockedCount.value - 1)
       if (selectedLockedUser.value?.id === id) selectedLockedUser.value = null
-      successMessage.value = 'Đã mở khóa tài khoản.'
+      successMessage.value = 'Đã mở khóa tài khoản thành công.'
     } catch (error) {
       errorMessage.value = `Mở khóa thất bại: ${error.message}`
     }
@@ -788,15 +635,13 @@ const pagedLockedUsers = computed(() => {
   return lockedUsers.value.slice(start, start + LOCKED_PAGE_SIZE)
 })
 
-const lockedTotalPages = computed(() => Math.max(1, Math.ceil(lockedUsers.value.length / LOCKED_PAGE_SIZE)))
-
 const appealLabel = (status) => ({ pending: 'Đang chờ', approved: 'Đã duyệt', rejected: 'Đã từ chối' }[status] || 'Chưa gửi')
 
 const appealBadgeClass = (status) => ({
-  pending: 'border-amber-500/25 bg-amber-500/10 text-amber-300',
-  approved: 'border-emerald-500/25 bg-emerald-500/10 text-emerald-300',
-  rejected: 'border-rose-500/25 bg-rose-500/10 text-rose-300',
-}[status] || 'border-[var(--border)] bg-[var(--surface-soft)] text-[var(--muted)]')
+  pending: 'bg-amber-100 text-amber-800',
+  approved: 'bg-emerald-100 text-emerald-800',
+  rejected: 'bg-red-100 text-red-800',
+}[status] || 'bg-slate-100 text-slate-500')
 
 const loadAppealMap = async () => {
   try {
@@ -806,7 +651,6 @@ const loadAppealMap = async () => {
     list.forEach((r) => {
       const uid = r.user_id || r.user?.id
       if (!uid) return
-      // giữ pending ưu tiên cao nhất, sau đó rejected, approved
       const priority = { pending: 3, rejected: 2, approved: 1 }
       if (!map[uid] || (priority[r.status] || 0) > (priority[map[uid]] || 0)) {
         map[uid] = r.status
@@ -864,7 +708,7 @@ const rejectRequest = async () => {
 
   const trimmedNote = adminNote.value.trim()
   if (!trimmedNote) {
-    adminNoteError.value = 'Vui lòng nhập lý do từ chối để người dùng biết vì sao kháng cáo bị từ chối.'
+    adminNoteError.value = 'Vui lòng nhập lý do từ chối để người dùng biết.'
     return
   }
   if (trimmedNote.length > 1000) {
@@ -905,8 +749,8 @@ const loadTrash = async () => {
 
 const restoreUser = (id) => {
   openConfirm('Khôi phục user này?', async () => {
-  errorMessage.value = ''
-  successMessage.value = ''
+    errorMessage.value = ''
+    successMessage.value = ''
     try {
       await usersApi.restore(id)
       trashedUsers.value = trashedUsers.value.filter((user) => user.id !== id)
@@ -919,8 +763,8 @@ const restoreUser = (id) => {
 
 const forceDeleteUser = (id) => {
   openConfirm('Xóa vĩnh viễn user này? Không thể hoàn tác!', async () => {
-  errorMessage.value = ''
-  successMessage.value = ''
+    errorMessage.value = ''
+    successMessage.value = ''
     try {
       await usersApi.forceDelete(id)
       trashedUsers.value = trashedUsers.value.filter((user) => user.id !== id)
@@ -933,8 +777,8 @@ const forceDeleteUser = (id) => {
 
 const deleteUser = (id) => {
   openConfirm('Xóa user này?', async () => {
-  errorMessage.value = ''
-  successMessage.value = ''
+    errorMessage.value = ''
+    successMessage.value = ''
     try {
       await usersApi.remove(id)
       users.value = users.value.filter((user) => user.id !== id)
@@ -950,25 +794,13 @@ const viewUserDetail = (id) => {
 }
 
 const formatDate = (value) => {
-  if (!value) return 'Chưa rõ'
-  const date = new Date(value)
-  return date.toLocaleDateString('vi-VN', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  })
+  if (!value) return '-'
+  return new Date(value).toLocaleDateString('vi-VN')
 }
 
 onMounted(async () => {
   syncCurrentUser()
   window.addEventListener('quizflex-user-updated', syncCurrentUser)
-  const actor = currentUser.value
-  if (actor?.id) {
-    try {
-      const fresh = await usersApi.get(actor.id)
-      if (fresh) currentUser.value = { ...actor, ...fresh }
-    } catch { /* giữ nguyên nếu lỗi */ }
-  }
   loadUsers()
   loadLockedCount()
   loadAppealMap()

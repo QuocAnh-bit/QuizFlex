@@ -3,17 +3,18 @@
     <!-- Nút Quả Chuông -->
     <button
       @click="toggleDropdown"
-      class="relative flex h-10 w-10 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--surface-soft)] text-[var(--muted)] transition duration-200 hover:-translate-y-0.5 hover:bg-[var(--border-light)] hover:text-[var(--text)] hover:shadow-lg active:scale-95"
+      class="relative flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 hover:text-slate-900 active:scale-95 shadow-sm"
+      title="Thông báo"
     >
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
         <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
       </svg>
 
-      <!-- Chấm đỏ nhấp nháy khi có thông báo chưa đọc -->
-      <span v-if="unreadCount > 0" class="absolute right-2 top-2 flex h-2.5 w-2.5">
-        <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-400 opacity-75"></span>
-        <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.8)]"></span>
+      <!-- Chấm đỏ khi có thông báo chưa đọc -->
+      <span v-if="unreadCount > 0" class="absolute right-1.5 top-1.5 flex h-2 w-2">
+        <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
+        <span class="relative inline-flex h-2 w-2 rounded-full bg-red-500"></span>
       </span>
     </button>
 
@@ -21,15 +22,15 @@
     <transition name="dropdown-slide">
       <div
         v-if="isOpen"
-        class="absolute right-0 top-full mt-2 w-80 sm:w-96 rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-2xl backdrop-blur-xl z-50 overflow-hidden flex flex-col max-h-[85vh]"
+        class="absolute right-0 top-full mt-2 w-80 sm:w-96 rounded-xl border border-slate-200 bg-white shadow-xl z-50 overflow-hidden flex flex-col max-h-[85vh]"
       >
         <!-- Header -->
-        <div class="flex items-center justify-between border-b border-[var(--border)] px-4 py-3 bg-[var(--surface-soft)]/50">
-          <h3 class="font-black text-[var(--text)] text-sm">Thông báo</h3>
+        <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3 bg-slate-50">
+          <h3 class="font-bold text-slate-900 text-sm">Thông báo</h3>
           <button 
             v-if="unreadCount > 0" 
             @click="markAllAsRead" 
-            class="text-xs font-bold text-[var(--primary)] hover:text-[var(--accent)] transition"
+            class="text-xs font-semibold text-[#7C3AED] hover:underline transition"
           >
             Đánh dấu đã đọc
           </button>
@@ -37,11 +38,11 @@
 
         <!-- Danh sách thông báo -->
         <div class="overflow-y-auto overflow-x-hidden p-2 custom-scrollbar flex-1">
-          <div v-if="isLoading" class="p-4 text-center text-sm text-[var(--muted)]">
+          <div v-if="isLoading" class="p-4 text-center text-sm text-slate-500">
             Đang tải...
           </div>
           
-          <div v-else-if="notifications.length === 0" class="p-8 text-center text-sm text-[var(--muted)] flex flex-col items-center gap-2">
+          <div v-else-if="notifications.length === 0" class="p-8 text-center text-sm text-slate-500 flex flex-col items-center gap-2">
             <span class="text-3xl">📭</span>
             Chưa có thông báo nào
           </div>
@@ -52,28 +53,27 @@
               :key="item.id"
               @click="handleReadNotification(item)"
               :class="[
-                'cursor-pointer rounded-xl p-3 transition duration-200 hover:bg-[var(--surface-soft)]',
-                !item.is_read ? 'bg-[var(--primary)]/5 border border-[var(--primary)]/20' : 'bg-transparent'
+                'cursor-pointer rounded-lg p-3 transition duration-150',
+                !item.is_read ? 'bg-purple-50/70 border border-purple-100' : 'hover:bg-slate-50'
               ]"
             >
               <div class="flex gap-3 items-start">
-                <!-- Icon theo loại thông báo (báo cáo, hệ thống, v.v.) -->
-                <div class="mt-0.5 shrink-0 text-xl">
+                <div class="mt-0.5 shrink-0 text-lg">
                   {{ getIcon(item.type) }}
                 </div>
-                <div class="flex-1">
-                  <p class="text-sm font-bold text-[var(--text)] leading-tight mb-1" v-html="item.title"></p>
-                  <p class="text-xs text-[var(--muted)] line-clamp-2" v-html="item.message"></p>
-                  <span class="text-[10px] font-bold text-[var(--primary)] mt-1.5 block">{{ formatTime(item.created_at) }}</span>
+                <div class="flex-1 min-w-0">
+                  <p class="text-xs font-bold text-slate-900 leading-snug mb-0.5" v-html="item.title"></p>
+                  <p class="text-xs text-slate-600 line-clamp-2" v-html="item.message"></p>
+                  <span class="text-[10px] font-medium text-slate-400 mt-1 block">{{ formatTime(item.created_at) }}</span>
                 </div>
-                <div v-if="!item.is_read" class="shrink-0 h-2 w-2 rounded-full bg-rose-500 mt-2 shadow-[0_0_8px_rgba(244,63,94,0.6)]"></div>
+                <div v-if="!item.is_read" class="shrink-0 h-2 w-2 rounded-full bg-[#7C3AED] mt-1.5"></div>
               </div>
             </div>
           </div>
         </div>
         
         <!-- Footer -->
-        <router-link to="/notifications" @click="isOpen = false" class="block border-t border-[var(--border)] p-3 text-center text-xs font-black text-[var(--muted)] hover:bg-[var(--surface-soft)] hover:text-[var(--text)] transition">
+        <router-link to="/notifications" @click="isOpen = false" class="block border-t border-slate-100 p-2.5 text-center text-xs font-bold text-slate-600 hover:bg-slate-50 hover:text-[#7C3AED] transition">
           Xem tất cả thông báo
         </router-link>
       </div>

@@ -1,36 +1,70 @@
 <template>
-  <section class="grid gap-6 py-8">
-    <article class="relative overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-soft)]">
-      <div class="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[var(--primary)]/15 blur-3xl"></div>
-      <div class="relative z-10">
-      <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Phòng thi đấu</p>
-      <h1 class="mt-2 text-4xl font-black tracking-[-0.06em] text-[var(--text)]">Chơi quiz trực tiếp</h1>
-      <p class="mt-3 max-w-3xl text-sm leading-7 text-[var(--muted)]">
-        Chủ phòng tạo phòng từ quiz, người chơi tham gia bằng mã và tự trả lời theo tiến độ riêng. Bảng xếp hạng cập nhật realtime, polling giữ vai trò fallback.
+  <section class="max-w-4xl mx-auto py-4 space-y-6">
+    <!-- Header -->
+    <div class="card p-6 sm:p-8 space-y-2">
+      <span class="rounded-full bg-amber-50 border border-amber-200 px-3 py-0.5 text-xs font-bold text-amber-700">
+        Thời gian thực
+      </span>
+      <h1 class="text-2xl sm:text-3xl font-black text-slate-900 pt-1">Phòng thi đấu trực tiếp</h1>
+      <p class="text-xs sm:text-sm text-slate-600 max-w-2xl leading-relaxed">
+        Tạo phòng thi đấu thời gian thực kiểu Kahoot, mời bạn bè qua mã PIN và cùng tranh tài trên bảng xếp hạng trực tiếp.
       </p>
-      </div>
-    </article>
+    </div>
 
+    <!-- 2 Choice Cards -->
     <div class="grid gap-5 md:grid-cols-2">
-      <router-link v-if="canCreateLiveRoom" class="group rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-card)] transition hover:-translate-y-1 hover:border-[var(--border-strong)]" to="/live-rooms/create">
-        <span class="rounded-full bg-[var(--chip-active)] px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-[var(--primary)]">Chủ phòng</span>
-        <h2 class="mt-5 text-2xl font-black tracking-[-0.04em] text-[var(--text)]">Tạo phòng thi đấu</h2>
-        <p class="mt-3 text-sm leading-7 text-[var(--muted)]">Dành cho tài khoản Plus/Pro/Ultra/Admin tạo phòng, chia sẻ mã, start và theo dõi tiến độ người chơi.</p>
-        <span class="btn-primary mt-6 inline-flex">Tạo phòng thi đấu</span>
+      <!-- Host Card -->
+      <router-link 
+        v-if="canCreateLiveRoom" 
+        class="card p-6 sm:p-8 flex flex-col justify-between card-hover" 
+        to="/live-rooms/create"
+      >
+        <div class="space-y-3">
+          <span class="rounded-full bg-amber-50 text-amber-800 border border-amber-200 px-3 py-1 text-xs font-bold">
+            👑 Dành cho chủ phòng
+          </span>
+          <h2 class="text-xl font-bold text-slate-900 pt-1">Tạo phòng thi đấu</h2>
+          <p class="text-xs text-slate-500 leading-relaxed">
+            Chọn bộ quiz từ kho của bạn, tạo mã PIN và quản lý phòng thi đấu trực tuyến cho các thành viên.
+          </p>
+        </div>
+        <div class="pt-6">
+          <span class="btn-primary text-xs w-full justify-center">Tạo phòng thi đấu ngay →</span>
+        </div>
       </router-link>
 
-      <article v-else class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-card)]">
-        <span class="rounded-full bg-[var(--chip-active)] px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-[var(--primary)]">Chủ phòng</span>
-        <h2 class="mt-5 text-2xl font-black tracking-[-0.04em] text-[var(--text)]">Tạo phòng thi đấu</h2>
-        <p class="mt-3 text-sm leading-7 text-[var(--muted)]">Tài khoản Plus/Pro/Ultra mới có thể tạo phòng thi đấu. Bạn vẫn có thể tham gia phòng thi đấu bằng mã.</p>
-        <router-link class="btn-ghost mt-6 inline-flex" to="/upgrade">Nâng cấp tài khoản</router-link>
+      <article v-else class="card p-6 sm:p-8 flex flex-col justify-between card-hover">
+        <div class="space-y-3">
+          <span class="rounded-full bg-slate-100 text-slate-600 px-3 py-1 text-xs font-bold">
+            👑 Gói nâng cấp
+          </span>
+          <h2 class="text-xl font-bold text-slate-900 pt-1">Tạo phòng thi đấu</h2>
+          <p class="text-xs text-slate-500 leading-relaxed">
+            Tài khoản Plus/Pro/Ultra mới có thể tạo phòng thi đấu. Bạn vẫn có thể tham gia vào bất kỳ phòng nào bằng mã PIN.
+          </p>
+        </div>
+        <div class="pt-6">
+          <router-link class="btn-secondary text-xs w-full justify-center" to="/upgrade">Nâng cấp tài khoản 👑</router-link>
+        </div>
       </article>
 
-      <router-link class="group rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-card)] transition hover:-translate-y-1 hover:border-[var(--border-strong)]" to="/live-rooms/join">
-        <span class="rounded-full bg-[var(--chip-active)] px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-[var(--primary)]">Player</span>
-        <h2 class="mt-5 text-2xl font-black tracking-[-0.04em] text-[var(--text)]">Tham gia phòng thi đấu</h2>
-        <p class="mt-3 text-sm leading-7 text-[var(--muted)]">Nhập mã phòng thi đấu, chờ chủ phòng bắt đầu và trả lời các câu hỏi theo tốc độ của bạn.</p>
-        <span class="btn-ghost mt-6 inline-flex">Nhập mã phòng</span>
+      <!-- Player Card -->
+      <router-link 
+        class="card p-6 sm:p-8 flex flex-col justify-between card-hover" 
+        to="/live-rooms/join"
+      >
+        <div class="space-y-3">
+          <span class="rounded-full bg-purple-50 text-[#7C3AED] border border-purple-200 px-3 py-1 text-xs font-bold">
+            🎮 Dành cho người chơi
+          </span>
+          <h2 class="text-xl font-bold text-slate-900 pt-1">Tham gia phòng thi đấu</h2>
+          <p class="text-xs text-slate-500 leading-relaxed">
+            Nhập mã PIN từ bạn bè hoặc giáo viên, chọn biệt danh và sẵn sàng thi đấu tính điểm trên bảng xếp hạng.
+          </p>
+        </div>
+        <div class="pt-6">
+          <span class="btn-secondary text-xs w-full justify-center">Nhập mã PIN phòng →</span>
+        </div>
       </router-link>
     </div>
   </section>

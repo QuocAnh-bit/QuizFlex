@@ -1,5 +1,5 @@
 <template>
-  <section class="grid gap-6 py-8">
+  <section class="max-w-5xl mx-auto py-4 space-y-6">
     <!-- 1. LOADING STATE -->
     <AppLoadingState 
       v-if="isLoading" 
@@ -16,151 +16,136 @@
       @retry="loadAttempts"
     >
       <template #actions>
-        <router-link class="btn-ghost text-xs" :to="`/homework-rooms/${roomId}`">Quay lại room</router-link>
+        <router-link class="btn-ghost text-xs" :to="`/homework-rooms/${roomId}`">Quay lại phòng</router-link>
       </template>
     </AppErrorState>
 
     <!-- 3. LOADED STATE -->
     <template v-else>
       <div class="flex flex-wrap items-center justify-between gap-3">
-        <router-link class="btn-ghost" :to="`/homework-rooms/${roomId}`">Quay lại room</router-link>
-        <button class="btn-ghost" type="button" :disabled="isLoading" @click="loadAttempts">
-          Tải lại
+        <router-link class="btn-secondary text-xs" :to="`/homework-rooms/${roomId}`">← Quay lại phòng học</router-link>
+        <button class="btn-secondary text-xs px-3.5 py-1.5" type="button" :disabled="isLoading" @click="loadAttempts">
+          🔄 Tải lại
         </button>
       </div>
 
-      <article class="relative overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-soft)] backdrop-blur-2xl">
-        <div class="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[var(--primary)]/15 blur-3xl"></div>
-        <div class="relative z-10">
-          <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Homework Results</p>
-          <h1 class="mt-2 text-4xl font-black tracking-[-0.06em] text-[var(--text)]">Bài nộp của thành viên</h1>
-          <p class="mt-3 max-w-3xl text-sm leading-7 text-[var(--muted)]">
-            Theo dõi trạng thái, điểm và thời gian nộp bài của các thành viên trong assignment này.
-          </p>
+      <!-- Header -->
+      <div class="card p-6 sm:p-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+        <div>
+          <p class="text-xs font-bold uppercase tracking-wider text-blue-600">Báo cáo kết quả</p>
+          <h1 class="mt-1 text-2xl font-black text-slate-900 sm:text-3xl">Bài nộp của thành viên</h1>
+          <p class="mt-1 text-sm text-slate-600">Theo dõi trạng thái, điểm số và gửi nhận xét đánh giá cho từng học viên.</p>
+        </div>
+        <span class="rounded-full bg-blue-50 border border-blue-200 px-3.5 py-1 text-xs font-bold text-blue-700">
+          Tổng cộng: {{ attempts.length }} bài nộp
+        </span>
+      </div>
+
+      <!-- Attempts Table Card -->
+      <article class="card overflow-hidden">
+        <div v-if="attempts.length" class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="border-b border-slate-100 bg-slate-50 text-slate-400 font-bold uppercase text-[10px]">
+                <th class="py-3.5 px-4">Học viên</th>
+                <th class="py-3.5 px-4">Trạng thái</th>
+                <th class="py-3.5 px-4">Điểm số</th>
+                <th class="py-3.5 px-4">Số câu đúng</th>
+                <th class="py-3.5 px-4">Bắt đầu</th>
+                <th class="py-3.5 px-4">Nộp bài</th>
+                <th class="py-3.5 px-4 text-right">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 font-medium">
+              <tr v-for="attempt in attempts" :key="attempt.id" class="hover:bg-slate-50">
+                <td class="py-3.5 px-4">
+                  <span class="font-bold text-slate-900 block">{{ attempt.user?.name || `User #${attempt.user_id}` }}</span>
+                  <span class="text-[11px] text-slate-400 block">{{ attempt.user?.email || '-' }}</span>
+                </td>
+                <td class="py-3.5 px-4">
+                  <StatusBadge :value="attempt.status || '-'" />
+                </td>
+                <td class="py-3.5 px-4 font-bold text-[#7C3AED]">{{ formatScore(attempt) }}</td>
+                <td class="py-3.5 px-4 text-slate-700">{{ formatCorrectCount(attempt) }}</td>
+                <td class="py-3.5 px-4 text-slate-500">{{ formatDateTime(attempt.started_at) }}</td>
+                <td class="py-3.5 px-4 text-slate-500">{{ formatDateTime(attempt.submitted_at || attempt.finished_at) }}</td>
+                <td class="py-3.5 px-4 text-right">
+                  <div class="flex items-center justify-end gap-1.5">
+                    <button
+                      class="rounded px-2.5 py-1 font-bold text-xs transition"
+                      :class="attempt.evaluation ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100' : 'bg-purple-50 text-[#7C3AED] hover:bg-purple-100'"
+                      type="button"
+                      @click="openEvaluation(attempt)"
+                    >
+                      <span>{{ attempt.evaluation ? '💬 Đã nhận xét' : 'Đánh giá' }}</span>
+                    </button>
+                    <button
+                      v-if="isHost && !isBanned"
+                      class="rounded bg-red-50 px-2 py-1 text-xs font-bold text-red-600 hover:bg-red-100 transition disabled:opacity-50"
+                      type="button"
+                      :disabled="isResetting === attempt.id"
+                      @click="resetAttempt(attempt)"
+                      title="Cho phép học viên làm lại từ đầu"
+                    >
+                      {{ isResetting === attempt.id ? '...' : 'Reset' }}
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div v-else class="p-10 text-center text-slate-500">
+          <span class="text-3xl block mb-1">📝</span>
+          <h3 class="text-base font-bold text-slate-800">Chưa có bài nộp nào</h3>
+          <p class="mt-1 text-xs">Khi thành viên bắt đầu hoặc nộp bài, kết quả sẽ hiển thị tại đây.</p>
         </div>
       </article>
-
-      <article class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-card)]">
-        <div class="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Attempts</p>
-            <h2 class="mt-1 text-2xl font-black tracking-[-0.04em] text-[var(--text)]">Danh sách bài nộp</h2>
-          </div>
-          <span class="rounded-full border border-[var(--border)] bg-[var(--surface-soft)] px-3 py-1 text-xs font-black text-[var(--muted)]">
-            {{ attempts.length }}
-          </span>
-        </div>
-
-      <div v-if="attempts.length" class="mt-5 overflow-hidden rounded-[1.5rem] border border-[var(--border)]">
-        <div class="hidden grid-cols-[minmax(220px,1.4fr)_110px_110px_120px_150px_150px_120px] gap-3 border-b border-[var(--border)] bg-[var(--surface-soft)] px-4 py-3 text-xs font-black uppercase tracking-[0.16em] text-[var(--muted)] lg:grid">
-          <span>Người làm</span>
-          <span>Trạng thái</span>
-          <span>Điểm</span>
-          <span>Số câu đúng</span>
-          <span>Bắt đầu</span>
-          <span>Nộp bài</span>
-          <span>Thao tác</span>
-        </div>
-
-        <article
-          v-for="attempt in attempts"
-          :key="attempt.id"
-          class="grid gap-3 border-b border-[var(--border)] px-4 py-4 last:border-b-0 lg:grid-cols-[minmax(220px,1.4fr)_110px_110px_120px_150px_150px_120px] lg:items-center"
-        >
-          <div>
-            <h3 class="font-black text-[var(--text)]">{{ attempt.user?.name || `User #${attempt.user_id}` }}</h3>
-            <p class="mt-1 text-xs font-bold text-[var(--muted)]">{{ attempt.user?.email || 'Chưa có email' }}</p>
-          </div>
-          <StatusBadge :value="attempt.status || '-'" />
-          <p class="text-sm font-black text-[var(--text)]">{{ formatScore(attempt) }}</p>
-          <p class="text-sm font-black text-[var(--text)]">{{ formatCorrectCount(attempt) }}</p>
-          <p class="text-sm font-bold text-[var(--muted)]">{{ formatDateTime(attempt.started_at) }}</p>
-          <p class="text-sm font-bold text-[var(--muted)]">{{ formatDateTime(attempt.submitted_at || attempt.finished_at) }}</p>
-          <div class="flex items-center gap-2">
-            <button
-              class="btn-ghost px-3 py-1.5 text-xs flex items-center gap-1"
-              :class="attempt.evaluation ? 'text-emerald-400 hover:bg-emerald-500/10' : 'text-[var(--primary)] hover:bg-[var(--primary)]/10'"
-              type="button"
-              @click="openEvaluation(attempt)"
-            >
-              <span>Đánh giá</span>
-              <span v-if="attempt.evaluation" title="Đã có nhận xét">💬</span>
-            </button>
-            <button
-              v-if="isHost && !isBanned"
-              class="btn-ghost px-3 py-1.5 text-xs text-rose-400 hover:bg-rose-500/10 flex items-center gap-1 disabled:opacity-50"
-              type="button"
-              :disabled="isResetting === attempt.id"
-              @click="resetAttempt(attempt)"
-            >
-              {{ isResetting === attempt.id ? '...' : 'Reset' }}
-            </button>
-          </div>
-        </article>
-      </div>
-
-      <div v-else class="mt-5 rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface-soft)] p-10 text-center">
-        <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Empty</p>
-        <h3 class="mt-2 text-2xl font-black tracking-[-0.04em] text-[var(--text)]">Chưa có bài nộp</h3>
-        <p class="mt-3 text-sm leading-7 text-[var(--muted)]">Khi thành viên bắt đầu hoặc nộp bài, dữ liệu sẽ xuất hiện tại đây.</p>
-      </div>
-    </article>
     </template>
 
     <!-- Modal Đánh giá bài làm -->
-    <div v-if="selectedAttempt" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity">
-      <div class="relative w-full max-w-lg rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-card)]">
-        <div class="flex items-center justify-between pb-4 border-b border-[var(--border)]">
-          <h3 class="text-xl font-black text-[var(--text)]">Đánh giá bài làm</h3>
-          <button @click="closeEvaluation" class="text-[var(--muted)] hover:text-[var(--text)] text-2xl font-bold">&times;</button>
+    <div v-if="selectedAttempt" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+      <div class="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-xl space-y-4">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+          <h3 class="text-base font-bold text-slate-900">Đánh giá & Nhận xét bài làm</h3>
+          <button @click="closeEvaluation" class="text-slate-400 hover:text-slate-600 text-lg font-bold">✕</button>
         </div>
 
-        <div class="mt-5 space-y-6 max-h-[70vh] overflow-y-auto pr-1">
-          <div class="space-y-2 rounded-xl border border-[var(--border)] bg-[var(--surface-soft)] p-4 text-sm leading-relaxed">
-            <p class="font-bold text-[var(--text)]">Học viên: <span class="font-black text-[var(--primary)]">{{ selectedAttempt.user?.name || `User #${selectedAttempt.user_id}` }}</span></p>
-            <p class="text-[var(--muted)]">Email: <span class="font-bold text-[var(--text)]">{{ selectedAttempt.user?.email || '-' }}</span></p>
-            <p class="text-[var(--muted)]">Điểm số: <span class="font-black text-[var(--text)]">{{ formatScore(selectedAttempt) }} ({{ formatCorrectCount(selectedAttempt) }} câu đúng)</span></p>
-            <p class="text-[var(--muted)]">Thời gian nộp: <span class="font-bold text-[var(--text)]">{{ formatDateTime(selectedAttempt.submitted_at || selectedAttempt.finished_at) }}</span></p>
+        <div class="space-y-4 text-xs">
+          <div class="rounded-xl border border-slate-100 bg-slate-50 p-3.5 space-y-1.5">
+            <p class="font-bold text-slate-900">Học viên: <b class="text-[#7C3AED]">{{ selectedAttempt.user?.name || `User #${selectedAttempt.user_id}` }}</b></p>
+            <p class="text-slate-500">Email: {{ selectedAttempt.user?.email || '-' }}</p>
+            <p class="text-slate-700 font-bold">Điểm số: {{ formatScore(selectedAttempt) }} ({{ formatCorrectCount(selectedAttempt) }} câu đúng)</p>
+            <p class="text-slate-500">Nộp lúc: {{ formatDateTime(selectedAttempt.submitted_at || selectedAttempt.finished_at) }}</p>
           </div>
 
           <div>
-            <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)] mb-3">Nhận xét bài làm</p>
-            
-            <div v-if="isLoadingEvaluation" class="py-4 text-center text-xs font-bold text-[var(--muted)]">
+            <span class="text-xs font-bold text-slate-700 block mb-1">Nhận xét của giáo viên / chủ phòng</span>
+            <div v-if="isLoadingEvaluation" class="py-4 text-center text-slate-400 font-semibold">
               Đang tải nhận xét...
             </div>
-
             <div v-else>
-              <div v-if="isHost && !isBanned" class="space-y-4">
-                <div>
-                  <label class="block text-xs font-bold text-[var(--muted)] mb-1 uppercase">Nhận xét của giáo viên</label>
-                  <textarea 
-                    v-model="evaluationForm.comment"
-                    class="field min-h-24 w-full resize-y text-sm"
-                    maxlength="1000"
-                    placeholder="Nhập nhận xét cho bài làm này (Ví dụ: Trình bày tốt, làm bài nghiêm túc...)"
-                  ></textarea>
-                </div>
-              </div>
-
-              <div v-else class="space-y-3 rounded-xl border border-[var(--border)] bg-[var(--surface-soft)] p-4">
-                <div>
-                  <p class="text-[10px] font-bold text-[var(--muted)] uppercase">Nhận xét</p>
-                  <p class="mt-1 text-sm font-bold leading-relaxed text-[var(--text)] italic">
-                    "{{ evaluationData?.comment || 'Chưa có nhận xét nào cho bài làm này.' }}"
-                  </p>
-                </div>
+              <textarea 
+                v-if="isHost && !isBanned"
+                v-model="evaluationForm.comment"
+                class="field text-xs min-h-24 resize-y"
+                maxlength="1000"
+                placeholder="Nhập nhận xét chi tiết (Ví dụ: Hoàn thành bài tốt, cần xem lại phần câu hỏi 5...)"
+              ></textarea>
+              <div v-else class="rounded-xl border border-slate-100 bg-slate-50 p-3 text-slate-700 italic">
+                "{{ evaluationData?.comment || 'Chưa có nhận xét nào cho bài làm này.' }}"
               </div>
             </div>
           </div>
         </div>
 
-        <div class="mt-6 flex items-center justify-end gap-3 pt-4 border-t border-[var(--border)]">
-          <button @click="closeEvaluation" class="btn-ghost" type="button">Đóng</button>
+        <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+          <button @click="closeEvaluation" class="btn-secondary text-xs" type="button">Đóng</button>
           <button 
             v-if="isHost && !isLoadingEvaluation && !isBanned" 
             @click="saveEvaluation" 
-            class="btn-primary" 
+            class="btn-primary text-xs px-4 py-2" 
             type="button"
             :disabled="isSavingEvaluation"
           >
@@ -195,18 +180,14 @@ const isResetting = ref(null)
 const MAX_EVALUATION_COMMENT_LENGTH = 1000
 
 const currentUser = currentUserStorage.get()
-const canManageRoom = computed(() => currentUser?.role === 'admin' || Number(room.value?.host_id) === Number(currentUser?.id))
 const isHost = computed(() => Number(room.value?.host_id) === Number(currentUser?.id))
 const isBanned = computed(() => room.value?.status === 'banned')
 
-// Evaluation modal state
 const selectedAttempt = ref(null)
 const isLoadingEvaluation = ref(false)
 const isSavingEvaluation = ref(false)
 const evaluationData = ref(null)
-const evaluationForm = ref({
-  comment: '',
-})
+const evaluationForm = ref({ comment: '' })
 
 const formatDateTime = (value) => {
   if (!value) return '-'
