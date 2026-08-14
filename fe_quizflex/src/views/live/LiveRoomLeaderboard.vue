@@ -226,7 +226,7 @@ const applyLeaderboardPayload = (eventName, event) => {
 
 const subscribeToRealtime = () => {
   try {
-    liveChannel = getEcho().private(`live-room.${liveRoomId.value}`)
+    liveChannel = getEcho().join(`live-room.${liveRoomId.value}`)
     liveChannel
       .listen('.live.leaderboard.updated', (event) => applyLeaderboardPayload('live.leaderboard.updated', event))
       .listen('.live.room.finished', (event) => applyLeaderboardPayload('live.room.finished', event))

@@ -7,6 +7,30 @@ let echoInstance = null
 
 const tokenKey = 'quizflex_access_token'
 
+const generateTabId = () => {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID()
+  }
+  return 'tab-' + Math.random().toString(36).substring(2, 15) + Date.now().toString(36)
+}
+
+// Tab ID độc lập cho từng tab trình duyệt (sử dụng sessionStorage - không chia sẻ giữa các tab)
+let tabId = null
+export const getTabId = () => {
+  if (!tabId) {
+    if (typeof sessionStorage !== 'undefined') {
+      tabId = sessionStorage.getItem('quizflex_tab_id')
+      if (!tabId) {
+        tabId = generateTabId()
+        sessionStorage.setItem('quizflex_tab_id', tabId)
+      }
+    } else {
+      tabId = generateTabId()
+    }
+  }
+  return tabId
+}
+
 const apiOrigin = () => {
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api'
   if (!apiBaseUrl.startsWith('http')) return ''
@@ -21,6 +45,8 @@ const apiOrigin = () => {
 const reverbScheme = () => import.meta.env.VITE_REVERB_SCHEME || 'http'
 
 export const createEcho = () => {
+  const currentTabId = getTabId()
+
   const echo = new Echo({
     broadcaster: 'reverb',
     key: import.meta.env.VITE_REVERB_APP_KEY,
@@ -35,17 +61,20 @@ export const createEcho = () => {
     authorizer: (channel) => ({
       authorize: (socketId, callback) => {
         const token = localStorage.getItem(tokenKey)
+        const tabId = getTabId()
 
-        fetch(`${apiOrigin()}/broadcasting/auth`, {
+        fetch(`${apiOrigin()}/broadcasting/auth?tab_id=${encodeURIComponent(tabId)}`, {
           method: 'POST',
           headers: {
             Accept: 'application/json',
             'Content-Type': 'application/json',
+            'X-Tab-Id': tabId,
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
           body: JSON.stringify({
             socket_id: socketId,
             channel_name: channel.name,
+            tab_id: tabId,
           }),
         })
           .then(async (response) => {

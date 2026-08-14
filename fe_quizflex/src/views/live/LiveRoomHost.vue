@@ -1,5 +1,25 @@
 <template>
   <section class="grid gap-6 py-8">
+    <!-- Modal Cảnh báo Đăng nhập đa Tab / Thiết bị cho Host -->
+    <transition name="fade">
+      <div v-if="isDuplicateTab" class="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-md">
+        <div class="w-full max-w-md rounded-[2rem] border border-rose-500/40 bg-[var(--surface)] p-6 shadow-2xl text-center">
+          <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-rose-500/10 text-3xl text-rose-400">
+            ⚠️
+          </div>
+          <h3 class="mt-4 text-xl font-black tracking-tight text-[var(--text)]">Phiên điều khiển bị gián đoạn</h3>
+          <p class="mt-2 text-sm leading-relaxed text-[var(--muted)]">
+            Tài khoản quản lý của bạn đang được mở trong một trình duyệt hoặc thiết bị khác. Bạn đã bị đưa ra khỏi phiên điều khiển này.
+          </p>
+          <div class="mt-6">
+            <button type="button" class="btn-primary w-full text-center" @click="confirmAndLeave">
+              Xác nhận và rời phòng
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
     <div class="flex flex-wrap items-center justify-between gap-3">
       <router-link class="btn-ghost" to="/live-rooms">Phòng thi đấu</router-link>
       <router-link class="btn-ghost" :to="`/live-rooms/${liveRoomId}/leaderboard`">Leaderboard</router-link>
@@ -46,10 +66,10 @@
       </div>
 
       <div v-if="liveRoom.status !== 'banned'" class="mt-6 flex flex-wrap gap-3">
-        <button v-if="hasLoadedRoom && roomStatus === 'waiting'" class="btn-primary" type="button" :disabled="isActionLoading" @click="startLive">
+        <button v-if="hasLoadedRoom && roomStatus === 'waiting'" class="btn-primary" type="button" :disabled="isActionLoading || isDuplicateTab" @click="startLive">
           {{ isActionLoading ? 'Đang start...' : 'Start Live' }}
         </button>
-        <button v-if="hasLoadedRoom && ['waiting', 'playing'].includes(roomStatus)" class="btn-ghost" type="button" :disabled="isActionLoading" @click="finishLive">
+        <button v-if="hasLoadedRoom && ['waiting', 'playing'].includes(roomStatus)" class="btn-ghost" type="button" :disabled="isActionLoading || isDuplicateTab" @click="finishLive">
           {{ isActionLoading ? 'Đang xử lý...' : 'Finish Live' }}
         </button>
       </div>
@@ -216,15 +236,16 @@
 
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, inject } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import StatusBadge from '@/components/common/StatusBadge.vue'
-import { getEcho } from '@/echo'
+import { getEcho, getTabId } from '@/echo'
 import { currentUserStorage, liveRoomApi } from '@/services/api'
 
 const showConfirm = inject('showConfirm')
 const showToast = inject('showToast')
 
 const route = useRoute()
+const router = useRouter()
 const liveRoomId = computed(() => route.params.liveRoomId)
 const currentUser = currentUserStorage.get()
 const monitor = ref({})
@@ -233,6 +254,12 @@ const isActionLoading = ref(false)
 const errorMessage = ref('')
 const lastRealtimeAt = ref(0)
 const activeFloatingPoints = ref({})
+
+// Multi-tab Collision State
+const isDuplicateTab = ref(false)
+const myTabId = getTabId()
+const myJoinedAt = ref(Date.now())
+
 let pollTimer = null
 let liveChannel = null
 const realtimeFreshMs = 8000
@@ -269,6 +296,27 @@ const getRankIcon = (rank) => {
   if (rank === 2) return '🥈'
   if (rank === 3) return '🥉'
   return ''
+}
+
+const confirmAndLeave = () => {
+  leaveRealtime()
+  router.push('/live-rooms')
+}
+
+const getMemberUserId = (m) => Number(m?.user_id ?? m?.info?.user_id ?? (typeof m?.id === 'number' ? m.id : null))
+const getMemberTabId = (m) => String(m?.tab_id ?? m?.info?.tab_id ?? m?.id ?? '')
+const getMemberJoinedAt = (m) => Number(m?.joined_at ?? m?.info?.joined_at ?? 0)
+
+const handleDuplicateSession = () => {
+  if (isDuplicateTab.value) return
+  isDuplicateTab.value = true
+
+  if (pollTimer) {
+    clearInterval(pollTimer)
+    pollTimer = null
+  }
+
+  leaveRealtime()
 }
 
 const triggerFloatingPoints = (userId, amount) => {
@@ -321,6 +369,7 @@ const markRealtime = () => {
 const hasRecentRealtime = () => Date.now() - lastRealtimeAt.value < realtimeFreshMs
 
 const loadMonitor = async (force = false) => {
+  if (isDuplicateTab.value) return
   if (!force && hasRecentRealtime()) return
 
   try {
@@ -471,15 +520,51 @@ const handleRoomFinished = (event) => {
 }
 
 const subscribeToRealtime = () => {
+  if (isDuplicateTab.value) return
+
   try {
-    liveChannel = getEcho().private(`live-room.${liveRoomId.value}`)
+    myJoinedAt.value = Date.now()
+    liveChannel = getEcho().join(`live-room.${liveRoomId.value}`)
+
     liveChannel
+      .here((members) => {
+        realtimeLog('presence.here', members)
+        const myUserId = Number(currentUser?.id || currentUserStorage.get()?.id)
+        if (!myUserId) return
+
+        const myServerMember = (members || []).find((m) => getMemberTabId(m) === myTabId)
+        const myServerJoinedAt = getMemberJoinedAt(myServerMember) || myJoinedAt.value
+
+        const duplicate = (members || []).find((m) => {
+          const otherUserId = getMemberUserId(m)
+          const otherTabId = getMemberTabId(m)
+          const otherJoinedAt = getMemberJoinedAt(m)
+          return otherUserId === myUserId && otherTabId !== myTabId && otherJoinedAt > myServerJoinedAt
+        })
+
+        if (duplicate) {
+          handleDuplicateSession()
+        }
+      })
+      .joining((member) => {
+        realtimeLog('presence.joining', member)
+        const myUserId = Number(currentUser?.id || currentUserStorage.get()?.id)
+        if (!myUserId) return
+
+        const newUserId = getMemberUserId(member)
+        const newTabId = getMemberTabId(member)
+
+        if (newUserId === myUserId && newTabId !== myTabId) {
+          handleDuplicateSession()
+        }
+      })
       .listen('.live.player.joined', handlePlayerJoined)
       .listen('.live.room.started', handleRoomStarted)
       .listen('.live.answer.submitted', handleAnswerSubmitted)
       .listen('.live.leaderboard.updated', handleLeaderboardUpdated)
       .listen('.live.room.finished', handleRoomFinished)
-  } catch {
+  } catch (err) {
+    console.error('[realtime] Subscribe presence error:', err)
     liveChannel = null
   }
 }
@@ -492,6 +577,7 @@ const leaveRealtime = () => {
 }
 
 const startLive = async () => {
+  if (isDuplicateTab.value) return
   isActionLoading.value = true
   errorMessage.value = ''
   try {
@@ -506,6 +592,7 @@ const startLive = async () => {
 }
 
 const finishLive = async () => {
+  if (isDuplicateTab.value) return
   if (showConfirm) {
     showConfirm(
       'Kết thúc phòng thi đấu',
@@ -619,5 +706,14 @@ onBeforeUnmount(() => {
 }
 .max-h-\[600px\]::-webkit-scrollbar-thumb:hover {
   background: var(--border-strong);
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>
