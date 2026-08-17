@@ -89,24 +89,47 @@
     <!-- Loaded Questions List -->
     <template v-else>
       <!-- Focused Question Banner -->
-      <div v-if="focusedQuestionId" class="rounded-2xl border border-rose-500/40 bg-rose-500/10 p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg shadow-rose-500/10 backdrop-blur-xl mb-4">
-        <div class="flex items-center gap-3">
-          <span class="text-2xl">⚠️</span>
-          <div>
-            <h4 class="font-black text-rose-300 text-sm sm:text-base">
-              Đang tập trung xử lý câu hỏi #{{ focusedQuestionId }}
-              <span v-if="focusedQuestionItem?.is_locked_by_admin" class="text-amber-300 ml-1">(Admin đã khóa: "{{ focusedQuestionItem.report_reason || 'Vi phạm quy định' }}")</span>
-            </h4>
-            <p class="text-xs text-[var(--muted)] mt-0.5">Vui lòng nhấp nút <strong>"✏️ Sửa câu hỏi"</strong> ở thẻ bên dưới để đính chính đáp án/nội dung.</p>
+      <div v-if="focusedQuestionId" class="mb-4">
+        <!-- SUCCESS BANNER (When question was just updated) -->
+        <div v-if="highlightedUpdatedQuestionId === focusedQuestionId" class="rounded-2xl border border-emerald-500/40 bg-emerald-500/10 p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg shadow-emerald-500/10 backdrop-blur-xl">
+          <div class="flex items-center gap-3">
+            <span class="text-2xl">🎉</span>
+            <div>
+              <h4 class="font-black text-emerald-700 dark:text-emerald-300 text-sm sm:text-base">
+                Đã hoàn tất đính chính câu hỏi #{{ focusedQuestionId }}
+              </h4>
+              <p class="text-xs text-slate-700 dark:text-slate-300 mt-0.5 font-semibold">Nội dung đã được lưu thành công và đã tự động chuyển sang trạng thái <strong>Chờ Admin duyệt lại</strong>.</p>
+            </div>
           </div>
+          <button 
+            type="button" 
+            class="shrink-0 rounded-xl border border-emerald-500/40 bg-emerald-500/20 px-3.5 py-1.5 text-xs font-black text-emerald-800 dark:text-emerald-200 hover:bg-emerald-500/30 transition flex items-center gap-1.5"
+            @click="clearQuestionFocus"
+          >
+            <span>👁️ Xem tất cả câu hỏi trong kho</span>
+          </button>
         </div>
-        <button 
-          type="button" 
-          class="shrink-0 rounded-xl border border-[var(--border)] bg-[var(--surface-soft)] px-3.5 py-1.5 text-xs font-black text-[var(--text)] hover:bg-[var(--chip-active)] transition flex items-center gap-1.5"
-          @click="clearQuestionFocus"
-        >
-          <span>👁️ Xem tất cả câu hỏi trong kho</span>
-        </button>
+
+        <!-- WARNING BANNER (When user needs to edit reported question) -->
+        <div v-else class="rounded-2xl border border-rose-500/40 bg-rose-500/10 p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg shadow-rose-500/10 backdrop-blur-xl">
+          <div class="flex items-center gap-3">
+            <span class="text-2xl">⚠️</span>
+            <div>
+              <h4 class="font-black text-rose-300 text-sm sm:text-base">
+                Đang tập trung xử lý câu hỏi #{{ focusedQuestionId }}
+                <span v-if="focusedQuestionItem?.is_locked_by_admin" class="text-amber-300 ml-1">(Admin đã khóa: "{{ focusedQuestionItem.report_reason || 'Vi phạm quy định' }}")</span>
+              </h4>
+              <p class="text-xs text-[var(--muted)] mt-0.5">Vui lòng nhấp nút <strong>"✏️ Sửa câu hỏi"</strong> ở thẻ bên dưới để đính chính đáp án/nội dung.</p>
+            </div>
+          </div>
+          <button 
+            type="button" 
+            class="shrink-0 rounded-xl border border-[var(--border)] bg-[var(--surface-soft)] px-3.5 py-1.5 text-xs font-black text-[var(--text)] hover:bg-[var(--chip-active)] transition flex items-center gap-1.5"
+            @click="clearQuestionFocus"
+          >
+            <span>👁️ Xem tất cả câu hỏi trong kho</span>
+          </button>
+        </div>
       </div>
 
       <div class="grid gap-4">
@@ -114,14 +137,25 @@
           v-for="q in questions" 
           :key="q.id" 
           :id="`question-card-${q.id}`"
-          class="group rounded-[1.75rem] border p-5 backdrop-blur-2xl transition duration-300"
+          class="group rounded-[1.75rem] border p-5 backdrop-blur-2xl transition duration-300 relative overflow-hidden"
           :class="[
-            highlightedQuestionId === q.id
-              ? 'border-rose-500 ring-4 ring-rose-500/50 bg-rose-500/10 shadow-2xl scale-[1.01]'
-              : 'border-[var(--border)] bg-[var(--surface)] hover:border-[var(--border-strong)] hover:shadow-lg',
-            q.is_locked_by_admin ? 'border-rose-500/50 bg-rose-500/10' : ''
+            highlightedUpdatedQuestionId === q.id
+              ? 'border-emerald-500 ring-4 ring-emerald-500/30 bg-emerald-500/10 shadow-2xl scale-[1.01]'
+              : (highlightedQuestionId === q.id
+                  ? 'border-rose-500 ring-4 ring-rose-500/50 bg-rose-500/10 shadow-2xl scale-[1.01]'
+                  : 'border-[var(--border)] bg-[var(--surface)] hover:border-[var(--border-strong)] hover:shadow-lg'),
+            q.is_locked_by_admin && highlightedUpdatedQuestionId !== q.id ? 'border-rose-500/50 bg-rose-500/10' : ''
           ]"
         >
+          <!-- Success Banner if updated -->
+          <div v-if="highlightedUpdatedQuestionId === q.id" class="mb-4 flex items-center justify-between rounded-xl border border-emerald-500/40 bg-emerald-500/20 p-3 text-xs font-bold text-emerald-950 dark:text-emerald-100 shadow-sm">
+            <div class="flex items-center gap-2">
+              <span class="text-base">🎉</span>
+              <span>Đã cập nhật đính chính nội dung câu hỏi thành công! Hệ thống đã tự động chuyển câu hỏi sang trạng thái Chờ duyệt lại.</span>
+            </div>
+            <button type="button" class="text-emerald-900 dark:text-emerald-200 hover:text-black dark:hover:text-white font-black ml-2 text-sm" @click="clearQuestionFocus">✕</button>
+          </div>
+
           <div class="flex flex-col xl:flex-row xl:items-start justify-between gap-4">
             <div class="flex-1 min-w-0">
               <div class="flex flex-wrap items-center gap-2 mb-3">
@@ -145,7 +179,10 @@
                   {{ difficultyText(q.difficulty) }}
                 </span>
 
-                <span v-if="q.is_locked_by_admin" class="rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40 px-2.5 py-0.5 text-[11px] font-black animate-pulse" :title="q.report_reason ? `Lý do: ${q.report_reason}` : ''">
+                <span v-if="highlightedUpdatedQuestionId === q.id" class="rounded-full bg-emerald-600 text-white dark:bg-emerald-800 dark:text-emerald-100 border border-emerald-500 px-2.5 py-0.5 text-[11px] font-black shadow-sm">
+                  ✅ Đã cập nhật &amp; Chờ duyệt lại
+                </span>
+                <span v-else-if="q.is_locked_by_admin" class="rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40 px-2.5 py-0.5 text-[11px] font-black animate-pulse" :title="q.report_reason ? `Lý do: ${q.report_reason}` : ''">
                   🔒 Đã bị Admin khóa / Gỡ công khai {{ q.report_reason ? `(Lý do: ${q.report_reason})` : '' }}
                 </span>
                 <span v-else-if="q.has_report" class="rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2.5 py-0.5 text-[11px] font-black animate-pulse">
@@ -367,6 +404,7 @@ import { myQuestionsApi, questionsBankApi, taxonomyApi } from '@/services/api'
 const route = useRoute()
 const router = useRouter()
 const highlightedQuestionId = ref(null)
+const highlightedUpdatedQuestionId = ref(null)
 const hasAutoOpenedModal = ref(false)
 
 const focusedQuestionId = computed(() => {
@@ -690,14 +728,24 @@ const forceDeleteQuestion = async (id) => {
 
 const clearQuestionFocus = () => {
   hasAutoOpenedModal.value = false
+  highlightedQuestionId.value = null
+  highlightedUpdatedQuestionId.value = null
   router.push({ path: '/dashboard/my-questions' })
 }
 
 const handleHighlightFromQuery = () => {
   const targetId = route.query.question_id || route.query.id
+  const isUpdated = route.query.updated === '1' || route.query.updated === 'true'
+
   if (targetId) {
     const qId = Number(targetId)
-    highlightedQuestionId.value = qId
+    if (isUpdated) {
+      highlightedUpdatedQuestionId.value = qId
+      highlightedQuestionId.value = null
+    } else {
+      highlightedQuestionId.value = qId
+      highlightedUpdatedQuestionId.value = null
+    }
     
     const matched = questions.value.find(q => q.id === qId)
     if (matched) {
@@ -710,6 +758,7 @@ const handleHighlightFromQuery = () => {
     }
   } else {
     highlightedQuestionId.value = null
+    highlightedUpdatedQuestionId.value = null
     hasAutoOpenedModal.value = false
   }
 }

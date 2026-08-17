@@ -1442,7 +1442,7 @@ import {
   Sparkles,
   Target,
   XCircle,
-} from "lucide-vue-next";
+} from "@lucide/vue";
 
 // ==================== 1. KHỞI TẠO VÀ CẤU HÌNH ====================
 

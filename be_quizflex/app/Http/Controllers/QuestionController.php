@@ -204,6 +204,13 @@ class QuestionController extends Controller
      */
     public function createQuizFromBank(Request $request)
     {
+        if ($request->has('shuffle_questions')) {
+            $request->merge(['shuffle_questions' => filter_var($request->input('shuffle_questions'), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? $request->boolean('shuffle_questions')]);
+        }
+        if ($request->has('is_public')) {
+            $request->merge(['is_public' => filter_var($request->input('is_public'), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? $request->boolean('is_public')]);
+        }
+
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
@@ -224,7 +231,19 @@ class QuestionController extends Controller
             'is_public' => ['nullable', 'boolean'],
             'status' => ['nullable', 'string', Rule::in(['published', 'draft'])],
             'tag' => ['nullable', 'string', 'max:255'],
+            'cover' => ['nullable', 'string', 'max:2048'],
+            'cover_file' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:4096'],
+            'icon' => ['nullable', 'string', 'max:32'],
+            'badge' => ['nullable', 'string', 'max:32'],
         ]);
+
+        $coverUrl = null;
+        if ($request->hasFile('cover_file')) {
+            $path = $request->file('cover_file')->store('quiz-covers', 'public');
+            $coverUrl = url(\Illuminate\Support\Facades\Storage::url($path));
+        } elseif (!empty($validated['cover'])) {
+            $coverUrl = $validated['cover'];
+        }
 
         $user = auth('api')->user() ?? Quiz::first()?->user;
         if (!$user) {
@@ -320,7 +339,7 @@ class QuestionController extends Controller
         $status = $validated['status'] ?? ($isPublic ? 'published' : 'draft');
         $displayTopicName = $validated['quiz_topic_name'] ?? $validated['topic_name'] ?? null;
 
-        $quiz = DB::transaction(function () use ($validated, $user, $questionIds, $timeLimitSeconds, $isPublic, $status, $displayTopicName) {
+        $quiz = DB::transaction(function () use ($validated, $user, $questionIds, $timeLimitSeconds, $isPublic, $status, $displayTopicName, $coverUrl) {
             $quiz = Quiz::create([
                 'user_id' => $user->id,
                 'title' => $validated['title'],
@@ -335,8 +354,9 @@ class QuestionController extends Controller
                 'status' => $status,
                 'is_public' => $isPublic,
                 'time_limit_seconds' => $timeLimitSeconds,
-                'badge' => 'AUTO',
-                'icon' => '🎯',
+                'cover' => $coverUrl,
+                'badge' => $validated['badge'] ?? 'AUTO',
+                'icon' => $validated['icon'] ?? '🎯',
             ]);
 
             $syncData = [];
@@ -668,6 +688,11 @@ class QuestionController extends Controller
             'answers.*.content' => ['required', 'string'],
             'answers.*.key' => ['nullable', 'string'],
             'answers.*.is_correct' => ['nullable', 'boolean'],
+        ], [
+            'content.required' => 'Vui lòng nhập nội dung câu hỏi.',
+            'answers.required' => 'Danh sách đáp án không được để trống.',
+            'answers.min' => 'Câu hỏi phải có ít nhất 2 phương án đáp án.',
+            'answers.*.content.required' => 'Vui lòng điền đầy đủ nội dung cho tất cả các lựa chọn đáp án.',
         ]);
 
         DB::transaction(function () use ($question, $validated) {

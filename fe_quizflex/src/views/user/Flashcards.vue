@@ -377,7 +377,7 @@ import {
   Volume2,
   VolumeX,
   XCircle,
-} from 'lucide-vue-next'
+} from '@lucide/vue'
 
 import AppLoadingState from '@/components/common/AppLoadingState.vue'
 import AppErrorState from '@/components/common/AppErrorState.vue'

@@ -461,7 +461,7 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted, inject, h } from 'vue'
-import { adminSubjectsApi } from '@/services/api'
+import { adminSubjectsApi, formatApiErrorMessage } from '@/services/api'
 
 const showToast = inject('showToast', (msg) => alert(msg))
 
@@ -737,7 +737,7 @@ const saveSubject = async () => {
     fetchSubjects()
   } catch (e) {
     console.error('Lỗi khi lưu bộ môn:', e)
-    const errMessage = e.response?.data?.message || 'Có lỗi xảy ra khi lưu môn học.'
+    const errMessage = formatApiErrorMessage(e, 'Có lỗi xảy ra khi lưu môn học.')
     showToast(errMessage, 'error')
   } finally {
     isSubmitting.value = false

@@ -395,6 +395,13 @@ class QuizController extends Controller
             'questions.*.answers.*.key' => ['nullable', 'string', 'max:4'],
             'questions.*.answers.*.is_correct' => ['nullable', 'boolean'],
             'questions.*.answers.*.order' => ['nullable', 'integer', 'min:0'],
+        ], [
+            'title.required' => 'Vui lòng nhập tiêu đề bài Quiz.',
+            'subject_id.exists' => 'Bộ môn được chọn không tồn tại.',
+            'questions.*.answers.required_with' => 'Mỗi câu hỏi phải có danh sách đáp án.',
+            'questions.*.answers.min' => 'Mỗi câu hỏi trắc nghiệm phải có ít nhất 2 đáp án.',
+            'questions.*.answers.*.content.required' => 'Vui lòng điền nội dung cho tất cả các lựa chọn đáp án.',
+            'questions.*.answers.*.text.required' => 'Vui lòng điền nội dung cho tất cả các lựa chọn đáp án.',
         ]);
     }
 

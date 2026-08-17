@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@lucide/vue": "^1.31.0",
     "apexcharts": "^5.16.0",
     "axios": "^1.16.1",
     "howler": "^2.2.4",

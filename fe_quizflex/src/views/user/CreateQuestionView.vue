@@ -62,7 +62,7 @@
 
             <label class="grid gap-1.5 text-xs font-black text-[var(--text)]">
               Khối lớp
-              <select v-model="form.grade_id" class="field">
+              <select v-model="form.grade_id" class="field" @change="onTaxonomyChange">
                 <option value="">Tất cả khối lớp</option>
                 <option v-for="grade in availableGrades" :key="grade.id" :value="grade.id">{{ grade.name }}</option>
               </select>
@@ -70,7 +70,7 @@
 
             <label class="grid gap-1.5 text-xs font-black text-[var(--text)]">
               Bộ môn
-              <select v-model="form.subject_id" class="field">
+              <select v-model="form.subject_id" class="field" @change="onTaxonomyChange">
                 <option value="">Tất cả bộ môn</option>
                 <option v-for="subject in availableSubjects" :key="subject.id" :value="subject.id">{{ subject.name }}</option>
               </select>
@@ -86,18 +86,31 @@
             </label>
           </div>
 
-          <label class="grid gap-1.5 text-xs font-black text-[var(--text)]">
-            Chủ đề
-            <input 
-              v-model="form.topic_name" 
-              class="field" 
-              placeholder="VD: Hàm số, Tiếng Anh B1, Lịch sử Việt Nam..." 
-            />
-          </label>
+          <div class="grid gap-4 md:grid-cols-2">
+            <label class="grid gap-1.5 text-xs font-black text-[var(--text)]">
+              Chọn Chủ đề có sẵn (từ Ngân hàng)
+              <select v-model="selectedBankTopic" class="field cursor-pointer" @change="onBankTopicSelect">
+                <option value="">-- Chọn chủ đề từ kho --</option>
+                <option v-for="top in topicsList" :key="top.topic_name || top" :value="top.topic_name || top">
+                  {{ top.topic_name || top }}{{ top.total_questions ? ' (' + top.total_questions + ' câu)' : '' }}
+                </option>
+              </select>
+            </label>
+
+            <label class="grid gap-1.5 text-xs font-black text-[var(--text)]">
+              Tên Chủ đề (hoặc nhập chủ đề mới)
+              <input 
+                v-model="form.topic_name" 
+                class="field" 
+                placeholder="VD: Hàm số, Tiếng Anh B1, Lịch sử Việt Nam..." 
+                @input="onTopicInputChange"
+              />
+            </label>
+          </div>
         </div>
 
         <!-- 3. Đáp án -->
-        <div class="grid gap-4 pt-5 border-t border-[var(--border)]">
+        <div id="answers-section" class="grid gap-4 pt-5 border-t border-[var(--border)]">
           <div class="flex items-center justify-between gap-4">
             <h2 class="text-lg font-black tracking-[-0.04em] text-[var(--text)] flex items-center">
               <span class="h-4 w-1 rounded-full bg-[var(--primary)] inline-block mr-2.5 shadow-[0_0_8px_var(--primary)]"></span>
@@ -130,6 +143,7 @@
               
               <!-- Input Content -->
               <input 
+                :id="'answer-input-' + idx"
                 v-model="ans.content" 
                 required 
                 class="field text-xs flex-1 !py-2.5" 
@@ -379,7 +393,7 @@
 <script setup>
 import { computed, inject, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { myQuestionsApi, taxonomyApi } from '@/services/api'
+import { formatApiErrorMessage, myQuestionsApi, questionsBankApi, taxonomyApi } from '@/services/api'
 
 const router = useRouter()
 const showToast = inject('showToast')
@@ -387,6 +401,8 @@ const showToast = inject('showToast')
 const isSubmitting = ref(false)
 const taxonomyLevels = ref([])
 const allSubjects = ref([])
+const topicsList = ref([])
+const selectedBankTopic = ref('')
 
 const form = reactive({
   content: '',
@@ -403,6 +419,53 @@ const form = reactive({
     { key: 'D', content: '', is_correct: false },
   ]
 })
+
+const fetchTopicsList = async () => {
+  try {
+    const params = {
+      education_level_id: form.education_level_id || undefined,
+      grade_id: form.grade_id || undefined,
+      subject_id: form.subject_id || undefined,
+    }
+    const data = await questionsBankApi.fetchTopics(params)
+    topicsList.value = Array.isArray(data) ? data : (data?.data && Array.isArray(data.data) ? data.data : [])
+  } catch (e) {
+    console.error('Không tải được danh sách Chủ đề từ kho:', e)
+  }
+}
+
+const onBankTopicSelect = () => {
+  if (selectedBankTopic.value) {
+    form.topic_name = selectedBankTopic.value
+  }
+}
+
+const onTopicInputChange = () => {
+  const text = (form.topic_name || '').trim().toLowerCase()
+  if (!text) {
+    selectedBankTopic.value = ''
+  } else {
+    const found = topicsList.value.find(
+      (t) => (t.topic_name || t || '').toString().toLowerCase() === text
+    )
+    selectedBankTopic.value = found ? (found.topic_name || found) : ''
+  }
+}
+
+const onTaxonomyChange = () => {
+  fetchTopicsList()
+}
+
+const onLevelChange = () => {
+  form.grade_id = ''
+  fetchTopicsList()
+}
+
+const setCorrectAnswer = (targetIdx) => {
+  form.answers.forEach((ans, idx) => {
+    ans.is_correct = idx === targetIdx
+  })
+}
 
 const difficultyText = (diff) => {
   switch (diff) {
@@ -456,7 +519,6 @@ const addAnswerChoice = () => {
 const removeAnswerChoice = (targetIdx) => {
   if (form.answers.length <= 2) return
   form.answers.splice(targetIdx, 1)
-  // Re-key
   form.answers.forEach((ans, idx) => {
     ans.key = chrKey(idx)
   })
@@ -465,22 +527,54 @@ const removeAnswerChoice = (targetIdx) => {
   }
 }
 
-const onLevelChange = () => {
-  form.grade_id = ''
-}
-
-const setCorrectAnswer = (targetIdx) => {
-  form.answers.forEach((ans, idx) => {
-    ans.is_correct = idx === targetIdx
-  })
-}
-
 const goBack = () => {
   router.back()
 }
 
+const focusAndHighlightElement = (targetId) => {
+  if (!targetId) return
+  const el = document.getElementById(targetId)
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    if (typeof el.focus === 'function') {
+      el.focus()
+    }
+    el.classList.add('ring-4', 'ring-rose-500/60', 'border-rose-500')
+    setTimeout(() => {
+      el.classList.remove('ring-4', 'ring-rose-500/60', 'border-rose-500')
+    }, 2500)
+  }
+}
+
+const validateBeforeSubmit = () => {
+  if (!form.content.trim()) {
+    return { message: 'Vui lòng nhập nội dung câu hỏi.', targetId: 'question-content-input' }
+  }
+
+  for (let i = 0; i < form.answers.length; i++) {
+    if (!form.answers[i].content.trim()) {
+      return { 
+        message: `Vui lòng nhập nội dung cho Đáp án ${form.answers[i].key}.`, 
+        targetId: `answer-input-${i}` 
+      }
+    }
+  }
+
+  if (!form.answers.some(a => a.is_correct)) {
+    return { message: 'Vui lòng đánh dấu chọn 1 đáp án đúng.', targetId: 'answers-section' }
+  }
+
+  return null
+}
+
 const submitForm = async (createAnother = false) => {
-  if (!form.content.trim()) return
+  const errorInfo = validateBeforeSubmit()
+  if (errorInfo) {
+    if (showToast) showToast(errorInfo.message, 'error')
+    focusAndHighlightElement(errorInfo.targetId)
+    return
+  }
+
   isSubmitting.value = true
 
   try {
@@ -500,10 +594,9 @@ const submitForm = async (createAnother = false) => {
     }
 
     await myQuestionsApi.createQuestion(payload)
-    if (showToast) showToast('Tạo câu hỏi thành công!', 'success')
+    if (showToast) showToast('Tạo câu hỏi mới thành công!', 'success')
 
     if (createAnother) {
-      // Clear content & answers but keep taxonomies
       form.content = ''
       form.answers = [
         { key: 'A', content: '', is_correct: true },
@@ -515,7 +608,8 @@ const submitForm = async (createAnother = false) => {
       router.push('/dashboard/my-questions')
     }
   } catch (err) {
-    if (showToast) showToast(`Tạo thất bại: ${err.message}`, 'error')
+    const msg = formatApiErrorMessage(err, 'Tạo câu hỏi thất bại. Vui lòng kiểm tra lại.')
+    if (showToast) showToast(msg, 'error')
   } finally {
     isSubmitting.value = false
   }
@@ -532,5 +626,6 @@ onMounted(async () => {
   } catch (e) {
     console.error('Không tải được taxonomy:', e)
   }
+  fetchTopicsList()
 })
 </script>

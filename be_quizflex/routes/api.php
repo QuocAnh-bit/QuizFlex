@@ -56,7 +56,7 @@ Route::get('/ai-direct', function () {
     );
 });
 
-Route::post('/auth/login', [AuthController::class, 'login']);
+Route::post('/auth/login', [AuthController::class, 'login'])->name('login');
 Route::post('/auth/register', [AuthController::class, 'register']);
 Route::post('/auth/verify-otp', [AuthController::class, 'verifyOtp']);
 Route::post('/auth/resend-otp', [AuthController::class, 'resendOtp']);

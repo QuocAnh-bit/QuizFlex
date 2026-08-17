@@ -92,6 +92,57 @@
                 placeholder="Nhập ghi chú hoặc hướng dẫn làm bài..."
               ></textarea>
             </label>
+
+            <!-- Ảnh bìa bộ đề (Cover Image Upload) -->
+            <div class="grid gap-2 pt-2">
+              <label class="text-xs font-black text-[var(--text)] flex items-center justify-between">
+                <span class="flex items-center gap-1.5">
+                  <span>🖼️ Ảnh bìa bộ đề</span>
+                  <span class="text-[var(--muted)] font-normal text-[11px]">(Tùy chọn)</span>
+                </span>
+                <span v-if="formCoverFile || quizForm.cover" class="text-emerald-400 text-[11px]">✓ Đã chọn ảnh</span>
+              </label>
+
+              <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                  <div 
+                    class="h-16 w-24 rounded-xl overflow-hidden border border-[var(--border)] shrink-0 shadow-sm transition-all duration-300"
+                    :style="{ background: coverBackground }"
+                  ></div>
+                  <div class="min-w-0">
+                    <p class="text-xs font-black text-[var(--text)]">Ảnh bìa bộ đề thi</p>
+                    <p class="text-[11px] font-bold text-[var(--muted)] mt-0.5 truncate max-w-[220px]">
+                      {{ selectedCoverLabel }}
+                    </p>
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-2 shrink-0">
+                  <input
+                    ref="coverInput"
+                    type="file"
+                    accept="image/png,image/jpeg,image/jpg,image/webp,image/gif"
+                    class="hidden"
+                    @change="handleCoverFileChange"
+                  />
+                  <button
+                    type="button"
+                    class="rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3.5 py-2 text-xs font-black text-[var(--text)] hover:bg-[var(--chip-active)] transition cursor-pointer flex items-center gap-1.5"
+                    @click="openCoverPicker"
+                  >
+                    <span>📷 {{ formCoverFile || quizForm.cover ? 'Đổi ảnh' : 'Tải ảnh lên' }}</span>
+                  </button>
+                  <button
+                    v-if="formCoverFile || quizForm.cover"
+                    type="button"
+                    class="rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs font-black text-rose-300 hover:bg-rose-500/20 transition cursor-pointer"
+                    @click="removeCover"
+                  >
+                    Xóa ảnh
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -381,6 +432,25 @@
           </span>
         </div>
 
+        <!-- Cover Banner Preview -->
+        <div 
+          class="relative h-40 overflow-hidden rounded-2xl border border-[var(--border)] shadow-md transition-all duration-300" 
+          :style="{ background: coverBackground }"
+        >
+          <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+          <div class="absolute bottom-3 left-3 right-3 text-white drop-shadow">
+            <span v-if="selectedSubjectName" class="rounded-full bg-emerald-600/80 px-2 py-0.5 text-[10px] font-black backdrop-blur">
+              Môn {{ selectedSubjectName }}
+            </span>
+            <h4 class="mt-1 text-sm font-black leading-tight line-clamp-2">
+              {{ quizForm.title || "Bộ đề thi chưa đặt tên" }}
+            </h4>
+            <p class="mt-0.5 text-[11px] font-bold text-white/80 line-clamp-1">
+              {{ quizForm.topic_name || "Kho câu hỏi QuizFlex" }}
+            </p>
+          </div>
+        </div>
+
         <!-- Status Pills -->
         <div class="flex flex-wrap items-center gap-2">
           <span class="rounded-full bg-[var(--surface-soft)] px-3 py-1 text-xs font-semibold text-[var(--muted)]">
@@ -488,7 +558,7 @@
 <script setup>
 import { computed, inject, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { questionsBankApi, taxonomyApi } from '@/services/api'
+import { coverToBackground, questionsBankApi, taxonomyApi } from '@/services/api'
 
 const route = useRoute()
 const router = useRouter()
@@ -496,6 +566,10 @@ const showToast = inject('showToast')
 
 const mode = ref(route.query.mode === 'manual' ? 'manual' : 'random')
 const isSubmitting = ref(false)
+
+const coverInput = ref(null)
+const formCoverFile = ref(null)
+const coverPreview = ref('')
 
 const selectedIds = ref([])
 if (route.query.ids) {
@@ -530,6 +604,45 @@ const quizForm = reactive({
   time_limit_minutes: 15,
   shuffle_questions: true,
   visibility: 'public',
+  cover: '',
+})
+
+const openCoverPicker = () => coverInput.value?.click()
+
+const handleCoverFileChange = (e) => {
+  const file = e.target.files?.[0]
+  if (!file) return
+  if (coverPreview.value?.startsWith('blob:')) {
+    URL.revokeObjectURL(coverPreview.value)
+  }
+  formCoverFile.value = file
+  coverPreview.value = URL.createObjectURL(file)
+}
+
+const removeCover = () => {
+  if (coverPreview.value?.startsWith('blob:')) {
+    URL.revokeObjectURL(coverPreview.value)
+  }
+  formCoverFile.value = null
+  coverPreview.value = ''
+  quizForm.cover = ''
+  if (coverInput.value) coverInput.value.value = ''
+}
+
+const coverBackground = computed(() =>
+  coverToBackground(coverPreview.value || quizForm.cover)
+)
+
+const selectedCoverLabel = computed(() => {
+  if (formCoverFile.value) return `Đã chọn: ${formCoverFile.value.name}`
+  if (quizForm.cover) return 'Đang dùng ảnh bìa mặc định'
+  return 'Chưa chọn ảnh bìa (Hiển thị gradient màu sắc tự động)'
+})
+
+const selectedSubjectName = computed(() => {
+  if (!filters.subject_id) return ''
+  const sub = allSubjects.value.find(s => s.id === Number(filters.subject_id))
+  return sub ? sub.name : ''
 })
 
 const totalMatrixQuestions = computed(() => {
@@ -768,6 +881,8 @@ const handleCreateQuizSubmit = async () => {
       shuffle_questions: quizForm.shuffle_questions,
       is_public: quizForm.visibility === 'public',
       status: quizForm.visibility === 'public' ? 'published' : 'draft',
+      cover_file: formCoverFile.value || undefined,
+      cover: quizForm.cover || undefined,
     }
 
     if (mode.value === 'manual') {

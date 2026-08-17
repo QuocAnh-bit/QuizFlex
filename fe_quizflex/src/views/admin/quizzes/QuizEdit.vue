@@ -156,7 +156,7 @@
 <script setup>
 import { ref, computed, onMounted, inject } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { TriangleAlert } from 'lucide-vue-next'
+import { TriangleAlert } from '@lucide/vue'
 import api from '@/services/api'
 
 const route = useRoute()

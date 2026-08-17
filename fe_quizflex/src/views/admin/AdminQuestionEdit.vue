@@ -267,7 +267,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted, inject } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { adminQuestionsApi, taxonomyApi } from '@/services/api'
+import { adminQuestionsApi, formatApiErrorMessage, taxonomyApi } from '@/services/api'
 
 const route = useRoute()
 const router = useRouter()
@@ -379,6 +379,13 @@ const saveQuestion = async () => {
     return
   }
 
+  for (let i = 0; i < form.answers.length; i++) {
+    if (!form.answers[i].content.trim()) {
+      if (showToast) showToast(`Vui lòng nhập nội dung cho Phương án ${String.fromCharCode(65 + i)}!`, 'error')
+      return
+    }
+  }
+
   const hasCorrectAnswer = form.answers.some(a => a.is_correct)
   if (!hasCorrectAnswer) {
     if (showToast) showToast('Vui lòng đánh dấu ít nhất 1 đáp án đúng!', 'warning')
@@ -401,7 +408,8 @@ const saveQuestion = async () => {
       }
     }
   } catch (err) {
-    if (showToast) showToast(`Lưu thất bại: ${err.message}`, 'error')
+    const msg = formatApiErrorMessage(err, 'Lưu thất bại. Vui lòng kiểm tra lại.')
+    if (showToast) showToast(msg, 'error')
   } finally {
     isSubmitting.value = false
   }

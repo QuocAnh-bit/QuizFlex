@@ -118,6 +118,26 @@
                     <span>{{ $t('nav.user.profile') }}</span>
                   </router-link>
 
+                  <!-- Kho câu hỏi cá nhân -->
+                  <router-link
+                    to="/dashboard/my-questions"
+                    @click="isUserDropdownOpen = false"
+                    class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-bold text-slate-800 transition hover:bg-purple-50 hover:text-[#7C3AED]"
+                  >
+                    <HelpCircle class="h-4 w-4 shrink-0 text-[#7C3AED]" />
+                    <span>Kho câu hỏi của tôi</span>
+                  </router-link>
+
+                  <!-- Kho Quiz cá nhân -->
+                  <router-link
+                    to="/dashboard/questions"
+                    @click="isUserDropdownOpen = false"
+                    class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-bold text-slate-800 transition hover:bg-purple-50 hover:text-[#7C3AED]"
+                  >
+                    <BookOpen class="h-4 w-4 shrink-0 text-[#7C3AED]" />
+                    <span>Kho Quiz của tôi</span>
+                  </router-link>
+
                   <!-- Subscription -->
                   <router-link
                     to="/profile?tab=subscription"
@@ -285,6 +305,8 @@ import {
 } from 'vue-i18n'
 
 import {
+  HelpCircle,
+  BookOpen,
   UserRound,
   CreditCard,
   Trophy,
@@ -296,7 +318,7 @@ import {
   X,
   ChevronDown,
   LayoutDashboard,
-} from 'lucide-vue-next'
+} from '@lucide/vue'
 
 import BrandLogo from '@/components/common/BrandLogo.vue'
 import LanguageSwitcher from '@/components/common/LanguageSwitcher.vue'

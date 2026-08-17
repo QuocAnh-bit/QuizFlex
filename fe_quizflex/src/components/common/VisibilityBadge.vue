@@ -10,7 +10,7 @@
 
 <script setup>
 import { computed } from 'vue'
-import { Globe, Lock, Users } from 'lucide-vue-next'
+import { Globe, Lock, Users } from '@lucide/vue'
 
 const visibilityLabels = {
   public: { text: 'Public', icon: Globe, className: 'border-emerald-500/25 bg-emerald-500/10 text-emerald-400' },

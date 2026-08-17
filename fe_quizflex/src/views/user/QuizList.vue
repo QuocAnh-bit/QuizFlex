@@ -14,7 +14,7 @@
         <h1
           class="mt-1 text-2xl font-black tracking-tight text-slate-900 sm:text-3xl"
         >
-          Danh sách bộ câu hỏi
+          Danh sách Quiz
         </h1>
 
         <p class="mt-1 text-sm text-slate-600">
@@ -311,7 +311,7 @@ import {
   SlidersHorizontal,
   Tag,
   UserRound,
-} from 'lucide-vue-next'
+} from '@lucide/vue'
 
 import AppLoadingState from '@/components/common/AppLoadingState.vue'
 import AppErrorState from '@/components/common/AppErrorState.vue'

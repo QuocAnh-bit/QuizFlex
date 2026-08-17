@@ -150,7 +150,7 @@ import {
   Settings,
   Users,
   Video,
-} from 'lucide-vue-next'
+} from '@lucide/vue'
 
 import BrandLogo from '@/components/common/BrandLogo.vue'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'

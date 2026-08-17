@@ -18,6 +18,14 @@ class ReportTicketController extends Controller
      */
     public function store(Request $request)
     {
+        $user = auth('api')->user() ?? $request->user();
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn cần đăng nhập để thực hiện gửi báo cáo.'
+            ], 401);
+        }
+
         $request->validate([
             'quiz_id' => 'required_without:question_id|nullable|exists:quizzes,id',
             'question_id' => 'required_without:quiz_id|nullable|exists:questions,id',
@@ -26,7 +34,7 @@ class ReportTicketController extends Controller
         ]);
 
         $report = ReportTicket::create([
-            'user_id' => Auth::id(),
+            'user_id' => $user->id,
             'quiz_id' => $request->quiz_id,
             'question_id' => $request->question_id,
             'reason' => $request->reason,
@@ -34,12 +42,13 @@ class ReportTicketController extends Controller
             'status' => 'pending',
         ]);
 
-        $reporter = Auth::user();
-        if ($reporter) {
-            // 1. Gửi thông báo cho Admin
-            $admins = User::whereIn('role', ['admin', 'ADMIN'])->get();
-            if ($admins->isNotEmpty()) {
-                Notification::send($admins, new ReportCreated($report, $reporter));
+        // 1. Gửi thông báo cho Admin
+        $admins = User::whereIn('role', ['admin', 'ADMIN'])->get();
+        if ($admins->isNotEmpty()) {
+            try {
+                Notification::send($admins, new ReportCreated($report, $user));
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Không thể gửi thông báo cho Admin: ' . $e->getMessage());
             }
         }
 
@@ -48,14 +57,22 @@ class ReportTicketController extends Controller
 
         if ($report->question) {
             $questionAuthor = $report->question->user ?? $report->question->quiz?->user;
-            if ($questionAuthor && $questionAuthor->id !== Auth::id()) {
-                $questionAuthor->notify(new QuestionModerated($report->question, 'reported', $report->reason));
+            if ($questionAuthor && $questionAuthor->id !== $user->id) {
+                try {
+                    $questionAuthor->notify(new QuestionModerated($report->question, 'reported', $report->reason));
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning('Không thể gửi thông báo cho tác giả câu hỏi: ' . $e->getMessage());
+                }
             }
         }
 
         if ($report->quiz && $report->quiz->user) {
-            if ($report->quiz->user->id !== Auth::id()) {
-                $report->quiz->user->notify(new QuizModerated($report->quiz, 'reported', $report->reason));
+            if ($report->quiz->user->id !== $user->id) {
+                try {
+                    $report->quiz->user->notify(new QuizModerated($report->quiz, 'reported', $report->reason));
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning('Không thể gửi thông báo cho tác giả quiz: ' . $e->getMessage());
+                }
             }
         }
 

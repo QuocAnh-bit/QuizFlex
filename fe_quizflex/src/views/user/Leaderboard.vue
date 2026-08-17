@@ -281,7 +281,7 @@ import {
   Zap,
   Medal,
   ChevronDown,
-} from "lucide-vue-next";
+} from "@lucide/vue";
 
 import AppLoadingState from "@/components/common/AppLoadingState.vue";
 import {
@@ -299,8 +299,9 @@ onMounted(async () => {
   try {
     const currentUser = currentUserStorage.get();
     const data = await gamificationApi.getLeaderboard();
+    const list = Array.isArray(data) ? data : (data?.data && Array.isArray(data.data) ? data.data : []);
 
-    leaderboard.value = data.map((item) => ({
+    leaderboard.value = list.map((item) => ({
       ...item,
       is_me:
         currentUser &&

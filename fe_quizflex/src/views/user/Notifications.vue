@@ -251,7 +251,7 @@ import {
   XCircle,
   ChevronDown,
   Loader2,
-} from 'lucide-vue-next'
+} from '@lucide/vue'
 
 import { notificationApi } from '@/services/api'
 

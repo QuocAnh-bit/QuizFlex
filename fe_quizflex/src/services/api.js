@@ -101,6 +101,26 @@ export const questionsBankApi = {
     return unwrap(data);
   },
   async createQuizFromBank(payload) {
+    if (payload.cover_file instanceof File) {
+      const formData = new FormData();
+      Object.keys(payload).forEach((key) => {
+        if (payload[key] !== undefined && payload[key] !== null) {
+          if (typeof payload[key] === 'boolean') {
+            formData.append(key, payload[key] ? '1' : '0');
+          } else if (Array.isArray(payload[key])) {
+            payload[key].forEach((val, i) => {
+              formData.append(`${key}[${i}]`, val);
+            });
+          } else {
+            formData.append(key, payload[key]);
+          }
+        }
+      });
+      const { data } = await api.post('/quizzes/from-bank', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      return unwrap(data);
+    }
     const { data } = await api.post('/quizzes/from-bank', payload);
     return unwrap(data);
   },
@@ -1568,4 +1588,90 @@ export const adminSubjectsApi = {
   },
 };
 
+export const formatApiErrorMessage = (error, defaultMessage = "Có lỗi xảy ra, vui lòng kiểm tra lại.") => {
+  if (!error) return defaultMessage;
+
+  const data = error.response?.data;
+  if (!data) {
+    if (error.message && error.message.includes("Network Error")) {
+      return "Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng.";
+    }
+    return error.message || defaultMessage;
+  }
+
+  if (data.errors && typeof data.errors === "object") {
+    const messages = [];
+
+    Object.entries(data.errors).forEach(([field, errList]) => {
+      const fieldMsg = Array.isArray(errList) ? errList[0] : String(errList);
+
+      let formattedField = field;
+      const qMatch = field.match(/questions\.(\d+)\.answers\.(\d+)/);
+      const qOnlyMatch = field.match(/questions\.(\d+)/);
+      const aMatch = field.match(/answers\.(\d+)/);
+
+      if (qMatch) {
+        const qIndex = Number(qMatch[1]) + 1;
+        const aIndex = String.fromCharCode(65 + Number(qMatch[2]));
+        formattedField = `Câu ${qIndex} (Đáp án ${aIndex})`;
+      } else if (aMatch) {
+        const aIndex = String.fromCharCode(65 + Number(aMatch[1]));
+        formattedField = `Đáp án ${aIndex}`;
+      } else if (qOnlyMatch) {
+        const qIndex = Number(qOnlyMatch[1]) + 1;
+        formattedField = `Câu hỏi số ${qIndex}`;
+      } else {
+        const fieldNameMap = {
+          title: "Tiêu đề bài Quiz",
+          subject_id: "Bộ môn",
+          education_level_id: "Cấp học",
+          grade_id: "Khối lớp",
+          duration_minutes: "Thời gian làm bài",
+          content: "Nội dung câu hỏi",
+          answers: "Danh sách đáp án",
+        };
+        formattedField = fieldNameMap[field] || field;
+      }
+
+      let cleanMsg = fieldMsg
+        .replace(/The (.+) field is required\./gi, `Vui lòng nhập ${formattedField}.`)
+        .replace(/The (.+) must be a string\./gi, `${formattedField} phải là chuỗi ký tự.`)
+        .replace(/The (.+) must be an integer\./gi, `${formattedField} phải là số nguyên.`)
+        .replace(/The selected (.+) is invalid\./gi, `${formattedField} không hợp lệ.`)
+        .replace(/\(and \d+ more errors?\)/gi, "");
+
+      if (cleanMsg === fieldMsg && !fieldMsg.includes("Vui lòng")) {
+        cleanMsg = `${formattedField}: ${fieldMsg}`;
+      }
+
+      messages.push(cleanMsg.trim());
+    });
+
+    if (messages.length > 0) {
+      return messages.join("\n");
+    }
+  }
+
+  if (data.message && typeof data.message === "string") {
+    let msg = data.message;
+    msg = msg.replace(/The questions\.(\d+)\.answers\.(\d+)\.content field is required\./gi, (m, q, a) => {
+      return `Câu ${Number(q) + 1} (Đáp án ${String.fromCharCode(65 + Number(a))}): Chưa nhập nội dung.`;
+    });
+    msg = msg.replace(/The answers\.(\d+)\.content field is required\./gi, (m, a) => {
+      return `Đáp án ${String.fromCharCode(65 + Number(a))}: Chưa nhập nội dung.`;
+    });
+    msg = msg.replace(/The (.+) field is required\./gi, "Trường thông tin bị thiếu.");
+    msg = msg.replace(/\(and \d+ more errors?\)/gi, "").trim();
+
+    if (msg.toLowerCase().includes("field is required") || msg.toLowerCase().includes("errors")) {
+      return "Dữ liệu nhập vào chưa đầy đủ. Vui lòng kiểm tra lại tiêu đề, nội dung câu hỏi và các đáp án.";
+    }
+
+    return msg;
+  }
+
+  return defaultMessage;
+};
+
 export default api;
+
