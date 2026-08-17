@@ -1,3 +1,69 @@
+<template>
+  <section class="max-w-6xl mx-auto py-4 space-y-6">
+    <!-- Header -->
+    <div class="card p-6 sm:p-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+      <div>
+        <p class="text-xs font-bold uppercase tracking-wider text-red-600">Thùng rác</p>
+        <h1 class="mt-1 text-2xl font-black text-slate-900 sm:text-3xl">Thùng rác Quiz</h1>
+        <p class="mt-1 text-sm text-slate-600">Các bộ đề đã bị xóa tạm thời. Bạn có thể khôi phục lại hoặc xóa vĩnh viễn.</p>
+      </div>
+      <RouterLink to="/admin/quizzes" class="btn-secondary text-xs px-3.5 py-1.5">
+        ← Quay lại danh sách
+      </RouterLink>
+    </div>
+
+    <!-- Table Card -->
+    <div class="card overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs">
+          <thead>
+            <tr class="border-b border-slate-100 bg-slate-50 text-slate-400 font-bold uppercase text-[10px]">
+              <th class="py-3 px-4">Tên quiz</th>
+              <th class="py-3 px-4">Người tạo</th>
+              <th class="py-3 px-4 text-center">Danh mục</th>
+              <th class="py-3 px-4 text-center">Độ khó</th>
+              <th class="py-3 px-4 text-right">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 font-medium">
+            <tr v-for="quiz in quizzes" :key="quiz.id" class="hover:bg-slate-50">
+              <td class="py-3.5 px-4 font-bold text-slate-900 max-w-xs truncate">{{ quiz.title }}</td>
+              <td class="py-3.5 px-4 text-slate-500">{{ quiz.user?.name || quiz.author || '-' }}</td>
+              <td class="py-3.5 px-4 text-center">
+                <span class="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+                  {{ quiz.category || 'Mặc định' }}
+                </span>
+              </td>
+              <td class="py-3.5 px-4 text-center">
+                <span
+                  class="rounded px-2 py-0.5 text-[10px] font-bold"
+                  :class="quiz.difficulty === 'easy' ? 'bg-emerald-50 text-emerald-700' : quiz.difficulty === 'hard' ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700'"
+                >
+                  {{ quiz.difficulty_label || quiz.difficulty || 'Vừa' }}
+                </span>
+              </td>
+              <td class="py-3.5 px-4 text-right">
+                <div class="flex items-center justify-end gap-2">
+                  <button @click="restoreQuiz(quiz.id)" class="text-emerald-700 hover:underline font-bold text-xs">
+                    Khôi phục
+                  </button>
+                  <button @click="forceDeleteQuiz(quiz.id)" class="text-red-600 hover:underline font-bold text-xs">
+                    Xóa vĩnh viễn
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr v-if="!loading && quizzes.length === 0">
+              <td colspan="5" class="text-center py-10 text-slate-400 text-xs">Thùng rác trống.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div v-if="loading" class="text-center py-8 text-xs text-slate-400">Đang tải thùng rác...</div>
+    </div>
+  </section>
+</template>
+
 <script setup>
 import { ref, onMounted, inject } from 'vue'
 import { RouterLink } from 'vue-router'
@@ -64,70 +130,3 @@ onMounted(() => {
   fetchTrash()
 })
 </script>
-
-<template>
-  <section class="grid gap-6">
-    <!-- Header -->
-    <div class="relative overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-soft)] backdrop-blur-2xl">
-      <div class="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-rose-500/10 blur-3xl"></div>
-      <div class="relative z-10 flex flex-col justify-between gap-5 xl:flex-row xl:items-end">
-        <div>
-          <p class="text-xs font-black uppercase tracking-[0.2em] text-rose-400">Trash Bin</p>
-          <h1 class="mt-2 text-4xl font-black tracking-[-0.06em] text-[var(--text)]">Thùng rác Quiz</h1>
-          <p class="mt-3 max-w-2xl text-sm leading-7 text-[var(--muted)]">Danh sách các bộ đề quiz đã bị xóa mềm. Bạn có thể khôi phục lại hoặc xóa vĩnh viễn khỏi cơ sở dữ liệu.</p>
-        </div>
-        <div class="flex flex-wrap gap-3">
-          <RouterLink to="/admin/quizzes" class="btn-ghost">
-            ← Quay lại
-          </RouterLink>
-        </div>
-      </div>
-    </div>
-
-    <!-- Table -->
-    <div class="overflow-x-auto rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-card)] backdrop-blur-2xl">
-      <table class="w-full border-collapse text-left text-sm text-[var(--text)]">
-        <thead>
-          <tr class="border-b border-[var(--border)] bg-[var(--surface-soft)] text-xs font-black uppercase tracking-wider text-[var(--muted)]">
-            <th class="p-4">Tên quiz</th>
-            <th class="p-4 text-center">Người tạo</th>
-            <th class="p-4 text-center">Danh mục</th>
-            <th class="p-4 text-center">Độ khó</th>
-            <th class="p-4 text-center">Thao tác</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-[var(--border)]">
-          <tr v-for="quiz in quizzes" :key="quiz.id" class="transition hover:bg-[var(--surface-soft)]">
-            <td class="p-4 font-bold">{{ quiz.title }}</td>
-            <td class="p-4 text-center text-[var(--muted)]">{{ quiz.user?.name || quiz.author || 'Chưa có' }}</td>
-            <td class="p-4 text-center">
-              <span class="rounded-full bg-[var(--surface-soft)] px-3 py-1 text-xs font-bold">
-                {{ quiz.category || 'Chưa có' }}
-              </span>
-            </td>
-            <td class="p-4 text-center">
-              <span
-                class="rounded-full px-3 py-1 text-xs font-bold border"
-                :class="quiz.difficulty === 'easy' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : quiz.difficulty === 'hard' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'"
-              >
-                {{ quiz.difficulty_label || quiz.difficulty || 'Vừa' }}
-              </span>
-            </td>
-            <td class="p-4 text-center space-x-3">
-              <button @click="restoreQuiz(quiz.id)" class="text-emerald-400 hover:underline font-bold">
-                Khôi phục
-              </button>
-              <button @click="forceDeleteQuiz(quiz.id)" class="text-rose-400 hover:underline font-bold">
-                Xóa vĩnh viễn
-              </button>
-            </td>
-          </tr>
-          <tr v-if="!loading && quizzes.length === 0">
-            <td colspan="5" class="text-center py-10 text-[var(--muted)] font-bold">Thùng rác trống</td>
-          </tr>
-        </tbody>
-      </table>
-      <div v-if="loading" class="text-center py-10 text-[var(--muted)] font-bold">Đang tải dữ liệu...</div>
-    </div>
-  </section>
-</template>

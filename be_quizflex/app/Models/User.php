@@ -152,5 +152,18 @@ class User extends Authenticatable implements JWTSubject
     {
         return 'user.' . $this->id;
     }
+
+    /**
+     * The identifier used for broadcasting authentication (Pusher/Reverb Presence Channels).
+     * If X-Tab-Id is provided by the client, use it to ensure Reverb treats each browser tab as a distinct presence member.
+     */
+    public function getAuthIdentifierForBroadcasting(): string
+    {
+        $tabId = request()->header('X-Tab-Id')
+            ?: request()->input('tab_id')
+            ?: request()->query('tab_id');
+
+        return $tabId ? (string) $tabId : (string) $this->getKey();
+    }
 }
 

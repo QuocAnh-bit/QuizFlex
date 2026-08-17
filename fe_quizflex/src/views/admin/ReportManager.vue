@@ -26,6 +26,9 @@
             <span class="text-[10px] font-bold text-[var(--muted)] uppercase">Câu hỏi chờ duyệt</span>
             <p class="text-xl font-black text-rose-400">{{ questionPendingCount }}</p>
           </div>
+          <button class="btn-secondary text-xs px-3.5 py-1.5 self-center" type="button" @click="fetchReports(false)">
+            🔄 Làm mới
+          </button>
         </div>
       </div>
     </div>
@@ -330,7 +333,6 @@ const toggleQuestionVisibility = async (report) => {
     try {
       const res = await adminQuestionsApi.toggleVisibility(report.question_id)
       
-      // Đổi ngay trạng thái is_public trên UI
       const newIsPublic = res?.data?.is_public ?? res?.is_public ?? !isCurrentlyPublic
       if (report.question) {
         report.question.is_public = Boolean(newIsPublic)
@@ -338,7 +340,6 @@ const toggleQuestionVisibility = async (report) => {
         report.question = { is_public: Boolean(newIsPublic) }
       }
 
-      // Nếu ticket đang pending, tự động đánh dấu đã xử lý
       if (report.status === 'pending') {
         const resolvedAction = isCurrentlyPublic ? 'hidden' : 'approved'
         await reportApi.updateAdminStatus(report.id, 'resolved', resolvedAction)
@@ -370,7 +371,6 @@ const toggleQuizVisibility = async (report) => {
     try {
       const res = await quizzesApi.toggleVisibility(report.quiz_id)
       
-      // Đổi ngay trạng thái is_public trên UI
       const newIsPublic = res?.data?.is_public ?? res?.is_public ?? !isCurrentlyPublic
       if (report.quiz) {
         report.quiz.is_public = Boolean(newIsPublic)
@@ -430,14 +430,11 @@ const getStatusBadge = (status) => {
   }
 }
 
-const getStatusText = (status) => {
-  switch (status) {
-    case 'pending': return 'Chờ xử lý'
-    case 'resolved': return 'Đã xử lý'
-    case 'dismissed': return 'Đã bỏ qua'
-    default: return status
-  }
-}
+const getStatusText = (status) => ({
+  pending: 'Chờ xử lý',
+  resolved: 'Đã xử lý',
+  dismissed: 'Đã bỏ qua',
+}[status] || status)
 
 onMounted(() => {
   fetchReports()

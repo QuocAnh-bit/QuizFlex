@@ -1,3 +1,155 @@
+<template>
+  <section class="max-w-6xl mx-auto py-4 space-y-6">
+    <!-- Loading -->
+    <div v-if="loading" class="card p-10 text-center text-xs text-slate-400">
+      Đang tải chi tiết quiz...
+    </div>
+
+    <template v-if="quiz">
+      <!-- Header -->
+      <div class="card p-6 sm:p-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+        <div>
+          <p class="text-xs font-bold uppercase tracking-wider text-[#7C3AED]">Chi tiết đề thi</p>
+          <h1 class="mt-1 text-2xl font-black text-slate-900 sm:text-3xl">{{ quiz.title }}</h1>
+          <p class="mt-1 text-sm text-slate-600 max-w-2xl">{{ quiz.description || 'Không có mô tả cho bộ quiz này.' }}</p>
+        </div>
+        <div class="flex items-center gap-2.5">
+          <RouterLink to="/admin/quizzes" class="btn-secondary text-xs px-3.5 py-1.5">
+            ← Quay lại
+          </RouterLink>
+          <RouterLink :to="`/admin/quizzes/${quiz.id}/edit`" class="btn-primary text-xs px-3.5 py-1.5">
+            Sửa Quiz
+          </RouterLink>
+        </div>
+      </div>
+
+      <!-- Stats Grid & Info -->
+      <div class="grid gap-6 md:grid-cols-3">
+        <!-- Main Info -->
+        <article class="md:col-span-2 card p-6 space-y-4">
+          <h2 class="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3">Thông tin cấu hình</h2>
+          <div class="grid gap-3 sm:grid-cols-2 text-xs">
+            <div class="rounded-xl border border-slate-100 bg-slate-50 p-3">
+              <span class="block text-[10px] font-bold uppercase text-slate-400">Người tạo</span>
+              <span class="text-slate-900 font-bold block mt-0.5">{{ quiz.user?.name || quiz.author || 'Chưa rõ' }}</span>
+            </div>
+            <div class="rounded-xl border border-slate-100 bg-slate-50 p-3">
+              <span class="block text-[10px] font-bold uppercase text-slate-400">Danh mục</span>
+              <span class="text-slate-900 font-bold block mt-0.5">{{ quiz.category || 'Chung' }}</span>
+            </div>
+            <div class="rounded-xl border border-slate-100 bg-slate-50 p-3">
+              <span class="block text-[10px] font-bold uppercase text-slate-400">Độ khó</span>
+              <span class="text-slate-900 font-bold uppercase block mt-0.5">{{ quiz.difficulty }}</span>
+            </div>
+            <div class="rounded-xl border border-slate-100 bg-slate-50 p-3">
+              <span class="block text-[10px] font-bold uppercase text-slate-400">Hiển thị</span>
+              <span
+                class="mt-0.5 flex items-center gap-1.5 font-bold"
+                :class="quiz.is_public ? 'text-emerald-700' : 'text-slate-600'"
+              >
+                <Globe v-if="quiz.is_public" class="h-3.5 w-3.5" />
+                <Lock v-else class="h-3.5 w-3.5" />
+                <span>{{ quiz.is_public ? 'Công khai (Public)' : 'Riêng tư (Private)' }}</span>
+              </span>
+            </div>
+          </div>
+        </article>
+
+        <!-- Stats -->
+        <article class="card p-6 flex flex-col justify-between space-y-4">
+          <div>
+            <h2 class="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3">Hiệu suất quiz</h2>
+            <div class="grid grid-cols-2 gap-3 mt-3">
+              <div class="rounded-xl border border-slate-100 bg-slate-50 p-3 text-center">
+                <b class="block text-2xl font-black text-slate-900">{{ quiz.questions_count }}</b>
+                <span class="text-[10px] font-bold uppercase text-slate-400">Câu hỏi</span>
+              </div>
+              <div class="rounded-xl border border-slate-100 bg-slate-50 p-3 text-center">
+                <b class="block text-2xl font-black text-slate-900">{{ quiz.attempts_count }}</b>
+                <span class="text-[10px] font-bold uppercase text-slate-400">Lượt làm</span>
+              </div>
+            </div>
+          </div>
+          <div class="rounded-xl border border-purple-100 bg-purple-50 p-3.5 text-center">
+            <span class="block text-[10px] font-bold uppercase text-[#7C3AED]">Điểm số trung bình</span>
+            <b class="text-2xl font-black text-[#7C3AED]">{{ averageScore }}%</b>
+          </div>
+        </article>
+      </div>
+
+      <!-- Questions List -->
+      <article class="card p-6 space-y-5">
+        <h2 class="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3">Danh sách câu hỏi ({{ quiz.questions?.length ?? 0 }})</h2>
+        <div class="grid gap-3">
+          <div
+            v-for="(question, index) in quiz.questions"
+            :key="question.id"
+            class="rounded-xl border border-slate-100 bg-slate-50 p-4 space-y-3"
+          >
+            <div class="flex items-start justify-between gap-3">
+              <h3 class="text-xs font-bold text-slate-900 leading-relaxed">
+                Câu {{ index + 1 }}: {{ question.content }}
+              </h3>
+              <span class="rounded bg-white border border-slate-200 px-2 py-0.5 text-[10px] font-bold text-slate-500 shrink-0">
+                {{ question.points ?? 10 }} pts
+              </span>
+            </div>
+
+            <div class="grid gap-1.5 sm:grid-cols-2 text-xs">
+              <div
+                v-for="answer in question.answers"
+                :key="answer.id"
+                class="flex items-center justify-between p-2.5 rounded-lg border text-xs"
+                :class="answer.is_correct ? 'bg-emerald-50 border-emerald-200 text-emerald-800 font-bold' : 'bg-white border-slate-200 text-slate-700'"
+              >
+                <span>{{ answer.content }}</span>
+                <span v-if="answer.is_correct" class="text-[10px] uppercase font-bold text-emerald-700">
+                  ✓ Đúng
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- Attempt History -->
+      <article class="card p-6 space-y-4">
+        <h2 class="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3">Lịch sử làm bài gần nhất</h2>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="border-b border-slate-100 text-slate-400 uppercase text-[10px] font-bold">
+                <th class="py-2.5 px-3">Người dùng</th>
+                <th class="py-2.5 px-3 text-center">Điểm</th>
+                <th class="py-2.5 px-3 text-center">Trạng thái</th>
+                <th class="py-2.5 px-3 text-right">Thời gian</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 font-medium">
+              <tr v-for="attempt in quiz.attempts" :key="attempt.id" class="hover:bg-slate-50">
+                <td class="py-2.5 px-3 font-bold text-slate-900">{{ attempt.user?.name || 'Khách' }}</td>
+                <td class="py-2.5 px-3 text-center font-bold text-[#7C3AED]">{{ attempt.score }}%</td>
+                <td class="py-2.5 px-3 text-center">
+                  <span
+                    class="rounded px-2 py-0.5 text-[10px] font-bold"
+                    :class="attempt.status === 'completed' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'"
+                  >
+                    {{ attempt.status === 'completed' ? 'Hoàn thành' : 'Đang làm' }}
+                  </span>
+                </td>
+                <td class="py-2.5 px-3 text-right text-slate-400 text-[11px]">{{ new Date(attempt.created_at).toLocaleString('vi-VN') }}</td>
+              </tr>
+              <tr v-if="!quiz.attempts?.length">
+                <td colspan="4" class="py-6 text-center text-slate-400 text-xs">Chưa có ai làm bài thi này.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </article>
+    </template>
+  </section>
+</template>
+
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -36,156 +188,3 @@ onMounted(() => {
   fetchQuizDetail()
 })
 </script>
-
-<template>
-  <section class="grid gap-6">
-    <!-- Loading -->
-    <div v-if="loading" class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-10 text-center text-sm font-bold text-[var(--muted)]">
-      Đang tải chi tiết quiz...
-    </div>
-
-    <template v-if="quiz">
-      <!-- Header -->
-      <div class="relative overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-soft)] backdrop-blur-2xl">
-        <div class="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[var(--primary)]/15 blur-3xl"></div>
-        <div class="relative z-10 flex flex-col justify-between gap-5 xl:flex-row xl:items-end">
-          <div>
-            <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Quiz Details</p>
-            <h1 class="mt-2 text-4xl font-black tracking-[-0.06em] text-[var(--text)]">{{ quiz.title }}</h1>
-            <p class="mt-3 max-w-2xl text-sm leading-7 text-[var(--muted)]">{{ quiz.description || 'Không có mô tả cho bộ quiz này.' }}</p>
-          </div>
-          <div class="flex flex-wrap gap-3">
-            <button type="button" @click="goBack" class="btn-ghost">
-              ← Quay lại
-            </button>
-            <RouterLink :to="`/admin/quizzes/${quiz.id}/edit`" class="btn-primary">
-              ✏️ Sửa Quiz
-            </RouterLink>
-          </div>
-        </div>
-      </div>
-
-      <!-- Stats Grid & Info -->
-      <div class="grid gap-6 md:grid-cols-3">
-        <!-- Main Info -->
-        <article class="md:col-span-2 rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-card)] backdrop-blur-2xl space-y-4">
-          <h2 class="text-xl font-black text-[var(--text)] mb-4">Thông tin cơ bản</h2>
-          <div class="grid gap-4 sm:grid-cols-2 text-sm text-[var(--text)]">
-            <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-4">
-              <span class="block text-xs font-bold text-[var(--muted)]">Người tạo</span>
-              <span class="text-base font-black">{{ quiz.user?.name || quiz.author || 'Chưa có' }}</span>
-            </div>
-            <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-4">
-              <span class="block text-xs font-bold text-[var(--muted)]">Danh mục</span>
-              <span class="text-base font-black">{{ quiz.category || 'Chưa có' }}</span>
-            </div>
-            <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-4">
-              <span class="block text-xs font-bold text-[var(--muted)]">Độ khó</span>
-              <span class="text-base font-black uppercase">{{ quiz.difficulty }}</span>
-            </div>
-            <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-4">
-              <span class="block text-xs font-bold text-[var(--muted)]">Trạng thái</span>
-              <span
-                class="text-base font-black"
-                :class="quiz.is_public ? 'text-emerald-400' : 'text-rose-400'"
-              >
-                {{ quiz.is_public ? '🌐 Public' : '🔒 Private' }}
-              </span>
-            </div>
-          </div>
-        </article>
-
-        <!-- Stats -->
-        <article class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-card)] backdrop-blur-2xl flex flex-col justify-between">
-          <div>
-            <h2 class="text-xl font-black text-[var(--text)] mb-4">Thống kê chung</h2>
-            <div class="grid grid-cols-2 gap-4">
-              <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-3 text-center">
-                <b class="block text-2xl text-[var(--text)]">{{ quiz.questions_count }}</b>
-                <span class="text-xs font-bold text-[var(--muted)]">Câu hỏi</span>
-              </div>
-              <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-3 text-center">
-                <b class="block text-2xl text-[var(--text)]">{{ quiz.attempts_count }}</b>
-                <span class="text-xs font-bold text-[var(--muted)]">Lượt làm</span>
-              </div>
-            </div>
-          </div>
-          <div class="mt-6 rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-4 text-center">
-            <span class="block text-xs font-bold text-[var(--muted)]">Điểm số trung bình</span>
-            <b class="text-3xl text-[var(--primary)]">{{ averageScore }}%</b>
-          </div>
-        </article>
-      </div>
-
-      <!-- Questions List -->
-      <article class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-card)] backdrop-blur-2xl space-y-6">
-        <h2 class="text-xl font-black text-[var(--text)]">Danh sách câu hỏi</h2>
-        <div class="grid gap-4">
-          <div
-            v-for="(question, index) in quiz.questions"
-            :key="question.id"
-            class="rounded-3xl border border-[var(--border)] p-5 bg-[var(--surface-soft)] transition hover:border-[var(--border-strong)]"
-          >
-            <div class="flex items-start justify-between gap-4 mb-4">
-              <h3 class="text-base font-black text-[var(--text)]">
-                Câu {{ index + 1 }}: {{ question.content }}
-              </h3>
-              <span class="rounded-full bg-[var(--surface)] border border-[var(--border)] px-3 py-1 text-xs font-bold text-[var(--muted)]">
-                {{ question.points ?? 10 }} pts
-              </span>
-            </div>
-
-            <div class="grid gap-2">
-              <div
-                v-for="answer in question.answers"
-                :key="answer.id"
-                class="flex items-center justify-between p-3 rounded-2xl border text-sm"
-                :class="answer.is_correct ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 font-bold' : 'bg-[var(--surface)] border-[var(--border)] text-[var(--muted)]'"
-              >
-                <span>{{ answer.content }}</span>
-                <span v-if="answer.is_correct" class="text-xs uppercase tracking-wider font-black">
-                  ✓ Đáp án đúng
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </article>
-
-      <!-- Attempt History -->
-      <article class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-card)] backdrop-blur-2xl space-y-6">
-        <h2 class="text-xl font-black text-[var(--text)]">Lịch sử làm bài</h2>
-        <div class="overflow-x-auto rounded-2xl border border-[var(--border)]">
-          <table class="w-full border-collapse text-left text-sm text-[var(--text)]">
-            <thead>
-              <tr class="border-b border-[var(--border)] bg-[var(--surface-soft)] text-xs font-black uppercase tracking-wider text-[var(--muted)]">
-                <th class="p-4">Người dùng</th>
-                <th class="p-4 text-center">Điểm</th>
-                <th class="p-4 text-center">Trạng thái</th>
-                <th class="p-4 text-center">Thời gian</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-[var(--border)]">
-              <tr v-for="attempt in quiz.attempts" :key="attempt.id" class="transition hover:bg-[var(--surface-soft)]">
-                <td class="p-4 font-bold">{{ attempt.user?.name || 'Guest' }}</td>
-                <td class="p-4 text-center font-bold text-[var(--primary)]">{{ attempt.score }}%</td>
-                <td class="p-4 text-center">
-                  <span
-                    class="rounded-full px-3 py-1 text-xs font-black"
-                    :class="attempt.status === 'completed' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'"
-                  >
-                    {{ attempt.status === 'completed' ? 'Hoàn thành' : 'Đang làm' }}
-                  </span>
-                </td>
-                <td class="p-4 text-center text-[var(--muted)]">{{ new Date(attempt.created_at).toLocaleString('vi-VN') }}</td>
-              </tr>
-              <tr v-if="!quiz.attempts?.length">
-                <td colspan="4" class="text-center py-10 text-[var(--muted)] font-bold">Chưa có lịch sử làm bài</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </article>
-    </template>
-  </section>
-</template>

@@ -285,6 +285,19 @@ export const canUseWorkspace = (user) => hasAnyRole(user, AUTH_ROLES);
 export const canUseUserDashboard = (user) => hasAnyRole(user, USER_ROLES);
 export const canUseAdminConsole = (user) => hasAnyRole(user, ADMIN_ROLES);
 
+const resolveAvatarUrl = (avatar) => {
+  if (!avatar) return ''
+  const url = String(avatar).trim()
+  if (!url) return ''
+  // If it's already a full URL, return as-is
+  if (/^https?:\/\//.test(url)) return url
+  // If it's a relative path starting with /storage, keep it (Vite proxy will handle)
+  if (url.startsWith('/storage')) return url
+  // If it's just a filename or relative path, prepend /storage/avatars/
+  if (!url.includes('/')) return `/storage/avatars/${url}`
+  return url
+}
+
 const normalizeUserForStorage = (user = {}) => {
   if (!user || typeof user !== "object") return null;
 
@@ -293,6 +306,7 @@ const normalizeUserForStorage = (user = {}) => {
     ...user,
     role: normalizedRole,
     role_label: user.role_label || user.roleLabel || roleLabel(normalizedRole),
+    avatar: resolveAvatarUrl(user.avatar),
   };
 
   if (!normalized.name)
@@ -1284,45 +1298,73 @@ export const difficultyValue = (value) =>
 
 export const defaultQuizCover = "linear-gradient(135deg, #0f172a, #7c3aed)";
 
+const resolveCoverUrl = (cover) => {
+  if (!cover) return ''
+  const url = String(cover).trim()
+  if (!url) return ''
+  // If it's already a full URL, return as-is
+  if (/^https?:\/\//.test(url)) return url
+  // If it's a relative path starting with /storage, keep it (Vite proxy will handle)
+  if (url.startsWith('/storage')) return url
+  // If it's just a filename or relative path, prepend /storage/quiz-covers/
+  if (!url.includes('/')) return `/storage/quiz-covers/${url}`
+  return url
+}
+
 export const coverToBackground = (cover) => {
   const value = String(cover || "").trim();
   if (!value) return defaultQuizCover;
   if (/gradient\(/i.test(value)) return value;
 
-  const isImageSource = /^(https?:\/\/|\/|data:image\/|blob:)/i.test(value);
+  const resolved = resolveCoverUrl(value);
+  const isImageSource = /^(https?:\/\/|\/storage\/|data:image\/|blob:)/i.test(resolved);
   if (!isImageSource) return value;
 
-  const escaped = value.replace(/"/g, '\\"');
+  const escaped = resolved.replace(/"/g, '\\"');
   return `linear-gradient(135deg, rgba(15,23,42,.2), rgba(124,58,237,.24)), url("${escaped}") center / cover no-repeat`;
 };
 
-export const normalizeQuizCard = (quiz) => ({
-  ...quiz,
-  subject_id: quiz.subject_id ?? quiz.subject?.id ?? null,
-  subject_name: quiz.subject_name ?? quiz.subject?.name ?? "",
-  topic_name: quiz.topic_name ?? "",
-  roomCode: quiz.room_code || "",
-  duration: `${quiz.duration_minutes || Math.ceil((quiz.time_limit_seconds || 600) / 60)} phút`,
-  questions:
-    quiz.questions_count ??
-    (Array.isArray(quiz.questions) ? quiz.questions.length : 0),
-  attempts: quiz.attempts_count ?? 0,
-  avgScore: Math.round(Number(quiz.avg_score ?? quiz.score_percent ?? 0)),
-  rating: quiz.rating || "4.8",
-  coverSource: quiz.cover || "",
-  cover: coverToBackground(quiz.cover),
-  icon: quiz.icon || "QZ",
-  badge: quiz.badge || "QUIZ",
-  author: quiz.author || quiz.user?.name || "QuizFlex",
-  visibility: quiz.visibility || (quiz.is_public ? "public" : "private"),
-  difficulty: difficultyLabel(quiz.difficulty_label || quiz.difficulty),
-  rawDifficulty: difficultyValue(quiz.difficulty),
-});
+export const normalizeQuizCard = (quiz) => {
+  const coverUrl = resolveCoverUrl(quiz.cover);
+  return {
+    ...quiz,
+    subject_id: quiz.subject_id ?? quiz.subject?.id ?? null,
+    subject_name: quiz.subject_name ?? quiz.subject?.name ?? "",
+    topic_name: quiz.topic_name ?? "",
+    roomCode: quiz.room_code || "",
+    duration: `${quiz.duration_minutes || Math.ceil((quiz.time_limit_seconds || 600) / 60)} phút`,
+    questions:
+      quiz.questions_count ??
+      (Array.isArray(quiz.questions) ? quiz.questions.length : 0),
+    attempts: quiz.attempts_count ?? 0,
+    avgScore: Math.round(Number(quiz.avg_score ?? quiz.score_percent ?? 0)),
+    rating: quiz.rating || "4.8",
+    coverSource: coverUrl,
+    cover: coverToBackground(coverUrl),
+    icon: quiz.icon || "QZ",
+    badge: quiz.badge || "QUIZ",
+    author: quiz.author || quiz.user?.name || "QuizFlex",
+    visibility: quiz.visibility || (quiz.is_public ? "public" : "private"),
+    difficulty: difficultyLabel(quiz.difficulty_label || quiz.difficulty),
+    rawDifficulty: difficultyValue(quiz.difficulty),
+  };
+};
+
+const resolveUserAvatar = (avatar) => {
+  if (!avatar) return ''
+  const url = String(avatar).trim()
+  if (!url) return ''
+  if (/^https?:\/\//.test(url)) return url
+  if (url.startsWith('/storage')) return url
+  if (!url.includes('/')) return `/storage/avatars/${url}`
+  return url
+}
 
 export const normalizeUser = (user) => {
   const normRole = normalizeRole(user?.role);
   return {
     ...user,
+    avatar: resolveAvatarUrl(user?.avatar),
     role: normRole,
     roleLabel: user?.role_label || user?.roleLabel || roleLabel(normRole),
     joinedAt:

@@ -1,178 +1,169 @@
 <template>
-  <div class="mx-auto max-w-xl rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 sm:p-8 shadow-[var(--shadow-soft)] backdrop-blur-2xl">
-    <div class="flex items-center justify-between">
-      <BrandLogo to="/" size="lg" />
-      <span class="rounded-full border border-[var(--border-strong)] bg-[var(--chip-active)] px-3.5 py-1 text-xs font-black text-[var(--primary)]">
-        Khôi phục mật khẩu
-      </span>
-    </div>
-
-    <!-- Stepper indicator -->
-    <div class="mt-6 flex items-center justify-center gap-2">
-      <div
-        class="flex h-8 items-center gap-2 rounded-full px-4 text-xs font-black transition"
-        :class="step >= 1 ? 'bg-[var(--primary)] text-white' : 'bg-[var(--surface-soft)] text-[var(--muted)]'"
-      >
-        <span>1</span>
-        <span>Nhập Email</span>
-      </div>
-      <div class="h-0.5 w-6 bg-[var(--border)]"></div>
-      <div
-        class="flex h-8 items-center gap-2 rounded-full px-4 text-xs font-black transition"
-        :class="step >= 2 ? 'bg-[var(--primary)] text-white' : 'bg-[var(--surface-soft)] text-[var(--muted)]'"
-      >
-        <span>2</span>
-        <span>Mã OTP & Mật khẩu</span>
-      </div>
-    </div>
-
-    <!-- Message Alert -->
-    <div
-      v-if="message.text"
-      class="mt-6 rounded-2xl border p-4 text-sm font-bold shadow-sm transition"
-      :class="message.type === 'success' ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300' : 'border-rose-500/30 bg-rose-500/10 text-rose-300'"
-    >
-      <div class="flex items-start gap-3">
-        <span class="text-base">{{ message.type === 'success' ? '✅' : '⚠️' }}</span>
-        <div class="flex-1 leading-6">{{ message.text }}</div>
-      </div>
-    </div>
-
-    <!-- BƯỚC 1: NHẬP EMAIL -->
-    <div v-if="step === 1" class="mt-6">
-      <h1 class="text-3xl font-black tracking-[-0.05em] text-[var(--text)] sm:text-4xl">Quên mật khẩu?</h1>
-      <p class="mt-2 text-sm leading-6 text-[var(--muted)]">
-        Nhập địa chỉ email đăng ký tài khoản QuizFlex của bạn. Chúng tôi sẽ gửi mã xác thực OTP 6 số để bạn đặt lại mật khẩu.
-      </p>
-
-      <form class="mt-6 grid gap-4" @submit.prevent="handleSendOtp">
-        <label class="grid gap-2 text-xs font-black uppercase text-[var(--muted)]">
-          Email tài khoản
-          <input
-            v-model.trim="form.email"
-            type="email"
-            class="field"
-            placeholder="nhap-email@example.com"
-            :disabled="loading"
-          />
-          <span v-if="errors.email" class="text-xs font-bold text-rose-400 normal-case">{{ errors.email }}</span>
-        </label>
-
-        <button
-          type="submit"
-          class="btn-primary w-full !py-3 text-sm font-black shadow-lg"
-          :disabled="loading"
-        >
-          <span v-if="loading">Đang gửi mã OTP...</span>
-          <span v-else>🚀 Gửi mã xác thực OTP</span>
-        </button>
-
-        <router-link class="btn-ghost w-full text-center text-sm font-bold" to="/login">
-          ← Quay lại đăng nhập
-        </router-link>
-      </form>
-    </div>
-
-    <!-- BƯỚC 2: NHẬP OTP & ĐỔI MẬT KHẨU -->
-    <div v-else-if="step === 2" class="mt-6">
-      <div class="flex items-center justify-between">
-        <div>
-          <h1 class="text-2xl font-black tracking-[-0.05em] text-[var(--text)] sm:text-3xl">Nhập OTP & Mật khẩu mới</h1>
-          <p class="mt-1 text-xs text-[var(--muted)]">
-            Mã OTP đã gửi tới <strong class="text-[var(--text)]">{{ form.email }}</strong>
-          </p>
+  <div class="mx-auto max-w-md py-6">
+    <div class="card p-6 sm:p-8 space-y-6 shadow-sm">
+      <!-- Logo Header -->
+      <div class="text-center space-y-2">
+        <div class="flex justify-center">
+          <BrandLogo to="/" size="md" />
         </div>
-        <button type="button" class="text-xs font-bold text-[var(--primary)] hover:underline" @click="step = 1">
-          Sửa email
-        </button>
+        <h1 class="text-2xl font-black text-slate-900 pt-1">Khôi phục mật khẩu</h1>
+        <p class="text-xs text-slate-500">Đặt lại mật khẩu tài khoản QuizFlex của bạn qua mã OTP</p>
       </div>
 
-      <form class="mt-6 grid gap-4" @submit.prevent="handleResetPassword">
-        <label class="grid gap-2 text-xs font-black uppercase text-[var(--muted)]">
-          Mã OTP (6 chữ số)
-          <input
-            v-model.trim="form.otp"
-            type="text"
-            name="one-time-code"
-            autocomplete="one-time-code"
-            inputmode="numeric"
-            maxlength="6"
-            required
-            class="field text-center text-lg tracking-[0.3em] font-black"
-            placeholder="123456"
-            :disabled="loading"
-          />
-          <span v-if="errors.otp" class="text-xs font-bold text-rose-400 normal-case">{{ errors.otp }}</span>
-        </label>
-
-        <label class="grid gap-2 text-xs font-black uppercase text-[var(--muted)]">
-          Mật khẩu mới
-          <input
-            v-model="form.password"
-            type="password"
-            name="new-password"
-            autocomplete="new-password"
-            required
-            minlength="8"
-            class="field"
-            placeholder="Tối thiểu 8 ký tự"
-            :disabled="loading"
-          />
-          <span v-if="errors.password" class="text-xs font-bold text-rose-400 normal-case">{{ errors.password }}</span>
-        </label>
-
-        <label class="grid gap-2 text-xs font-black uppercase text-[var(--muted)]">
-          Xác nhận mật khẩu mới
-          <input
-            v-model="form.password_confirmation"
-            type="password"
-            name="confirm-new-password"
-            autocomplete="new-password"
-            required
-            minlength="8"
-            class="field"
-            placeholder="Nhập lại mật khẩu mới"
-            :disabled="loading"
-          />
-          <span v-if="errors.password_confirmation" class="text-xs font-bold text-rose-400 normal-case">{{ errors.password_confirmation }}</span>
-        </label>
-
-        <button
-          type="submit"
-          class="btn-primary w-full !py-3 text-sm font-black shadow-lg"
-          :disabled="loading"
+      <!-- Stepper indicator -->
+      <div class="flex items-center justify-center gap-2 text-xs font-bold">
+        <div
+          class="flex items-center gap-1.5 rounded-full px-3 py-1 transition"
+          :class="step >= 1 ? 'bg-[#7C3AED] text-white' : 'bg-slate-100 text-slate-400'"
         >
-          <span v-if="loading">Đang cập nhật mật khẩu...</span>
-          <span v-else>💾 Đặt lại mật khẩu</span>
-        </button>
+          <span>1</span>
+          <span>Email</span>
+        </div>
+        <span class="text-slate-300">→</span>
+        <div
+          class="flex items-center gap-1.5 rounded-full px-3 py-1 transition"
+          :class="step >= 2 ? 'bg-[#7C3AED] text-white' : 'bg-slate-100 text-slate-400'"
+        >
+          <span>2</span>
+          <span>OTP & Mật khẩu</span>
+        </div>
+      </div>
 
-        <div class="flex items-center justify-between text-xs">
-          <span class="text-[var(--muted)]">Không nhận được mã?</span>
+      <!-- Message Alert -->
+      <div
+        v-if="message.text"
+        class="rounded-xl border p-3 text-xs font-bold"
+        :class="message.type === 'success' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-red-200 bg-red-50 text-red-700'"
+      >
+        <div class="flex items-start gap-2">
+          <span>{{ message.type === 'success' ? '✅' : '⚠️' }}</span>
+          <div class="flex-1 leading-relaxed">{{ message.text }}</div>
+        </div>
+      </div>
+
+      <!-- Step 1: Input Email -->
+      <div v-if="step === 1" class="space-y-4">
+        <form class="space-y-4" @submit.prevent="handleSendOtp">
+          <label class="grid gap-1.5 text-xs font-bold text-slate-700">
+            Email tài khoản
+            <input
+              v-model.trim="form.email"
+              type="email"
+              class="field text-xs"
+              placeholder="nhap-email@example.com"
+              :disabled="loading"
+              required
+            />
+            <span v-if="errors.email" class="text-xs font-bold text-red-600">{{ errors.email }}</span>
+          </label>
+
           <button
-            type="button"
-            class="font-black text-[var(--primary)] disabled:opacity-50 disabled:cursor-not-allowed hover:underline"
-            :disabled="resendTimer > 0 || loading"
-            @click="handleResendOtp"
+            type="submit"
+            class="btn-primary w-full py-2.5 text-xs"
+            :disabled="loading"
           >
-            {{ resendTimer > 0 ? `Gửi lại sau (${resendTimer}s)` : 'Gửi lại mã OTP' }}
+            {{ loading ? 'Đang gửi mã OTP...' : 'Gửi mã xác thực OTP →' }}
+          </button>
+
+          <router-link class="btn-secondary w-full text-center text-xs py-2 block" to="/login">
+            ← Quay lại đăng nhập
+          </router-link>
+        </form>
+      </div>
+
+      <!-- Step 2: OTP & New Password -->
+      <div v-else-if="step === 2" class="space-y-4">
+        <div class="flex items-center justify-between text-xs">
+          <span class="text-slate-500">Mã gửi tới: <b class="text-slate-900">{{ form.email }}</b></span>
+          <button type="button" class="font-bold text-[#7C3AED] hover:underline" @click="step = 1">
+            Sửa email
           </button>
         </div>
-      </form>
-    </div>
 
-    <!-- BƯỚC 3: THÀNH CÔNG -->
-    <div v-else-if="step === 3" class="mt-6 text-center">
-      <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/20 text-3xl font-black text-emerald-400">
-        ✓
+        <form class="space-y-4" @submit.prevent="handleResetPassword">
+          <label class="grid gap-1.5 text-xs font-bold text-slate-700">
+            Mã OTP (6 chữ số)
+            <input
+              v-model.trim="form.otp"
+              type="text"
+              name="one-time-code"
+              autocomplete="one-time-code"
+              inputmode="numeric"
+              maxlength="6"
+              required
+              class="field text-center font-mono text-lg font-bold tracking-[0.25em]"
+              placeholder="123456"
+              :disabled="loading"
+            />
+            <span v-if="errors.otp" class="text-xs font-bold text-red-600">{{ errors.otp }}</span>
+          </label>
+
+          <label class="grid gap-1.5 text-xs font-bold text-slate-700">
+            Mật khẩu mới
+            <input
+              v-model="form.password"
+              type="password"
+              name="new-password"
+              autocomplete="new-password"
+              required
+              minlength="8"
+              class="field text-xs"
+              placeholder="Tối thiểu 8 ký tự"
+              :disabled="loading"
+            />
+            <span v-if="errors.password" class="text-xs font-bold text-red-600">{{ errors.password }}</span>
+          </label>
+
+          <label class="grid gap-1.5 text-xs font-bold text-slate-700">
+            Xác nhận mật khẩu mới
+            <input
+              v-model="form.password_confirmation"
+              type="password"
+              name="confirm-new-password"
+              autocomplete="new-password"
+              required
+              minlength="8"
+              class="field text-xs"
+              placeholder="Nhập lại mật khẩu mới"
+              :disabled="loading"
+            />
+            <span v-if="errors.password_confirmation" class="text-xs font-bold text-red-600">{{ errors.password_confirmation }}</span>
+          </label>
+
+          <button
+            type="submit"
+            class="btn-primary w-full py-2.5 text-xs"
+            :disabled="loading"
+          >
+            {{ loading ? 'Đang cập nhật mật khẩu...' : 'Đặt lại mật khẩu' }}
+          </button>
+
+          <div class="flex items-center justify-between text-xs pt-1">
+            <span class="text-slate-500">Chưa nhận được mã?</span>
+            <button
+              type="button"
+              class="font-bold text-[#7C3AED] disabled:opacity-50 disabled:cursor-not-allowed hover:underline"
+              :disabled="resendTimer > 0 || loading"
+              @click="handleResendOtp"
+            >
+              {{ resendTimer > 0 ? `Gửi lại sau (${resendTimer}s)` : 'Gửi lại mã OTP' }}
+            </button>
+          </div>
+        </form>
       </div>
-      <h2 class="mt-4 text-3xl font-black text-[var(--text)]">Đổi mật khẩu thành công!</h2>
-      <p class="mt-2 text-sm leading-6 text-[var(--muted)]">
-        Mật khẩu mới của bạn đã được cập nhật. Bạn có thể sử dụng mật khẩu mới này để đăng nhập ngay vào hệ thống QuizFlex.
-      </p>
 
-      <div class="mt-6">
-        <button type="button" class="btn-primary w-full !py-3 text-sm font-black shadow-lg" @click="goToLogin">
-          🔑 Đăng nhập ngay
+      <!-- Step 3: Success -->
+      <div v-else-if="step === 3" class="text-center py-4 space-y-4">
+        <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50 text-2xl text-emerald-600">
+          ✓
+        </div>
+        <h2 class="text-lg font-bold text-slate-900">Đổi mật khẩu thành công!</h2>
+        <p class="text-xs text-slate-500">
+          Mật khẩu mới của bạn đã được cập nhật. Bạn có thể sử dụng mật khẩu này để đăng nhập.
+        </p>
+
+        <button type="button" class="btn-primary w-full py-2.5 text-xs" @click="goToLogin">
+          Đăng nhập ngay →
         </button>
       </div>
     </div>

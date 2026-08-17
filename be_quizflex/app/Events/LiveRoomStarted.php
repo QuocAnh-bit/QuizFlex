@@ -5,7 +5,7 @@ namespace App\Events;
 use App\Models\LiveRoom;
 use App\Services\LiveRoomPayloadService;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Broadcasting\PrivateChannel;
+use Illuminate\Broadcasting\PresenceChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
@@ -20,9 +20,9 @@ class LiveRoomStarted implements ShouldBroadcastNow
     ) {
     }
 
-    public function broadcastOn(): PrivateChannel
+    public function broadcastOn(): PresenceChannel
     {
-        return new PrivateChannel('live-room.'.$this->liveRoom->id);
+        return new PresenceChannel('live-room.'.$this->liveRoom->id);
     }
 
     public function broadcastAs(): string

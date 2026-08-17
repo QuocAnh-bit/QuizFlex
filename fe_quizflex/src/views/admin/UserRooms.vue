@@ -1,36 +1,38 @@
 <template>
-  <section class="grid gap-6">
-    <div class="relative overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-soft)] backdrop-blur-2xl">
-      <div class="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[var(--accent)]/15 blur-3xl"></div>
-      <div class="relative z-10 flex flex-col justify-between gap-5 xl:flex-row xl:items-end">
-        <div>
-          <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Room Management</p>
-          <h1 class="mt-2 text-4xl font-black tracking-[-0.06em] text-[var(--text)]">Room quiz</h1>
-          <p class="mt-3 max-w-2xl text-sm leading-7 text-[var(--muted)]">Danh sách room lấy từ các quiz có room_code trong backend.</p>
-        </div>
-        <router-link class="btn-primary" :to="`${questionBase}/create?visibility=group`">Tạo group quiz</router-link>
+  <section class="max-w-6xl mx-auto py-4 space-y-6">
+    <!-- Header -->
+    <div class="card p-6 sm:p-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+      <div>
+        <p class="text-xs font-bold uppercase tracking-wider text-[#7C3AED]">Nhóm học tập</p>
+        <h1 class="mt-1 text-2xl font-black text-slate-900 sm:text-3xl">Phòng Quiz Nhóm</h1>
+        <p class="mt-1 text-sm text-slate-600">Danh sách các bộ đề được cấu hình chế độ mã phòng (Group Code).</p>
       </div>
+      <router-link class="btn-primary text-xs px-3.5 py-1.5" :to="`${questionBase}/create?visibility=group`">
+        + Tạo Group Quiz
+      </router-link>
     </div>
 
-    <div v-if="isLoading" class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-10 text-center text-sm font-bold text-[var(--muted)]">Đang tải room...</div>
-    <div v-if="errorMessage" class="rounded-[2rem] border border-rose-500/30 bg-rose-500/10 p-5 text-sm font-bold text-rose-300">{{ errorMessage }}</div>
+    <div v-if="isLoading" class="card p-10 text-center text-xs text-slate-400">Đang tải danh sách phòng...</div>
+    <div v-if="errorMessage" class="rounded-xl border border-red-200 bg-red-50 p-4 text-xs font-bold text-red-700">{{ errorMessage }}</div>
 
-    <div class="grid gap-4 md:grid-cols-3">
+    <div v-if="!isLoading && rooms.length > 0" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       <router-link
         v-for="room in rooms"
         :key="room.id"
         :to="`/quizzes/${room.id}`"
-        class="rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface)] p-4 text-left shadow-[var(--shadow-card)] transition duration-300 hover:-translate-y-1 hover:border-[var(--border-strong)]"
+        class="card card-hover p-5 space-y-3 block"
       >
-        <div class="flex items-center justify-between gap-3">
-          <b class="text-[var(--text)]">{{ room.title }}</b>
-          <span class="rounded-full bg-[var(--chip-active)] px-3 py-1 text-xs font-black text-[var(--primary)]">{{ room.roomCode }}</span>
+        <div class="flex items-center justify-between gap-2">
+          <b class="text-sm font-bold text-slate-900 line-clamp-1 hover:text-[#7C3AED] transition">{{ room.title }}</b>
+          <span class="rounded bg-purple-50 text-[#7C3AED] px-2 py-0.5 text-xs font-bold font-mono shrink-0">{{ room.roomCode }}</span>
         </div>
-        <p class="mt-2 text-sm text-[var(--muted)]">{{ room.questions }} câu - {{ room.attempts }} lượt làm - {{ room.duration }}</p>
+        <p class="text-xs text-slate-500">{{ room.questions }} câu hỏi • {{ room.attempts }} lượt làm • {{ room.duration }}</p>
       </router-link>
     </div>
 
-    <div v-if="!isLoading && rooms.length === 0" class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-10 text-center text-sm font-bold text-[var(--muted)]">Chưa có group quiz nào.</div>
+    <div v-if="!isLoading && rooms.length === 0" class="card p-10 text-center text-xs text-slate-400">
+      Chưa có group quiz nào được tạo.
+    </div>
   </section>
 </template>
 
@@ -53,7 +55,7 @@ const loadRooms = async () => {
     const data = await quizzesApi.list({ visibility: 'group', per_page: 100 })
     rooms.value = data.map(normalizeQuizCard)
   } catch (error) {
-    errorMessage.value = `Không tải được room: ${error.message}`
+    errorMessage.value = `Không tải được danh sách: ${error.message}`
   } finally {
     isLoading.value = false
   }

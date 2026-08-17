@@ -1,3 +1,136 @@
+<template>
+  <section class="max-w-6xl mx-auto py-4 space-y-6">
+    <!-- Header -->
+    <div class="card p-6 sm:p-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+      <div>
+        <p class="text-xs font-bold uppercase tracking-wider text-[#7C3AED]">Kho đề thi</p>
+        <h1 class="mt-1 text-2xl font-black text-slate-900 sm:text-3xl">Quản lý Quiz</h1>
+        <p class="mt-1 text-sm text-slate-600">Quản lý tất cả bộ đề trắc nghiệm trong hệ thống, xem phân tích và hiệu suất.</p>
+      </div>
+      <div class="flex items-center gap-2.5">
+        <RouterLink to="/admin/quizzes-trash" class="rounded-lg border border-red-200 bg-red-50 px-3.5 py-1.5 text-xs font-bold text-red-700 hover:bg-red-100 transition">
+          Thùng rác
+        </RouterLink>
+      </div>
+    </div>
+
+    <!-- Search & Filter Card -->
+    <article class="card p-5 space-y-3">
+      <div class="grid gap-3 sm:grid-cols-3">
+        <input
+          v-model="filters.search"
+          type="text"
+          placeholder="Tìm theo tên quiz..."
+          class="field text-xs"
+          @keyup.enter="fetchQuizzes"
+        />
+        <input
+          v-model="filters.creator"
+          type="text"
+          placeholder="Tìm theo người tạo..."
+          class="field text-xs"
+          @keyup.enter="fetchQuizzes"
+        />
+        <input
+          v-model="filters.category"
+          type="text"
+          placeholder="Tìm theo danh mục..."
+          class="field text-xs"
+          @keyup.enter="fetchQuizzes"
+        />
+      </div>
+
+      <div class="grid gap-3 sm:grid-cols-4 items-center">
+        <select v-model="filters.difficulty" class="field text-xs" @change="fetchQuizzes">
+          <option value="">Mọi độ khó</option>
+          <option value="easy">Dễ</option>
+          <option value="medium">Vừa</option>
+          <option value="hard">Khó</option>
+        </select>
+        <select v-model="filters.visibility" class="field text-xs" @change="fetchQuizzes">
+          <option value="">Mọi hiển thị</option>
+          <option value="public">Công khai (Public)</option>
+          <option value="private">Riêng tư (Private)</option>
+        </select>
+        <select v-model="filters.ai_generated" class="field text-xs" @change="fetchQuizzes">
+          <option value="">Mọi nguồn tạo</option>
+          <option value="1">AI sinh đề</option>
+          <option value="0">Thủ công</option>
+        </select>
+        <button @click="fetchQuizzes" class="btn-primary text-xs py-2.5">
+          Tìm kiếm
+        </button>
+      </div>
+    </article>
+
+    <!-- Table Card -->
+    <div class="card overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs">
+          <thead>
+            <tr class="border-b border-slate-100 bg-slate-50 text-slate-400 font-bold uppercase text-[10px]">
+              <th class="py-3 px-4">Tên Quiz</th>
+              <th class="py-3 px-4">Tác giả</th>
+              <th class="py-3 px-4 text-center">Danh mục</th>
+              <th class="py-3 px-4 text-center">Độ khó</th>
+              <th class="py-3 px-4 text-center">Lượt làm</th>
+              <th class="py-3 px-4 text-center">Điểm TB</th>
+              <th class="py-3 px-4 text-center">Trạng thái</th>
+              <th class="py-3 px-4 text-right">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 font-medium">
+            <tr v-for="quiz in quizzes" :key="quiz.id" class="hover:bg-slate-50">
+              <td class="py-3.5 px-4 font-bold text-slate-900 max-w-xs truncate">{{ quiz.title }}</td>
+              <td class="py-3.5 px-4 text-slate-500">{{ quiz.user?.name || quiz.author || '-' }}</td>
+              <td class="py-3.5 px-4 text-center">
+                <span class="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+                  {{ quiz.category || 'Mặc định' }}
+                </span>
+              </td>
+              <td class="py-3.5 px-4 text-center">
+                <span
+                  class="rounded px-2 py-0.5 text-[10px] font-bold"
+                  :class="quiz.difficulty === 'easy' ? 'bg-emerald-50 text-emerald-700' : quiz.difficulty === 'hard' ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700'"
+                >
+                  {{ quiz.difficulty === 'easy' ? 'Dễ' : quiz.difficulty === 'hard' ? 'Khó' : 'Vừa' }}
+                </span>
+              </td>
+              <td class="py-3.5 px-4 text-center font-bold text-slate-800">{{ quiz.attempts_count ?? 0 }}</td>
+              <td class="py-3.5 px-4 text-center font-bold text-[#7C3AED]">{{ quiz.avg_score ?? 0 }}%</td>
+              <td class="py-3.5 px-4 text-center">
+                <span
+                  class="rounded px-2 py-0.5 text-[10px] font-bold"
+                  :class="quiz.is_public ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'"
+                >
+                  {{ quiz.is_public ? 'Public' : 'Private' }}
+                </span>
+              </td>
+              <td class="py-3.5 px-4 text-right">
+                <div class="flex items-center justify-end gap-2">
+                  <RouterLink :to="`/admin/quizzes/${quiz.id}`" class="text-[#7C3AED] hover:underline font-bold text-xs">
+                    Chi tiết
+                  </RouterLink>
+                  <RouterLink :to="`/admin/quizzes/${quiz.id}/edit`" class="text-amber-600 hover:underline font-bold text-xs">
+                    Sửa
+                  </RouterLink>
+                  <button @click="deleteQuiz(quiz.id)" class="text-red-600 hover:underline font-bold text-xs">
+                    Xóa
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr v-if="!loading && quizzes.length === 0">
+              <td colspan="8" class="text-center py-10 text-slate-400 text-xs">Không có quiz nào phù hợp.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div v-if="loading" class="text-center py-8 text-xs text-slate-400">Đang tải danh sách quiz...</div>
+    </div>
+  </section>
+</template>
+
 <script setup>
 import { ref, onMounted, inject } from 'vue'
 import api from '@/services/api'
@@ -52,144 +185,3 @@ onMounted(() => {
   fetchQuizzes()
 })
 </script>
-
-<template>
-  <section class="grid gap-6">
-    <!-- Header -->
-    <div class="relative overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-soft)] backdrop-blur-2xl">
-      <div class="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[var(--primary)]/15 blur-3xl"></div>
-      <div class="relative z-10 flex flex-col justify-between gap-5 xl:flex-row xl:items-end">
-        <div>
-          <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Quiz Management</p>
-          <h1 class="mt-2 text-4xl font-black tracking-[-0.06em] text-[var(--text)]">Quản lý Quiz</h1>
-          <p class="mt-3 max-w-2xl text-sm leading-7 text-[var(--muted)]">Quản lý tất cả các bộ đề quiz trong hệ thống, xem chi tiết, chỉnh sửa hoặc khôi phục từ thùng rác.</p>
-        </div>
-        <div class="flex flex-wrap gap-3">
-          <RouterLink to="/admin/quizzes-trash" class="rounded-full border border-rose-500/30 bg-rose-500/10 px-4 py-2 text-xs font-black text-rose-400 transition hover:bg-rose-500/20">
-            🗑️ Thùng rác
-          </RouterLink>
-        </div>
-      </div>
-    </div>
-
-    <!-- Search + Filter -->
-    <article class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow-card)] backdrop-blur-2xl">
-      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        <div class="flex items-center gap-3 rounded-2xl border border-[var(--border)] bg-[var(--input-bg)] px-4 py-3 transition focus-within:border-[var(--border-strong)]">
-          <span class="text-lg">🔍</span>
-          <input
-            v-model="filters.search"
-            type="text"
-            placeholder="Tìm theo tên quiz..."
-            class="w-full bg-transparent text-sm font-semibold text-[var(--text)] outline-none placeholder:text-[var(--muted)]"
-            @keyup.enter="fetchQuizzes"
-          />
-        </div>
-        <div class="flex items-center gap-3 rounded-2xl border border-[var(--border)] bg-[var(--input-bg)] px-4 py-3 transition focus-within:border-[var(--border-strong)]">
-          <span class="text-lg">👤</span>
-          <input
-            v-model="filters.creator"
-            type="text"
-            placeholder="Tìm theo người tạo..."
-            class="w-full bg-transparent text-sm font-semibold text-[var(--text)] outline-none placeholder:text-[var(--muted)]"
-            @keyup.enter="fetchQuizzes"
-          />
-        </div>
-        <div class="flex items-center gap-3 rounded-2xl border border-[var(--border)] bg-[var(--input-bg)] px-4 py-3 transition focus-within:border-[var(--border-strong)]">
-          <span class="text-lg">📁</span>
-          <input
-            v-model="filters.category"
-            type="text"
-            placeholder="Tìm theo danh mục..."
-            class="w-full bg-transparent text-sm font-semibold text-[var(--text)] outline-none placeholder:text-[var(--muted)]"
-            @keyup.enter="fetchQuizzes"
-          />
-        </div>
-      </div>
-
-      <div class="mt-4 grid gap-4 sm:grid-cols-4 items-center">
-        <select v-model="filters.difficulty" class="field" @change="fetchQuizzes">
-          <option value="">Mọi độ khó</option>
-          <option value="easy">Dễ</option>
-          <option value="medium">Vừa</option>
-          <option value="hard">Khó</option>
-        </select>
-        <select v-model="filters.visibility" class="field" @change="fetchQuizzes">
-          <option value="">Mọi hiển thị</option>
-          <option value="public">🌐 Public</option>
-          <option value="private">🔒 Private</option>
-        </select>
-        <select v-model="filters.ai_generated" class="field" @change="fetchQuizzes">
-          <option value="">Mọi nguồn tạo</option>
-          <option value="1">🤖 AI Generated</option>
-          <option value="0">✍️ Quiz thường</option>
-        </select>
-        <button @click="fetchQuizzes" class="btn-primary h-full justify-center">
-          Tìm kiếm
-        </button>
-      </div>
-    </article>
-
-    <!-- Table -->
-    <div class="overflow-x-auto rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-card)] backdrop-blur-2xl">
-      <table class="w-full border-collapse text-left text-sm text-[var(--text)]">
-        <thead>
-          <tr class="border-b border-[var(--border)] bg-[var(--surface-soft)] text-xs font-black uppercase tracking-wider text-[var(--muted)]">
-            <th class="p-4">Tên quiz</th>
-            <th class="p-4 text-center">Người tạo</th>
-            <th class="p-4 text-center">Danh mục</th>
-            <th class="p-4 text-center">Độ khó</th>
-            <th class="p-4 text-center">Lượt làm</th>
-            <th class="p-4 text-center">Điểm TB</th>
-            <th class="p-4 text-center">Trạng thái</th>
-            <th class="p-4 text-center">Thao tác</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-[var(--border)]">
-          <tr v-for="quiz in quizzes" :key="quiz.id" class="transition hover:bg-[var(--surface-soft)]">
-            <td class="p-4 font-bold">{{ quiz.title }}</td>
-            <td class="p-4 text-center text-[var(--muted)]">{{ quiz.user?.name || quiz.author || 'Chưa có' }}</td>
-            <td class="p-4 text-center">
-              <span class="rounded-full bg-[var(--surface-soft)] px-3 py-1 text-xs font-bold">
-                {{ quiz.category || 'Chưa có' }}
-              </span>
-            </td>
-            <td class="p-4 text-center">
-              <span
-                class="rounded-full px-3 py-1 text-xs font-bold border"
-                :class="quiz.difficulty === 'easy' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : quiz.difficulty === 'hard' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'"
-              >
-                {{ quiz.difficulty === 'easy' ? 'Dễ' : quiz.difficulty === 'hard' ? 'Khó' : 'Vừa' }}
-              </span>
-            </td>
-            <td class="p-4 text-center font-bold">{{ quiz.attempts_count ?? 0 }}</td>
-            <td class="p-4 text-center font-bold text-[var(--primary)]">{{ quiz.avg_score ?? 0 }}%</td>
-            <td class="p-4 text-center">
-              <span
-                class="rounded-full border px-3 py-1 text-xs font-black"
-                :class="quiz.is_public ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400' : 'border-rose-500/30 bg-rose-500/10 text-rose-400'"
-              >
-                {{ quiz.is_public ? '🌐 Public' : '🔒 Private' }}
-              </span>
-            </td>
-            <td class="p-4 text-center space-x-3">
-              <RouterLink :to="`/admin/quizzes/${quiz.id}`" class="text-[var(--primary)] hover:underline font-bold">
-                Chi tiết
-              </RouterLink>
-              <RouterLink :to="`/admin/quizzes/${quiz.id}/edit`" class="text-amber-400 hover:underline font-bold">
-                Sửa
-              </RouterLink>
-              <button @click="deleteQuiz(quiz.id)" class="text-rose-400 hover:underline font-bold">
-                Xóa
-              </button>
-            </td>
-          </tr>
-          <tr v-if="!loading && quizzes.length === 0">
-            <td colspan="8" class="text-center py-10 text-[var(--muted)] font-bold">Không có quiz nào trong hệ thống</td>
-          </tr>
-        </tbody>
-      </table>
-      <div v-if="loading" class="text-center py-10 text-[var(--muted)] font-bold">Đang tải dữ liệu...</div>
-    </div>
-  </section>
-</template>

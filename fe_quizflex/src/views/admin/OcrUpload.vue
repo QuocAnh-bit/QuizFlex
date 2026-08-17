@@ -94,17 +94,19 @@
 
         <div
           v-if="totalQuestions > 0"
-          class="mt-5 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm font-bold text-emerald-300"
+          class="mt-5 flex items-center gap-2 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm font-bold text-emerald-300"
         >
-          ✅ Đã render {{ totalQuestions }} câu hỏi
+          <CheckCircle2 class="h-4 w-4" />
+          <span>Đã render {{ totalQuestions }} câu hỏi</span>
           <span v-if="showReadyMessage">. Đang chuyển sang editor...</span>
         </div>
 
         <div
           v-if="errorMessage"
-          class="mt-5 rounded-2xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm font-bold text-rose-300"
+          class="mt-5 flex items-center gap-2 rounded-2xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm font-bold text-rose-300"
         >
-          {{ errorMessage }}
+          <AlertTriangle class="h-4 w-4" />
+          <span>{{ errorMessage }}</span>
         </div>
 
         <div class="mt-6 flex flex-wrap gap-3">
@@ -210,10 +212,10 @@
 
       <div
         v-if="isDirty"
-        class="mt-5 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm font-bold text-amber-300"
+        class="mt-5 flex items-start gap-2 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm font-bold text-amber-300"
       >
-        ⚠️ Bạn đang có thay đổi chưa lưu. Reload hoặc thoát trang sẽ mất dữ
-        liệu.
+        <AlertTriangle class="mt-0.5 h-4 w-4 shrink-0" />
+        <span>Bạn đang có thay đổi chưa lưu. Reload hoặc thoát trang sẽ mất dữ liệu.</span>
       </div>
 
       <div
@@ -464,7 +466,7 @@
                 @click="aiOptions.action = 'similar'"
               >
                 <div class="flex items-start gap-3">
-                  <span class="text-xl">✨</span>
+                  <Sparkles class="h-5 w-5 shrink-0 text-violet-500" />
 
                   <div>
                     <p class="text-sm font-black text-[var(--text)]">
@@ -490,7 +492,7 @@
                 @click="aiOptions.action = 'generate_by_difficulty'"
               >
                 <div class="flex items-start gap-3">
-                  <span class="text-xl">🎯</span>
+                  <Target class="h-5 w-5 shrink-0 text-emerald-500" />
 
                   <div>
                     <p class="text-sm font-black text-[var(--text)]">
@@ -512,10 +514,13 @@
             v-if="aiOptions.action === 'similar' && !selectedQuestions.length"
             class="mt-4 rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4"
           >
-            <p class="text-xs font-bold leading-6 text-amber-300">
-              💡 Hãy chọn ít nhất một câu trong bộ đề để AI có dữ liệu tạo câu
-              tương tự.
-            </p>
+            <div class="flex items-start gap-2 text-xs font-bold leading-6 text-amber-300">
+              <Lightbulb class="mt-0.5 h-4 w-4 shrink-0" />
+              <p>
+                Hãy chọn ít nhất một câu trong bộ đề để AI có dữ liệu tạo câu
+                tương tự.
+              </p>
+            </div>
           </div>
 
           <!-- Options -->
@@ -563,14 +568,15 @@
             <div class="flex items-end">
               <button
                 type="button"
-                class="btn-primary w-full whitespace-nowrap disabled:cursor-not-allowed disabled:opacity-50"
+                class="btn-primary flex w-full items-center justify-center gap-2 whitespace-nowrap disabled:cursor-not-allowed disabled:opacity-50"
                 :disabled="
                   aiLoading ||
                   (aiOptions.action === 'similar' && !selectedQuestions.length)
                 "
                 @click="generateAiSuggestions(aiOptions.action)"
               >
-                {{ aiLoading ? "AI đang tạo..." : "✨ Tạo câu hỏi" }}
+                <Sparkles v-if="!aiLoading" class="h-4 w-4" />
+                <span>{{ aiLoading ? "AI đang tạo..." : "Tạo câu hỏi" }}</span>
               </button>
             </div>
           </div>
@@ -580,9 +586,10 @@
             v-if="aiLoading"
             class="mt-5 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4"
           >
-            <p class="text-sm font-black text-[var(--text)]">
-              ✨ AI đang tạo câu hỏi...
-            </p>
+            <div class="flex items-center gap-2 text-sm font-black text-[var(--text)]">
+              <Sparkles class="h-4 w-4 text-violet-500" />
+              <p>AI đang tạo câu hỏi...</p>
+            </div>
 
             <p class="mt-1 text-xs text-[var(--muted)]">
               Quá trình này có thể mất vài giây.
@@ -646,8 +653,9 @@
                 v-if="item.solution_summary"
                 class="mt-3 rounded-xl bg-[var(--surface-soft)] p-3"
               >
-                <p class="text-xs font-black uppercase text-[var(--muted)]">
-                  💡 Hướng giải
+                <p class="flex items-center gap-1.5 text-xs font-black uppercase text-[var(--muted)]">
+                  <Lightbulb class="h-3.5 w-3.5" />
+                  <span>Hướng giải</span>
                 </p>
 
                 <p
@@ -1175,18 +1183,23 @@
           + Điền đáp án
         </button>
         <button
-          class="btn-ghost"
+          class="btn-ghost flex items-center gap-2"
           type="button"
           :disabled="aiReviewLoading || saving || !questions.length"
           @click="reviewQuizWithAi"
         >
+          <Sparkles v-if="aiReviewLoading" class="h-4 w-4" />
+          <Bot v-else-if="!aiReviewResult" class="h-4 w-4" />
+          <AlertTriangle v-else-if="aiReviewIsStale" class="h-4 w-4" />
+          <CheckCheck v-else class="h-4 w-4" />
+
           <template v-if="aiReviewLoading"> AI đang phân tích... </template>
 
-          <template v-else-if="!aiReviewResult"> ✨ AI Review </template>
+          <template v-else-if="!aiReviewResult"> AI Review </template>
 
-          <template v-else-if="aiReviewIsStale"> ⚠️ Xem AI Review cũ </template>
+          <template v-else-if="aiReviewIsStale"> Xem AI Review cũ </template>
 
-          <template v-else> ✓ Xem AI Review </template>
+          <template v-else> Xem AI Review </template>
         </button>
         <button
           class="btn-primary"
@@ -1242,7 +1255,7 @@
             class="mt-6 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4"
           >
             <div class="flex items-start gap-3">
-              <span class="text-xl"> ⚠️ </span>
+              <AlertTriangle class="mt-0.5 h-5 w-5 shrink-0 text-amber-400" />
 
               <div class="flex-1">
                 <p class="text-sm font-black text-amber-300">
@@ -1260,11 +1273,12 @@
 
                 <button
                   type="button"
-                  class="mt-4 rounded-full bg-[var(--primary)] px-4 py-2 text-xs font-black text-white disabled:opacity-50"
+                  class="mt-4 flex items-center justify-center gap-2 rounded-full bg-[var(--primary)] px-4 py-2 text-xs font-black text-white disabled:opacity-50"
                   :disabled="aiReviewLoading"
                   @click="refreshAiReview"
                 >
-                  ✨ Phân tích lại bằng AI
+                  <Sparkles class="h-4 w-4" />
+                  <span>Phân tích lại bằng AI</span>
                 </button>
               </div>
             </div>
@@ -1274,9 +1288,10 @@
             v-if="aiReviewLoading"
             class="mt-8 rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-5"
           >
-            <p class="font-black text-[var(--text)]">
-              ✨ AI đang đọc toàn bộ Quiz...
-            </p>
+            <div class="flex items-center gap-2 font-black text-[var(--text)]">
+              <Sparkles class="h-4 w-4 text-violet-500" />
+              <p>AI đang đọc toàn bộ Quiz...</p>
+            </div>
 
             <p class="mt-2 text-sm text-[var(--muted)]">
               Đang kiểm tra nội dung, phân bố và các câu cần xem lại.
@@ -1344,7 +1359,7 @@
                   class="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4"
                 >
                   <div class="flex items-start gap-3">
-                    <span class="text-lg">⚠️</span>
+                    <AlertTriangle class="mt-0.5 h-5 w-5 shrink-0 text-amber-400" />
 
                     <div class="min-w-0 flex-1">
                       <p
@@ -1389,9 +1404,10 @@
                   :key="index"
                   class="rounded-xl border border-[var(--border)] bg-[var(--surface-soft)] p-4"
                 >
-                  <p class="text-sm leading-6 text-[var(--muted)]">
-                    💡 {{ suggestion }}
-                  </p>
+                  <div class="flex items-start gap-2 text-sm leading-6 text-[var(--muted)]">
+                    <Lightbulb class="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+                    <p>{{ suggestion }}</p>
+                  </div>
                 </div>
               </div>
             </section>
@@ -1401,18 +1417,6 @@
     </Transition>
   </Teleport>
   <!-- Custom Toast Message -->
-  <!-- <div
-    v-if="toast.isOpen"
-    class="fixed bottom-24 right-6 z-50 flex items-center gap-3 rounded-2xl border px-4 py-3 shadow-lg backdrop-blur-xl transition-all duration-300"
-    :class="
-      toast.type === 'success'
-        ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400 shadow-[0_12px_40px_rgba(16,185,129,0.1)]'
-        : 'border-rose-500/30 bg-rose-500/10 text-rose-400 shadow-[0_12px_40px_rgba(244,63,94,0.1)]'
-    "
-  >
-    <span class="text-base">{{ toast.type === "success" ? "✅" : "❌" }}</span>
-    <span class="text-sm font-bold">{{ toast.message }}</span>
-  </div> -->
 </template>
 
 <script setup>
@@ -1429,6 +1433,16 @@ import draggable from "vuedraggable";
 import { renderMathInElement } from "mathlive";
 import "mathlive/static.css";
 import { importOcrQuiz, ocrApi, aiQuizApi } from "@/services/api";
+import {
+  AlertTriangle,
+  Bot,
+  CheckCheck,
+  CheckCircle2,
+  Lightbulb,
+  Sparkles,
+  Target,
+  XCircle,
+} from "lucide-vue-next";
 
 // ==================== 1. KHỞI TẠO VÀ CẤU HÌNH ====================
 

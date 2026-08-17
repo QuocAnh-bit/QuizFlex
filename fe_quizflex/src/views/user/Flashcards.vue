@@ -1,349 +1,392 @@
 <template>
-  <section class="mx-auto max-w-4xl py-6 md:py-10">
-    <!-- 1. LOADING STATE: Ẩn TOÀN BỘ giao diện & dữ liệu cho tới khi tải xong -->
-    <AppLoadingState 
-      v-if="isLoading" 
-      title="Đang chuẩn bị bộ thẻ học tập..." 
+  <section class="mx-auto max-w-4xl py-4 space-y-6">
+    <!-- 1. LOADING STATE -->
+    <AppLoadingState
+      v-if="isLoading"
+      title="Đang chuẩn bị bộ thẻ học tập..."
       message="Vui lòng chờ trong giây lát để hệ thống xử lý dữ liệu quiz."
-      icon="⚡"
     />
 
     <!-- 2. ERROR STATE -->
-    <AppErrorState 
-      v-else-if="errorMessage" 
+    <AppErrorState
+      v-else-if="errorMessage"
       title="Không thể tải bộ thẻ học tập"
-      :message="errorMessage" 
+      :message="errorMessage"
       @retry="loadQuizDetails"
     >
       <template #actions>
-        <button type="button" class="btn-ghost text-xs" @click="goBack">Quay lại</button>
+        <button
+          type="button"
+          class="btn-ghost text-xs inline-flex items-center gap-1.5"
+          @click="goBack"
+        >
+          <ArrowLeft class="h-3.5 w-3.5" />
+          Quay lại
+        </button>
       </template>
     </AppErrorState>
 
-    <!-- 3. LOADED STATE: Giao diện (Header) và Dữ liệu (Cards) cùng hiển thị đồng thời -->
+    <!-- 3. LOADED STATE -->
     <template v-else>
       <!-- Header Navigation & Quiz Info -->
-      <div class="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-[var(--border)] pb-4">
-        <div class="flex flex-wrap items-center gap-3">
-          <button 
-            type="button" 
-            class="flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface-soft)] px-4 py-2 text-xs font-black text-[var(--muted)] transition hover:border-[var(--border-strong)] hover:text-[var(--text)] active:scale-95 shadow-sm"
+      <div class="card p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4">
+        <div class="flex flex-wrap items-center gap-2.5">
+          <button
+            type="button"
+            class="btn-secondary text-xs px-3 py-1.5 inline-flex items-center gap-1.5"
             @click="goBack"
           >
-            <span>← Quay lại</span>
+            <ArrowLeft class="h-3.5 w-3.5" />
+            Quay lại
           </button>
 
-          <!-- Compact Audio Controls Pill -->
-          <div class="flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface)] p-1 shadow-sm">
-            <button 
-              type="button" 
-              class="flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition active:scale-95"
-              :class="isAutoPlayAudio ? 'bg-[var(--chip-active)] text-[var(--primary)] font-black' : 'text-[var(--muted)] hover:text-[var(--text)]'"
+          <!-- Audio Controls -->
+          <div class="flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1 text-xs">
+            <button
+              type="button"
+              class="rounded-md px-2.5 py-1 font-semibold transition active:scale-95 inline-flex items-center gap-1.5"
+              :class="
+                isAutoPlayAudio
+                  ? 'bg-purple-100 text-[#7C3AED] font-bold'
+                  : 'text-slate-600 hover:text-slate-900'
+              "
               @click="toggleAutoPlayAudio"
-              :title="isAutoPlayAudio ? 'Tự động phát âm thanh: Đang BẬT' : 'Tự động phát âm thanh: Đang TẮT'"
             >
-              <span>{{ isAutoPlayAudio ? '🔊 Tự phát âm' : '🔇 Tự phát âm' }}</span>
+              <Volume2 v-if="isAutoPlayAudio" class="h-3.5 w-3.5" />
+              <VolumeX v-else class="h-3.5 w-3.5" />
+              Tự phát âm
             </button>
 
-            <!-- Multi-speed Audio Rate Toggle (1.0x -> 0.7x -> 0.45x) -->
-            <button 
-              type="button" 
-              class="flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition active:scale-95"
-              :class="audioRate < 1.0 ? 'bg-indigo-500/15 text-indigo-400 font-black' : 'text-[var(--muted)] hover:text-[var(--text)]'"
+            <button
+              type="button"
+              class="rounded-md px-2.5 py-1 font-semibold transition active:scale-95 inline-flex items-center gap-1.5"
+              :class="
+                audioRate < 1.0
+                  ? 'bg-indigo-100 text-indigo-700 font-bold'
+                  : 'text-slate-600 hover:text-slate-900'
+              "
               @click="toggleAudioRate"
-              :title="`Tốc độ phát âm: ${audioRate}x (Nhấn để đổi tốc độ)`"
             >
-              <span v-if="audioRate === 0.45">🐢 Đọc chậm (0.45x)</span>
-              <span v-else-if="audioRate === 0.7">🔉 Đọc vừa (0.7x)</span>
-              <span v-else>⚡ Tốc độ (1.0x)</span>
+              <Turtle v-if="audioRate === 0.45" class="h-3.5 w-3.5" />
+              <Gauge v-else class="h-3.5 w-3.5" />
+              {{ audioRate }}x
             </button>
 
-            <button 
-              type="button" 
-              class="flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold transition active:scale-95"
-              :class="isSoundEffects ? 'bg-amber-500/15 text-amber-400 font-black' : 'text-[var(--muted)] hover:text-[var(--text)]'"
+            <button
+              type="button"
+              class="rounded-md px-2.5 py-1 font-semibold transition active:scale-95 inline-flex items-center gap-1.5"
+              :class="
+                isSoundEffects
+                  ? 'bg-amber-100 text-amber-800 font-bold'
+                  : 'text-slate-600 hover:text-slate-900'
+              "
               @click="toggleSoundEffects"
-              :title="isSoundEffects ? 'Hiệu ứng âm thanh: Đang BẬT' : 'Hiệu ứng âm thanh: Đang TẮT'"
             >
-              <span>{{ isSoundEffects ? '🔔 Hiệu ứng' : '🔕 Hiệu ứng' }}</span>
+              <Bell v-if="isSoundEffects" class="h-3.5 w-3.5" />
+              <BellOff v-else class="h-3.5 w-3.5" />
+              Hiệu ứng
             </button>
           </div>
         </div>
 
-        <div class="text-right flex flex-col items-end">
-          <h2 class="text-xl font-black text-[var(--text)] line-clamp-1 max-w-md">{{ quizMeta.title }}</h2>
-          <div class="flex items-center gap-2 mt-0.5">
-            <span v-if="!isLoggedIn" class="rounded-full bg-amber-500/15 px-2.5 py-0.5 text-[11px] font-black text-amber-400 border border-amber-500/30">
-              🔒 Khách (Dùng thử 5 thẻ)
-            </span>
-            <span class="text-xs font-bold text-[var(--muted)]">Ôn tập thẻ ghi nhớ</span>
-          </div>
+        <div class="text-right">
+          <h2 class="text-base font-bold text-slate-900 truncate max-w-xs">
+            {{ quizMeta.title }}
+          </h2>
+          <span class="text-xs text-slate-500 font-medium">
+            Ôn tập Flashcard
+          </span>
         </div>
       </div>
 
-      <!-- MAIN INTERACTIVE CONTAINER -->
-      <div v-if="questions.length === 0" class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-8 text-center text-sm font-bold text-[var(--muted)] shadow-[var(--shadow-soft)]">
+      <!-- EMPTY -->
+      <div
+        v-if="questions.length === 0"
+        class="card p-10 text-center text-sm font-semibold text-slate-500"
+      >
         Quiz này không có câu hỏi nào để tạo thẻ ghi nhớ.
       </div>
 
-    <div v-else-if="isFinished" class="relative overflow-hidden rounded-[2.5rem] border border-[var(--border)] bg-[var(--surface)] p-8 text-center shadow-[var(--shadow-soft)] backdrop-blur-2xl md:p-12">
-      <!-- Decorative Orbs -->
-      <div class="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[var(--primary)]/15 blur-3xl"></div>
-      <div class="pointer-events-none absolute -left-24 -bottom-24 h-72 w-72 rounded-full bg-[var(--accent)]/10 blur-3xl"></div>
-
-      <div class="relative z-10">
-        <!-- Congratulations Banner -->
-        <span class="inline-flex rounded-full bg-gradient-to-r from-[var(--primary)] to-[var(--accent)] px-6 py-2.5 text-sm font-black uppercase tracking-[0.2em] text-white shadow-lg animate-bounce">
-          🎉 Hoàn thành ôn tập! 🎉
+      <!-- FINISHED -->
+      <div
+        v-else-if="isFinished"
+        class="card p-8 sm:p-12 text-center space-y-6"
+      >
+        <span
+          class="inline-flex items-center gap-2 rounded-full bg-purple-50 border border-purple-200 px-4 py-1 text-xs font-bold uppercase tracking-wider text-[#7C3AED]"
+        >
+          <PartyPopper class="h-4 w-4" />
+          Hoàn thành bài ôn tập!
         </span>
-        <h1 class="mt-6 text-4xl font-black tracking-[-0.07em] text-[var(--text)] sm:text-5xl">Tuyệt vời, bạn đã xuất sắc vượt qua!</h1>
-        <p class="mt-4 text-sm leading-7 text-[var(--muted)] max-w-xl mx-auto">
-          Bạn đã hoàn thành việc ôn luyện tất cả các câu hỏi trong bộ thẻ ghi nhớ của quiz này.
+
+        <h1 class="text-2xl font-black text-slate-900 sm:text-3xl">
+          Tuyệt vời, bạn đã hoàn thành bộ flashcard!
+        </h1>
+
+        <p class="text-sm text-slate-600 max-w-md mx-auto">
+          Bạn đã duyệt qua toàn bộ các câu hỏi trong bộ thẻ ghi nhớ của quiz này.
         </p>
 
-        <!-- Stats Section -->
-        <div class="mt-8 mx-auto grid max-w-md grid-cols-2 gap-4">
-          <div class="rounded-3xl border border-[var(--border)] bg-[var(--surface-soft)] p-5 text-center">
-            <span class="block text-xs font-black uppercase tracking-[0.1em] text-emerald-400">Đã thuộc lòng</span>
-            <b class="mt-2 block text-3xl font-black text-[var(--text)]">{{ masteredQuestions.length }} / {{ totalCount }}</b>
+        <!-- Stats -->
+        <div class="mx-auto grid max-w-sm grid-cols-2 gap-3">
+          <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-center">
+            <span class="text-xs font-bold uppercase text-emerald-800">
+              Đã thuộc lòng
+            </span>
+            <b class="mt-1 block text-2xl font-black text-emerald-700">
+              {{ masteredQuestions.length }} / {{ totalCount }}
+            </b>
           </div>
-          <div class="rounded-3xl border border-[var(--border)] bg-[var(--surface-soft)] p-5 text-center">
-            <span class="block text-xs font-black uppercase tracking-[0.1em] text-rose-400">Cần học lại</span>
-            <b class="mt-2 block text-3xl font-black text-[var(--text)]">{{ needReviewQuestions.length }} / {{ totalCount }}</b>
+
+          <div class="rounded-xl border border-red-200 bg-red-50 p-4 text-center">
+            <span class="text-xs font-bold uppercase text-red-800">
+              Cần ôn lại
+            </span>
+            <b class="mt-1 block text-2xl font-black text-red-700">
+              {{ needReviewQuestions.length }} / {{ totalCount }}
+            </b>
           </div>
         </div>
 
-        <!-- Action Choices -->
-        <div class="mt-10 flex flex-wrap justify-center gap-4">
-          <button 
-            type="button" 
-            class="btn-primary shadow-lg"
+        <!-- Actions -->
+        <div class="flex flex-wrap justify-center gap-3 pt-4">
+          <button
+            type="button"
+            class="btn-primary text-xs inline-flex items-center gap-1.5"
             @click="restartAll"
           >
-            🔄 Ôn lại tất cả
-          </button>
-          
-          <button 
-            v-if="needReviewQuestions.length > 0"
-            type="button" 
-            class="rounded-full bg-gradient-to-br from-rose-500 to-rose-600 px-6 py-3 text-sm font-black text-white shadow-lg transition hover:-translate-y-0.5 hover:shadow-rose-500/20 active:scale-95"
-            @click="restartOnlyWeak"
-          >
-            🔥 Chỉ ôn thẻ chưa thuộc ({{ needReviewQuestions.length }})
+            <RotateCcw class="h-3.5 w-3.5" />
+            Ôn lại tất cả
           </button>
 
-          <button 
-            type="button" 
-            class="btn-ghost"
+          <button
+            v-if="needReviewQuestions.length > 0"
+            type="button"
+            class="btn-secondary text-xs text-red-600 font-bold hover:bg-red-50 inline-flex items-center gap-1.5"
+            @click="restartOnlyWeak"
+          >
+            <Flame class="h-3.5 w-3.5" />
+            Chỉ ôn thẻ chưa thuộc
+            ({{ needReviewQuestions.length }})
+          </button>
+
+          <button
+            type="button"
+            class="btn-ghost text-xs inline-flex items-center gap-1.5"
             @click="goBack"
           >
+            <ArrowLeft class="h-3.5 w-3.5" />
             Quay lại Quiz
           </button>
         </div>
       </div>
-    </div>
 
-    <!-- INTERACTIVE 3D FLASHCARD -->
-    <div v-else class="grid gap-8">
-      <!-- Info Header -->
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <span class="rounded-full bg-[var(--chip-active)] px-3.5 py-1.5 text-xs font-black text-[var(--primary)] uppercase tracking-wider">
+      <!-- FLASHCARD -->
+      <div v-else class="space-y-6">
+        <!-- Progress Header -->
+        <div class="flex items-center justify-between text-xs font-semibold text-slate-600">
+          <span
+            class="rounded-full bg-purple-50 px-3 py-1 font-bold text-[#7C3AED] inline-flex items-center gap-1.5"
+          >
+            <ListChecks class="h-3.5 w-3.5" />
             Thẻ {{ currentIndex + 1 }} / {{ activeList.length }}
           </span>
-          <span v-if="isReviewingWeakOnly" class="rounded-full bg-rose-500/10 px-3.5 py-1.5 text-xs font-black text-rose-400 uppercase tracking-wider">
-            Chế độ ôn thẻ yếu
-          </span>
-        </div>
-        <div class="text-xs font-black text-[var(--muted)]">
-          Đã thuộc: <span class="text-emerald-400 font-bold">{{ masteredQuestions.length }}</span> • Cần ôn: <span class="text-rose-400 font-bold">{{ needReviewQuestions.length }}</span>
-        </div>
-      </div>
 
-      <!-- Progressive Bar -->
-      <div class="overflow-hidden rounded-full border border-[var(--border)] bg-[var(--surface-soft)] p-0.5">
-        <div 
-          class="h-2 rounded-full bg-gradient-to-r from-[var(--primary)] via-[var(--primary-2)] to-[var(--accent)] transition-all duration-500" 
-          :style="{ width: `${progressPercent}%` }"
-        ></div>
-      </div>
-
-      <!-- 3D Card Scene -->
-      <div class="perspective-container mx-auto w-full max-w-xl h-[380px] md:h-[420px]" @click="toggleFlip">
-        <div 
-          class="flashcard-inner relative w-full h-full cursor-pointer transition-transform duration-500"
-          :class="{ 'flashcard-flipped': isFlipped }"
-        >
-          <!-- CARD FRONT -->
-          <div class="flashcard-front absolute inset-0 rounded-[2.5rem] border border-[var(--border-strong)] bg-[var(--surface)] p-6 md:p-8 flex flex-col justify-between shadow-[var(--shadow-soft)] hover:shadow-2xl hover:border-[var(--primary)]/30 transition-all duration-300">
-            <!-- Background Orbs -->
-            <div class="pointer-events-none absolute -right-20 -top-20 h-44 w-44 rounded-full bg-[var(--primary)]/10 blur-3xl"></div>
-            <div class="pointer-events-none absolute -left-20 -bottom-20 h-44 w-44 rounded-full bg-[var(--accent)]/5 blur-3xl"></div>
-
-            <div class="relative z-10 flex items-center justify-between text-xs font-black text-[var(--muted)] uppercase tracking-widest">
-              <span>Mặt trước: Câu hỏi</span>
-              <div class="flex items-center gap-2">
-                <button 
-                  type="button"
-                  class="flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface-soft)] px-3 py-1 text-xs font-bold text-[var(--text)] transition hover:scale-105 active:scale-95 shadow-sm"
-                  :class="{ 'ring-2 ring-[var(--primary)] text-[var(--primary)] animate-pulse': activeSpeakingTarget === 'front' }"
-                  @click.stop="speakFrontText"
-                  title="Đọc phát âm câu hỏi"
-                >
-                  <span>{{ activeSpeakingTarget === 'front' ? '🔊 Đang đọc...' : '🔊 Đọc' }}</span>
-                </button>
-                <span>🔍 Nhấp để lật</span>
-              </div>
-            </div>
-
-            <div class="relative z-10 flex-1 flex items-center justify-center py-6 text-center">
-              <h3 class="text-xl md:text-2xl font-black leading-snug tracking-[-0.04em] text-[var(--text)] line-clamp-6">
-                {{ currentCard.question }}
-              </h3>
-            </div>
-
-            <div class="relative z-10 text-center text-xs font-black text-[var(--muted)]">
-              💡 Nhấp vào thẻ để kiểm tra đáp án đúng của bạn
-            </div>
+          <div>
+            Đã thuộc:
+            <b class="text-emerald-700">
+              {{ masteredQuestions.length }}
+            </b>
+            · Cần ôn:
+            <b class="text-red-700">
+              {{ needReviewQuestions.length }}
+            </b>
           </div>
+        </div>
 
-          <!-- CARD BACK -->
-          <div class="flashcard-back absolute inset-0 rounded-[2.5rem] border border-[var(--border-strong)] bg-[var(--surface-strong)] p-6 md:p-8 flex flex-col justify-between shadow-[var(--shadow-soft)]">
-            <!-- Background Orbs -->
-            <div class="pointer-events-none absolute -right-20 -bottom-20 h-44 w-44 rounded-full bg-emerald-500/10 blur-3xl"></div>
+        <!-- Progress Bar -->
+        <div class="h-2 w-full overflow-hidden rounded-full bg-slate-100 border border-slate-200">
+          <div
+            class="h-full rounded-full bg-[#7C3AED] transition-all duration-300"
+            :style="{ width: `${progressPercent}%` }"
+          ></div>
+        </div>
 
-            <div class="relative z-10 flex items-center justify-between text-xs font-black text-[var(--muted)] uppercase tracking-widest">
-              <span>Mặt sau: Đáp án</span>
-              <div class="flex items-center gap-2">
-                <button 
-                  type="button"
-                  class="flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-400 transition hover:scale-105 active:scale-95 shadow-sm"
-                  :class="{ 'ring-2 ring-emerald-500 animate-pulse': activeSpeakingTarget === 'back' }"
-                  @click.stop="speakBackText"
-                  title="Đọc các đáp án đúng"
-                >
-                  <span>{{ activeSpeakingTarget === 'back' ? '🔊 Đang đọc...' : '🔊 Đọc đáp án đúng' }}</span>
-                </button>
-                <span class="text-emerald-400">✓ Đã lật</span>
-              </div>
-            </div>
+        <!-- 3D CARD -->
+        <div
+          class="perspective-container mx-auto w-full max-w-xl h-[340px] sm:h-[380px]"
+          @click="toggleFlip"
+        >
+          <div
+            class="flashcard-inner relative w-full h-full cursor-pointer transition-transform duration-500"
+            :class="{ 'flashcard-flipped': isFlipped }"
+          >
+            <!-- FRONT -->
+            <div
+              class="flashcard-front absolute inset-0 rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 flex flex-col justify-between shadow-md hover:border-purple-300 transition-all"
+            >
+              <div
+                class="flex items-center justify-between text-xs font-bold text-slate-400 uppercase tracking-wider"
+              >
+                <span>Câu hỏi</span>
 
-            <div class="relative z-10 flex-1 flex flex-col justify-center py-4">
-              <p class="text-xs font-black text-[var(--muted)] line-clamp-2 mb-4 text-center">
-                {{ currentCard.question }}
-              </p>
-
-              <!-- Option options listing -->
-              <div class="grid gap-2.5 max-h-[220px] overflow-y-auto pr-1 scrollbar-soft">
-                <div 
-                  v-for="answer in currentCard.answers" 
-                  :key="answer.key"
-                  class="flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm font-bold transition duration-300"
-                  :class="answer.isCorrect 
-                    ? 'border-emerald-500 bg-emerald-500/15 text-emerald-300 shadow-[0_4px_20px_rgba(16,185,129,0.15)] ring-1 ring-emerald-500/30' 
-                    : 'border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] opacity-55'"
-                >
-                  <span 
-                    class="grid h-8 w-8 shrink-0 place-items-center rounded-xl text-xs font-black shadow-inner"
-                    :class="answer.isCorrect 
-                      ? 'bg-gradient-to-br from-emerald-400 to-teal-500 text-white' 
-                      : 'bg-[var(--surface-soft)] text-[var(--muted)]'"
-                  >
-                    {{ answer.key }}
-                  </span>
-                  <span class="flex-1 leading-snug">{{ answer.text }}</span>
-
-                  <!-- Speaker icon per option -->
-                  <button 
+                <div class="flex items-center gap-2">
+                  <button
                     type="button"
-                    class="rounded-lg p-1.5 text-xs transition hover:bg-[var(--surface-soft)] active:scale-95 shrink-0"
-                    :class="activeSpeakingTarget === `ans-${answer.key}` ? 'text-emerald-400 font-bold animate-pulse' : 'text-[var(--muted)] hover:text-[var(--text)]'"
-                    @click.stop="speakOptionText(answer)"
-                    title="Đọc phát âm phương án này"
+                    class="rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100 inline-flex items-center gap-1.5"
+                    @click.stop="speakFrontText"
                   >
-                    🔊
+                    <Volume2 class="h-3.5 w-3.5" />
+                    Đọc
                   </button>
 
-                  <span v-if="answer.isCorrect" class="text-sm font-black text-emerald-400 shrink-0 flex items-center gap-1">
-                    ✓ Đúng
+                  <span class="text-slate-400 inline-flex items-center gap-1">
+                    <Lightbulb class="h-3.5 w-3.5" />
+                    Nhấp để lật
                   </span>
                 </div>
               </div>
+
+              <div class="flex-1 flex items-center justify-center py-4 text-center">
+                <h3 class="text-lg sm:text-xl font-bold leading-relaxed text-slate-900 line-clamp-6">
+                  {{ currentCard.question }}
+                </h3>
+              </div>
+
+              <div class="text-center text-xs text-slate-400 font-medium">
+                Nhấp vào thẻ để xem đáp án đúng
+              </div>
             </div>
 
-            <div class="relative z-10 text-center text-xs font-black text-[var(--muted)]">
-              💡 Bấm nút đỏ hoặc xanh bên dưới để đánh dấu mức độ thuộc bài
+            <!-- BACK -->
+            <div
+              class="flashcard-back absolute inset-0 rounded-2xl border border-purple-200 bg-purple-50/40 p-6 sm:p-8 flex flex-col justify-between shadow-md"
+            >
+              <div
+                class="flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-wider"
+              >
+                <span>Đáp án</span>
+
+                <div class="flex items-center gap-2">
+                  <button
+                    type="button"
+                    class="rounded-md border border-purple-200 bg-purple-100 px-2.5 py-1 text-xs font-bold text-[#7C3AED] inline-flex items-center gap-1.5"
+                    @click.stop="speakBackText"
+                  >
+                    <Volume2 class="h-3.5 w-3.5" />
+                    Đọc đáp án
+                  </button>
+
+                  <span class="text-emerald-700 font-bold inline-flex items-center gap-1">
+                    <CheckCircle2 class="h-3.5 w-3.5" />
+                    Đã lật
+                  </span>
+                </div>
+              </div>
+
+              <div class="flex-1 flex flex-col justify-center py-2 space-y-3">
+                <p class="text-xs font-semibold text-slate-500 line-clamp-2 text-center">
+                  {{ currentCard.question }}
+                </p>
+
+                <div class="grid gap-2 max-h-[180px] overflow-y-auto pr-1 scrollbar-soft">
+                  <div
+                    v-for="answer in currentCard.answers"
+                    :key="answer.key"
+                    class="flex items-center gap-2.5 rounded-lg border px-3 py-2 text-xs font-semibold"
+                    :class="
+                      answer.isCorrect
+                        ? 'border-emerald-300 bg-emerald-50 text-emerald-900'
+                        : 'border-slate-200 bg-white text-slate-500 opacity-60'
+                    "
+                  >
+                    <span
+                      class="grid h-6 w-6 shrink-0 place-items-center rounded text-xs font-bold"
+                      :class="
+                        answer.isCorrect
+                          ? 'bg-emerald-600 text-white'
+                          : 'bg-slate-100 text-slate-600'
+                      "
+                    >
+                      {{ answer.key }}
+                    </span>
+
+                    <span class="flex-1 leading-tight">
+                      {{ answer.text }}
+                    </span>
+
+                    <span
+                      v-if="answer.isCorrect"
+                      class="text-emerald-700 font-bold shrink-0 inline-flex items-center gap-1"
+                    >
+                      <CheckCircle2 class="h-3.5 w-3.5" />
+                      Đúng
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="text-center text-xs text-slate-400 font-medium">
+                Đánh dấu mức độ ghi nhớ của bạn ở nút bên dưới
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- CONTROL BUTTONS -->
-      <div class="flex items-center justify-center gap-4">
-        <button 
-          type="button"
-          class="group flex flex-1 max-w-[200px] h-12 items-center justify-center gap-2 rounded-full border border-rose-500/30 bg-gradient-to-br from-rose-500/10 to-rose-600/10 px-5 text-sm font-black text-rose-400 transition hover:-translate-y-1 hover:border-rose-500 hover:bg-rose-500/20 active:scale-95 shadow-[var(--shadow-card)]"
-          @click.stop="markAnswer(false)"
-        >
-          <span>❌ Chưa thuộc</span>
-        </button>
+        <!-- Controls -->
+        <div class="flex items-center justify-center gap-3 pt-2">
+          <button
+            type="button"
+            class="btn-danger text-xs px-6 py-2.5 inline-flex items-center gap-1.5"
+            @click.stop="markAnswer(false)"
+          >
+            <XCircle class="h-4 w-4" />
+            Chưa thuộc
+          </button>
 
-        <button 
-          type="button"
-          class="group flex flex-1 max-w-[200px] h-12 items-center justify-center gap-2 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 px-5 text-sm font-black text-white shadow-[0_12px_28px_rgba(16,185,129,0.28)] transition hover:-translate-y-1 hover:shadow-[0_18px_38px_rgba(16,185,129,0.38)] active:scale-95"
-          @click.stop="markAnswer(true)"
-        >
-          <span>✓ Đã thuộc</span>
-        </button>
+          <button
+            type="button"
+            class="btn-success text-xs px-6 py-2.5 inline-flex items-center gap-1.5"
+            @click.stop="markAnswer(true)"
+          >
+            <CheckCircle2 class="h-4 w-4" />
+            Đã thuộc
+          </button>
+        </div>
       </div>
-    </div>
     </template>
-
-    <!-- GUEST LIMIT AUTH MODAL -->
-    <div v-if="showGuestLimitModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-fade-in">
-      <div class="relative w-full max-w-md rounded-[2.5rem] border border-[var(--border-strong)] bg-[var(--surface)] p-8 text-center shadow-2xl overflow-hidden">
-        <!-- Background Glow -->
-        <div class="pointer-events-none absolute -right-20 -top-20 h-48 w-48 rounded-full bg-amber-500/20 blur-3xl"></div>
-        <div class="pointer-events-none absolute -left-20 -bottom-20 h-48 w-48 rounded-full bg-[var(--primary)]/20 blur-3xl"></div>
-
-        <div class="relative z-10">
-          <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 text-3xl shadow-inner border border-amber-500/30 mb-4 animate-bounce">
-            🔒
-          </div>
-          <h3 class="text-2xl font-black text-[var(--text)] tracking-tight">Đăng ký để học trọn bộ!</h3>
-          <p class="mt-3 text-sm text-[var(--muted)] leading-relaxed">
-            Bạn đang trải nghiệm chế độ <b class="text-amber-400">Khách dùng thử ({{ GUEST_PREVIEW_LIMIT }} thẻ)</b>. Để học tiếp toàn bộ <b>{{ totalCount }}</b> thẻ và lưu kết quả thuộc bài, hãy đăng nhập hoặc tạo tài khoản miễn phí nhé!
-          </p>
-
-          <div class="mt-6 flex flex-col gap-3">
-            <button 
-              type="button" 
-              class="w-full rounded-full bg-gradient-to-r from-[var(--primary)] to-[var(--accent)] py-3.5 text-sm font-black text-white shadow-lg transition hover:-translate-y-0.5 hover:shadow-xl active:scale-95"
-              @click="goToLogin"
-            >
-              🚀 Đăng nhập / Đăng ký ngay
-            </button>
-
-            <button 
-              type="button" 
-              class="w-full rounded-full border border-[var(--border)] bg-[var(--surface-soft)] py-3 text-xs font-bold text-[var(--muted)] transition hover:text-[var(--text)] hover:border-[var(--border-strong)] active:scale-95"
-              @click="restartGuestPreview"
-            >
-              🔄 Ôn lại 5 thẻ dùng thử
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
   </section>
 </template>
 
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+
+import {
+  ArrowLeft,
+  Bell,
+  BellOff,
+  CheckCircle2,
+  Flame,
+  Gauge,
+  Lightbulb,
+  ListChecks,
+  PartyPopper,
+  RotateCcw,
+  Turtle,
+  Volume2,
+  VolumeX,
+  XCircle,
+} from 'lucide-vue-next'
+
 import AppLoadingState from '@/components/common/AppLoadingState.vue'
 import AppErrorState from '@/components/common/AppErrorState.vue'
-import { normalizeQuestion, normalizeQuizCard, quizzesApi, tokenStorage } from '@/services/api'
+import {
+  normalizeQuestion,
+  normalizeQuizCard,
+  quizzesApi,
+  tokenStorage,
+} from '@/services/api'
 import speechService from '@/services/speechService'
 
 const route = useRoute()
@@ -355,36 +398,57 @@ const isFlipped = ref(false)
 const currentIndex = ref(0)
 const isFinished = ref(false)
 
-// Auth & Guest Limit State
 const isLoggedIn = computed(() => !!tokenStorage.get())
-const GUEST_PREVIEW_LIMIT = 5
-const showGuestLimitModal = ref(false)
+const isAutoPlayAudio = ref(
+  localStorage.getItem('flashcard_autoplay_audio') === 'true'
+)
+const isSoundEffects = ref(
+  localStorage.getItem('flashcard_sfx_enabled') !== 'false'
+)
+const audioRate = ref(
+  parseFloat(localStorage.getItem('flashcard_audio_rate') || '1.0')
+)
+const activeSpeakingTarget = ref(null)
 
-// Audio Controls State
-const isAutoPlayAudio = ref(localStorage.getItem('flashcard_autoplay_audio') === 'true')
-const isSoundEffects = ref(localStorage.getItem('flashcard_sfx_enabled') !== 'false')
-const audioRate = ref(parseFloat(localStorage.getItem('flashcard_audio_rate') || '1.0'))
-const activeSpeakingTarget = ref(null) // 'front' | 'back' | 'ans-A' | etc.
+const quizMeta = ref({
+  title: '',
+  category: '',
+  difficulty: '',
+})
 
-const quizMeta = ref({ title: '', category: '', difficulty: '' })
 const questions = ref([])
 const activeList = ref([])
 
-// Spaces/leitner tracking: keep list of indexes
 const masteredQuestions = ref([])
 const needReviewQuestions = ref([])
 const isReviewingWeakOnly = ref(false)
 
 const totalCount = computed(() => questions.value.length)
-const currentCard = computed(() => activeList.value[currentIndex.value] || { question: '', answers: [] })
+
+const currentCard = computed(
+  () =>
+    activeList.value[currentIndex.value] || {
+      question: '',
+      answers: [],
+    }
+)
+
 const progressPercent = computed(() => {
   if (activeList.value.length === 0) return 0
-  return Math.round((currentIndex.value / activeList.value.length) * 100)
+
+  return Math.round(
+    (currentIndex.value / activeList.value.length) * 100
+  )
 })
 
 const toggleAutoPlayAudio = () => {
   isAutoPlayAudio.value = !isAutoPlayAudio.value
-  localStorage.setItem('flashcard_autoplay_audio', isAutoPlayAudio.value ? 'true' : 'false')
+
+  localStorage.setItem(
+    'flashcard_autoplay_audio',
+    isAutoPlayAudio.value ? 'true' : 'false'
+  )
+
   if (!isAutoPlayAudio.value) {
     speechService.stop()
     activeSpeakingTarget.value = null
@@ -399,57 +463,57 @@ const toggleAudioRate = () => {
   } else {
     audioRate.value = 1.0
   }
-  localStorage.setItem('flashcard_audio_rate', audioRate.value.toString())
+
+  localStorage.setItem(
+    'flashcard_audio_rate',
+    audioRate.value.toString()
+  )
+
   speechService.stop()
   activeSpeakingTarget.value = null
 }
 
 const toggleSoundEffects = () => {
   isSoundEffects.value = !isSoundEffects.value
-  localStorage.setItem('flashcard_sfx_enabled', isSoundEffects.value ? 'true' : 'false')
+
+  localStorage.setItem(
+    'flashcard_sfx_enabled',
+    isSoundEffects.value ? 'true' : 'false'
+  )
 }
 
 const speakFrontText = () => {
   if (!currentCard.value.question) return
+
   activeSpeakingTarget.value = 'front'
+
   speechService.speak(currentCard.value.question, {
     rate: audioRate.value,
     onEnd: () => {
       if (activeSpeakingTarget.value === 'front') {
         activeSpeakingTarget.value = null
       }
-    }
+    },
   })
 }
 
 const speakBackText = () => {
   const correctAnswers = currentCard.value.answers
-    .filter(a => a.isCorrect)
-    .map(a => a.text)
+    .filter((a) => a.isCorrect)
+    .map((a) => a.text)
     .join('. ')
-  
+
   const textToSpeak = correctAnswers || currentCard.value.question
+
   activeSpeakingTarget.value = 'back'
+
   speechService.speak(textToSpeak, {
     rate: audioRate.value,
     onEnd: () => {
       if (activeSpeakingTarget.value === 'back') {
         activeSpeakingTarget.value = null
       }
-    }
-  })
-}
-
-const speakOptionText = (answer) => {
-  if (!answer || !answer.text) return
-  activeSpeakingTarget.value = `ans-${answer.key}`
-  speechService.speak(answer.text, {
-    rate: audioRate.value,
-    onEnd: () => {
-      if (activeSpeakingTarget.value === `ans-${answer.key}`) {
-        activeSpeakingTarget.value = null
-      }
-    }
+    },
   })
 }
 
@@ -479,27 +543,9 @@ const goBack = () => {
   router.push(`/quizzes/${route.params.id}`)
 }
 
-const goToLogin = () => {
-  speechService.stop()
-  router.push({ path: '/login', query: { redirect: route.fullPath } })
-}
-
-const restartGuestPreview = () => {
-  speechService.stop()
-  showGuestLimitModal.value = false
-  currentIndex.value = 0
-  isFlipped.value = false
-}
-
 const markAnswer = (isMastered) => {
   speechService.stop()
   activeSpeakingTarget.value = null
-
-  // Restrict Guest after 5 preview cards
-  if (!isLoggedIn.value && currentIndex.value >= GUEST_PREVIEW_LIMIT - 1) {
-    showGuestLimitModal.value = true
-    return
-  }
 
   if (isSoundEffects.value) {
     if (isMastered) {
@@ -510,30 +556,40 @@ const markAnswer = (isMastered) => {
   }
 
   const originalQuestion = currentCard.value
-  
+
   if (isMastered) {
     if (!masteredQuestions.value.includes(originalQuestion.id)) {
       masteredQuestions.value.push(originalQuestion.id)
     }
-    needReviewQuestions.value = needReviewQuestions.value.filter(id => id !== originalQuestion.id)
+
+    needReviewQuestions.value =
+      needReviewQuestions.value.filter(
+        (id) => id !== originalQuestion.id
+      )
   } else {
     if (!needReviewQuestions.value.includes(originalQuestion.id)) {
       needReviewQuestions.value.push(originalQuestion.id)
     }
-    masteredQuestions.value = masteredQuestions.value.filter(id => id !== originalQuestion.id)
+
+    masteredQuestions.value =
+      masteredQuestions.value.filter(
+        (id) => id !== originalQuestion.id
+      )
   }
 
-  // Go to next card or complete
   if (currentIndex.value < activeList.value.length - 1) {
     isFlipped.value = false
+
     setTimeout(() => {
       currentIndex.value += 1
+
       if (isAutoPlayAudio.value) {
         speakFrontText()
       }
     }, 200)
   } else {
     isFlipped.value = false
+
     setTimeout(() => {
       isFinished.value = true
     }, 200)
@@ -542,10 +598,12 @@ const markAnswer = (isMastered) => {
 
 const restartAll = () => {
   speechService.stop()
+
   activeList.value = [...questions.value]
   currentIndex.value = 0
   isFlipped.value = false
   isFinished.value = false
+
   masteredQuestions.value = []
   needReviewQuestions.value = []
   isReviewingWeakOnly.value = false
@@ -557,8 +615,13 @@ const restartAll = () => {
 
 const restartOnlyWeak = () => {
   speechService.stop()
+
   const weakIds = [...needReviewQuestions.value]
-  activeList.value = questions.value.filter(q => weakIds.includes(q.id))
+
+  activeList.value = questions.value.filter((q) =>
+    weakIds.includes(q.id)
+  )
+
   currentIndex.value = 0
   isFlipped.value = false
   isFinished.value = false
@@ -572,22 +635,26 @@ const restartOnlyWeak = () => {
 const loadQuizDetails = async () => {
   isLoading.value = true
   errorMessage.value = ''
-  
+
   try {
     const rawData = await quizzesApi.get(route.params.id)
     const normalizedQuiz = normalizeQuizCard(rawData)
-    
+
     quizMeta.value = {
       title: normalizedQuiz.title,
       category: normalizedQuiz.category,
       difficulty: normalizedQuiz.difficulty,
     }
-    
+
     const rawQuestions = rawData.questions || []
-    questions.value = rawQuestions.map(q => normalizeQuestion(q))
+
+    questions.value = rawQuestions.map((q) => normalizeQuestion(q))
     activeList.value = [...questions.value]
 
-    if (isAutoPlayAudio.value && activeList.value.length > 0) {
+    if (
+      isAutoPlayAudio.value &&
+      activeList.value.length > 0
+    ) {
       setTimeout(speakFrontText, 500)
     }
   } catch (error) {
@@ -605,21 +672,21 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* 3D SCENE PERSPECTIVE SETUP */
 .perspective-container {
   perspective: 1000px;
 }
 
 .flashcard-inner {
   transform-style: preserve-3d;
-  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .flashcard-flipped {
   transform: rotateY(180deg);
 }
 
-.flashcard-front, .flashcard-back {
+.flashcard-front,
+.flashcard-back {
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
 }

@@ -1,196 +1,227 @@
 <template>
-  <section class="grid gap-6 py-8 xl:grid-cols-[minmax(0,1fr)_360px]">
-    <article class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-soft)]">
-      <div v-if="errorMessage" class="mb-5 rounded-2xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm font-bold text-rose-300">{{ errorMessage }}</div>
-      
-      <!-- Banner Phản hồi Kết quả câu trả lời -->
-      <transition name="slide-up">
-        <div v-if="lastAnswerResult" class="mb-5 overflow-hidden rounded-3xl border p-5 shadow-lg backdrop-blur-md transition-all duration-300" :class="lastAnswerResult.isCorrect ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300' : 'border-rose-500/30 bg-rose-500/10 text-rose-300'">
-          <div class="flex items-center gap-4">
-            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl" :class="lastAnswerResult.isCorrect ? 'bg-emerald-500/20' : 'bg-rose-500/20'">
-              <span class="text-2xl font-black">{{ lastAnswerResult.isCorrect ? '✔' : '✖' }}</span>
-            </div>
-            <div class="flex-grow">
-              <h4 class="text-lg font-black leading-tight">{{ lastAnswerResult.isCorrect ? 'Chính xác!' : 'Sai rồi' }}</h4>
-              <p class="mt-1 text-xs font-bold" :class="lastAnswerResult.isCorrect ? 'text-emerald-400' : 'text-rose-400'">{{ lastAnswerResult.rankMessage }}</p>
-            </div>
-            <div class="text-right">
-              <span class="text-xl font-black" :class="lastAnswerResult.isCorrect ? 'text-emerald-400' : 'text-rose-400'">+{{ lastAnswerResult.scoreAwarded }} điểm</span>
-            </div>
+  <section class="max-w-5xl mx-auto py-4 space-y-6">
+    <!-- Modal Cảnh báo Đăng nhập đa Tab / Thiết bị -->
+    <transition name="fade">
+      <div v-if="isDuplicateTab" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
+        <div class="w-full max-w-md rounded-2xl border border-red-200 bg-white p-6 shadow-xl text-center space-y-3">
+          <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-red-50 text-2xl text-red-600">
+            ⚠️
+          </div>
+          <h3 class="text-lg font-bold text-slate-900">Phiên thi đấu bị gián đoạn</h3>
+          <p class="text-xs text-slate-600 leading-relaxed">
+            Tài khoản của bạn đang được mở trong một tab hoặc thiết bị khác. Bạn đã bị đưa ra khỏi phòng thi đấu này.
+          </p>
+          <div class="pt-2">
+            <button type="button" class="btn-primary w-full text-xs py-2.5" @click="confirmAndLeave">
+              Xác nhận và rời phòng
+            </button>
           </div>
         </div>
-      </transition>
-
-      <!-- Banner Banned cho Player -->
-      <div v-if="isBanned" class="mb-5 rounded-[2rem] border border-rose-500/30 bg-rose-500/10 p-6 text-sm font-bold text-rose-300 flex items-center gap-3">
-        <span>🚫</span>
-        <span>Phòng đã bị quản trị viên khóa và hiện không thể sử dụng.</span>
       </div>
+    </transition>
 
-      <template v-else>
-        <template v-if="isWaiting">
-          <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Waiting</p>
-          <h1 class="mt-2 text-4xl font-black tracking-[-0.06em] text-[var(--text)]">Đang chờ chủ phòng bắt đầu</h1>
-          <p class="mt-3 text-sm leading-7 text-[var(--muted)]">Trang sẽ tự cập nhật mỗi 10 giây. Khi trận đấu bắt đầu, câu hỏi sẽ xuất hiện tại đây.</p>
-        </template>
- 
-      <template v-if="isFinished">
-        <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Finished</p>
-        <h1 class="mt-2 text-4xl font-black tracking-[-0.06em] text-[var(--text)]">{{ roomStatus === 'finished' ? 'Phòng thi đấu đã kết thúc' : 'Bạn đã hoàn thành' }}</h1>
-        <p class="mt-3 text-sm leading-7 text-[var(--muted)]">Điểm hiện tại: {{ progress.current_score ?? 0 }}, số câu đúng: {{ progress.correct_count ?? 0 }}/{{ progress.total_questions ?? 0 }}.</p>
-        <router-link class="btn-primary mt-6 inline-flex" :to="`/live-rooms/${liveRoomId}/leaderboard`">Xem leaderboard</router-link>
-      </template>
- 
-      <template v-else-if="question.id">
-        <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <div class="mb-4 flex flex-wrap items-center gap-2">
-              <span class="rounded-full bg-[var(--chip-active)] px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-[var(--primary)]">Câu {{ currentQuestionNumber }} / {{ progress.total_questions || 1 }}</span>
-              <StatusBadge :value="roomStatus" />
-            </div>
-            <h1 class="max-w-4xl text-3xl font-black leading-tight tracking-[-0.055em] text-[var(--text)] sm:text-5xl">{{ question.question }}</h1>
-          </div>
-        </div>
- 
-        <div class="grid gap-4">
-          <button
-            v-for="answer in question.answers"
-            :key="answer.id"
-            type="button"
-            class="group rounded-[1.35rem] border p-4 text-left transition duration-300 hover:-translate-y-1 active:scale-[0.99]"
-            :class="selectedAnswerId === answer.id ? selectedAnswerClass : defaultAnswerClass"
-            :disabled="isAnswering"
-            @click="submitAnswer(answer.id)"
-          >
-            <div class="flex items-center gap-4">
-              <span class="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-[var(--primary)] to-[var(--primary-2)] text-sm font-black text-white">{{ answer.key }}</span>
-              <span class="font-bold leading-7 text-[var(--text)]">{{ answer.text }}</span>
-            </div>
-          </button>
-        </div>
-      </template>
- 
-        <div v-else-if="!isFinished" class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-8 text-center text-sm font-bold text-[var(--muted)]">
-          Đang tải câu hỏi live...
-        </div>
-      </template>
-    </article>
- 
-    <aside class="grid content-start gap-5">
-      <!-- Card Thành tích cá nhân -->
-      <article class="relative overflow-hidden rounded-[2rem] border bg-[var(--surface)] p-6 shadow-[var(--shadow-card)] transition-all duration-300"
-               :class="[
-                 currentPlayerStats.rank === 1 ? 'border-yellow-500/40 shadow-[0_0_20px_rgba(234,179,8,0.15)]' :
-                 currentPlayerStats.rank === 2 ? 'border-slate-300/40 shadow-[0_0_20px_rgba(203,213,225,0.12)]' :
-                 currentPlayerStats.rank === 3 ? 'border-amber-600/40 shadow-[0_0_20px_rgba(180,83,9,0.12)]' :
-                 'border-[var(--border-strong)] shadow-[var(--shadow-soft)]'
-               ]">
-        <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Thành tích của bạn</p>
+    <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+      <!-- Main Play Area -->
+      <article class="card p-6 sm:p-8 space-y-6">
+        <div v-if="errorMessage" class="rounded-xl border border-red-200 bg-red-50 p-4 text-xs font-bold text-red-700">{{ errorMessage }}</div>
         
-        <!-- Hiệu ứng điểm bay -->
-        <transition name="float-points">
-          <span v-if="floatingPoints" class="floating-points" :key="floatingPoints.id">
-            {{ floatingPoints.amount }}
-          </span>
+        <!-- Answer Feedback Banner -->
+        <transition name="slide-up">
+          <div 
+            v-if="lastAnswerResult" 
+            class="rounded-xl border p-4 flex items-center justify-between gap-3"
+            :class="lastAnswerResult.isCorrect ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-red-200 bg-red-50 text-red-800'"
+          >
+            <div class="flex items-center gap-3">
+              <span class="text-2xl">{{ lastAnswerResult.isCorrect ? '✔' : '✖' }}</span>
+              <div>
+                <h4 class="text-sm font-bold">{{ lastAnswerResult.isCorrect ? 'Chính xác!' : 'Chưa chính xác' }}</h4>
+                <p class="text-xs opacity-90">{{ lastAnswerResult.rankMessage }}</p>
+              </div>
+            </div>
+            <span class="text-base font-black">+{{ lastAnswerResult.scoreAwarded }} điểm</span>
+          </div>
         </transition>
 
-        <div class="mt-4 flex items-center justify-between">
-          <div class="flex items-center gap-3">
-            <span class="text-4xl select-none">
-              {{ currentPlayerStats.rank === 1 ? '🥇' : currentPlayerStats.rank === 2 ? '🥈' : currentPlayerStats.rank === 3 ? '🥉' : '🏆' }}
+        <!-- Banner Banned -->
+        <div v-if="isBanned" class="rounded-xl border border-red-200 bg-red-50 p-4 text-xs font-bold text-red-700 flex items-center gap-2">
+          <span>🚫</span>
+          <span>Phòng thi đấu này đã bị quản trị viên khóa và không thể tiếp tục.</span>
+        </div>
+
+        <template v-else>
+          <!-- Waiting State -->
+          <div v-if="isWaiting" class="text-center py-10 space-y-3">
+            <div class="h-14 w-14 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center text-2xl mx-auto animate-pulse">
+              ⏳
+            </div>
+            <span class="rounded-full bg-amber-50 text-amber-700 px-3 py-0.5 text-xs font-bold">
+              Phòng chờ
             </span>
+            <h2 class="text-xl font-black text-slate-900 pt-1">Đang chờ chủ phòng bắt đầu trận đấu</h2>
+            <p class="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
+              Hãy giữ màn hình này, khi chủ phòng bấm Bắt đầu, câu hỏi đầu tiên sẽ hiển thị tự động trên màn hình của bạn.
+            </p>
+          </div>
+
+          <!-- Finished State -->
+          <div v-else-if="isFinished" class="text-center py-10 space-y-4">
+            <div class="h-16 w-16 rounded-full bg-purple-50 text-[#7C3AED] flex items-center justify-center text-3xl mx-auto">
+              🎉
+            </div>
             <div>
-              <p class="text-xs font-bold text-[var(--muted)]">Thứ hạng</p>
-              <h3 class="text-3xl font-black text-[var(--text)]">#{{ currentPlayerStats.rank }}</h3>
+              <span class="rounded-full bg-purple-50 text-[#7C3AED] px-3 py-0.5 text-xs font-bold">
+                Đã hoàn thành
+              </span>
+              <h2 class="text-2xl font-black text-slate-900 mt-2">
+                {{ roomStatus === 'finished' ? 'Phòng thi đấu đã kết thúc' : 'Bạn đã hoàn thành tất cả câu hỏi!' }}
+              </h2>
+              <p class="text-xs text-slate-500 mt-1">
+                Điểm số: <b class="text-[#7C3AED]">{{ progress.current_score ?? 0 }}</b> | Số câu đúng: <b class="text-emerald-700">{{ progress.correct_count ?? 0 }}/{{ progress.total_questions ?? 0 }}</b>
+              </p>
+            </div>
+            <div class="pt-2">
+              <router-link class="btn-primary text-xs px-5 py-2.5" :to="`/live-rooms/${liveRoomId}/leaderboard`">
+                Xem bảng xếp hạng đầy đủ 🏆
+              </router-link>
             </div>
           </div>
-          <div class="text-right">
-            <p class="text-xs font-bold text-[var(--muted)]">Tổng điểm</p>
-            <h3 class="text-3xl font-black text-[var(--primary)]">{{ currentPlayerStats.score }}</h3>
-          </div>
-        </div>
 
-        <!-- Khoảng cách điểm -->
-        <div v-if="rankMessage" class="mt-4 rounded-xl bg-[var(--surface-soft)] p-3 text-xs font-bold text-[var(--text)] text-center border border-[var(--border)]">
-          {{ rankMessage }}
-        </div>
+          <!-- Playing Question -->
+          <template v-else-if="question.id">
+            <div class="space-y-4 border-b border-slate-100 pb-5">
+              <div class="flex items-center justify-between">
+                <span class="rounded-full bg-purple-50 text-[#7C3AED] border border-purple-200 px-3 py-1 text-xs font-bold">
+                  Câu {{ currentQuestionNumber }} / {{ progress.total_questions || 1 }}
+                </span>
+                <StatusBadge :value="roomStatus" />
+              </div>
 
-        <div class="mt-5 grid grid-cols-2 gap-3">
-          <div class="rounded-xl border border-[var(--border)] bg-[var(--surface-soft)] p-3">
-            <p class="text-[10px] font-bold text-[var(--muted)] uppercase tracking-wider">Chính xác</p>
-            <p class="mt-1 text-lg font-black text-emerald-400">✔ {{ currentPlayerStats.correct_count }}</p>
-          </div>
-          <div class="rounded-xl border border-[var(--border)] bg-[var(--surface-soft)] p-3">
-            <p class="text-[10px] font-bold text-[var(--muted)] uppercase tracking-wider">Tiến trình</p>
-            <p class="mt-1 text-lg font-black text-[var(--text)]">{{ currentPlayerStats.answered_count }}/{{ currentPlayerStats.total_questions }}</p>
-          </div>
-        </div>
-
-        <!-- Thanh progress cá nhân -->
-        <div class="mt-4">
-          <div class="h-2 w-full overflow-hidden rounded-full bg-[var(--surface-soft)]">
-            <div class="h-full rounded-full bg-gradient-to-r from-[var(--primary)] to-[var(--primary-2)] transition-all duration-500"
-                 :style="{ width: `${currentPlayerStats.total_questions ? (currentPlayerStats.answered_count / currentPlayerStats.total_questions) * 100 : 0}%` }">
+              <h2 class="text-xl font-bold leading-relaxed text-slate-900 sm:text-2xl pt-1">
+                {{ question.question }}
+              </h2>
             </div>
+
+            <!-- Answers List -->
+            <div class="grid gap-3 pt-2">
+              <button
+                v-for="answer in question.answers"
+                :key="answer.id"
+                type="button"
+                class="flex items-center gap-3.5 rounded-xl border p-4 text-left transition duration-150 active:scale-[0.99]"
+                :class="selectedAnswerId === answer.id
+                  ? 'border-[#7C3AED] bg-purple-50 text-slate-900 shadow-sm'
+                  : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'"
+                :disabled="isAnswering"
+                @click="submitAnswer(answer.id)"
+              >
+                <span
+                  class="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-xs font-black transition"
+                  :class="selectedAnswerId === answer.id ? 'bg-[#7C3AED] text-white' : 'bg-slate-100 text-slate-700'"
+                >
+                  {{ answer.key }}
+                </span>
+                <span class="font-medium text-sm leading-relaxed flex-1">
+                  {{ answer.text }}
+                </span>
+              </button>
+            </div>
+          </template>
+
+          <div v-else class="rounded-xl border border-slate-100 bg-slate-50 p-8 text-center text-xs text-slate-500">
+            Đang đồng bộ câu hỏi tiếp theo...
           </div>
-        </div>
+        </template>
       </article>
 
-      <!-- Bảng xếp hạng Top 5 -->
-      <article class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-card)]">
-        <div class="flex items-center justify-between">
-          <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Bảng xếp hạng</p>
-          <span class="rounded-full bg-violet-500/10 px-2 py-0.5 text-[10px] font-bold text-violet-400">Top 5</span>
-        </div>
+      <!-- Sidebar: User Stats & Top 5 -->
+      <aside class="grid content-start gap-5">
+        <!-- Personal Stats Card -->
+        <article class="card p-5 space-y-4">
+          <div class="border-b border-slate-100 pb-3 flex items-center justify-between">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Thành tích của bạn</span>
+            <span class="text-xs font-bold text-[#7C3AED]">Trực tiếp</span>
+          </div>
 
-        <div v-if="leaderboard.length" class="mt-4 relative">
-          <TransitionGroup name="leaderboard-list" tag="div" class="grid gap-2">
+          <div class="grid grid-cols-2 gap-2 text-center text-xs">
+            <div class="rounded-lg bg-slate-50 p-3">
+              <span class="text-slate-400 font-bold uppercase text-[10px] block">Thứ hạng</span>
+              <b class="text-slate-900 font-black text-2xl block mt-0.5">#{{ currentPlayerStats.rank }}</b>
+            </div>
+            <div class="rounded-lg bg-slate-50 p-3">
+              <span class="text-slate-400 font-bold uppercase text-[10px] block">Tổng điểm</span>
+              <b class="text-[#7C3AED] font-black text-2xl block mt-0.5">{{ currentPlayerStats.score }}</b>
+            </div>
+          </div>
+
+          <div v-if="rankMessage" class="rounded-lg bg-purple-50 p-2.5 text-center text-xs font-semibold text-[#7C3AED] border border-purple-100">
+            {{ rankMessage }}
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 text-xs pt-1">
+            <div class="rounded-lg border border-slate-100 p-2 text-center">
+              <span class="text-slate-400 text-[10px] font-semibold block">Đúng</span>
+              <b class="text-emerald-700 font-bold text-sm block mt-0.5">✔ {{ currentPlayerStats.correct_count }} câu</b>
+            </div>
+            <div class="rounded-lg border border-slate-100 p-2 text-center">
+              <span class="text-slate-400 text-[10px] font-semibold block">Đã làm</span>
+              <b class="text-slate-800 font-bold text-sm block mt-0.5">{{ currentPlayerStats.answered_count }}/{{ currentPlayerStats.total_questions }}</b>
+            </div>
+          </div>
+
+          <!-- Progress Bar -->
+          <div class="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+            <div 
+              class="h-full rounded-full bg-[#7C3AED] transition-all duration-300"
+              :style="{ width: `${currentPlayerStats.total_questions ? (currentPlayerStats.answered_count / currentPlayerStats.total_questions) * 100 : 0}%` }"
+            ></div>
+          </div>
+        </article>
+
+        <!-- Top 5 Leaderboard -->
+        <article class="card p-5 space-y-4">
+          <div class="border-b border-slate-100 pb-3 flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-900">Bảng xếp hạng Top 5</span>
+            <span class="rounded bg-slate-100 text-slate-600 px-2 py-0.5 text-[10px] font-bold">Live</span>
+          </div>
+
+          <div v-if="leaderboard.length" class="space-y-2">
             <div
               v-for="entry in leaderboard.slice(0, 5)"
               :key="entry.user_id"
-              class="flex items-center justify-between rounded-2xl border p-3 transition-all duration-300 hover:scale-[1.02]"
-              :class="[
-                Number(entry.user_id) === Number(currentUser?.id) ? 'border-[var(--primary)] bg-[var(--chip-active)]' : 'border-[var(--border)] bg-[var(--surface-soft)]',
-                entry.rank === 1 ? 'border-yellow-500/30 bg-yellow-500/5' : entry.rank === 2 ? 'border-slate-300/30 bg-slate-400/5' : entry.rank === 3 ? 'border-amber-600/30 bg-amber-700/5' : ''
-              ]"
+              class="flex items-center justify-between rounded-lg p-2.5 text-xs transition"
+              :class="Number(entry.user_id) === Number(currentUser?.id) ? 'bg-purple-50 border border-purple-200' : 'bg-slate-50 border border-slate-100'"
             >
-              <div class="flex items-center gap-3">
-                <span class="w-6 text-center text-sm font-black">
-                  {{ getRankIcon(entry.rank) || `#${entry.rank}` }}
+              <div class="flex items-center gap-2 truncate">
+                <span class="font-bold w-4 text-center">
+                  {{ entry.rank === 1 ? '🥇' : entry.rank === 2 ? '🥈' : entry.rank === 3 ? '🥉' : entry.rank }}
                 </span>
-                
-                <!-- Avatar Gradient đẹp mắt -->
-                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full font-black text-white text-xs"
-                     :style="getAvatarStyle(entry.user?.name || entry.user_id)">
-                  {{ getAvatarInitial(entry.user?.name || entry.user_id) }}
-                </div>
-                
-                <span class="text-sm font-black text-[var(--text)] truncate max-w-[120px]"
-                      :class="{ 'text-[var(--primary)]': Number(entry.user_id) === Number(currentUser?.id) }">
+                <span class="font-bold truncate text-slate-800" :class="{ 'text-[#7C3AED] font-black': Number(entry.user_id) === Number(currentUser?.id) }">
                   {{ entry.user?.name || `User #${entry.user_id}` }}
                 </span>
               </div>
-              <b class="text-sm font-black text-[var(--text)]">{{ entry.score }}</b>
+              <b class="text-[#7C3AED] font-bold shrink-0">{{ entry.score }}đ</b>
             </div>
-          </TransitionGroup>
-        </div>
-        <div v-else class="mt-4 rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-5 text-center text-sm font-bold text-[var(--muted)]">
-          Chưa có xếp hạng.
-        </div>
-      </article>
-    </aside>
+          </div>
+          <div v-else class="text-center py-6 text-slate-400 text-xs">
+            Chưa có bảng xếp hạng.
+          </div>
+        </article>
+      </aside>
+    </div>
   </section>
 </template>
 
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import StatusBadge from '@/components/common/StatusBadge.vue'
-import { getEcho } from '@/echo'
+import { getEcho, getTabId } from '@/echo'
 import { liveRoomApi, normalizeQuestion, currentUserStorage } from '@/services/api'
 import audioService from '@/services/audioService'
 
 const route = useRoute()
+const router = useRouter()
 const liveRoomId = computed(() => route.params.liveRoomId)
 const progress = ref({})
 const question = ref({ id: 0, question: '', answers: [] })
@@ -205,39 +236,10 @@ const lastAnswerResult = ref(null)
 const floatingPoints = ref(null)
 const currentUser = computed(() => currentUserStorage.get())
 
-const getAvatarInitial = (name) => {
-  if (!name) return '?'
-  return String(name).trim().charAt(0).toUpperCase()
-}
-
-const getAvatarStyle = (name) => {
-  const colors = [
-    ['#9b2cff', '#cf30ff'],
-    ['#ff7a45', '#ff4d6d'],
-    ['#16f2b3', '#0b8793'],
-    ['#ec4899', '#f43f5e'],
-    ['#3b82f6', '#1d4ed8'],
-    ['#10b981', '#047857']
-  ]
-  const str = String(name || '')
-  let hash = 0
-  for (let i = 0; i < str.length; i++) {
-    hash = str.charCodeAt(i) + ((hash << 5) - hash)
-  }
-  const index = Math.abs(hash) % colors.length
-  const [c1, c2] = colors[index]
-  return {
-    background: `linear-gradient(135deg, ${c1}, ${c2})`,
-    boxShadow: `0 4px 10px rgba(0, 0, 0, 0.2)`
-  }
-}
-
-const getRankIcon = (rank) => {
-  if (rank === 1) return '🥇'
-  if (rank === 2) return '🥈'
-  if (rank === 3) return '🥉'
-  return ''
-}
+// Multi-tab Collision State
+const isDuplicateTab = ref(false)
+const myTabId = getTabId()
+const myJoinedAt = ref(Date.now())
 
 const currentPlayerStats = computed(() => {
   const myUserId = currentUser.value?.id
@@ -270,13 +272,12 @@ const rankMessage = computed(() => {
   const aboveName = aboveEntry.user?.name || `User #${aboveEntry.user_id}`
   return `Còn ${gap} điểm để vượt hạng ${aboveEntry.rank} (${aboveName})`
 })
+
 let pollTimer = null
 let leaderboardTimer = null
 let liveChannel = null
 const realtimeFreshMs = 8000
 
-const selectedAnswerClass = ['border-[var(--border-strong)]', 'bg-[var(--chip-active)]']
-const defaultAnswerClass = ['border-[var(--border)]', 'bg-[var(--surface-soft)]', 'hover:border-[var(--border-strong)]']
 const isWaiting = computed(() => roomStatus.value === 'waiting')
 const isFinished = computed(() => roomStatus.value === 'finished' || progress.value.player_finished || progress.value.is_finished)
 const isBanned = computed(() => roomStatus.value === 'banned')
@@ -288,7 +289,34 @@ const markRealtime = () => {
 
 const hasRecentRealtime = () => Date.now() - lastRealtimeAt.value < realtimeFreshMs
 
+const confirmAndLeave = () => {
+  leaveRealtime()
+  router.push('/live-rooms')
+}
+
+const getMemberUserId = (m) => Number(m?.user_id ?? m?.info?.user_id ?? (typeof m?.id === 'number' ? m.id : null))
+const getMemberTabId = (m) => String(m?.tab_id ?? m?.info?.tab_id ?? m?.id ?? '')
+const getMemberJoinedAt = (m) => Number(m?.joined_at ?? m?.info?.joined_at ?? 0)
+
+const handleDuplicateSession = () => {
+  if (isDuplicateTab.value) return
+  isDuplicateTab.value = true
+
+  if (pollTimer) {
+    clearInterval(pollTimer)
+    pollTimer = null
+  }
+  if (leaderboardTimer) {
+    clearInterval(leaderboardTimer)
+    leaderboardTimer = null
+  }
+
+  audioService.stopAll()
+  leaveRealtime()
+}
+
 const loadLeaderboard = async (force = false) => {
+  if (isDuplicateTab.value) return
   if (!force && hasRecentRealtime()) return
 
   try {
@@ -307,6 +335,7 @@ const applyQuestionData = (data) => {
 }
 
 const loadCurrentQuestion = async (force = false) => {
+  if (isDuplicateTab.value) return
   if (!force && hasRecentRealtime()) return
 
   try {
@@ -344,52 +373,16 @@ const applyLeaderboardPayload = (leaderboardPayload) => {
   return true
 }
 
-// const handleRoomStarted = async (event) => {
-//   realtimeLog('live.room.started', event)
-//   markRealtime()
-// audioService.stopLobby()
-
-// setTimeout(() => {
-//   audioService.playCountdown()
-// }, 3000)
-
-//   roomStatus.value = event?.status || 'playing'
-//   progress.value = {
-//     ...progress.value,
-//     total_questions: event?.total_questions ?? progress.value.total_questions,
-//     player_current_question_index: progress.value.player_current_question_index ?? 0,
-//     current_question_index: progress.value.current_question_index ?? 0,
-//     player_finished: false,
-//     is_finished: false,
-//   }
-//   if (Array.isArray(event?.leaderboard)) {
-//     leaderboard.value = event.leaderboard
-//   }
-
-//   if (event?.current_question) {
-//     question.value = normalizeQuestion(event.current_question)
-//     selectedAnswerId.value = null
-//     errorMessage.value = ''
-//     return
-//   }
-
-//   await loadCurrentQuestion(true)
-// }
 const handleRoomStarted = async (event) => {
-    realtimeLog('live.room.started', event)
-        console.log("=== ROOM STARTED ===", event)
-
-    audioService.stopLobby()
-
-    roomStatus.value = event?.status || 'playing'
-
-    await loadCurrentQuestion(true)
+  realtimeLog('live.room.started', event)
+  audioService.stopLobby()
+  roomStatus.value = event?.status || 'playing'
+  await loadCurrentQuestion(true)
 }
 
 const handleRoomFinished = async (event) => {
   realtimeLog('live.room.finished', event)
   markRealtime()
-console.log('Finish event', event)
   audioService.playFinish()
 
   roomStatus.value = event?.status || 'finished'
@@ -415,13 +408,49 @@ const handleLeaderboardUpdated = async (event) => {
 }
 
 const subscribeToRealtime = () => {
+  if (isDuplicateTab.value) return
+
   try {
-    liveChannel = getEcho().private(`live-room.${liveRoomId.value}`)
+    myJoinedAt.value = Date.now()
+    liveChannel = getEcho().join(`live-room.${liveRoomId.value}`)
+
     liveChannel
+      .here((members) => {
+        realtimeLog('presence.here', members)
+        const myUserId = Number(currentUser.value?.id || currentUserStorage.get()?.id)
+        if (!myUserId) return
+
+        const myServerMember = (members || []).find((m) => getMemberTabId(m) === myTabId)
+        const myServerJoinedAt = getMemberJoinedAt(myServerMember) || myJoinedAt.value
+
+        const duplicate = (members || []).find((m) => {
+          const otherUserId = getMemberUserId(m)
+          const otherTabId = getMemberTabId(m)
+          const otherJoinedAt = getMemberJoinedAt(m)
+          return otherUserId === myUserId && otherTabId !== myTabId && otherJoinedAt > myServerJoinedAt
+        })
+
+        if (duplicate) {
+          handleDuplicateSession()
+        }
+      })
+      .joining((member) => {
+        realtimeLog('presence.joining', member)
+        const myUserId = Number(currentUser.value?.id || currentUserStorage.get()?.id)
+        if (!myUserId) return
+
+        const newUserId = getMemberUserId(member)
+        const newTabId = getMemberTabId(member)
+
+        if (newUserId === myUserId && newTabId !== myTabId) {
+          handleDuplicateSession()
+        }
+      })
       .listen('.live.room.started', handleRoomStarted)
       .listen('.live.room.finished', handleRoomFinished)
       .listen('.live.leaderboard.updated', handleLeaderboardUpdated)
-  } catch {
+  } catch (err) {
+    console.error('[realtime] Subscribe presence error:', err)
     liveChannel = null
   }
 }
@@ -434,7 +463,7 @@ const leaveRealtime = () => {
 }
 
 const submitAnswer = async (answerId) => {
-  if (isAnswering.value || isFinished.value || isWaiting.value) return
+  if (isDuplicateTab.value || isAnswering.value || isFinished.value || isWaiting.value) return
   selectedAnswerId.value = answerId
   isAnswering.value = true
   answerMessage.value = ''
@@ -445,7 +474,6 @@ const submitAnswer = async (answerId) => {
     const oldRank = leaderboard.value.find(item => Number(item.user_id) === Number(currentUser.value?.id))?.rank || null
     const result = await liveRoomApi.answerLiveQuestion(liveRoomId.value, answerId)
 
-    // Phát âm thanh
     if (result.is_correct) {
       audioService.playCorrect()
     } else {
@@ -465,9 +493,7 @@ const submitAnswer = async (answerId) => {
     }
     roomStatus.value = result.room_status || roomStatus.value
     
-    // Phát nhạc khi người chơi hoàn thành
     if (result.player_finished || result.room_status === 'finished' || !result.has_next_question) {
-      console.log('PLAY FINISH')
       audioService.playFinish()
     }
     
@@ -517,82 +543,20 @@ const submitAnswer = async (answerId) => {
     isAnswering.value = false
   }
 }
+
 onMounted(async () => {
   audioService.playLobby()
-
   subscribeToRealtime()
-
   await loadCurrentQuestion(true)
 
   pollTimer = setInterval(loadCurrentQuestion, 10000)
   leaderboardTimer = setInterval(loadLeaderboard, 15000)
 })
+
 onBeforeUnmount(() => {
-
   audioService.stopAll()
-
   clearInterval(pollTimer)
   clearInterval(leaderboardTimer)
-
   leaveRealtime()
 })
 </script>
-
-<style scoped>
-.leaderboard-list-move {
-  transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
-}
-.leaderboard-list-enter-active,
-.leaderboard-list-leave-active {
-  transition: all 0.5s ease;
-}
-.leaderboard-list-enter-from,
-.leaderboard-list-leave-to {
-  opacity: 0;
-  transform: translateX(-20px);
-}
-.leaderboard-list-leave-active {
-  position: absolute;
-  width: 100%;
-}
-
-@keyframes floatUpFade {
-  0% {
-    transform: translateY(0) scale(0.8);
-    opacity: 0;
-  }
-  15% {
-    transform: translateY(-15px) scale(1.25);
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(-50px) scale(0.9);
-    opacity: 0;
-  }
-}
-.floating-points {
-  position: absolute;
-  top: 15px;
-  right: 25px;
-  font-size: 1.5rem;
-  font-weight: 900;
-  color: var(--accent-2);
-  animation: floatUpFade 1.4s forwards cubic-bezier(0.18, 0.89, 0.32, 1.28);
-  pointer-events: none;
-  z-index: 50;
-  text-shadow: 0 4px 10px rgba(0,0,0,0.5);
-}
-
-.slide-up-enter-active,
-.slide-up-leave-active {
-  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.slide-up-enter-from {
-  transform: translateY(20px);
-  opacity: 0;
-}
-.slide-up-leave-to {
-  transform: translateY(-20px);
-  opacity: 0;
-}
-</style>

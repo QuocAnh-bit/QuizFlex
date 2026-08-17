@@ -1,16 +1,9 @@
 <template>
   <section class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_400px]">
     <form
-      class="relative overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-soft)] backdrop-blur-2xl"
+      class="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-soft)]"
       @submit.prevent="saveQuiz"
     >
-      <div
-        class="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[var(--primary)]/15 blur-3xl"
-      ></div>
-      <div
-        class="pointer-events-none absolute -left-24 top-1/2 h-64 w-64 rounded-full bg-[var(--accent)]/10 blur-3xl"
-      ></div>
-
       <div class="relative z-10">
         <p
           class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]"
@@ -57,7 +50,7 @@
           </label>
 
           <section
-            class="overflow-hidden rounded-[1.7rem] border border-[var(--border)] bg-[var(--surface-soft)] shadow-[var(--shadow-card)]"
+            class="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface-soft)]"
           >
             <div class="grid gap-0 lg:grid-cols-[minmax(0,1fr)_280px]">
               <div class="p-5">
@@ -97,7 +90,7 @@
 
                 <div class="mt-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_240px]">
                   <div
-                    class="rounded-[1.35rem] border border-[var(--border)] bg-[var(--surface)] p-4"
+                    class="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4"
                   >
                     <p class="text-sm font-black text-[var(--text)]">
                       File ảnh bìa
@@ -119,7 +112,7 @@
                   <div class="grid gap-2 text-sm font-black text-[var(--text)]">
                     Avatar người tạo
                     <div
-                      class="flex min-h-[72px] items-center gap-3 rounded-[1.35rem] border border-[var(--border)] bg-[var(--surface)] px-4 py-3"
+                      class="flex min-h-[72px] items-center gap-3 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-4 py-3"
                     >
                       <UserAvatar
                         :user="creatorProfile"
@@ -272,21 +265,17 @@
               v-for="option in visibilityOptions"
               :key="option.value"
               type="button"
-              class="relative overflow-hidden rounded-[1.4rem] border p-4 text-left transition duration-300 hover:-translate-y-1 active:scale-[0.98]"
+              class="rounded-lg border p-4 text-left transition"
               :class="
                 form.visibility === option.value
-                  ? 'border-[var(--border-strong)] bg-[var(--chip-active)] shadow-[0_18px_44px_rgba(155,44,255,0.16)]'
-                  : 'border-[var(--border)] bg-[var(--surface-soft)] hover:border-[var(--border-strong)]'
+                  ? 'border-[var(--primary)] bg-[var(--chip-active)]'
+                  : 'border-[var(--border)] bg-[var(--surface-soft)]'
               "
               @click="form.visibility = option.value"
             >
-              <div
-                v-if="form.visibility === option.value"
-                class="absolute inset-0 bg-gradient-to-br from-[var(--primary)]/10 via-[var(--primary-2)]/10 to-[var(--accent)]/10"
-              ></div>
-              <div class="relative z-10">
+              <div>
                 <div
-                  class="mb-3 grid h-10 w-10 place-items-center rounded-2xl bg-[var(--surface)] text-xs font-black text-[var(--primary)]"
+                  class="mb-3 grid h-10 w-10 place-items-center rounded-lg bg-[var(--surface)] text-xs font-black text-[var(--primary)]"
                 >
                   {{ option.short }}
                 </div>
@@ -339,7 +328,7 @@
             v-for="(question, index) in questions"
             :key="question.localId"
             :ref="(el) => setQuestionCardRef(el, index)"
-            class="rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface-soft)] p-4 transition hover:border-[var(--border-strong)]"
+            class="rounded-lg border border-[var(--border)] bg-[var(--surface-soft)] p-4"
           >
             <div class="mb-3 flex items-center justify-between gap-3">
               <b class="text-[var(--text)]">Câu {{ index + 1 }}</b>
@@ -391,7 +380,7 @@
       </div>
     </form>
 
-    <div class="fixed bottom-4 right-4 z-[60] flex flex-col gap-2 rounded-[1.4rem] border border-[var(--border)] bg-[var(--surface)]/95 p-3 shadow-[var(--shadow-card)] backdrop-blur-xl">
+    <div class="fixed bottom-4 right-4 z-[60] flex flex-col gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3 shadow-lg">
       <button class="btn-ghost !px-4 !py-2 text-xs" type="button" @click="addQuestion">
         Thêm câu hỏi
       </button>
@@ -402,11 +391,11 @@
 
     <div
       v-if="toastMessage"
-      class="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm"
+      class="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 px-4"
       @click="clearToast"
     >
       <div
-        class="w-full max-w-md rounded-[2rem] border px-6 py-6 text-center shadow-[0_30px_80px_rgba(0,0,0,0.35)]"
+        class="w-full max-w-md rounded-xl border px-6 py-6 text-center shadow-lg"
         :class="toastType === 'success' ? 'border-emerald-500/30 bg-[var(--surface)] text-emerald-200' : 'border-rose-500/30 bg-[var(--surface)] text-rose-200'"
         @click.stop
       >
@@ -422,7 +411,7 @@
 
     <aside class="grid content-start gap-5">
       <article
-        class="overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-card)] backdrop-blur-2xl"
+        class="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-lg"
       >
         <div class="relative h-52" :style="{ background: coverBackground }">
           <div
@@ -466,7 +455,7 @@
       </article>
 
       <article
-        class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-card)] backdrop-blur-2xl"
+        class="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-lg"
       >
         <p
           class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]"
