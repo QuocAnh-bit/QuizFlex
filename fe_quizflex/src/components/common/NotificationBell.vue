@@ -158,8 +158,10 @@ const markAllAsRead = async () => {
 
 const getIcon = (type) => {
   const icons = {
-    // Quiz
-    'quiz_moderated': '📝',
+    // Quiz & Question
+    'quiz_moderated': '📖',
+    'question_moderated': '❓',
+    'report_author_updated': '🛠️',
     // Room Member status
     'room_join_request': '👋',
     'room_member_approved': '✅',
