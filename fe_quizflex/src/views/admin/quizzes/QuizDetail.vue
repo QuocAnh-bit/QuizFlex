@@ -1,12 +1,23 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import api from '@/services/api'
 
 const route = useRoute()
+const router = useRouter()
 const quiz = ref(null)
 const loading = ref(false)
 const averageScore = ref(0)
+
+const goBack = () => {
+  if (route.query.from === 'reports') {
+    router.push('/admin/report-tickets')
+  } else if (window.history.length > 1) {
+    router.back()
+  } else {
+    router.push('/admin/quizzes')
+  }
+}
 
 const fetchQuizDetail = async () => {
   try {
@@ -44,9 +55,9 @@ onMounted(() => {
             <p class="mt-3 max-w-2xl text-sm leading-7 text-[var(--muted)]">{{ quiz.description || 'Không có mô tả cho bộ quiz này.' }}</p>
           </div>
           <div class="flex flex-wrap gap-3">
-            <RouterLink to="/admin/quizzes" class="btn-ghost">
+            <button type="button" @click="goBack" class="btn-ghost">
               ← Quay lại
-            </RouterLink>
+            </button>
             <RouterLink :to="`/admin/quizzes/${quiz.id}/edit`" class="btn-primary">
               ✏️ Sửa Quiz
             </RouterLink>

@@ -28,9 +28,9 @@
         </p>
 
         <div class="mt-8 grid gap-5">
-          <div class="grid gap-4 md:grid-cols-[1fr_220px]">
+          <div class="grid gap-4 md:grid-cols-[1fr_260px]">
             <label class="grid gap-2 text-sm font-black text-[var(--text)]">
-              Tiêu đề quiz
+              Tiêu đề quiz *
               <input
                 v-model="form.title"
                 class="field"
@@ -38,8 +38,12 @@
               />
             </label>
             <label class="grid gap-2 text-sm font-black text-[var(--text)]">
-              Tag
-              <input v-model="form.tag" class="field" placeholder="Sinh học" />
+              Chủ đề
+              <input
+                v-model="form.topic_name"
+                class="field"
+                placeholder="VD: Hàm số, Este-Lipit..."
+              />
             </label>
           </div>
 
@@ -182,7 +186,7 @@
             </div>
           </section>
 
-          <div class="grid gap-4 md:grid-cols-3">
+          <div class="grid gap-4 md:grid-cols-2">
             <label class="grid gap-2 text-sm font-black text-[var(--text)]">
               Thời gian phút
               <input
@@ -201,12 +205,54 @@
                 <option value="hard">Khó</option>
               </select>
             </label>
+          </div>
+
+          <!-- Phân loại Chuẩn hóa EdTech: Cấp học - Khối lớp - Bộ môn -->
+          <div class="grid gap-4 md:grid-cols-3 mt-4">
             <label class="grid gap-2 text-sm font-black text-[var(--text)]">
-              Danh mục
+              Cấp học
+              <select v-model="form.education_level_id" class="field" @change="onTaxonomyChange">
+                <option value="">-- Chọn cấp học --</option>
+                <option v-for="level in taxonomyLevels" :key="level.id" :value="level.id">{{ level.name }}</option>
+              </select>
+            </label>
+
+            <label class="grid gap-2 text-sm font-black text-[var(--text)]">
+              Khối lớp
+              <select v-model="form.grade_id" class="field" @change="onTaxonomyChange">
+                <option value="">-- Chọn khối lớp --</option>
+                <option v-for="grade in formAvailableGrades" :key="grade.id" :value="grade.id">{{ grade.name }}</option>
+              </select>
+            </label>
+
+            <label class="grid gap-2 text-sm font-black text-[var(--text)]">
+              Bộ môn *
+              <select v-model="form.subject_id" class="field" required @change="onTaxonomyChange">
+                <option value="">-- Chọn bộ môn * --</option>
+                <option v-for="subject in formAvailableSubjects" :key="subject.id" :value="subject.id">{{ subject.name }}</option>
+              </select>
+            </label>
+          </div>
+
+          <!-- Chủ đề bộ môn: Gợi ý từ Kho + Nhập tự do -->
+          <div class="grid gap-4 md:grid-cols-2 mt-4">
+            <label class="grid gap-2 text-sm font-black text-[var(--text)]">
+              Chủ đề có sẵn (Gợi ý)
+              <select v-model="selectedBankTopic" class="field cursor-pointer" @change="onBankTopicSelect">
+                <option value="">-- Chọn chủ đề từ kho câu hỏi --</option>
+                <option v-for="top in topicsList" :key="top.topic_name" :value="top.topic_name">
+                  {{ top.topic_name }} ({{ top.total_questions }} câu)
+                </option>
+              </select>
+            </label>
+
+            <label class="grid gap-2 text-sm font-black text-[var(--text)]">
+              Tên Chủ đề hiển thị
               <input
-                v-model="form.category"
+                v-model="form.topic_name"
                 class="field"
-                placeholder="Khoa học"
+                placeholder="VD: Hàm số bậc hai, Unit 3..."
+                @input="onTopicInputChange"
               />
             </label>
           </div>
@@ -452,7 +498,9 @@ import {
   currentUserStorage,
   difficultyLabel,
   normalizeQuestion,
+  questionsBankApi,
   quizzesApi,
+  taxonomyApi,
 } from "@/services/api";
 
 const route = useRoute();
@@ -495,16 +543,97 @@ const coverInput = ref(null);
 const coverPreview = ref("");
 const questionCardRefs = ref([]);
 
+const taxonomyLevels = ref([]);
+const taxonomyAllSubjects = ref([]);
+const topicsList = ref([]);
+const selectedBankTopic = ref("");
+
+const fetchFormTaxonomies = async () => {
+  try {
+    const data = await taxonomyApi.tree();
+    if (data) {
+      taxonomyLevels.value = data.education_levels || [];
+      taxonomyAllSubjects.value = data.subjects || [];
+    }
+  } catch (e) {
+    console.error("Không tải được danh mục:", e);
+  }
+};
+
+const fetchTopicsList = async () => {
+  try {
+    const params = {
+      education_level_id: form.education_level_id || undefined,
+      grade_id: form.grade_id || undefined,
+      subject_id: form.subject_id || undefined,
+    };
+    const data = await questionsBankApi.fetchTopics(params);
+    topicsList.value = Array.isArray(data)
+      ? data
+      : data?.data && Array.isArray(data.data)
+      ? data.data
+      : [];
+  } catch (e) {
+    console.error("Không tải được danh sách Chủ đề từ kho:", e);
+  }
+};
+
+const onTaxonomyChange = () => {
+  fetchTopicsList();
+};
+
+const onBankTopicSelect = () => {
+  if (selectedBankTopic.value) {
+    form.topic_name = selectedBankTopic.value;
+  }
+};
+
+const onTopicInputChange = () => {
+  const text = (form.topic_name || "").trim().toLowerCase();
+  if (!text) {
+    selectedBankTopic.value = "";
+  } else {
+    const found = topicsList.value.find(
+      (t) => t.topic_name.toLowerCase() === text,
+    );
+    selectedBankTopic.value = found ? found.topic_name : "";
+  }
+};
+
+const formAvailableGrades = computed(() => {
+  if (!form.education_level_id) {
+    return taxonomyLevels.value.flatMap((l) => l.grades || []);
+  }
+  const level = taxonomyLevels.value.find(
+    (l) => l.id === Number(form.education_level_id),
+  );
+  return level ? level.grades || [] : [];
+});
+
+const formAvailableSubjects = computed(() => {
+  if (!form.grade_id) {
+    return taxonomyAllSubjects.value;
+  }
+  const grade = formAvailableGrades.value.find(
+    (g) => g.id === Number(form.grade_id),
+  );
+  return grade && grade.subjects ? grade.subjects : taxonomyAllSubjects.value;
+});
+
 const form = reactive({
   title: "",
   tag: "",
   description: "",
+  education_level_id: "",
+  grade_id: "",
+  subject_id: "",
+  topic_name: "",
   cover: "",
   coverFile: null,
   removeCover: false,
   durationMinutes: 12,
   difficulty: "medium",
-  category: "Khoa học",
+  category: "",
   visibility: route.query.visibility === "group" ? "group" : "public",
   roomCode:
     route.query.visibility === "group"
@@ -642,11 +771,14 @@ const makePayload = () => {
   const payload = {
     user_id: currentUser?.id,
     title: form.title.trim(),
-    tag: form.tag.trim(),
     description: form.description.trim(),
+    education_level_id: form.education_level_id || undefined,
+    grade_id: form.grade_id || undefined,
+    subject_id: form.subject_id || undefined,
+    topic_name: form.topic_name ? form.topic_name.trim() : undefined,
+    category: form.topic_name ? form.topic_name.trim() : "General",
     duration_minutes: Number(form.durationMinutes) || 12,
     difficulty: form.difficulty,
-    category: form.category.trim() || "General",
     visibility: form.visibility,
     roomCode: form.roomCode.trim(),
     questions: questions.value.map((question, index) => ({
@@ -676,6 +808,7 @@ const makePayload = () => {
 
 const validateBeforeSave = () => {
   if (!form.title.trim()) return "Bạn chưa nhập tiêu đề quiz.";
+  if (!form.subject_id) return "Vui lòng chọn Bộ môn cho bài quiz.";
 
   const duration = Number(form.durationMinutes);
   if (!Number.isFinite(duration) || duration < 1 || duration > 1440)
@@ -740,6 +873,10 @@ const loadQuizForEdit = async () => {
     form.title = quiz.title || "";
     form.tag = quiz.tag || "";
     form.description = quiz.description || "";
+    form.education_level_id = quiz.education_level_id || "";
+    form.grade_id = quiz.grade_id || "";
+    form.subject_id = quiz.subject_id || "";
+    form.topic_name = quiz.topic_name || "";
     form.cover = quiz.cover || "";
     form.coverFile = null;
     form.removeCover = false;
@@ -864,6 +1001,7 @@ onMounted(async () => {
   syncCreatorProfile();
   window.addEventListener("quizflex-user-updated", syncCreatorProfile);
   window.addEventListener("storage", syncCreatorProfile);
+  await fetchFormTaxonomies();
   await loadQuizForEdit();
   loadOcrDraft();
 });

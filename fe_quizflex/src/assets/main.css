@@ -169,10 +169,21 @@ select {
     background: var(--input-bg);
   }
 
+  select.field {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23a4a1b5' stroke-width='2.5'><path stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 1.1rem 1.1rem;
+    padding-right: 2.6rem;
+  }
+
   select option {
-  background-color: var(--surface, #1e1e24) !important;
-  color: var(--text, #ffffff) !important;
-}
+    background-color: var(--surface, #1e1e24) !important;
+    color: var(--text, #ffffff) !important;
+  }
 
   .field:focus {
     border-color: var(--border-strong);

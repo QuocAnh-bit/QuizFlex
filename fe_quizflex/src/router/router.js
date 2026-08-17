@@ -25,6 +25,36 @@ const routes = [
     meta: { layout: "user", title: "Danh sách quiz" },
   },
   {
+    path: "/question-bank",
+    name: "question-bank",
+    component: () => import("@/views/user/QuestionBankView.vue"),
+    meta: { layout: "user", title: "Ngân hàng câu hỏi" },
+  },
+  {
+    path: "/question-bank/create-exam",
+    name: "question-bank-create-exam",
+    component: () => import("@/views/user/CreateExamView.vue"),
+    meta: { layout: "user", title: "Tạo bộ đề thi tự động", requiresAuth: true, roles: workspaceRoles },
+  },
+  {
+    path: "/question-bank/create-question",
+    name: "question-bank-create-question",
+    component: () => import("@/views/user/CreateQuestionView.vue"),
+    meta: { layout: "user", title: "Tạo câu hỏi mới", requiresAuth: true, roles: workspaceRoles },
+  },
+  {
+    path: "/dashboard/my-questions/create",
+    name: "user-my-questions-create",
+    component: () => import("@/views/user/CreateQuestionView.vue"),
+    meta: { layout: "user", title: "Tạo câu hỏi mới", requiresAuth: true, roles: workspaceRoles },
+  },
+  {
+    path: "/dashboard/my-questions/:id/edit",
+    name: "user-my-questions-edit",
+    component: () => import("@/views/user/EditQuestionView.vue"),
+    meta: { layout: "user", title: "Chỉnh sửa câu hỏi", requiresAuth: true, roles: workspaceRoles },
+  },
+  {
     path: "/quizzes/:id",
     name: "quiz-detail",
     component: () => import("@/views/user/QuizDetail.vue"),
@@ -308,9 +338,20 @@ const routes = [
     },
   },
   {
+    path: "/dashboard/my-questions",
+    name: "user-my-questions",
+    component: () => import("@/views/user/MyQuestionBank.vue"),
+    meta: {
+      layout: "user",
+      title: "Kho câu hỏi của tôi",
+      requiresAuth: true,
+      roles: workspaceRoles,
+    },
+  },
+  {
     path: "/dashboard/questions/create",
     name: "user-question-create",
-    component: () => import("@/views/admin/QuizEditorCombined.vue"),
+    component: () => import("@/views/admin/CreateQuiz.vue"),
     meta: {
       layout: "user",
       title: "Tạo quiz",
@@ -321,7 +362,7 @@ const routes = [
   {
     path: "/dashboard/questions/edit/:id",
     name: "user-question-edit",
-    component: () => import("@/views/admin/QuizEditorCombined.vue"),
+    component: () => import("@/views/admin/CreateQuiz.vue"),
     meta: {
       layout: "user",
       title: "Sửa quiz",
@@ -388,7 +429,7 @@ const routes = [
   {
     path: "/admin/questions/create",
     name: "admin-question-create",
-    component: () => import("@/views/admin/QuizEditorCombined.vue"),
+    component: () => import("@/views/admin/CreateQuiz.vue"),
     meta: {
       layout: "admin",
       title: "Tạo quiz admin",
@@ -397,9 +438,20 @@ const routes = [
     },
   },
   {
+    path: "/admin/question-bank/create-question",
+    name: "admin-create-question",
+    component: () => import("@/views/user/CreateQuestionView.vue"),
+    meta: {
+      layout: "admin",
+      title: "Tạo câu hỏi mới",
+      requiresAuth: true,
+      roles: adminRoles,
+    },
+  },
+  {
     path: "/admin/questions/edit/:id",
     name: "admin-question-edit",
-    component: () => import("@/views/admin/QuizEditorCombined.vue"),
+    component: () => import("@/views/admin/CreateQuiz.vue"),
     meta: {
       layout: "admin",
       title: "Sửa quiz admin",
@@ -429,7 +481,18 @@ const routes = [
       roles: adminRoles,
     },
   },
-{
+  {
+    path: "/admin/subjects",
+    name: "admin-subjects",
+    component: () => import("@/views/admin/AdminSubjectManager.vue"),
+    meta: {
+      layout: "admin",
+      title: "Quản lý Bộ môn",
+      requiresAuth: true,
+      roles: adminRoles,
+    },
+  },
+  {
     path: "/admin/report-tickets",
     name: "admin-report-tickets",
     component: () => import("@/views/admin/ReportManager.vue"),
@@ -539,13 +602,28 @@ const routes = [
   },
   
 
-  // Admin Quiz Management
+  // Admin Quiz & Question Management
+  { path: '/admin/question-bank', name: 'admin-question-bank', component: () => import('@/views/admin/AdminQuestionManager.vue'), meta: { layout: 'admin', title: 'Quản lý Ngân hàng Câu hỏi', requiresAuth: true, roles: adminRoles } },
+  { path: '/admin/questions-trash', name: 'admin-questions-trash', component: () => import('@/views/admin/AdminQuestionsTrash.vue'), meta: { layout: 'admin', title: 'Thùng rác câu hỏi', requiresAuth: true, roles: adminRoles } },
+  { path: '/admin/questions/create', name: 'admin-question-create', component: () => import('@/views/admin/AdminQuestionEdit.vue'), meta: { layout: 'admin', title: 'Tạo câu hỏi mới', requiresAuth: true, roles: adminRoles } },
+  { path: '/admin/questions/:id', name: 'admin-question-detail', component: () => import('@/views/admin/AdminQuestionDetail.vue'), meta: { layout: 'admin', title: 'Chi tiết câu hỏi', requiresAuth: true, roles: adminRoles } },
+  { path: '/admin/questions/:id/edit', name: 'admin-question-edit', component: () => import('@/views/admin/AdminQuestionEdit.vue'), meta: { layout: 'admin', title: 'Chỉnh sửa câu hỏi', requiresAuth: true, roles: adminRoles } },
   { path: '/admin/quizzes', name: 'admin-quizzes', component: () => import('@/views/admin/quizzes/QuizList.vue'), meta: { layout: 'admin', title: 'Quản lý Quiz', requiresAuth: true, roles: adminRoles } },
   { path: '/admin/quizzes-trash', name: 'admin-quizzes-trash', component: () => import('@/views/admin/quizzes/QuizzesTrash.vue'), meta: { layout: 'admin', title: 'Thùng rác Quiz', requiresAuth: true, roles: adminRoles } },
   { path: '/admin/quizzes/:id', name: 'admin-quiz-detail', component: () => import('@/views/admin/quizzes/QuizDetail.vue'), meta: { layout: 'admin', title: 'Chi tiết Quiz', requiresAuth: true, roles: adminRoles } },
   { path: '/admin/quizzes/:id/edit', name: 'admin-quiz-edit', component: () => import('@/views/admin/quizzes/QuizEdit.vue'), meta: { layout: 'admin', title: 'Sửa Quiz', requiresAuth: true, roles: adminRoles } },
 
-  { path: '/gamification', component: () => import('@/views/user/GamificationStats.vue') },
+  {
+    path: "/gamification",
+    name: "gamification",
+    component: () => import("@/views/user/GamificationStats.vue"),
+    meta: {
+      layout: "user",
+      title: "Thành tích & Huy hiệu",
+      requiresAuth: true,
+      roles: workspaceRoles,
+    },
+  },
   { path: '/leaderboard', component: () => import('@/views/user/Leaderboard.vue') },
   { path: '/:pathMatch(.*)*', name: 'not-found', redirect: '/' },
 ];

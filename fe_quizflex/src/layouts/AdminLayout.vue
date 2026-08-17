@@ -55,7 +55,10 @@
       <section class="min-w-0 p-4 sm:p-6 lg:p-8">
         <header class="mb-6 flex items-center justify-between gap-4 lg:hidden">
           <BrandLogo to="/admin" />
-          <ThemeToggle />
+          <div class="flex items-center gap-2">
+            <NotificationBell />
+            <ThemeToggle />
+          </div>
         </header>
 
         <header class="mb-6 hidden items-center justify-between gap-4 lg:flex">
@@ -64,6 +67,7 @@
             <h1 class="mt-1 text-4xl font-black tracking-[-0.06em] text-[var(--text)]">{{ pageTitle }}</h1>
           </div>
           <div class="flex items-center gap-3">
+            <NotificationBell />
             <ThemeToggle />
             <router-link class="btn-ghost" to="/">Trang chủ</router-link>
             <router-link class="btn-primary" to="/admin/questions/create">Tạo quiz</router-link>
@@ -82,6 +86,7 @@ import { useRoute } from 'vue-router'
 import axios from 'axios'
 import BrandLogo from '@/components/common/BrandLogo.vue'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
+import NotificationBell from '@/components/common/NotificationBell.vue'
 
 const route = useRoute()
 const expandedGroups = ref(['Quản lý nội dung'])
@@ -132,11 +137,13 @@ const menu = computed(() => [
     label: 'Quản lý nội dung',
     items: [
       { label: 'Tổng quan', to: '/admin', icon: 'DB' },
-      { label: 'Quản lý Quiz', to: '/admin/quizzes', icon: 'QL' },
+      { label: 'Quản lý câu hỏi', to: '/admin/question-bank', icon: '❓' },
+      { label: 'Tạo câu hỏi mới', to: '/admin/question-bank/create-question', icon: '┼' },
       { label: 'Kho quiz', to: '/admin/questions', icon: 'QZ' },
-      { label: 'Tạo quiz', to: '/admin/questions/create', icon: '+' },
+      { label: 'Tạo quiz', to: '/admin/questions/create', icon: '📝' },
       { label: 'AI Generator', to: '/admin/questions/ai', icon: 'AI' },
       { label: 'OCR Upload', to: '/admin/questions/ocr', icon: 'OC' },
+      { label: 'Quản lý Bộ môn', to: '/admin/subjects', icon: '📚' },
       { 
         label: 'Quản lý báo cáo', 
         to: '/admin/report-tickets', 

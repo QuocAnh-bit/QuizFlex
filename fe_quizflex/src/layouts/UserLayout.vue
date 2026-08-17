@@ -192,7 +192,7 @@ import BrandLogo from '@/components/common/BrandLogo.vue'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
 import LanguageSwitcher from '@/components/common/LanguageSwitcher.vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
-import { authApi, currentUserStorage, getDashboardRouteForRole } from '@/services/api'
+import { authApi, currentUserStorage, getDashboardRouteForRole, taxonomyApi } from '@/services/api'
 import StreakXpBar from '@/components/common/StreakXpBar.vue'
 import NotificationBell from '@/components/common/NotificationBell.vue'
 
@@ -203,6 +203,9 @@ const { t } = useI18n();
 const isMenuOpen = ref(false)
 const isScrolled = ref(false)
 const isUserDropdownOpen = ref(false)
+const isTaxonomyMenuOpen = ref(false)
+const taxonomyLevels = ref([])
+const taxonomySubjects = ref([])
 const currentUser = ref(currentUserStorage.get())
 
 const syncCurrentUser = (event) => {
@@ -257,6 +260,10 @@ const baseNav = computed(() => [
     to: '/quizzes',
   },
   {
+    label: 'Ngân hàng câu hỏi',
+    to: '/question-bank',
+  },
+  {
     label: t('nav.user.leaderboard'),
     to: '/leaderboard',
   },
@@ -295,6 +302,7 @@ const mobileNav = computed(() => {
   const items = [
     { label: t('nav.user.home'), to: '/' },
     { label: t('nav.user.quizzes'), to: '/quizzes' },
+    { label: 'Ngân hàng câu hỏi', to: '/question-bank' },
     { label: t('nav.user.leaderboard'), to: '/leaderboard' },
   ]
 
@@ -419,14 +427,30 @@ const getMobileNavLinkClass = (item) => {
   ];
 };
 
+const loadTaxonomyMenu = async () => {
+  try {
+    const data = await taxonomyApi.tree()
+    if (data) {
+      taxonomyLevels.value = data.education_levels || []
+      taxonomySubjects.value = data.subjects || []
+    }
+  } catch (e) {
+    console.error('Không tải được cây danh mục header:', e)
+  }
+}
+
 const closeDropdowns = (e) => {
   if (!e.target.closest('.user-dropdown-container')) {
     isUserDropdownOpen.value = false
+  }
+  if (!e.target.closest('.taxonomy-dropdown-container')) {
+    isTaxonomyMenuOpen.value = false
   }
 }
 
 onMounted(() => {
   handleScroll()
+  loadTaxonomyMenu()
   currentUser.value = currentUserStorage.get()
   window.addEventListener('scroll', handleScroll, { passive: true })
   window.addEventListener('quizflex-user-updated', syncCurrentUser)

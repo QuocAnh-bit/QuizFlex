@@ -36,11 +36,11 @@
 
 </div>
         </div>
-        <!-- <div class="flex flex-wrap gap-3">
+        <div class="flex flex-wrap gap-3">
           <router-link class="btn-ghost" :to="`${questionBase}/ocr`">Upload OCR</router-link>
           <router-link class="btn-ghost" :to="`${questionBase}/ai`">AI Generator</router-link>
-          <router-link class="btn-primary" :to="`${questionBase}/create`">Tạo quiz</router-link>
-        </div> -->
+          <router-link class="btn-primary shadow-lg transition hover:scale-105" :to="`${questionBase}/create`">┼ Tạo quiz</router-link>
+        </div>
         
       </div>
     </div>
@@ -69,7 +69,11 @@
       <article v-for="quiz in filteredQuizzes" :key="quiz.id" class="group relative overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-card)] backdrop-blur-2xl transition duration-300 hover:-translate-y-2 hover:border-[var(--border-strong)] hover:shadow-[0_24px_70px_rgba(0,0,0,0.24)]">
         <div class="relative h-36 overflow-hidden" :style="{ background: quiz.cover }">
           <div class="absolute inset-0 bg-gradient-to-t from-black/45 via-black/5 to-white/10"></div>
-          <div class="absolute left-4 top-4 rounded-full bg-black/55 px-3 py-1 text-[10px] font-black text-white backdrop-blur">{{ quiz.badge }}</div>
+          <div class="absolute left-4 top-4 flex flex-wrap gap-1.5">
+            <span v-if="quiz.grade_name" class="rounded-full bg-indigo-600/80 px-2.5 py-0.5 text-[10px] font-black text-white backdrop-blur">{{ quiz.grade_name }}</span>
+            <span v-if="quiz.subject_name" class="rounded-full bg-emerald-600/80 px-2.5 py-0.5 text-[10px] font-black text-white backdrop-blur">{{ quiz.subject_name }}</span>
+            <span v-else-if="quiz.topic_name" class="rounded-full bg-purple-600/80 px-2.5 py-0.5 text-[10px] font-black text-white backdrop-blur">{{ quiz.topic_name }}</span>
+          </div>
           <div class="absolute bottom-4 right-4 grid h-12 w-12 place-items-center rounded-2xl bg-white/90 text-sm font-black text-slate-900 shadow-xl transition group-hover:scale-110 group-hover:rotate-3">{{ quiz.icon }}</div>
         </div>
         <div class="p-5">
@@ -88,9 +92,10 @@
   <span class="rounded-full border border-[var(--border)] bg-[var(--surface-soft)] px-3 py-1 text-xs font-black text-[var(--muted)]">
     {{ quiz.difficulty }}
   </span>
+  <span v-if="quiz.topic_name && quiz.topic_name !== quiz.subject_name" class="rounded-full border border-[var(--primary)]/30 bg-[var(--primary)]/10 px-3 py-1 text-xs font-bold text-[var(--primary)] truncate max-w-[180px]">Chủ đề: {{ quiz.topic_name }}</span>
 </div>
           <h3 class="text-xl font-black tracking-[-0.04em] text-[var(--text)] transition group-hover:text-[var(--primary)]">{{ quiz.title }}</h3>
-          <p class="mt-2 text-sm leading-6 text-[var(--muted)]">{{ quiz.category }} • {{ quiz.tag }} • by {{ quiz.author }}</p>
+          <p class="mt-2 text-sm leading-6 text-[var(--muted)]">Tác giả: {{ quiz.author }}</p>
           <div class="mt-5 grid grid-cols-3 gap-2">
             <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-3 text-center"><b class="block text-[var(--text)]">{{ quiz.questions }}</b><span class="text-[10px] font-bold text-[var(--muted)]">Câu</span></div>
             <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-3 text-center"><b class="block text-[var(--text)]">{{ quiz.attempts }}</b><span class="text-[10px] font-bold text-[var(--muted)]">Lượt</span></div>

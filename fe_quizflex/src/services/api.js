@@ -14,15 +14,38 @@ const api = axios.create({
 
 const memoryCache = new Map();
 
+const inflightRequests = new Map();
+
 export const withMemoryCache = async (key, fetcher, ttlMs = 15000) => {
   const cached = memoryCache.get(key);
   const now = Date.now();
-  if (cached && now - cached.timestamp < ttlMs) {
+  if (cached && cached.data !== undefined && cached.data !== null && now - cached.timestamp < ttlMs) {
     return cached.data;
   }
-  const freshData = await fetcher();
-  memoryCache.set(key, { data: freshData, timestamp: now });
-  return freshData;
+
+  if (inflightRequests.has(key)) {
+    return inflightRequests.get(key);
+  }
+
+  const promise = (async () => {
+    try {
+      const freshData = await fetcher();
+      if (freshData !== undefined && freshData !== null) {
+        memoryCache.set(key, { data: freshData, timestamp: Date.now() });
+      } else {
+        memoryCache.delete(key);
+      }
+      return freshData;
+    } catch (error) {
+      memoryCache.delete(key);
+      throw error;
+    } finally {
+      inflightRequests.delete(key);
+    }
+  })();
+
+  inflightRequests.set(key, promise);
+  return promise;
 };
 
 export const clearMemoryCache = (keyPrefix = "") => {
@@ -38,6 +61,179 @@ export const clearMemoryCache = (keyPrefix = "") => {
 export const importOcrQuiz = (payload) => {
   return api.post("/ocr/import-quiz", payload);
 };
+
+const unwrap = (payload) => payload?.data ?? payload;
+const unwrapCollection = (payload) => {
+  const body = unwrap(payload);
+  if (Array.isArray(body)) return body;
+  if (Array.isArray(body?.data)) return body.data;
+  return [];
+};
+
+export const taxonomyApi = {
+  async tree(force = false) {
+    if (force) clearMemoryCache('education_taxonomy_tree');
+    return withMemoryCache('education_taxonomy_tree', async () => {
+      const { data } = await api.get('/taxonomies/tree');
+      const payload = unwrap(data);
+      return payload?.education_levels ? payload : (payload?.data ?? payload);
+    }, 300000);
+  }
+};
+
+export const questionsBankApi = {
+  async fetchBank(params = {}) {
+    const { data } = await api.get('/questions/bank', { params });
+    const payload = unwrap(data);
+    const items = Array.isArray(payload) ? payload : (Array.isArray(payload?.data) ? payload.data : []);
+    const total = payload?.total ?? items.length;
+    const currentPage = payload?.current_page ?? 1;
+    const lastPage = payload?.last_page ?? 1;
+    const perPage = payload?.per_page ?? 15;
+    return { items, total, currentPage, lastPage, perPage };
+  },
+  async fetchTopics(params = {}) {
+    const { data } = await api.get('/questions/topics', { params });
+    return unwrapCollection(data);
+  },
+  async fetchStats(params = {}) {
+    const { data } = await api.get('/questions/stats', { params });
+    return unwrap(data);
+  },
+  async createQuizFromBank(payload) {
+    const { data } = await api.post('/quizzes/from-bank', payload);
+    return unwrap(data);
+  },
+  async createQuestion(payload) {
+    const { data } = await api.post('/questions', payload);
+    return unwrap(data);
+  }
+};
+
+export const myQuestionsApi = {
+  async fetchBank(params = {}) {
+    const { data } = await api.get('/user/my-questions', { params });
+    const payload = unwrap(data);
+    const items = Array.isArray(payload) ? payload : (Array.isArray(payload?.data) ? payload.data : []);
+    const total = payload?.total ?? items.length;
+    const currentPage = payload?.current_page ?? 1;
+    const lastPage = payload?.last_page ?? 1;
+    const perPage = payload?.per_page ?? 20;
+    return { items, total, currentPage, lastPage, perPage };
+  },
+  async createQuestion(payload) {
+    const { data } = await api.post('/questions', payload);
+    return unwrap(data);
+  },
+  async trash() {
+    const { data } = await api.get('/user/my-questions/trash');
+    return unwrapCollection(data);
+  },
+  async update(id, payload) {
+    const { data } = await api.put(`/user/my-questions/${id}`, payload);
+    return unwrap(data);
+  },
+  async remove(id) {
+    const { data } = await api.delete(`/user/my-questions/${id}`);
+    return data;
+  },
+  async restore(id) {
+    const { data } = await api.post(`/user/my-questions/${id}/restore`);
+    return unwrap(data);
+  },
+  async forceDelete(id) {
+    const { data } = await api.delete(`/user/my-questions/${id}/force`);
+    return data;
+  }
+};
+
+export const adminQuestionsApi = {
+  async list(params = {}) {
+    const { data } = await api.get('/admin/questions-management', { params });
+    const payload = unwrap(data);
+    const items = Array.isArray(payload?.items) ? payload.items : (Array.isArray(payload) ? payload : []);
+    return {
+      items,
+      total: payload?.total ?? items.length,
+      currentPage: payload?.current_page ?? 1,
+      lastPage: payload?.last_page ?? 1,
+      perPage: payload?.per_page ?? 15,
+      stats: payload?.stats ?? { total: 0, public: 0, private: 0, reported: 0 }
+    };
+  },
+
+  async get(id) {
+    const { data } = await api.get(`/admin/questions/${id}`);
+    return unwrap(data);
+  },
+
+  async trash(params = {}) {
+    const { data } = await api.get('/admin/questions-trash', { params });
+    const payload = unwrap(data);
+    const items = Array.isArray(payload?.items) 
+      ? payload.items 
+      : (Array.isArray(payload?.data) ? payload.data : (Array.isArray(payload) ? payload : []));
+    return {
+      items,
+      total: payload?.total ?? items.length,
+      currentPage: payload?.current_page ?? 1,
+      lastPage: payload?.last_page ?? 1,
+      perPage: payload?.per_page ?? 15,
+      trashCount: payload?.trash_count ?? data?.trash_count ?? 0
+    };
+  },
+
+  async restore(id) {
+    const { data } = await api.post(`/admin/questions/${id}/restore`);
+    return unwrap(data);
+  },
+
+  async forceDelete(id) {
+    const { data } = await api.delete(`/admin/questions/${id}/force-delete`);
+    return data;
+  },
+
+  async bulkRestore(question_ids) {
+    const { data } = await api.post('/admin/questions/bulk-restore', { question_ids });
+    return unwrap(data);
+  },
+
+  async bulkForceDelete(question_ids) {
+    const { data } = await api.post('/admin/questions/bulk-force-delete', { question_ids });
+    return unwrap(data);
+  },
+
+  async toggleVisibility(id) {
+    const { data } = await api.patch(`/admin/questions/${id}/toggle-visibility`);
+    return unwrap(data);
+  },
+
+  async bulkToggleVisibility(question_ids, is_public) {
+    const { data } = await api.post('/admin/questions/bulk-visibility', { question_ids, is_public });
+    return unwrap(data);
+  },
+
+  async bulkDelete(question_ids) {
+    const { data } = await api.post('/admin/questions/bulk-delete', { question_ids });
+    return unwrap(data);
+  },
+
+  async update(id, payload) {
+    const { data } = await api.put(`/admin/questions/${id}`, payload);
+    return unwrap(data);
+  },
+
+  async createQuestion(payload) {
+    const { data } = await api.post('/questions', payload);
+    return unwrap(data);
+  },
+
+  async remove(id) {
+    const { data } = await api.delete(`/user/my-questions/${id}`);
+    return data;
+  }
+};
+
 
 export const normalizeRole = (role) => {
   const value = String(role || "guest")
@@ -259,13 +455,7 @@ api.interceptors.response.use(
   },
 );
 
-const unwrap = (payload) => payload?.data ?? payload;
-const unwrapCollection = (payload) => {
-  const body = unwrap(payload);
-  if (Array.isArray(body)) return body;
-  if (Array.isArray(body?.data)) return body.data;
-  return [];
-};
+
 const normalizeRoomCode = (value) =>
   String(value || "")
     .trim()
@@ -480,15 +670,8 @@ const prepareQuizPayload = (payload) =>
 
 export const quizzesApi = {
   async list(params = {}) {
-    const cacheKey = `quizzes_list_${JSON.stringify(params)}`;
-    return withMemoryCache(
-      cacheKey,
-      async () => {
-        const { data } = await api.get("/quizzes", { params });
-        return unwrapCollection(data);
-      },
-      15000,
-    );
+    const { data } = await api.get("/quizzes", { params });
+    return unwrapCollection(data);
   },
 
   async get(id) {
@@ -1033,6 +1216,14 @@ export const liveRoomApi = {
 };
 
 export const gamificationApi = {
+  async getUserStats() {
+    const { data } = await api.get("/user/stats");
+    return unwrap(data);
+  },
+  async getBadges() {
+    const { data } = await api.get("/badges");
+    return unwrapCollection(data);
+  },
   async getLeaderboard() {
     return withMemoryCache(
       "leaderboard",
@@ -1107,6 +1298,9 @@ export const coverToBackground = (cover) => {
 
 export const normalizeQuizCard = (quiz) => ({
   ...quiz,
+  subject_id: quiz.subject_id ?? quiz.subject?.id ?? null,
+  subject_name: quiz.subject_name ?? quiz.subject?.name ?? "",
+  topic_name: quiz.topic_name ?? "",
   roomCode: quiz.room_code || "",
   duration: `${quiz.duration_minutes || Math.ceil((quiz.time_limit_seconds || 600) / 60)} phút`,
   questions:
@@ -1231,21 +1425,21 @@ export const paymentsApi = {
 };
 
 export const reportApi = {
-  // Dành cho Client: Gửi báo cáo
+  // Dành cho Client: Gửi báo cáo (Quiz hoặc Question)
   async create(payload) {
     const { data } = await api.post("/report-tickets", payload);
     return unwrap(data);
   },
 
   // Dành cho Admin: Lấy danh sách
-  async listAdmin() {
-    const { data } = await api.get("/admin/report-tickets");
+  async listAdmin(params = {}) {
+    const { data } = await api.get("/admin/report-tickets", { params });
     return unwrapCollection(data);
   },
 
   // Dành cho Admin: Cập nhật trạng thái
-  async updateAdminStatus(id, status) {
-    const { data } = await api.put(`/admin/report-tickets/${id}`, { status });
+  async updateAdminStatus(id, status, action = null) {
+    const { data } = await api.put(`/admin/report-tickets/${id}`, { status, action });
     return unwrap(data);
   },
 };
@@ -1286,6 +1480,48 @@ export const notificationApi = {
 
   async deleteAll() {
     const { data } = await api.delete("/notifications");
+    return data;
+  },
+};
+
+export const adminSubjectsApi = {
+  async list(params = {}) {
+    const { data } = await api.get("/admin/subjects", { params });
+    return data?.data || { subjects: [], stats: { total: 0, trashed: 0 } };
+  },
+
+  async trash() {
+    const { data } = await api.get("/admin/subjects/trash");
+    return unwrapCollection(data);
+  },
+
+  async create(payload) {
+    const { data } = await api.post("/admin/subjects", payload);
+    return unwrap(data);
+  },
+
+  async get(id) {
+    const { data } = await api.get(`/admin/subjects/${id}`);
+    return unwrap(data);
+  },
+
+  async update(id, payload) {
+    const { data } = await api.put(`/admin/subjects/${id}`, payload);
+    return unwrap(data);
+  },
+
+  async softDelete(id) {
+    const { data } = await api.delete(`/admin/subjects/${id}`);
+    return data;
+  },
+
+  async restore(id) {
+    const { data } = await api.post(`/admin/subjects/${id}/restore`);
+    return unwrap(data);
+  },
+
+  async forceDelete(id) {
+    const { data } = await api.delete(`/admin/subjects/${id}/force-delete`);
     return data;
   },
 };

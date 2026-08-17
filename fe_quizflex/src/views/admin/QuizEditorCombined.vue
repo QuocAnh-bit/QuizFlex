@@ -21,22 +21,14 @@
         </p>
 
         <div class="mt-8 grid gap-5">
-          <div class="grid gap-4 md:grid-cols-[1fr_220px]">
+          <div class="grid gap-4">
             <label class="grid gap-2 text-sm font-black text-[var(--text)]">
-              Tiêu đề quiz
+              Tiêu đề quiz *
               <input
                 v-model="form.title"
                 class="field"
                 placeholder="Ví dụ: Ôn tập Sinh học lớp 10"
-              />
-            </label>
-
-            <label class="grid gap-2 text-sm font-black text-[var(--text)]">
-              Tag
-              <input
-                v-model="form.tag"
-                class="field"
-                placeholder="Sinh học"
+                required
               />
             </label>
           </div>
@@ -45,10 +37,60 @@
             Mô tả
             <textarea
               v-model="form.description"
-              class="field min-h-28"
+              class="field min-h-24"
               placeholder="Mô tả ngắn cho người làm quiz"
             ></textarea>
           </label>
+
+          <!-- Phân loại Chuẩn hóa EdTech: Cấp học - Khối lớp - Bộ môn -->
+          <div class="grid gap-4 md:grid-cols-3">
+            <label class="grid gap-2 text-sm font-black text-[var(--text)]">
+              Cấp học
+              <select v-model="form.education_level_id" class="field" @change="onTaxonomyChange">
+                <option value="">-- Chọn cấp học --</option>
+                <option v-for="level in taxonomyLevels" :key="level.id" :value="level.id">{{ level.name }}</option>
+              </select>
+            </label>
+
+            <label class="grid gap-2 text-sm font-black text-[var(--text)]">
+              Khối lớp
+              <select v-model="form.grade_id" class="field" @change="onTaxonomyChange">
+                <option value="">-- Chọn khối lớp --</option>
+                <option v-for="grade in formAvailableGrades" :key="grade.id" :value="grade.id">{{ grade.name }}</option>
+              </select>
+            </label>
+
+            <label class="grid gap-2 text-sm font-black text-[var(--text)]">
+              Bộ môn *
+              <select v-model="form.subject_id" class="field" required @change="onTaxonomyChange">
+                <option value="">-- Chọn bộ môn * --</option>
+                <option v-for="subject in formAvailableSubjects" :key="subject.id" :value="subject.id">{{ subject.name }}</option>
+              </select>
+            </label>
+          </div>
+
+          <!-- Chủ đề bộ môn: Gợi ý từ Kho + Nhập tự do -->
+          <div class="grid gap-4 md:grid-cols-2">
+            <label class="grid gap-2 text-sm font-black text-[var(--text)]">
+              Chủ đề có sẵn (Gợi ý)
+              <select v-model="selectedBankTopic" class="field cursor-pointer" @change="onBankTopicSelect">
+                <option value="">-- Chọn chủ đề từ kho câu hỏi --</option>
+                <option v-for="top in topicsList" :key="top.topic_name" :value="top.topic_name">
+                  {{ top.topic_name }} ({{ top.total_questions }} câu)
+                </option>
+              </select>
+            </label>
+
+            <label class="grid gap-2 text-sm font-black text-[var(--text)]">
+              Tên Chủ đề hiển thị
+              <input
+                v-model="form.topic_name"
+                class="field"
+                placeholder="VD: Hàm số bậc hai, Unit 3..."
+                @input="onTopicInputChange"
+              />
+            </label>
+          </div>
 
           <section class="overflow-hidden rounded-[1.7rem] border border-[var(--border)] bg-[var(--surface-soft)] shadow-[var(--shadow-card)]">
             <div class="grid gap-0 lg:grid-cols-[minmax(0,1fr)_280px]">
@@ -168,7 +210,7 @@
             </div>
           </section>
 
-          <div class="grid gap-4 md:grid-cols-3">
+          <div class="grid gap-4 md:grid-cols-2">
             <label class="grid gap-2 text-sm font-black text-[var(--text)]">
               Thời gian phút
               <input
@@ -187,15 +229,6 @@
                 <option value="medium">Vừa</option>
                 <option value="hard">Khó</option>
               </select>
-            </label>
-
-            <label class="grid gap-2 text-sm font-black text-[var(--text)]">
-              Danh mục
-              <input
-                v-model="form.category"
-                class="field"
-                placeholder="Khoa học"
-              />
             </label>
           </div>
         </div>
@@ -271,6 +304,14 @@
             </div>
 
             <div class="flex flex-wrap gap-2">
+              <button
+                class="btn-primary !px-4 !py-2 text-xs flex items-center gap-1.5"
+                type="button"
+                @click="openImportModal"
+              >
+                <span>📚 Chọn từ Kho & Ngân hàng câu hỏi</span>
+              </button>
+
               <button
                 class="btn-ghost !px-4 !py-2 text-xs"
                 type="button"
@@ -712,7 +753,13 @@
             {{ form.description || "Mô tả sẽ hiển thị ở đây." }}
           </p>
 
-          <div class="mt-4 flex flex-wrap gap-2">
+          <div class="mt-4 flex flex-wrap items-center gap-2">
+            <span v-if="selectedSubjectName" class="rounded-full bg-emerald-600/80 px-2.5 py-0.5 text-[11px] font-black text-white backdrop-blur shadow-sm">
+              Môn {{ selectedSubjectName }}
+            </span>
+            <span v-if="form.topic_name" class="rounded-full bg-purple-600/80 px-2.5 py-0.5 text-[11px] font-black text-white backdrop-blur shadow-sm">
+              Chủ đề: {{ form.topic_name }}
+            </span>
             <VisibilityBadge :value="form.visibility" />
 
             <span class="rounded-full border border-[var(--border)] bg-[var(--surface-soft)] px-3 py-1 text-xs font-black text-[var(--muted)]">
@@ -743,6 +790,317 @@
       </article>
     </aside>
   </section>
+    <!-- MODAL 📚 CHỌN CÂU HỎI TỪ NGÂN HÀNG (QUIZFLEX BALANCED LAYOUT & VISUAL REDESIGN) -->
+    <div
+      v-if="isImportModalOpen"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 sm:p-6 md:p-8 backdrop-blur-md overflow-y-auto"
+      @click.self="isImportModalOpen = false"
+    >
+      <div
+        class="relative w-full max-w-2xl max-h-[88vh] my-auto flex flex-col rounded-[2.2rem] border border-purple-500/25 bg-[#0b0717] shadow-[0_25px_80px_rgba(0,0,0,0.85)] overflow-hidden"
+      >
+        <!-- 1. HEADER CỐ ĐỊNH (RỘNG RÃI, KHÔNG LẸM MÉP) -->
+        <div
+          class="flex items-start justify-between px-7 pt-6 pb-4 border-b border-purple-500/20 bg-[#0b0717] shrink-0 gap-4"
+        >
+          <div>
+            <h3 class="text-lg sm:text-xl font-black text-[#f8f7ff] tracking-tight leading-tight">
+              Chọn câu hỏi
+            </h3>
+            <p class="text-xs font-semibold text-[#a4a1b5] mt-1">
+              Chọn câu hỏi từ ngân hàng để thêm vào Quiz
+            </p>
+          </div>
+          <button
+            type="button"
+            class="h-9 w-9 rounded-full shrink-0 flex items-center justify-center text-base font-bold text-[#a4a1b5] hover:text-[#f8f7ff] hover:bg-[#161324] transition"
+            @click="isImportModalOpen = false"
+          >
+            ✕
+          </button>
+        </div>
+
+        <!-- 2. SEARCH BAR (VÙNG CHÍNH TÌM KIẾM - SVG ICON TÁCH BIỆT HẲN VỚI TEXT) -->
+        <div class="px-7 pt-5 pb-3 bg-[#141022]/40 shrink-0">
+          <div class="relative flex items-center w-full">
+            <svg class="absolute left-3.5 h-4 w-4 text-[#a4a1b5] pointer-events-none shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input
+              v-model="importFilters.search"
+              type="text"
+              class="w-full rounded-xl border border-purple-500/20 bg-[#141022] text-xs font-semibold text-[#f8f7ff] placeholder-[#8a859e] pl-10 pr-4 py-2.5 outline-none transition-all duration-200 focus:border-[#9b2cff] focus:ring-1 focus:ring-[#9b2cff]/40 shadow-[inset_0_1px_3px_rgba(0,0,0,0.3)]"
+              placeholder="Tìm kiếm câu hỏi..."
+              @keyup.enter="loadImportBank(1)"
+            />
+          </div>
+        </div>
+
+        <!-- 3. FILTERS BAR (ĐẦY ĐỦ 5 BỘ LỌC: CẤP HỌC - KHỐI LỚP - MÔN HỌC - CHỦ ĐỀ - ĐỘ KHÓ) -->
+        <div class="px-7 pb-4 bg-[#141022]/40 border-b border-purple-500/20 shrink-0 space-y-2.5">
+          <!-- Hàng 1: Cấp học - Khối lớp - Môn học -->
+          <div class="grid grid-cols-3 gap-2.5">
+            <!-- Cấp học -->
+            <div class="relative flex items-center">
+              <select
+                v-model="importFilters.education_level_id"
+                class="w-full appearance-none rounded-xl border border-purple-500/20 bg-[#141022] text-xs font-semibold text-[#f8f7ff] pl-3 pr-8 py-2.5 h-10 outline-none transition-all duration-200 focus:border-[#9b2cff] focus:ring-1 focus:ring-[#9b2cff]/40 cursor-pointer"
+                :class="importFilters.education_level_id ? 'border-[#9b2cff]/60 bg-[#9b2cff]/10' : ''"
+                @change="onModalTaxonomyChange"
+              >
+                <option value="" class="bg-[#141022] text-[#f8f7ff]">-- Cấp học --</option>
+                <option
+                  v-for="level in taxonomyLevels"
+                  :key="level.id"
+                  :value="level.id"
+                  class="bg-[#141022] text-[#f8f7ff]"
+                >
+                  {{ level.name }}
+                </option>
+              </select>
+              <svg class="absolute right-3 h-3.5 w-3.5 text-[#9b96b0] pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+
+            <!-- Khối lớp -->
+            <div class="relative flex items-center">
+              <select
+                v-model="importFilters.grade_id"
+                class="w-full appearance-none rounded-xl border border-purple-500/20 bg-[#141022] text-xs font-semibold text-[#f8f7ff] pl-3 pr-8 py-2.5 h-10 outline-none transition-all duration-200 focus:border-[#9b2cff] focus:ring-1 focus:ring-[#9b2cff]/40 cursor-pointer"
+                :class="importFilters.grade_id ? 'border-[#9b2cff]/60 bg-[#9b2cff]/10' : ''"
+                @change="onModalTaxonomyChange"
+              >
+                <option value="" class="bg-[#141022] text-[#f8f7ff]">-- Khối lớp --</option>
+                <option
+                  v-for="grade in modalAvailableGrades"
+                  :key="grade.id"
+                  :value="grade.id"
+                  class="bg-[#141022] text-[#f8f7ff]"
+                >
+                  {{ grade.name }}
+                </option>
+              </select>
+              <svg class="absolute right-3 h-3.5 w-3.5 text-[#9b96b0] pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+
+            <!-- Môn học -->
+            <div class="relative flex items-center">
+              <select
+                v-model="importFilters.subject_id"
+                class="w-full appearance-none rounded-xl border border-purple-500/20 bg-[#141022] text-xs font-semibold text-[#f8f7ff] pl-3 pr-8 py-2.5 h-10 outline-none transition-all duration-200 focus:border-[#9b2cff] focus:ring-1 focus:ring-[#9b2cff]/40 cursor-pointer"
+                :class="importFilters.subject_id ? 'border-[#9b2cff]/60 bg-[#9b2cff]/10' : ''"
+                @change="onModalTaxonomyChange"
+              >
+                <option value="" class="bg-[#141022] text-[#f8f7ff]">-- Môn học --</option>
+                <option
+                  v-for="subject in modalAvailableSubjects"
+                  :key="subject.id"
+                  :value="subject.id"
+                  class="bg-[#141022] text-[#f8f7ff]"
+                >
+                  {{ subject.name }}
+                </option>
+              </select>
+              <svg class="absolute right-3 h-3.5 w-3.5 text-[#9b96b0] pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </div>
+
+          <!-- Hàng 2: Chủ đề - Độ khó -->
+          <div class="grid grid-cols-2 gap-2.5">
+            <!-- Chủ đề -->
+            <div class="relative flex items-center">
+              <select
+                v-model="importFilters.topic_name"
+                class="w-full appearance-none rounded-xl border border-purple-500/20 bg-[#141022] text-xs font-semibold text-[#f8f7ff] pl-3 pr-8 py-2.5 h-10 outline-none transition-all duration-200 focus:border-[#9b2cff] focus:ring-1 focus:ring-[#9b2cff]/40 cursor-pointer"
+                :class="importFilters.topic_name ? 'border-[#9b2cff]/60 bg-[#9b2cff]/10' : ''"
+                @change="loadImportBank(1)"
+              >
+                <option value="" class="bg-[#141022] text-[#f8f7ff]">-- Chủ đề --</option>
+                <option
+                  v-for="top in modalTopicsList"
+                  :key="top.topic_name"
+                  :value="top.topic_name"
+                  class="bg-[#141022] text-[#f8f7ff]"
+                >
+                  {{ top.topic_name }} ({{ top.total_questions }})
+                </option>
+              </select>
+              <svg class="absolute right-3 h-3.5 w-3.5 text-[#9b96b0] pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+
+            <!-- Độ khó -->
+            <div class="relative flex items-center">
+              <select
+                v-model="importFilters.difficulty"
+                class="w-full appearance-none rounded-xl border border-purple-500/20 bg-[#141022] text-xs font-semibold text-[#f8f7ff] pl-3 pr-8 py-2.5 h-10 outline-none transition-all duration-200 focus:border-[#9b2cff] focus:ring-1 focus:ring-[#9b2cff]/40 cursor-pointer"
+                :class="importFilters.difficulty ? 'border-[#9b2cff]/60 bg-[#9b2cff]/10' : ''"
+                @change="loadImportBank(1)"
+              >
+                <option value="" class="bg-[#141022] text-[#f8f7ff]">-- Độ khó --</option>
+                <option value="easy" class="bg-[#141022] text-[#f8f7ff]">Dễ</option>
+                <option value="medium" class="bg-[#141022] text-[#f8f7ff]">Trung bình</option>
+                <option value="hard" class="bg-[#141022] text-[#f8f7ff]">Khó</option>
+              </select>
+              <svg class="absolute right-3 h-3.5 w-3.5 text-[#9b96b0] pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. SUB-HEADER BAR (ĐẾM TỔNG SỐ CÂU HỎI TRONG DATABASE & TRANG HIỆN TẠI) -->
+        <div
+          class="px-7 py-3 border-b border-purple-500/20 bg-[#141022]/40 shrink-0 flex items-center justify-between text-xs font-bold text-[#a4a1b5]"
+        >
+          <span>
+            Tổng cộng <strong class="text-[#f8f7ff] font-extrabold">{{ totalImportBankItems }}</strong> câu hỏi
+            <span v-if="lastImportBankPage > 1" class="text-[11px] font-normal text-[#8a859e] ml-1">
+              (Trang {{ currentImportBankPage }}/{{ lastImportBankPage }})
+            </span>
+          </span>
+          <button
+            v-if="importBankItems.length > 0"
+            type="button"
+            class="text-xs font-extrabold text-[#9b2cff] hover:text-[#cf30ff] transition"
+            @click="toggleSelectAllImportBank"
+          >
+            {{ isAllImportSelected ? 'Bỏ chọn trang này' : 'Chọn tất cả trang này' }}
+          </button>
+        </div>
+
+        <!-- 5. QUESTION LIST (COMPACT SELECTION CARDS + PHÂN TRANG) -->
+        <div
+          class="flex-1 overflow-y-auto min-h-[220px] max-h-[46vh] space-y-2.5 p-6 scrollbar-soft"
+        >
+          <div
+            v-if="isLoadingImportBank"
+            class="py-16 text-center text-xs font-bold text-[#a4a1b5] flex flex-col items-center justify-center gap-2"
+          >
+            <div class="h-6 w-6 animate-spin rounded-full border-2 border-[#9b2cff] border-t-transparent"></div>
+            <span>Đang tải danh sách câu hỏi...</span>
+          </div>
+
+          <div
+            v-else-if="importBankItems.length === 0"
+            class="py-16 text-center text-xs font-bold text-[#a4a1b5]"
+          >
+            Không tìm thấy câu hỏi phù hợp.
+          </div>
+
+          <template v-else>
+            <div
+              v-for="item in importBankItems"
+              :key="item.id"
+              class="group flex items-start gap-4 p-4 rounded-2xl border transition-all duration-200 cursor-pointer"
+              :class="
+                selectedImportIds.includes(item.id)
+                  ? 'border-[#9b2cff] bg-[#9b2cff]/12 shadow-[0_0_20px_rgba(155,44,255,0.12)]'
+                  : 'border-purple-500/15 bg-[#141022]/60 hover:border-purple-500/40 hover:bg-[#1a152b]'
+              "
+              @click="toggleImportSelect(item.id)"
+            >
+              <!-- Checkbox Tinh Tế -->
+              <div
+                class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-lg border transition-all duration-200"
+                :class="
+                  selectedImportIds.includes(item.id)
+                    ? 'border-[#9b2cff] bg-[#9b2cff] text-white shadow-[0_0_8px_#9b2cff]'
+                    : 'border-purple-500/20 bg-[#161324] group-hover:border-[#a4a1b5]'
+                "
+              >
+                <svg
+                  v-if="selectedImportIds.includes(item.id)"
+                  class="h-3.5 w-3.5 stroke-[3]"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              </div>
+
+              <!-- Nội dung & Metadata Subline -->
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="font-mono text-xs font-black text-[#9b2cff]">#{{ item.id }}</span>
+                </div>
+                <p class="text-xs sm:text-sm font-bold text-[#f8f7ff] leading-snug line-clamp-2">
+                  {{ item.content || item.text }}
+                </p>
+                <p class="text-[11px] font-semibold text-[#a4a1b5] mt-1.5 truncate">
+                  {{ getQuestionMetaText(item) }}
+                </p>
+              </div>
+            </div>
+
+            <!-- PHÂN TRANG CHO PHÉP XEM KHÔNG GIỚI HẠN TOÀN BỘ CÂU HỎI -->
+            <div
+              v-if="lastImportBankPage > 1"
+              class="flex items-center justify-between pt-4 pb-1 border-t border-purple-500/20 mt-3 text-xs"
+            >
+              <button
+                type="button"
+                class="px-3.5 py-1.5 rounded-xl border border-purple-500/20 bg-[#141022] text-[#a4a1b5] hover:text-[#f8f7ff] hover:border-purple-500/40 disabled:opacity-30 disabled:cursor-not-allowed transition font-semibold"
+                :disabled="currentImportBankPage <= 1"
+                @click="loadImportBank(currentImportBankPage - 1)"
+              >
+                ◀ Trang trước
+              </button>
+              <span class="font-bold text-[#f8f7ff]">
+                Trang {{ currentImportBankPage }} / {{ lastImportBankPage }}
+              </span>
+              <button
+                type="button"
+                class="px-3.5 py-1.5 rounded-xl border border-purple-500/20 bg-[#141022] text-[#a4a1b5] hover:text-[#f8f7ff] hover:border-purple-500/40 disabled:opacity-30 disabled:cursor-not-allowed transition font-semibold"
+                :disabled="currentImportBankPage >= lastImportBankPage"
+                @click="loadImportBank(currentImportBankPage + 1)"
+              >
+                Trang sau ▶
+              </button>
+            </div>
+          </template>
+        </div>
+
+        <!-- 6. FOOTER CỐ ĐỊNH (CÂN ĐỐI & NHẸ NHÀNG) -->
+        <div
+          class="flex items-center justify-between px-7 py-4 border-t border-purple-500/20 bg-[#0b0717] shrink-0"
+        >
+          <span class="text-xs font-bold text-[#a4a1b5]">
+            Đã chọn
+            <strong class="text-[#f8f7ff] font-extrabold text-sm ml-1">{{ selectedImportIds.length }}</strong>
+            câu
+          </span>
+          <div class="flex items-center gap-3">
+            <button
+              type="button"
+              class="btn-ghost !px-5 !py-2.5 text-xs font-extrabold rounded-full"
+              @click="isImportModalOpen = false"
+            >
+              Hủy
+            </button>
+            <button
+              type="button"
+              class="btn-primary !px-5 !py-2.5 text-xs font-extrabold rounded-full shadow-[0_0_20px_rgba(155,44,255,0.3)] disabled:opacity-40 disabled:shadow-none disabled:cursor-not-allowed disabled:transform-none"
+              :disabled="selectedImportIds.length === 0"
+              @click="confirmImportQuestions"
+            >
+              Thêm {{ selectedImportIds.length }} câu
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
 </template>
 
 <script setup>
@@ -759,8 +1117,243 @@ import {
   currentUserStorage,
   difficultyLabel,
   normalizeQuestion as normalizeApiQuestion,
+  questionsBankApi,
   quizzesApi,
+  taxonomyApi,
 } from "@/services/api";
+
+const taxonomyLevels = ref([]);
+const taxonomyAllSubjects = ref([]);
+const topicsList = ref([]);
+const selectedBankTopic = ref("");
+
+const fetchFormTaxonomies = async () => {
+  try {
+    const data = await taxonomyApi.tree();
+    if (data) {
+      taxonomyLevels.value = data.education_levels || [];
+      taxonomyAllSubjects.value = data.subjects || [];
+    }
+  } catch (e) {
+    console.error("Không tải được danh mục taxonomy:", e);
+  }
+};
+
+const fetchTopicsList = async () => {
+  try {
+    const params = {
+      education_level_id: form.education_level_id || undefined,
+      grade_id: form.grade_id || undefined,
+      subject_id: form.subject_id || undefined,
+    };
+    const data = await questionsBankApi.fetchTopics(params);
+    topicsList.value = Array.isArray(data)
+      ? data
+      : data?.data && Array.isArray(data.data)
+      ? data.data
+      : [];
+  } catch (e) {
+    console.error("Không tải được danh sách Chủ đề từ kho:", e);
+  }
+};
+
+const onTaxonomyChange = () => {
+  form.grade_id = form.grade_id || "";
+  fetchTopicsList();
+};
+
+const onBankTopicSelect = () => {
+  if (selectedBankTopic.value) {
+    form.topic_name = selectedBankTopic.value;
+  }
+};
+
+const onTopicInputChange = () => {
+  const text = (form.topic_name || "").trim().toLowerCase();
+  if (!text) {
+    selectedBankTopic.value = "";
+  } else {
+    const found = topicsList.value.find(
+      (t) => t.topic_name.toLowerCase() === text,
+    );
+    selectedBankTopic.value = found ? found.topic_name : "";
+  }
+};
+
+const formAvailableGrades = computed(() => {
+  if (!form.education_level_id) {
+    return taxonomyLevels.value.flatMap((l) => l.grades || []);
+  }
+  const level = taxonomyLevels.value.find(
+    (l) => l.id === Number(form.education_level_id),
+  );
+  return level ? level.grades || [] : [];
+});
+
+const formAvailableSubjects = computed(() => {
+  if (!form.grade_id) {
+    return taxonomyAllSubjects.value;
+  }
+  const grade = formAvailableGrades.value.find(
+    (g) => g.id === Number(form.grade_id),
+  );
+  return grade && grade.subjects ? grade.subjects : taxonomyAllSubjects.value;
+});
+
+const selectedSubjectName = computed(() => {
+  if (!form.subject_id) return "";
+  const sub = taxonomyAllSubjects.value.find((s) => s.id === Number(form.subject_id));
+  return sub ? sub.name : "";
+});
+
+const isImportModalOpen = ref(false);
+const isLoadingImportBank = ref(false);
+const importBankItems = ref([]);
+const selectedImportIds = ref([]);
+const modalTopicsList = ref([]);
+
+const totalImportBankItems = ref(0);
+const currentImportBankPage = ref(1);
+const lastImportBankPage = ref(1);
+
+const importFilters = reactive({
+  search: "",
+  education_level_id: "",
+  grade_id: "",
+  subject_id: "",
+  topic_name: "",
+  difficulty: "",
+  page: 1,
+});
+
+const modalAvailableGrades = computed(() => {
+  if (!importFilters.education_level_id) {
+    return taxonomyLevels.value.flatMap((l) => l.grades || []);
+  }
+  const level = taxonomyLevels.value.find(
+    (l) => l.id === Number(importFilters.education_level_id),
+  );
+  return level ? level.grades || [] : [];
+});
+
+const modalAvailableSubjects = computed(() => {
+  if (!importFilters.grade_id) {
+    return taxonomyAllSubjects.value;
+  }
+  const grade = modalAvailableGrades.value.find(
+    (g) => g.id === Number(importFilters.grade_id),
+  );
+  return grade && grade.subjects ? grade.subjects : taxonomyAllSubjects.value;
+});
+
+const fetchModalTopicsList = async () => {
+  try {
+    const params = {
+      education_level_id: importFilters.education_level_id || undefined,
+      grade_id: importFilters.grade_id || undefined,
+      subject_id: importFilters.subject_id || undefined,
+    };
+    const data = await questionsBankApi.fetchTopics(params);
+    modalTopicsList.value = Array.isArray(data) ? data : [];
+  } catch (e) {
+    console.error("Không tải được danh sách Chủ đề modal:", e);
+  }
+};
+
+const onModalTaxonomyChange = () => {
+  importFilters.grade_id = importFilters.grade_id || "";
+  fetchModalTopicsList();
+  loadImportBank(1);
+};
+
+const openImportModal = async () => {
+  isImportModalOpen.value = true;
+  selectedImportIds.value = [];
+  importFilters.education_level_id = form.education_level_id || "";
+  importFilters.grade_id = form.grade_id || "";
+  importFilters.subject_id = form.subject_id || "";
+  importFilters.topic_name = form.topic_name || "";
+  await fetchModalTopicsList();
+  await loadImportBank(1);
+};
+
+const loadImportBank = async (page = 1) => {
+  isLoadingImportBank.value = true;
+  importFilters.page = page;
+  try {
+    const res = await questionsBankApi.fetchBank({
+      search: importFilters.search || undefined,
+      education_level_id: importFilters.education_level_id || undefined,
+      grade_id: importFilters.grade_id || undefined,
+      subject_id: importFilters.subject_id || undefined,
+      topic_name: importFilters.topic_name || undefined,
+      difficulty: importFilters.difficulty || undefined,
+      page: importFilters.page,
+      per_page: 20,
+    });
+    importBankItems.value = res.items || [];
+    totalImportBankItems.value = res.total || 0;
+    currentImportBankPage.value = res.currentPage || 1;
+    lastImportBankPage.value = res.lastPage || 1;
+  } catch (err) {
+    console.error("Không tải được ngân hàng câu hỏi:", err);
+  } finally {
+    isLoadingImportBank.value = false;
+  }
+};
+
+const isAllImportSelected = computed(() => {
+  if (importBankItems.value.length === 0) return false;
+  return importBankItems.value.every((item) =>
+    selectedImportIds.value.includes(item.id),
+  );
+});
+
+const toggleSelectAllImportBank = () => {
+  if (isAllImportSelected.value) {
+    selectedImportIds.value = [];
+  } else {
+    selectedImportIds.value = importBankItems.value.map((item) => item.id);
+  }
+};
+
+const formatDifficultyLabel = (diff) => {
+  if (diff === "easy") return "Dễ";
+  if (diff === "hard") return "Khó";
+  return "Trung bình";
+};
+
+const getQuestionMetaText = (item) => {
+  const parts = [];
+  const subjectName = item.subject_name || item.subject?.name;
+  if (subjectName) parts.push(subjectName);
+  if (item.topic_name) parts.push(item.topic_name);
+  parts.push(formatDifficultyLabel(item.difficulty));
+  parts.push(item.is_public ? "Public" : "Private");
+  return parts.join(" · ");
+};
+
+const toggleImportSelect = (id) => {
+  const idx = selectedImportIds.value.indexOf(id);
+  if (idx > -1) {
+    selectedImportIds.value.splice(idx, 1);
+  } else {
+    selectedImportIds.value.push(id);
+  }
+};
+
+const confirmImportQuestions = () => {
+  const selectedItems = importBankItems.value.filter((item) =>
+    selectedImportIds.value.includes(item.id),
+  );
+  if (selectedItems.length > 0) {
+    const formatted = normalizeEditorQuestions(selectedItems);
+    questions.value.push(...formatted);
+    if (typeof showToast === 'function') showToast(`Đã chèn ${selectedItems.length} câu hỏi vào Quiz!`, "success");
+  }
+  selectedImportIds.value = [];
+  isImportModalOpen.value = false;
+};
 
 const route = useRoute();
 const router = useRouter();
@@ -807,14 +1400,17 @@ const ocrMode = ref("math");
 
 const form = reactive({
   title: "",
-  tag: "",
+  education_level_id: "",
+  grade_id: "",
+  subject_id: "",
+  topic_name: "",
   description: "",
   cover: "",
   coverFile: null,
   removeCover: false,
   durationMinutes: 12,
   difficulty: "medium",
-  category: "Khoa học",
+  category: "",
   visibility: route.query.visibility === "group" ? "group" : "public",
   roomCode:
     route.query.visibility === "group"
@@ -825,6 +1421,7 @@ const form = reactive({
 const questions = ref([]);
 const checklist = [
   "Có tiêu đề rõ ràng",
+  "Đã chọn Bộ môn học (*)",
   "Có ảnh bìa hoặc gradient dự phòng",
   "Ít nhất 1 câu hỏi",
   "Mỗi câu có đáp án",
@@ -1338,11 +1935,14 @@ const makePayload = () => {
   const payload = {
     user_id: currentUser?.id,
     title: form.title.trim(),
-    tag: form.tag.trim(),
+    education_level_id: form.education_level_id || undefined,
+    grade_id: form.grade_id || undefined,
+    subject_id: form.subject_id || undefined,
+    topic_name: form.topic_name ? form.topic_name.trim() : undefined,
+    category: form.topic_name ? form.topic_name.trim() : undefined,
     description: form.description.trim(),
     duration_minutes: Number(form.durationMinutes) || 12,
     difficulty: form.difficulty,
-    category: form.category.trim() || "General",
     visibility: form.visibility,
     roomCode: form.roomCode.trim(),
     questions: buildSavePayload(),
@@ -1359,6 +1959,7 @@ const makePayload = () => {
 
 const validateBeforeSave = () => {
   if (!form.title.trim()) return "Bạn chưa nhập tiêu đề quiz.";
+  if (!form.subject_id) return "Vui lòng chọn Bộ môn cho bài quiz.";
 
   const duration = Number(form.durationMinutes);
   if (!Number.isFinite(duration) || duration < 1 || duration > 1440)
@@ -1455,7 +2056,12 @@ const loadQuizForEdit = async () => {
     const quiz = await quizzesApi.getForEdit(route.params.id);
 
     form.title = quiz.title || "";
-    form.tag = quiz.tag || "";
+    form.education_level_id = quiz.education_level_id || "";
+    form.grade_id = quiz.grade_id || "";
+    form.subject_id = quiz.subject_id || "";
+    form.topic_name = quiz.topic_name || "";
+    await fetchTopicsList();
+    onTopicInputChange();
     form.description = quiz.description || "";
     form.cover = quiz.cover || "";
     form.coverFile = null;
@@ -1464,7 +2070,6 @@ const loadQuizForEdit = async () => {
     form.durationMinutes =
       quiz.duration_minutes || Math.ceil((quiz.time_limit_seconds || 720) / 60);
     form.difficulty = quiz.difficulty || "medium";
-    form.category = quiz.category || "Khoa học";
     form.visibility = quiz.visibility || "public";
     form.roomCode = quiz.room_code || "";
 
@@ -1577,6 +2182,8 @@ onMounted(async () => {
   window.addEventListener("quizflex-user-updated", syncCreatorProfile);
   window.addEventListener("storage", syncCreatorProfile);
 
+  await fetchFormTaxonomies();
+  await fetchTopicsList();
   await loadQuizForEdit();
   loadOcrDraft();
 });
@@ -1693,6 +2300,17 @@ math-field::part(menu-toggle) {
   font-size: 0.95rem;
   font-weight: 700;
   outline: none;
+}
+
+select.field {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23a4a1b5' stroke-width='2.5'><path stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 1.1rem 1.1rem;
+  padding-right: 2.6rem;
 }
 
 .field:focus {

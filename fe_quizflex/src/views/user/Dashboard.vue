@@ -33,6 +33,7 @@
 <script setup>
 const quickActions = [
   { title: 'Kho quiz của tôi', desc: 'Xem, lọc, sửa và xóa quiz bạn đã tạo.', to: '/dashboard/questions', icon: 'QZ' },
+  { title: 'Kho câu hỏi của tôi', desc: 'Xem, sửa nội dung/đáp án và quản lý Thùng rác câu hỏi.', to: '/dashboard/my-questions', icon: '📚' },
   { title: 'Tạo quiz thủ công', desc: 'Tạo quiz mới với câu hỏi, đáp án, thời gian và ảnh bìa.', to: '/dashboard/questions/create', icon: '+' },
   { title: 'AI Generator', desc: 'Sinh bản nháp quiz bằng AI rồi chỉnh lại trước khi lưu.', to: '/dashboard/questions/ai', icon: 'AI' },
   { title: 'OCR Upload', desc: 'Upload ảnh hoặc tài liệu để trích xuất câu hỏi bằng OCR.', to: '/dashboard/questions/ocr', icon: 'OC' },

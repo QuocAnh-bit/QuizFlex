@@ -58,7 +58,7 @@
         <div class="mb-5 flex items-center justify-between gap-4"><div><h3 class="text-xl font-black text-[var(--text)]">{{ section.title }}</h3><p class="mt-1 text-sm text-[var(--muted)]">{{ section.description }}</p></div><router-link class="rounded-full border border-[var(--border)] bg-[var(--surface-soft)] px-4 py-2 text-xs font-black text-[var(--primary)] transition hover:border-[var(--border-strong)] hover:bg-[var(--chip-active)]" :to="`${questionBase}?category=${section.id}`">Xem tất cả</router-link></div>
         <div class="scrollbar-soft flex gap-4 overflow-x-auto pb-2">
           <article v-for="quiz in section.quizzes" :key="quiz.id" class="group/card w-[198px] shrink-0 overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--surface-soft)] shadow-[var(--shadow-card)] transition duration-300 hover:-translate-y-2 hover:border-[var(--border-strong)] hover:bg-[var(--surface)]">
-            <router-link :to="`/quizzes/${quiz.id}`" class="block"><div class="relative h-[124px] overflow-hidden" :style="{ background: quiz.cover }"><div class="absolute inset-0 bg-gradient-to-t from-black/35 via-black/5 to-white/10"></div><div class="absolute left-3 top-3 rounded-full bg-black/55 px-3 py-1 text-[10px] font-black uppercase text-white backdrop-blur">{{ quiz.badge }}</div><div class="absolute bottom-3 right-3 grid h-10 w-10 place-items-center rounded-full bg-white/90 text-lg shadow-lg transition group-hover/card:scale-110">{{ quiz.icon }}</div></div><div class="p-4"><h4 class="line-clamp-2 min-h-[44px] text-sm font-black leading-5 text-[var(--text)] transition group-hover/card:text-[var(--primary)]">{{ quiz.title }}</h4><div class="mt-3 flex items-center gap-1 text-xs"><span class="font-black text-[var(--accent)]">{{ quiz.rating }}</span><span class="text-[var(--accent)]">★</span><span class="text-[var(--muted)]">by {{ quiz.author }}</span></div><div class="mt-3 flex flex-wrap items-center gap-2"><VisibilityBadge :value="quiz.visibility" /><span class="rounded-full px-3 py-1 text-[11px] font-black" :class="difficultyClass(quiz.difficulty)">{{ quiz.difficulty }}</span><span class="text-xs font-bold text-[var(--muted)]">{{ quiz.questions }} câu</span></div></div></router-link>
+            <router-link :to="`/quizzes/${quiz.id}`" class="block"><div class="relative h-[124px] overflow-hidden" :style="{ background: quiz.cover }"><div class="absolute inset-0 bg-gradient-to-t from-black/35 via-black/5 to-white/10"></div><div class="absolute left-3 top-3 flex flex-wrap gap-1"><span v-if="quiz.topic_name" class="rounded-full bg-purple-600/80 px-2 py-0.5 text-[10px] font-black text-white backdrop-blur">{{ quiz.topic_name }}</span><span v-else-if="quiz.subject_name" class="rounded-full bg-emerald-600/80 px-2 py-0.5 text-[10px] font-black text-white backdrop-blur">{{ quiz.subject_name }}</span><span v-else class="rounded-full bg-slate-700/80 px-2 py-0.5 text-[10px] font-black text-white backdrop-blur">{{ quiz.category || 'Quiz' }}</span></div><div class="absolute bottom-3 right-3 grid h-10 w-10 place-items-center rounded-full bg-white/90 text-lg shadow-lg transition group-hover/card:scale-110">{{ quiz.icon }}</div></div><div class="p-4"><h4 class="line-clamp-2 min-h-[44px] text-sm font-black leading-5 text-[var(--text)] transition group-hover/card:text-[var(--primary)]">{{ quiz.title }}</h4><div class="mt-3 flex items-center gap-1 text-xs"><span class="font-black text-[var(--accent)]">{{ quiz.rating }}</span><span class="text-[var(--accent)]">★</span><span class="text-[var(--muted)]">by {{ quiz.author }}</span></div><div class="mt-3 flex flex-wrap items-center gap-2"><VisibilityBadge :value="quiz.visibility" /><span class="rounded-full px-3 py-1 text-[11px] font-black" :class="difficultyClass(quiz.difficulty)">{{ quiz.difficulty }}</span><span class="text-xs font-bold text-[var(--muted)]">{{ quiz.questions }} câu</span></div></div></router-link>
           </article>
         </div>
       </section>
@@ -109,16 +109,17 @@ const filteredQuizSections = computed(() => {
 
 const buildSections = (quizzes) => {
   const grouped = quizzes.reduce((acc, quiz) => {
-    const category = quiz.category || 'Ngẫu nhiên'
-    if (!acc[category]) acc[category] = []
-    acc[category].push(quiz)
+    const subjectName = quiz.subject_name ? quiz.subject_name : (quiz.subject?.name ? quiz.subject.name : null)
+    const categoryKey = subjectName || 'Khác / Tổng hợp'
+    if (!acc[categoryKey]) acc[categoryKey] = []
+    acc[categoryKey].push(quiz)
     return acc
   }, {})
 
   return Object.entries(grouped).map(([category, quizzes]) => ({
     id: category.toLowerCase().replace(/\s+/g, '-'),
-    title: category,
-    description: `Các quiz thuộc nhóm ${category}.`,
+    title: category === 'Khác / Tổng hợp' ? category : `Môn ${category}`,
+    description: category === 'Khác / Tổng hợp' ? 'Các quiz tổng hợp hoặc chưa gán môn học cụ thể.' : `Các quiz thuộc môn ${category}.`,
     category,
     quizzes,
   }))

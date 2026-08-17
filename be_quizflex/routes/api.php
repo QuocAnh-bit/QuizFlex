@@ -21,8 +21,14 @@ use App\Http\Controllers\UnlockRequestController;
 use App\Services\AI\AIService;
 use App\AI\Prompts\QuizPrompt;
 use App\Http\Controllers\AIController;
+use App\Http\Controllers\TaxonomyController;
+use App\Http\Controllers\AdminSubjectController;
 use App\Http\Controllers\ReportTicketController;
 use App\Http\Controllers\NotificationController;
+
+Route::get('/taxonomies/tree', [TaxonomyController::class, 'tree']);
+Route::get('/questions/bank', [QuestionController::class, 'bank']);
+Route::post('/quizzes/from-bank', [QuestionController::class, 'createQuizFromBank']);
 
 Route::get('/test', function () {
     return response()->json([
@@ -82,6 +88,15 @@ Route::middleware('auth:api')->group(function () {
     Route::put('/notifications/read-all', [NotificationController::class, 'markAllAsRead']);
     Route::delete('/notifications', [NotificationController::class, 'destroyAll']);
 
+    // Kho câu hỏi cá nhân & Thùng rác câu hỏi (My Questions Repository)
+    Route::post('/questions', [QuestionController::class, 'storeQuestion']);
+    Route::get('/user/my-questions', [QuestionController::class, 'userBank']);
+    Route::get('/user/my-questions/trash', [QuestionController::class, 'userTrash']);
+    Route::put('/user/my-questions/{id}', [QuestionController::class, 'updateQuestion']);
+    Route::delete('/user/my-questions/{id}', [QuestionController::class, 'softDeleteQuestion']);
+    Route::post('/user/my-questions/{id}/restore', [QuestionController::class, 'restoreQuestion']);
+    Route::delete('/user/my-questions/{id}/force', [QuestionController::class, 'forceDeleteQuestion']);
+
 
     Route::middleware('role:admin')->group(function () {
         Route::get('/admin/dashboard/overview', [AdminDashboardController::class, 'overview']);
@@ -119,6 +134,29 @@ Route::middleware('auth:api')->group(function () {
         // Quản lý báo cáo vi phạm cho admin
         Route::get('/admin/report-tickets', [ReportTicketController::class, 'index']);
         Route::put('/admin/report-tickets/{id}', [ReportTicketController::class, 'update']);
+
+        // Quản lý ngân hàng câu hỏi toàn hệ thống cho admin
+        Route::get('/admin/questions-management', [QuestionController::class, 'adminIndex']);
+        Route::get('/admin/questions-trash', [QuestionController::class, 'adminTrash']);
+        Route::post('/admin/questions/{id}/restore', [QuestionController::class, 'adminRestore']);
+        Route::delete('/admin/questions/{id}/force-delete', [QuestionController::class, 'adminForceDelete']);
+        Route::post('/admin/questions/bulk-restore', [QuestionController::class, 'adminBulkRestore']);
+        Route::post('/admin/questions/bulk-force-delete', [QuestionController::class, 'adminBulkForceDelete']);
+        Route::get('/admin/questions/{id}', [QuestionController::class, 'adminShow']);
+        Route::put('/admin/questions/{id}', [QuestionController::class, 'adminUpdate']);
+        Route::patch('/admin/questions/{id}/toggle-visibility', [QuestionController::class, 'adminToggleVisibility']);
+        Route::post('/admin/questions/bulk-visibility', [QuestionController::class, 'adminBulkToggleVisibility']);
+        Route::post('/admin/questions/bulk-delete', [QuestionController::class, 'adminBulkDelete']);
+
+        // Quản lý bộ môn (Subjects) cho admin
+        Route::get('/admin/subjects', [AdminSubjectController::class, 'index']);
+        Route::get('/admin/subjects/trash', [AdminSubjectController::class, 'trash']);
+        Route::post('/admin/subjects', [AdminSubjectController::class, 'store']);
+        Route::get('/admin/subjects/{id}', [AdminSubjectController::class, 'show']);
+        Route::put('/admin/subjects/{id}', [AdminSubjectController::class, 'update']);
+        Route::delete('/admin/subjects/{id}', [AdminSubjectController::class, 'destroy']);
+        Route::post('/admin/subjects/{id}/restore', [AdminSubjectController::class, 'restore']);
+        Route::delete('/admin/subjects/{id}/force-delete', [AdminSubjectController::class, 'forceDelete']);
 
         // Quản lý quiz cho admin
         Route::middleware('role:admin')->group(function () {
@@ -243,10 +281,14 @@ Route::post('/payments/webhook/momo', [PaymentController::class, 'webhookMomo'])
 Route::get('/payments/callback', [PaymentController::class, 'callback']);
 Route::get('/payments/check-status/{orderCode}', [PaymentController::class, 'checkStatus']);
 
-// Public Quiz Routes
+// Public Quiz & Question Bank Routes
 Route::get('/quizzes', [QuizController::class, 'index']);
 Route::get('/quizzes/{quiz}', [QuizController::class, 'show']);
 Route::get('/quizzes/{quiz}/questions', [QuestionController::class, 'index']);
+Route::get('/questions/bank', [QuestionController::class, 'bank']);
+Route::get('/questions/topics', [QuestionController::class, 'topics']);
+Route::get('/questions/stats', [QuestionController::class, 'stats']);
+Route::post('/quizzes/from-bank', [QuestionController::class, 'createQuizFromBank']);
 Route::get('/questions/{question}', [QuestionController::class, 'show']);
 Route::get('/user', function (Request $request) {
     return $request->user();
