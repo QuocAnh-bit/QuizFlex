@@ -19,14 +19,10 @@ class QuizController extends Controller
 {
     public function index(Request $request)
     {
-        try {
-            $user = $this->resolveOptionalApiUser();
-        } catch (TokenExpiredException) {
-            return response()->json(['message' => 'Unauthenticated.'], 401);
-        }
+        $user = $this->resolveOptionalApiUser();
 
         $query = Quiz::query()
-            ->with('user:id,name')
+            ->with(['user:id,name', 'educationLevel', 'grade', 'subject'])
             ->withCount(['questions', 'attempts'])
             ->withAvg(['attempts as avg_score' => fn($q) => $q->where('status', 'completed')], 'score')
             ->latest();
@@ -38,12 +34,29 @@ class QuizController extends Controller
                     ->orWhere('description', 'like', "%{$keyword}%")
                     ->orWhere('category', 'like', "%{$keyword}%")
                     ->orWhere('tag', 'like', "%{$keyword}%")
+                    ->orWhere('topic_name', 'like', "%{$keyword}%")
                     ->orWhere('room_code', 'like', "%{$keyword}%");
             });
         }
 
         if ($request->filled('category')) {
             $query->where('category', $request->query('category'));
+        }
+
+        if ($request->filled('education_level_id')) {
+            $query->where('education_level_id', $request->query('education_level_id'));
+        }
+
+        if ($request->filled('grade_id')) {
+            $query->where('grade_id', $request->query('grade_id'));
+        }
+
+        if ($request->filled('subject_id')) {
+            $query->where('subject_id', $request->query('subject_id'));
+        }
+
+        if ($request->filled('topic_name')) {
+            $query->where('topic_name', 'like', "%" . trim((string)$request->query('topic_name')) . "%");
         }
 
         if ($request->filled('difficulty')) {
@@ -162,7 +175,7 @@ class QuizController extends Controller
 
         Gate::forUser($user)->authorize('view', $quiz);
 
-        $quiz->load(['user:id,name', 'questions.answers'])
+        $quiz->load(['user:id,name', 'educationLevel', 'grade', 'subject', 'questions.answers'])
             ->loadCount(['questions', 'attempts'])
             ->loadAvg(['attempts as avg_score' => fn($q) => $q->where('status', 'completed')], 'score');
 
@@ -178,7 +191,7 @@ class QuizController extends Controller
         $user = auth('api')->user();
         Gate::forUser($user)->authorize('update', $quiz);
 
-        $quiz->load(['user:id,name', 'questions.answers'])
+        $quiz->load(['user:id,name', 'educationLevel', 'grade', 'subject', 'questions.answers'])
             ->loadCount(['questions', 'attempts'])
             ->loadAvg(['attempts as avg_score' => fn($q) => $q->where('status', 'completed')], 'score');
 
@@ -211,6 +224,18 @@ class QuizController extends Controller
             $owner = User::find($quiz->user_id);
             if ($owner) {
                 $owner->notify(new QuizModerated($quiz, 'edited'));
+            }
+        } else {
+            // NẾU TÁC GIẢ SỬA QUIZ TỪNG BỊ BÁO CÁO / ẨN -> THÔNG BÁO CHO CÁC ADMIN
+            $currentUser = auth('api')->user();
+            if ($currentUser && strtolower($currentUser->role ?? '') !== 'admin') {
+                $hasReport = \App\Models\ReportTicket::where('quiz_id', $quiz->id)->exists();
+                if ($hasReport || !$quiz->is_public) {
+                    $admins = User::whereIn('role', ['admin', 'ADMIN'])->get();
+                    if ($admins->isNotEmpty()) {
+                        \Illuminate\Support\Facades\Notification::send($admins, new \App\Notifications\ReportAuthorUpdated($quiz, 'quiz', $currentUser));
+                    }
+                }
             }
         }
 
@@ -300,6 +325,12 @@ class QuizController extends Controller
         $quiz->is_public = !$quiz->is_public;
         $quiz->save();
 
+        if ($quiz->is_public) {
+            \App\Models\ReportTicket::where('quiz_id', $quiz->id)
+                ->where('status', 'pending')
+                ->update(['status' => 'resolved']);
+        }
+
         // Gửi thông báo cho người tạo quiz
         $owner = User::find($quiz->user_id);
 
@@ -327,6 +358,10 @@ class QuizController extends Controller
             'title' => [$isUpdate ? 'sometimes' : 'required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'category' => ['nullable', 'string', 'max:100'],
+            'education_level_id' => ['nullable', 'integer', 'exists:education_levels,id'],
+            'grade_id' => ['nullable', 'integer', 'exists:grades,id'],
+            'subject_id' => ['nullable', 'integer', 'exists:subjects,id'],
+            'topic_name' => ['nullable', 'string', 'max:150'],
             'tag' => ['nullable', 'string', 'max:100'],
             'difficulty' => ['nullable', 'string', Rule::in(['easy', 'medium', 'hard', 'Dễ', 'Vừa', 'Khó'])],
             'status' => ['nullable', Rule::in(['draft', 'published', 'archived'])],
@@ -360,6 +395,13 @@ class QuizController extends Controller
             'questions.*.answers.*.key' => ['nullable', 'string', 'max:4'],
             'questions.*.answers.*.is_correct' => ['nullable', 'boolean'],
             'questions.*.answers.*.order' => ['nullable', 'integer', 'min:0'],
+        ], [
+            'title.required' => 'Vui lòng nhập tiêu đề bài Quiz.',
+            'subject_id.exists' => 'Bộ môn được chọn không tồn tại.',
+            'questions.*.answers.required_with' => 'Mỗi câu hỏi phải có danh sách đáp án.',
+            'questions.*.answers.min' => 'Mỗi câu hỏi trắc nghiệm phải có ít nhất 2 đáp án.',
+            'questions.*.answers.*.content.required' => 'Vui lòng điền nội dung cho tất cả các lựa chọn đáp án.',
+            'questions.*.answers.*.text.required' => 'Vui lòng điền nội dung cho tất cả các lựa chọn đáp án.',
         ]);
     }
 
@@ -433,13 +475,20 @@ class QuizController extends Controller
             $isPublic = false;
         }
 
-        $category = $data['category'] ?? $currentQuiz?->category ?? 'General';
+        $rawCategory = $data['category'] ?? $currentQuiz?->category;
+        $category = (!empty($data['topic_name']) && (empty($rawCategory) || $rawCategory === 'General' || $rawCategory === 'Khoa học'))
+            ? $data['topic_name']
+            : ($rawCategory ?: 'General');
 
         return [
             'user_id' => $userId,
             'title' => $data['title'] ?? $currentQuiz?->title ?? 'Untitled quiz',
             'description' => array_key_exists('description', $data) ? $data['description'] : $currentQuiz?->description,
             'category' => $category,
+            'education_level_id' => array_key_exists('education_level_id', $data) ? $data['education_level_id'] : $currentQuiz?->education_level_id,
+            'grade_id' => array_key_exists('grade_id', $data) ? $data['grade_id'] : $currentQuiz?->grade_id,
+            'subject_id' => array_key_exists('subject_id', $data) ? $data['subject_id'] : $currentQuiz?->subject_id,
+            'topic_name' => array_key_exists('topic_name', $data) ? $data['topic_name'] : $currentQuiz?->topic_name,
             'tag' => array_key_exists('tag', $data) ? $data['tag'] : $currentQuiz?->tag,
             'difficulty' => $this->normalizeDifficulty($data['difficulty'] ?? $currentQuiz?->difficulty ?? 'medium'),
             'status' => $data['status'] ?? $currentQuiz?->status ?? ($isPublic ? 'published' : 'draft'),
@@ -448,13 +497,13 @@ class QuizController extends Controller
             'time_limit_seconds' => $this->resolveTimeLimitSeconds($data, $currentQuiz),
             'cover' => array_key_exists('cover', $data) ? ($data['cover'] ?: null) : $currentQuiz?->cover,
             'icon' => array_key_exists('icon', $data) ? ($data['icon'] ?: null) : $currentQuiz?->icon,
-            'badge' => array_key_exists('badge', $data) ? ($data['badge'] ?: strtoupper(substr($category, 0, 4))) : $currentQuiz?->badge,
+            'badge' => array_key_exists('badge', $data) ? ($data['badge'] ?: mb_strtoupper(mb_substr($category, 0, 4, 'UTF-8'), 'UTF-8')) : $currentQuiz?->badge,
         ];
     }
 
     private function syncQuestions(Quiz $quiz, array $questions): void
     {
-        $keptQuestionIds = [];
+        $syncData = [];
 
         foreach ($questions as $index => $questionData) {
             $questionContent = trim((string) ($questionData['content'] ?? $questionData['text'] ?? ''));
@@ -465,9 +514,13 @@ class QuizController extends Controller
             $question = Question::updateOrCreate(
                 [
                     'id' => $questionData['id'] ?? null,
-                    'quiz_id' => $quiz->id,
                 ],
                 [
+                    'user_id' => $questionData['user_id'] ?? $quiz->user_id,
+                    'education_level_id' => $questionData['education_level_id'] ?? $quiz->education_level_id,
+                    'grade_id' => $questionData['grade_id'] ?? $quiz->grade_id,
+                    'subject_id' => $questionData['subject_id'] ?? $quiz->subject_id,
+                    'topic_name' => $questionData['topic_name'] ?? $quiz->topic_name,
                     'content' => $questionContent,
                     'type' => $questionData['type'] ?? 'single_choice',
                     'order' => $questionData['order'] ?? $index,
@@ -482,13 +535,15 @@ class QuizController extends Controller
                 ]
             );
 
-            $keptQuestionIds[] = $question->id;
             $this->syncAnswers($question, $questionData['answers'] ?? [], $questionData['correct'] ?? null);
+
+            $syncData[$question->id] = [
+                'order' => $questionData['order'] ?? $index,
+                'points' => $questionData['points'] ?? 10,
+            ];
         }
 
-        if (!empty($keptQuestionIds)) {
-            $quiz->questions()->whereNotIn('id', $keptQuestionIds)->delete();
-        }
+        $quiz->questions()->sync($syncData);
     }
 
     private function syncAnswers(Question $question, array $answers, mixed $correct): void
@@ -572,8 +627,6 @@ class QuizController extends Controller
     {
         try {
             return auth('api')->user();
-        } catch (TokenExpiredException $exception) {
-            throw $exception;
         } catch (\Throwable $exception) {
             return null;
         }
@@ -598,7 +651,17 @@ class QuizController extends Controller
             'user_id' => $quiz->user_id,
             'title' => $quiz->title,
             'description' => $quiz->description,
-            'category' => $quiz->category,
+            'category' => (!empty($quiz->category) && $quiz->category !== 'General' && $quiz->category !== 'Khoa học') 
+                ? $quiz->category 
+                : ($quiz->topic_name ?: ($quiz->subject?->name ?: ($quiz->category ?: 'General'))),
+            'education_level_id' => $quiz->education_level_id,
+            'education_level_name' => $quiz->educationLevel?->name,
+            'grade_id' => $quiz->grade_id,
+            'grade_name' => $quiz->grade?->name,
+            'subject_id' => $quiz->subject_id,
+            'subject_name' => $quiz->subject?->name,
+            'subject_icon' => $quiz->subject?->icon,
+            'topic_name' => $quiz->topic_name,
             'tag' => $quiz->tag ?? $quiz->category,
             'difficulty' => $quiz->difficulty,
             'difficulty_label' => $this->difficultyLabel($quiz->difficulty),
@@ -614,7 +677,7 @@ class QuizController extends Controller
             'author' => $quiz->user?->name ?? 'QuizFlex',
             'cover' => $this->resolveCoverForResponse($quiz->cover) ?? 'linear-gradient(135deg, #0f172a, #7c3aed)',
             'icon' => $quiz->icon ?? 'QZ',
-            'badge' => $quiz->badge ?? strtoupper(substr($quiz->category ?? 'Quiz', 0, 4)),
+            'badge' => $quiz->badge ?? mb_strtoupper(mb_substr($quiz->category ?? 'Quiz', 0, 4, 'UTF-8'), 'UTF-8'),
             'created_at' => $quiz->created_at,
             'updated_at' => $quiz->updated_at,
         ];
@@ -635,8 +698,13 @@ class QuizController extends Controller
             'text' => $question->content,
             'image_url' => $question->image_url,
             'type' => $question->type,
-            'order' => $question->order,
-            'points' => $question->points,
+            'difficulty' => $question->difficulty ?? 'medium',
+            'education_level_id' => $question->education_level_id,
+            'grade_id' => $question->grade_id,
+            'subject_id' => $question->subject_id,
+            'topic_name' => $question->topic_name,
+            'order' => $question->pivot?->order ?? $question->order,
+            'points' => $question->pivot?->points ?? $question->points,
             'answers' => $question->answers->map(fn(Answer $answer, int $index) => [
                 'id' => $answer->id,
                 'question_id' => $answer->question_id,

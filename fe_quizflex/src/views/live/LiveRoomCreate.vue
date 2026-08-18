@@ -1,45 +1,50 @@
 <template>
-  <section class="grid gap-6 py-8">
-    <div class="flex flex-wrap items-center justify-between gap-3">
-      <router-link class="btn-ghost" to="/live-rooms">Quay lại Phòng thi đấu</router-link>
-      <router-link class="btn-ghost" to="/live-rooms/join">Tham gia bằng mã</router-link>
+  <section class="max-w-2xl mx-auto py-4 space-y-6">
+    <div class="flex items-center justify-between">
+      <router-link class="btn-secondary text-xs" to="/live-rooms">← Quay lại</router-link>
+      <router-link class="btn-secondary text-xs" to="/live-rooms/join">Tham gia bằng mã PIN</router-link>
     </div>
 
-    <article class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-soft)]">
-      <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Phòng thi đấu</p>
-      <h1 class="mt-2 text-4xl font-black tracking-[-0.06em] text-[var(--text)]">Tạo phòng thi đấu</h1>
-      <p class="mt-3 max-w-3xl text-sm leading-7 text-[var(--muted)]">Chọn quiz, tạo mã phòng thi đấu và chuyển sang màn điều khiển của chủ phòng.</p>
-    </article>
-
-    <div class="grid gap-4 md:grid-cols-3">
-      <StatCard :value="String(quizzes.length)" label="Quiz khả dụng" hint="Dùng để tạo phòng thi đấu" />
-      <StatCard value="Realtime" label="Cập nhật" hint="Reverb với polling fallback" />
-      <StatCard value="Chủ phòng" label="Điều khiển" hint="Chủ phòng không nằm trong bảng xếp hạng" />
+    <!-- Header -->
+    <div class="card p-6 sm:p-8 space-y-2">
+      <span class="rounded-full bg-amber-50 border border-amber-200 px-3 py-0.5 text-xs font-bold text-amber-700">
+        Khởi tạo phòng
+      </span>
+      <h1 class="text-2xl font-black text-slate-900 sm:text-3xl pt-1">Tạo phòng thi đấu trực tiếp</h1>
+      <p class="text-xs text-slate-600">Chọn bộ câu hỏi, hệ thống sẽ cấp mã PIN để bạn trình chiếu cho người chơi tham gia.</p>
     </div>
 
-    <div v-if="errorMessage" class="rounded-[2rem] border border-rose-500/30 bg-rose-500/10 p-5 text-sm font-bold text-rose-300">{{ errorMessage }}</div>
-    <div v-if="successMessage" class="rounded-[2rem] border border-emerald-500/30 bg-emerald-500/10 p-5 text-sm font-bold text-emerald-300">{{ successMessage }}</div>
+    <div v-if="errorMessage" class="rounded-xl border border-red-200 bg-red-50 p-4 text-xs font-bold text-red-700">
+      {{ errorMessage }}
+    </div>
+    <div v-if="successMessage" class="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-xs font-bold text-emerald-700">
+      {{ successMessage }}
+    </div>
 
-    <form class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-card)]" @submit.prevent="handleCreate">
-      <div class="grid gap-5">
-        <label class="grid gap-2">
-          <span class="text-sm font-black text-[var(--text)]">Quiz</span>
-          <select v-model="form.quiz_id" class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] px-4 py-3 text-sm font-bold text-[var(--text)] outline-none focus:border-[var(--border-strong)]">
-            <option value="">Chọn quiz</option>
-            <option v-for="quiz in quizzes" :key="quiz.id" :value="quiz.id">{{ quiz.title || `Quiz #${quiz.id}` }}</option>
+    <form class="card p-6 sm:p-8 space-y-5" @submit.prevent="handleCreate">
+      <div class="space-y-4">
+        <label class="grid gap-1.5 text-xs font-bold text-slate-700">
+          Chọn quiz <span class="text-red-500">*</span>
+          <select v-model="form.quiz_id" class="field text-xs" required>
+            <option value="">-- Chọn bộ quiz muốn thi đấu --</option>
+            <option v-for="quiz in quizzes" :key="quiz.id" :value="quiz.id">
+              {{ quiz.title || `Quiz #${quiz.id}` }} ({{ quiz.questions_count ?? quiz.questions?.length ?? 0 }} câu)
+            </option>
           </select>
         </label>
 
-        <label class="grid gap-2">
-          <span class="text-sm font-black text-[var(--text)]">Tên phòng thi đấu</span>
-          <input v-model.trim="form.title" class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] px-4 py-3 text-sm font-bold text-[var(--text)] outline-none focus:border-[var(--border-strong)]" placeholder="Có thể để trống để dùng tên quiz" />
+        <label class="grid gap-1.5 text-xs font-bold text-slate-700">
+          Tên phòng thi đấu (Tùy chọn)
+          <input v-model.trim="form.title" class="field text-xs" placeholder="Để trống để dùng tên quiz làm tên phòng" />
         </label>
       </div>
 
-      <div class="mt-6 flex flex-wrap items-center justify-between gap-3">
-        <p class="text-sm font-bold text-[var(--muted)]">{{ quizzes.length ? `${quizzes.length} quiz có thể chọn` : 'Chưa có quiz để tạo phòng thi đấu' }}</p>
-        <button class="btn-primary disabled:cursor-not-allowed disabled:opacity-50" type="submit" :disabled="isLoading || isSubmitting || !quizzes.length">
-          {{ isSubmitting ? 'Đang tạo...' : 'Tạo phòng thi đấu' }}
+      <div class="flex items-center justify-between pt-4 border-t border-slate-100">
+        <span class="text-xs text-slate-500 font-medium">
+          {{ quizzes.length ? `${quizzes.length} quiz khả dụng trong kho` : 'Chưa có quiz nào' }}
+        </span>
+        <button class="btn-primary text-xs px-5 py-2" type="submit" :disabled="isLoading || isSubmitting || !quizzes.length">
+          {{ isSubmitting ? 'Đang tạo...' : 'Tạo phòng thi đấu ngay →' }}
         </button>
       </div>
     </form>
@@ -49,7 +54,6 @@
 <script setup>
 import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import StatCard from '@/components/cards/StatCard.vue'
 import { liveRoomApi, quizzesApi } from '@/services/api'
 
 const router = useRouter()

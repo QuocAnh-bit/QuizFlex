@@ -9,11 +9,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@lucide/vue": "^1.31.0",
     "apexcharts": "^5.16.0",
     "axios": "^1.16.1",
     "howler": "^2.2.4",
     "katex": "^0.17.0",
     "laravel-echo": "^2.3.4",
+    "lucide-vue-next": "^1.0.0",
     "mathlive": "^0.110.0",
     "pinia": "^3.0.4",
     "pusher-js": "^8.5.0",

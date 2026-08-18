@@ -15,6 +15,10 @@ class Quiz extends Model
         'title',
         'description',
         'category',
+        'education_level_id',
+        'grade_id',
+        'subject_id',
+        'topic_name',
         'tag',
         'difficulty',
         'status',
@@ -37,9 +41,27 @@ class Quiz extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function educationLevel()
+    {
+        return $this->belongsTo(EducationLevel::class);
+    }
+
+    public function grade()
+    {
+        return $this->belongsTo(Grade::class);
+    }
+
+    public function subject()
+    {
+        return $this->belongsTo(Subject::class);
+    }
+
     public function questions()
     {
-        return $this->hasMany(Question::class)->orderBy('order');
+        return $this->belongsToMany(Question::class, 'quiz_questions')
+            ->withPivot(['order', 'points'])
+            ->withTimestamps()
+            ->orderBy('quiz_questions.order');
     }
 
     public function attempts()

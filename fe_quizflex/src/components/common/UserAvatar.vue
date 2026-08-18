@@ -35,8 +35,21 @@ const props = defineProps({
   },
 })
 
+const resolveAvatarUrl = (avatar) => {
+  if (!avatar) return ''
+  const url = String(avatar).trim()
+  if (!url) return ''
+  // If it's already a full URL, return as-is
+  if (/^https?:\/\//.test(url)) return url
+  // If it's a relative path starting with /storage, keep it (Vite proxy will handle)
+  if (url.startsWith('/storage')) return url
+  // If it's just a filename or relative path, prepend /storage/avatars/
+  if (!url.includes('/')) return `/storage/avatars/${url}`
+  return url
+}
+
 const displayName = computed(() => props.user?.name || props.user?.email || 'Guest')
-const avatarUrl = computed(() => props.user?.avatar || '')
+const avatarUrl = computed(() => resolveAvatarUrl(props.user?.avatar))
 const initials = computed(() => {
   const parts = String(displayName.value).trim().split(/\s+/).filter(Boolean)
   if (!parts.length) return 'U'

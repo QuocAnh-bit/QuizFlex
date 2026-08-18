@@ -1,80 +1,91 @@
 <template>
-  <section class="grid gap-6 py-8">
-    <article class="relative overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-soft)] backdrop-blur-2xl">
-      <div class="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[var(--primary)]/15 blur-3xl"></div>
-      <div class="relative z-10 flex flex-col justify-between gap-5 xl:flex-row xl:items-end">
-        <div>
-          <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Phòng bài tập</p>
-          <h1 class="mt-2 text-4xl font-black tracking-[-0.06em] text-[var(--text)]">Phòng bài tập</h1>
-          <p class="mt-3 max-w-2xl text-sm leading-7 text-[var(--muted)]">Quản lý phòng giao quiz, tham gia bằng mã và theo dõi các bài được giao.</p>
-        </div>
-        <div class="flex flex-wrap gap-3">
-          <router-link class="btn-ghost" to="/homework-rooms/join">Tham gia bằng mã</router-link>
-          <router-link v-if="canCreateHomeworkRoom" class="btn-primary" to="/homework-rooms/create">Tạo phòng</router-link>
-          <router-link v-else class="btn-primary" to="/upgrade">Nâng cấp tài khoản</router-link>
-        </div>
+  <section class="max-w-5xl mx-auto py-4 space-y-6">
+    <!-- Header -->
+    <div class="card p-6 sm:p-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+      <div>
+        <p class="text-xs font-bold uppercase tracking-wider text-blue-600">Học tập theo nhóm</p>
+        <h1 class="mt-1 text-2xl font-black text-slate-900 sm:text-3xl">Phòng bài tập</h1>
+        <p class="mt-1 text-sm text-slate-600">Quản lý lớp học, làm bài tập được giao và theo dõi tiến độ chi tiết.</p>
       </div>
-    </article>
+      <div class="flex flex-wrap gap-2.5">
+        <router-link class="btn-secondary text-xs px-4 py-2" to="/homework-rooms/join">
+          Tham gia bằng mã
+        </router-link>
+        <router-link v-if="canCreateHomeworkRoom" class="btn-primary text-xs px-4 py-2" to="/homework-rooms/create">
+          + Tạo phòng mới
+        </router-link>
+        <router-link v-else class="btn-primary text-xs px-4 py-2" to="/upgrade">
+          👑 Nâng cấp tài khoản
+        </router-link>
+      </div>
+    </div>
 
-    <!-- Skeleton loading UI -->
-    <div v-if="isLoading && !rooms.length" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-      <div v-for="i in 3" :key="i" class="animate-pulse rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow-card)]">
-        <div class="flex items-start justify-between gap-3">
-          <div class="w-2/3 space-y-2">
-            <div class="h-6 w-3/4 rounded-lg bg-[var(--surface-soft)]"></div>
-            <div class="h-4 w-full rounded-lg bg-[var(--surface-soft)]"></div>
-          </div>
-          <div class="h-6 w-16 rounded-full bg-[var(--surface-soft)]"></div>
-        </div>
-        <div class="mt-5 grid grid-cols-2 gap-3">
-          <div class="h-14 rounded-2xl bg-[var(--surface-soft)]"></div>
-          <div class="h-14 rounded-2xl bg-[var(--surface-soft)]"></div>
-        </div>
-        <div class="mt-5 flex items-center justify-between">
-          <div class="h-6 w-20 rounded-full bg-[var(--surface-soft)]"></div>
-          <div class="h-9 w-24 rounded-xl bg-[var(--surface-soft)]"></div>
+    <!-- Skeleton Loading -->
+    <div v-if="isLoading && !rooms.length" class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div v-for="i in 3" :key="i" class="card p-5 animate-pulse space-y-4">
+        <div class="h-5 w-2/3 bg-slate-200 rounded"></div>
+        <div class="h-4 w-full bg-slate-100 rounded"></div>
+        <div class="grid grid-cols-2 gap-2 pt-2">
+          <div class="h-10 bg-slate-100 rounded"></div>
+          <div class="h-10 bg-slate-100 rounded"></div>
         </div>
       </div>
     </div>
 
-    <div v-if="errorMessage" class="rounded-[2rem] border border-rose-500/30 bg-rose-500/10 p-5 text-sm font-bold text-rose-300">{{ errorMessage }}</div>
+    <div v-if="errorMessage" class="rounded-xl border border-red-200 bg-red-50 p-4 text-xs font-bold text-red-700">
+      {{ errorMessage }}
+    </div>
 
-    <div v-if="rooms.length" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-      <article v-for="room in rooms" :key="room.id" class="group rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow-card)] transition duration-300 hover:-translate-y-1 hover:border-[var(--border-strong)]">
-        <div class="flex items-start justify-between gap-3">
-          <div>
-            <h2 class="text-xl font-black text-[var(--text)]">{{ room.name || 'Phòng bài tập' }}</h2>
-            <p class="mt-2 line-clamp-2 text-sm leading-6 text-[var(--muted)]">{{ room.description || 'Chưa có mô tả.' }}</p>
+    <!-- Rooms Grid -->
+    <div v-if="rooms.length" class="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+      <article
+        v-for="room in rooms"
+        :key="room.id"
+        class="card p-5 card-hover flex flex-col justify-between space-y-4"
+      >
+        <div class="space-y-2">
+          <div class="flex items-start justify-between gap-2">
+            <h2 class="text-base font-bold text-slate-900 line-clamp-1">{{ room.name || 'Phòng bài tập' }}</h2>
+            <span class="font-mono text-xs font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 shrink-0">
+              {{ room.code || 'NO CODE' }}
+            </span>
           </div>
-          <span class="shrink-0 rounded-full bg-[var(--chip-active)] px-3 py-1 text-xs font-black text-[var(--primary)]">{{ room.code || 'NO CODE' }}</span>
+          <p class="text-xs text-slate-500 line-clamp-2 leading-relaxed">
+            {{ room.description || 'Chưa có mô tả phòng.' }}
+          </p>
         </div>
 
-        <div class="mt-5 grid grid-cols-2 gap-3 text-sm">
-          <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-3">
-            <p class="text-xs font-bold text-[var(--muted)]">Thành viên</p>
-            <p class="mt-1 text-lg font-black text-[var(--text)]">{{ room.members_count ?? '-' }}</p>
+        <div class="space-y-3 pt-2 border-t border-slate-100">
+          <div class="grid grid-cols-2 gap-2 text-center text-xs">
+            <div class="rounded-lg bg-slate-50 p-2">
+              <span class="text-[10px] font-semibold text-slate-400 block uppercase">Thành viên</span>
+              <b class="text-slate-900 font-bold mt-0.5 block">{{ room.members_count ?? '-' }}</b>
+            </div>
+            <div class="rounded-lg bg-slate-50 p-2">
+              <span class="text-[10px] font-semibold text-slate-400 block uppercase">Vai trò</span>
+              <b class="text-slate-900 font-bold mt-0.5 block">{{ roleForRoom(room) }}</b>
+            </div>
           </div>
-          <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-3">
-            <p class="text-xs font-bold text-[var(--muted)]">Quyền</p>
-            <p class="mt-1 text-lg font-black text-[var(--text)]">{{ roleForRoom(room) }}</p>
-          </div>
-        </div>
 
-        <div class="mt-5 flex items-center justify-between gap-3">
-          <StatusBadge :value="room.status || 'active'" />
-          <router-link class="btn-ghost" :to="`/homework-rooms/${room.id}`">Vào phòng</router-link>
+          <div class="flex items-center justify-between gap-2 pt-1">
+            <StatusBadge :value="room.status || 'active'" />
+            <router-link class="btn-primary text-xs px-3.5 py-1.5" :to="`/homework-rooms/${room.id}`">
+              Vào phòng →
+            </router-link>
+          </div>
         </div>
       </article>
     </div>
 
-    <article v-if="!isLoading && !rooms.length && !errorMessage" class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-10 text-center shadow-[var(--shadow-card)]">
-      <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Empty</p>
-      <h2 class="mt-2 text-3xl font-black tracking-[-0.05em] text-[var(--text)]">Chưa có phòng bài tập nào</h2>
-      <p class="mx-auto mt-3 max-w-xl text-sm leading-7 text-[var(--muted)]">Tạo phòng mới hoặc tham gia phòng bằng mã được chia sẻ.</p>
-      <div class="mt-6 flex justify-center gap-3">
-        <router-link class="btn-ghost" to="/homework-rooms/join">Tham gia bằng mã</router-link>
-        <router-link v-if="canCreateHomeworkRoom" class="btn-primary" to="/homework-rooms/create">Tạo phòng</router-link>
-        <router-link v-else class="btn-primary" to="/upgrade">Nâng cấp tài khoản</router-link>
+    <!-- Empty State -->
+    <article v-if="!isLoading && !rooms.length && !errorMessage" class="card p-12 text-center text-slate-500 space-y-3">
+      <span class="text-4xl block">📚</span>
+      <h2 class="text-xl font-bold text-slate-800">Chưa có phòng bài tập nào</h2>
+      <p class="text-xs max-w-sm mx-auto">Tạo phòng học mới hoặc nhập mã tham gia phòng được chia sẻ từ giáo viên.</p>
+      <div class="flex justify-center gap-2 pt-2">
+        <router-link class="btn-secondary text-xs" to="/homework-rooms/join">Tham gia bằng mã</router-link>
+        <router-link v-if="canCreateHomeworkRoom" class="btn-primary text-xs" to="/homework-rooms/create">Tạo phòng</router-link>
+        <router-link v-else class="btn-primary text-xs" to="/upgrade">Nâng cấp tài khoản</router-link>
       </div>
     </article>
   </section>
@@ -107,7 +118,7 @@ const loadRooms = async () => {
   try {
     rooms.value = await homeworkApi.getHomeworkRooms()
   } catch (error) {
-    errorMessage.value = `Không tải được Phòng bài tập: ${error.message}`
+    errorMessage.value = `Không tải được danh sách phòng: ${error.message}`
   } finally {
     isLoading.value = false
   }

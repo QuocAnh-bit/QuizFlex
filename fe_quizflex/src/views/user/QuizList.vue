@@ -1,123 +1,436 @@
 <template>
-  <section class="grid gap-6 py-8">
-    <div class="relative overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-soft)] backdrop-blur-2xl">
-      <div class="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[var(--primary)]/15 blur-3xl"></div>
-      <div class="relative z-10 flex flex-col justify-between gap-5 xl:flex-row xl:items-end">
-        <div>
-          <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Quiz catalog</p>
-          <h1 class="mt-2 text-4xl font-black tracking-[-0.06em] text-[var(--text)]">Danh sách quiz</h1>
-          <p class="mt-3 max-w-2xl text-sm leading-7 text-[var(--muted)]">Lọc Public, Private hoặc Group, tìm kiếm theo tên, category và độ khó. Dữ liệu lấy trực tiếp từ Laravel API.</p>
-        </div>
-        <router-link class="btn-primary" to="/dashboard/questions/create">Tạo quiz mới</router-link>
+  <section class="grid gap-6 py-4">
+    <!-- Header -->
+    <div
+      class="card flex flex-col justify-between gap-4 p-6 sm:flex-row sm:items-center sm:p-8"
+    >
+      <div>
+        <p
+          class="text-xs font-bold uppercase tracking-[0.12em] text-[#7C3AED]"
+        >
+          Khám phá kiến thức
+        </p>
+
+        <h1
+          class="mt-1 text-2xl font-black tracking-tight text-slate-900 sm:text-3xl"
+        >
+          Danh sách Quiz
+        </h1>
+
+        <p class="mt-1 text-sm text-slate-600">
+          Lựa chọn bộ quiz phù hợp để luyện tập, thi đấu hoặc kiểm tra kiến thức.
+        </p>
       </div>
+
+      <!-- Create Quiz -->
+      <router-link
+        to="/dashboard/questions/create"
+        class="inline-flex shrink-0 items-center justify-center gap-2 self-start rounded-xl bg-[#7C3AED] px-4 py-2.5 text-xs font-bold text-white shadow-[0_4px_12px_rgba(124,58,237,0.18)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#6D28D9] hover:shadow-[0_7px_18px_rgba(124,58,237,0.22)] active:translate-y-0 sm:self-auto"
+      >
+        <Plus :size="15" :stroke-width="2.5" />
+        <span>Tạo quiz mới</span>
+      </router-link>
     </div>
 
-    <article class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow-card)] backdrop-blur-2xl">
-      <div class="grid gap-4 xl:grid-cols-[1fr_auto_auto_auto_auto] xl:items-center">
-        <input v-model="filters.search" class="field" placeholder="Tìm quiz, category, tag..." @keyup.enter="loadQuizzes" />
-        <select v-model="filters.visibility" class="field xl:w-48" @change="loadQuizzes">
-          <option value="all">Tất cả visibility</option>
-          <option value="public">Public</option>
-          <option value="private">Private</option>
-          <option value="group">Group</option>
+    <!-- ADVANCED TAXONOMY & SEARCH FILTER BAR -->
+    <article class="card p-4 sm:p-5">
+      <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <!-- 1. Cấp học Filter -->
+        <select v-model="filters.education_level_id" class="field text-xs" @change="onLevelChange">
+          <option value="">🎓 Tất cả Cấp học</option>
+          <option v-for="level in taxonomyLevels" :key="level.id" :value="level.id">
+            {{ level.name }}
+          </option>
         </select>
-        <select v-model="filters.difficulty" class="field xl:w-44" @change="loadQuizzes">
-          <option value="">Tất cả độ khó</option>
+
+        <!-- 2. Lớp học Filter -->
+        <select v-model="filters.grade_id" class="field text-xs" @change="loadQuizzes">
+          <option value="">🏫 Tất cả Lớp</option>
+          <option v-for="grade in availableGrades" :key="grade.id" :value="grade.id">
+            {{ grade.name }}
+          </option>
+        </select>
+
+        <!-- 3. Bộ môn Filter -->
+        <select v-model="filters.subject_id" class="field text-xs" @change="loadQuizzes">
+          <option value="">📖 Tất cả Môn học</option>
+          <option v-for="subject in availableSubjects" :key="subject.id" :value="subject.id">
+            {{ subject.name }}
+          </option>
+        </select>
+
+        <!-- 4. Độ khó -->
+        <select v-model="filters.difficulty" class="field text-xs" @change="loadQuizzes">
+          <option value="">⚡ Tất cả độ khó</option>
           <option value="easy">Dễ</option>
           <option value="medium">Vừa</option>
           <option value="hard">Khó</option>
         </select>
-        <select v-model="filters.tag" class="field xl:w-44">
-          <option value="all">Tất cả tag</option>
-          <option value="AI">AI</option>
-          <option v-for="tag in tags" :key="tag" :value="tag">{{ tag }}</option>
-        </select>
-        <button class="btn-ghost" type="button" @click="loadQuizzes">Tìm kiếm</button>
+      </div>
+
+      <div class="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_180px_160px_auto]">
+        <!-- Search -->
+        <div class="relative">
+          <Search
+            class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+            :size="16"
+            :stroke-width="2"
+          />
+          <input
+            v-model="filters.search"
+            class="field w-full pl-9 text-xs"
+            placeholder="Tìm kiếm quiz, chuyên đề, từ khóa..."
+            @keyup.enter="loadQuizzes"
+          />
+        </div>
+
+        <!-- Visibility -->
+        <div class="relative">
+          <Globe
+            class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+            :size="15"
+            :stroke-width="2"
+          />
+          <select
+            v-model="filters.visibility"
+            class="field w-full pl-9 text-xs"
+            @change="loadQuizzes"
+          >
+            <option value="all">Tất cả chế độ</option>
+            <option value="public">Công khai (Public)</option>
+            <option value="private">Riêng tư (Private)</option>
+            <option value="group">Nhóm (Group)</option>
+          </select>
+        </div>
+
+        <!-- Tag -->
+        <div class="relative">
+          <Tag
+            class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+            :size="15"
+            :stroke-width="2"
+          />
+          <select
+            v-model="filters.tag"
+            class="field w-full pl-9 text-xs"
+          >
+            <option value="all">Tất cả tag</option>
+            <option value="AI">AI</option>
+            <option
+              v-for="tag in tags"
+              :key="tag"
+              :value="tag"
+            >
+              {{ tag }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Search & Reset Buttons -->
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 transition-all duration-200 hover:border-[#7C3AED]/30 hover:bg-[#F5F3FF] hover:text-[#7C3AED] active:scale-[0.98]"
+            @click="loadQuizzes"
+          >
+            <Search :size="14" :stroke-width="2.5" />
+            <span>Tìm kiếm</span>
+          </button>
+          <button
+            v-if="hasActiveFilters"
+            type="button"
+            class="btn-ghost text-xs text-rose-500 font-bold px-3 py-2.5"
+            @click="resetFilters"
+          >
+            ✖ Đặt lại
+          </button>
+        </div>
       </div>
     </article>
 
-    <!-- 1. LOADING STATE -->
-    <AppLoadingState 
-      v-if="isLoading" 
-      title="Đang tải danh sách quiz..." 
+    <!-- Loading -->
+    <AppLoadingState
+      v-if="isLoading"
+      title="Đang tải danh sách quiz..."
       message="Vui lòng chờ trong giây lát để hệ thống tổng hợp danh sách các bộ câu hỏi."
-      icon="📚"
     />
 
-    <!-- 2. ERROR STATE -->
-    <AppErrorState 
-      v-else-if="errorMessage" 
+    <!-- Error -->
+    <AppErrorState
+      v-else-if="errorMessage"
       title="Không thể tải danh sách quiz"
-      :message="errorMessage" 
+      :message="errorMessage"
       @retry="loadQuizzes"
     />
 
-    <!-- 3. LOADED STATE -->
+    <!-- Loaded -->
     <template v-else>
-      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        <article v-for="quiz in filteredQuizzes" :key="quiz.id" class="group overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-card)] transition duration-300 hover:-translate-y-2 hover:border-[var(--border-strong)]">
-          <router-link :to="`/quizzes/${quiz.id}`" class="block">
-            <div class="relative h-36" :style="{ background: quiz.cover }">
-            <div class="absolute inset-0 bg-gradient-to-t from-black/45 via-black/5 to-white/10"></div>
-            <div class="absolute left-4 top-4 rounded-full bg-black/55 px-3 py-1 text-[10px] font-black text-white backdrop-blur">{{ quiz.badge }}</div>
-            <div class="absolute bottom-4 right-4 grid h-12 w-12 place-items-center rounded-2xl bg-white/90 text-sm font-black text-slate-900 shadow-xl">{{ quiz.icon }}</div>
-          </div>
-          <div class="p-5">
-            <div class="mb-3 flex flex-wrap items-center gap-2">
-              <VisibilityBadge :value="quiz.visibility" />
-              <span class="rounded-full border border-[var(--border)] bg-[var(--surface-soft)] px-3 py-1 text-xs font-black text-[var(--muted)]">{{ quiz.difficulty }}</span>
-            </div>
-            <h2 class="text-xl font-black tracking-[-0.04em] text-[var(--text)] transition group-hover:text-[var(--primary)]">{{ quiz.title }}</h2>
-            <p class="mt-2 line-clamp-2 text-sm leading-6 text-[var(--muted)]">{{ quiz.description || 'Chưa có mô tả.' }}</p>
-            <div class="mt-5 grid grid-cols-3 gap-2">
-              <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-3 text-center"><b class="block text-[var(--text)]">{{ quiz.questions }}</b><span class="text-[10px] font-bold text-[var(--muted)]">Câu</span></div>
-              <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-3 text-center"><b class="block text-[var(--text)]">{{ quiz.duration }}</b><span class="text-[10px] font-bold text-[var(--muted)]">Thời gian</span></div>
-              <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-3 text-center"><b class="block text-[var(--text)]">{{ quiz.avgScore }}%</b><span class="text-[10px] font-bold text-[var(--muted)]">TB</span></div>
-            </div>
-          </div>
-        </router-link>
-      </article>
-    </div>
+      <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+        <article
+          v-for="quiz in filteredQuizzes"
+          :key="quiz.id"
+          class="group flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_4px_16px_rgba(15,23,42,0.05)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[#7C3AED]/20 hover:shadow-[0_10px_28px_rgba(15,23,42,0.08)]"
+        >
+          <router-link
+            :to="`/quizzes/${quiz.id}`"
+            class="block"
+          >
+            <!-- Cover -->
+            <div
+              class="relative h-32 overflow-hidden"
+              :style="{ background: quiz.cover }"
+            >
+              <div
+                class="absolute inset-0 bg-gradient-to-br from-black/10 via-transparent to-white/10"
+              ></div>
 
-      <div v-if="filteredQuizzes.length === 0" class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-10 text-center shadow-[var(--shadow-card)]">
-        <h3 class="text-2xl font-black text-[var(--text)]">Không tìm thấy quiz</h3>
-        <p class="mt-2 text-sm text-[var(--muted)]">Đổi bộ lọc hoặc tạo quiz mới trong Admin.</p>
+              <!-- Badges/Taxonomy -->
+              <div class="absolute left-3 top-3 flex flex-wrap gap-1.5">
+                <span v-if="quiz.grade_name" class="rounded-md bg-slate-900/80 px-2 py-0.5 text-[10px] font-bold text-white backdrop-blur-sm">{{ quiz.grade_name }}</span>
+                <span v-if="quiz.subject_name" class="rounded-md bg-emerald-600/80 px-2 py-0.5 text-[10px] font-bold text-white backdrop-blur-sm">{{ quiz.subject_name }}</span>
+                <span v-else class="rounded-md bg-slate-900/80 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white backdrop-blur-sm">{{ quiz.badge || 'Quiz' }}</span>
+              </div>
+
+              <!-- User Icon -->
+              <div
+                class="absolute bottom-3 right-3 grid h-11 w-11 place-items-center rounded-xl border border-white/70 bg-white shadow-[0_4px_12px_rgba(15,23,42,0.10)] transition-transform duration-200 group-hover:scale-105"
+              >
+                <UserRound
+                  :size="20"
+                  :stroke-width="1.8"
+                  class="text-[#7C3AED]"
+                />
+              </div>
+            </div>
+
+            <!-- Content -->
+            <div class="space-y-3 p-5">
+              <!-- Visibility + Difficulty -->
+              <div class="flex items-center gap-2">
+                <VisibilityBadge :value="quiz.visibility" />
+                <span
+                  class="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600"
+                >
+                  {{ quiz.difficulty }}
+                </span>
+                <span v-if="quiz.topic_name && quiz.topic_name !== quiz.subject_name" class="rounded-full bg-purple-50 text-purple-700 px-2.5 py-1 text-[11px] font-bold truncate max-w-[150px]">
+                  {{ quiz.topic_name }}
+                </span>
+              </div>
+
+              <!-- Title -->
+              <h2
+                class="line-clamp-2 text-base font-bold text-slate-900 transition-colors group-hover:text-[#7C3AED]"
+              >
+                {{ quiz.title }}
+              </h2>
+
+              <!-- Description -->
+              <p
+                class="line-clamp-2 text-xs leading-relaxed text-slate-500"
+              >
+                {{ quiz.description || 'Chưa có mô tả chi tiết.' }}
+              </p>
+
+              <!-- Stats -->
+              <div
+                class="grid grid-cols-3 gap-2 border-t border-slate-100 pt-3 text-center"
+              >
+                <div
+                  class="rounded-xl bg-slate-50 px-2 py-2.5 transition-colors group-hover:bg-[#F8F7FF]"
+                >
+                  <b class="block text-sm font-bold text-slate-900">{{ quiz.questions }}</b>
+                  <span class="mt-0.5 block text-[10px] font-semibold text-slate-400">Câu hỏi</span>
+                </div>
+
+                <div
+                  class="rounded-xl bg-slate-50 px-2 py-2.5 transition-colors group-hover:bg-[#F8F7FF]"
+                >
+                  <b class="block text-sm font-bold text-slate-900">{{ quiz.duration }}</b>
+                  <span class="mt-0.5 block text-[10px] font-semibold text-slate-400">Thời gian</span>
+                </div>
+
+                <div
+                  class="rounded-xl bg-slate-50 px-2 py-2.5 transition-colors group-hover:bg-[#F8F7FF]"
+                >
+                  <b class="block text-sm font-bold text-[#7C3AED]">{{ quiz.avgScore }}%</b>
+                  <span class="mt-0.5 block text-[10px] font-semibold text-slate-400">Điểm TB</span>
+                </div>
+              </div>
+            </div>
+          </router-link>
+        </article>
+      </div>
+
+      <!-- Empty State -->
+      <div
+        v-if="filteredQuizzes.length === 0"
+        class="card flex flex-col items-center justify-center p-12 text-center"
+      >
+        <div
+          class="mb-4 grid h-12 w-12 place-items-center rounded-xl bg-[#F5F3FF]"
+        >
+          <Search
+            :size="21"
+            :stroke-width="1.8"
+            class="text-[#7C3AED]"
+          />
+        </div>
+
+        <h3 class="text-lg font-bold text-slate-800">
+          Không tìm thấy quiz phù hợp
+        </h3>
+
+        <p
+          class="mt-1 max-w-md text-xs leading-relaxed text-slate-500"
+        >
+          Hãy thử thay đổi tiêu chí bộ lọc hoặc tạo quiz mới trong tài khoản của bạn.
+        </p>
+
+        <button class="btn-ghost mt-4 text-xs font-bold text-[#7C3AED]" @click="resetFilters">Đặt lại bộ lọc</button>
       </div>
     </template>
   </section>
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import {
+  computed,
+  onMounted,
+  reactive,
+  ref,
+  watch,
+} from 'vue'
+
+import { useRoute, useRouter } from 'vue-router'
+
+import {
+  Globe,
+  Plus,
+  Search,
+  SlidersHorizontal,
+  Tag,
+  UserRound,
+} from '@lucide/vue'
+
 import AppLoadingState from '@/components/common/AppLoadingState.vue'
 import AppErrorState from '@/components/common/AppErrorState.vue'
 import VisibilityBadge from '@/components/common/VisibilityBadge.vue'
-import { currentUserStorage, normalizeQuizCard, quizzesApi } from '@/services/api'
+
+import {
+  currentUserStorage,
+  normalizeQuizCard,
+  quizzesApi,
+  taxonomyApi,
+} from '@/services/api'
 
 const route = useRoute()
+const router = useRouter()
 
 const quizzes = ref([])
 const isLoading = ref(false)
 const errorMessage = ref('')
 const tags = ref([])
 
+const taxonomyLevels = ref([])
+const allSubjects = ref([])
+
 const filters = reactive({
   search: '',
-  visibility: currentUserStorage.get() ? 'all' : 'public',
+  visibility: currentUserStorage.get()
+    ? 'all'
+    : 'public',
   difficulty: '',
+  education_level_id: '',
+  grade_id: '',
+  subject_id: '',
   tag: 'all',
 })
 
-const applyRouteFilters = () => {
-  filters.search = typeof route.query.search === 'string' ? route.query.search : ''
-  filters.difficulty = typeof route.query.difficulty === 'string' ? route.query.difficulty : ''
-  filters.tag = typeof route.query.tag === 'string' ? route.query.tag : 'all'
+const fetchTaxonomyTree = async () => {
+  try {
+    const data = await taxonomyApi.tree()
+    const payload = data?.education_levels ? data : (data?.data ?? data)
+    if (payload) {
+      taxonomyLevels.value = payload.education_levels || payload.educationLevels || []
+      allSubjects.value = payload.subjects || []
+    }
+  } catch (e) {
+    console.error('Không tải được danh mục Cấp học:', e)
+  }
+}
 
-  const visibility = typeof route.query.visibility === 'string' ? route.query.visibility : ''
-  filters.visibility = ['all', 'public', 'private', 'group'].includes(visibility)
+const availableGrades = computed(() => {
+  if (!filters.education_level_id) {
+    return taxonomyLevels.value.flatMap(l => l.grades || [])
+  }
+  const level = taxonomyLevels.value.find(l => l.id === Number(filters.education_level_id))
+  return level ? level.grades || [] : []
+})
+
+const availableSubjects = computed(() => {
+  if (!filters.grade_id) {
+    return allSubjects.value
+  }
+  const grade = availableGrades.value.find(g => g.id === Number(filters.grade_id))
+  return grade && grade.subjects && grade.subjects.length ? grade.subjects : allSubjects.value
+})
+
+const onLevelChange = () => {
+  filters.grade_id = ''
+  loadQuizzes()
+}
+
+const hasActiveFilters = computed(() => {
+  return Boolean(filters.search || filters.education_level_id || filters.grade_id || filters.subject_id || filters.difficulty)
+})
+
+const resetFilters = () => {
+  filters.search = ''
+  filters.difficulty = ''
+  filters.education_level_id = ''
+  filters.grade_id = ''
+  filters.subject_id = ''
+  filters.tag = 'all'
+  router.push({ path: '/quizzes' })
+  loadQuizzes()
+}
+
+const applyRouteFilters = () => {
+  filters.search =
+    typeof route.query.search === 'string'
+      ? route.query.search
+      : ''
+
+  filters.difficulty =
+    typeof route.query.difficulty === 'string'
+      ? route.query.difficulty
+      : ''
+
+  filters.education_level_id = route.query.education_level_id ? Number(route.query.education_level_id) : ''
+  filters.grade_id = route.query.grade_id ? Number(route.query.grade_id) : ''
+  filters.subject_id = route.query.subject_id ? Number(route.query.subject_id) : ''
+
+  filters.tag =
+    typeof route.query.tag === 'string'
+      ? route.query.tag
+      : 'all'
+
+  const visibility =
+    typeof route.query.visibility === 'string'
+      ? route.query.visibility
+      : ''
+
+  filters.visibility = [
+    'all',
+    'public',
+    'private',
+    'group',
+  ].includes(visibility)
     ? visibility
-    : (currentUserStorage.get() ? 'all' : 'public')
+    : currentUserStorage.get()
+      ? 'all'
+      : 'public'
 }
 
 const loadQuizzes = async () => {
@@ -127,22 +440,63 @@ const loadQuizzes = async () => {
   try {
     const params = {
       search: filters.search || undefined,
-      visibility: filters.visibility === 'all' ? undefined : filters.visibility,
-      difficulty: filters.difficulty || undefined,
+      visibility:
+        filters.visibility === 'all'
+          ? undefined
+          : filters.visibility,
+      difficulty:
+        filters.difficulty || undefined,
+      education_level_id: filters.education_level_id || undefined,
+      grade_id: filters.grade_id || undefined,
+      subject_id: filters.subject_id || undefined,
     }
+
     const data = await quizzesApi.list(params)
-    quizzes.value = data.map(normalizeQuizCard)
-    tags.value = [...new Set(quizzes.value.map((quiz) => quiz.tag).filter(Boolean).filter((tag) => tag !== 'AI'))]
+
+    const list = Array.isArray(data) ? data : (data?.data && Array.isArray(data.data) ? data.data : [])
+    quizzes.value = list.map((q) => {
+      const card = normalizeQuizCard(q)
+      card.education_level_name = q.education_level_name
+      card.grade_name = q.grade_name
+      card.subject_name = q.subject_name
+      card.topic_name = q.topic_name
+      return card
+    })
+
+    tags.value = [
+      ...new Set(
+        quizzes.value
+          .map((quiz) => quiz.tag)
+          .filter(Boolean)
+          .filter((tag) => tag !== 'AI'),
+      ),
+    ]
   } catch (error) {
-    errorMessage.value = `Không tải được quiz: ${error.message}`
+    errorMessage.value =
+      `Không tải được quiz: ${error.message}`
   } finally {
     isLoading.value = false
   }
 }
 
-const filteredQuizzes = computed(() => quizzes.value.filter((quiz) => filters.tag === 'all' || quiz.tag === filters.tag))
+const filteredQuizzes = computed(() => {
+  return quizzes.value.filter(
+    (quiz) =>
+      filters.tag === 'all' ||
+      quiz.tag === filters.tag,
+  )
+})
+
+watch(
+  () => route.query,
+  () => {
+    applyRouteFilters()
+    loadQuizzes()
+  }
+)
 
 onMounted(async () => {
+  await fetchTaxonomyTree()
   applyRouteFilters()
   await loadQuizzes()
 })

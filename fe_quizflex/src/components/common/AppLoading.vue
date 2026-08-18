@@ -2,58 +2,137 @@
   <Transition name="loading-fade">
     <div
       v-if="show"
-      class="fixed inset-0 z-[9998] grid place-items-center overflow-hidden bg-[var(--bg)]/90 backdrop-blur-2xl"
+      class="fixed inset-0 z-[9998] flex items-center justify-center overflow-hidden bg-white/85 px-4 backdrop-blur-xl"
     >
-      <div class="pointer-events-none absolute inset-0">
-        <div class="absolute left-1/2 top-1/2 h-[520px] w-[520px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[var(--primary)]/20 blur-[90px]"></div>
-        <div class="absolute left-[35%] top-[42%] h-72 w-72 rounded-full bg-[var(--accent)]/10 blur-[80px]"></div>
-        <div class="absolute right-[28%] top-[55%] h-72 w-72 rounded-full bg-[var(--accent-2)]/10 blur-[80px]"></div>
+      <!-- Background -->
+      <div class="pointer-events-none absolute inset-0 overflow-hidden">
+        <div
+          class="absolute left-1/2 top-1/2 h-[500px] w-[500px]
+                 -translate-x-1/2 -translate-y-1/2
+                 rounded-full bg-[#7C3AED]/[0.06] blur-[100px]"
+        ></div>
+
+        <div
+          class="absolute -left-24 -top-24 h-72 w-72
+                 rounded-full bg-[#A855F7]/[0.05] blur-[90px]"
+        ></div>
+
+        <div
+          class="absolute -bottom-24 -right-24 h-80 w-80
+                 rounded-full bg-[#8B5CF6]/[0.05] blur-[100px]"
+        ></div>
       </div>
 
-      <div class="relative z-10 w-[min(92vw,420px)]">
+      <!-- Loading Card -->
+      <div class="relative z-10 w-full max-w-[390px]">
         <div
-          class="relative overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-8 text-center shadow-[var(--shadow-soft)] backdrop-blur-2xl"
+          class="loading-card relative overflow-hidden rounded-[28px]
+                 border border-slate-200/80
+                 bg-white/95
+                 px-7 py-8
+                 text-center
+                 shadow-[0_20px_70px_rgba(15,23,42,0.10)]
+                 sm:px-9 sm:py-9"
         >
-          <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[var(--border-strong)] to-transparent"></div>
-          <div class="absolute -right-24 -top-24 h-56 w-56 rounded-full bg-[var(--primary)]/20 blur-3xl"></div>
-          <div class="absolute -bottom-24 -left-24 h-56 w-56 rounded-full bg-[var(--accent)]/10 blur-3xl"></div>
+          <!-- Top accent -->
+          <div
+            class="absolute inset-x-10 top-0 h-[2px]
+                   rounded-full bg-gradient-to-r
+                   from-transparent via-[#7C3AED] to-transparent opacity-70"
+          ></div>
 
-          <div class="relative mx-auto mb-7 grid h-28 w-28 place-items-center">
-            <div class="absolute inset-0 rounded-[2rem] bg-gradient-to-br from-[var(--primary)] via-[var(--primary-2)] to-[var(--accent)] opacity-25 blur-xl"></div>
-
-            <div class="absolute inset-0 rounded-[2rem] border border-[var(--border-strong)]"></div>
-
-            <div class="loading-orbit absolute inset-0 rounded-[2rem]"></div>
-
+          <!-- Logo -->
+          <div class="relative mx-auto mb-6 h-[92px] w-[92px]">
+            <!-- soft glow -->
             <div
-              class="relative grid h-20 w-20 place-items-center rounded-[1.6rem] bg-gradient-to-br from-[var(--primary)] via-[var(--primary-2)] to-[var(--accent)] text-5xl font-black tracking-[-0.12em] text-white shadow-[0_24px_60px_rgba(155,44,255,0.38)]"
+              class="absolute inset-2 rounded-[25px]
+                     bg-[#7C3AED]/10 blur-2xl"
+            ></div>
+
+            <!-- rotating border -->
+            <div class="loading-ring absolute inset-0 rounded-[26px]"></div>
+
+            <!-- white inner border -->
+            <div
+              class="absolute inset-[4px] rounded-[23px]
+                     border border-[#E9D5FF]
+                     bg-white"
+            ></div>
+
+            <!-- Q -->
+            <div
+              class="absolute inset-[10px] flex items-center justify-center
+                     rounded-[19px]
+                     bg-gradient-to-br from-[#7C3AED] to-[#8B5CF6]
+                     text-[42px] font-black leading-none
+                     tracking-[-0.12em] text-white
+                     shadow-[0_12px_30px_rgba(124,58,237,0.24)]"
             >
               Q
             </div>
           </div>
 
-          <p class="text-xs font-black uppercase tracking-[0.28em] text-[var(--primary)]">
+          <!-- Brand -->
+          <div
+            class="text-[11px] font-extrabold uppercase
+                   tracking-[0.24em] text-[#7C3AED]"
+          >
             QuizFlex
-          </p>
+          </div>
 
-          <h2 class="mt-3 text-3xl font-black tracking-[-0.06em] text-[var(--text)]">
-            Đang tải trải nghiệm
+          <!-- Heading -->
+          <h2
+            class="mt-2.5 text-[25px] font-extrabold
+                   tracking-[-0.035em] text-[#0F172A]"
+          >
+            Đang tải...
           </h2>
 
-          <p class="mx-auto mt-3 max-w-xs text-sm font-semibold leading-6 text-[var(--muted)]">
-            Chuẩn bị giao diện, dữ liệu quiz và hiệu ứng tương tác.
+          <p
+            class="mx-auto mt-2 max-w-[285px]
+                   text-[13px] font-medium leading-5
+                   text-[#64748B]"
+          >
+            Đang chuẩn bị không gian học tập cho bạn
           </p>
 
-          <div class="mt-7 overflow-hidden rounded-full border border-[var(--border)] bg-[var(--surface-soft)] p-1">
-            <div class="relative h-2 overflow-hidden rounded-full bg-[var(--surface-soft)]">
-              <div class="loading-progress absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-[var(--primary)] via-[var(--primary-2)] to-[var(--accent)]"></div>
+          <!-- Progress -->
+          <div class="mt-7">
+            <div
+              class="h-[7px] w-full overflow-hidden
+                     rounded-full bg-[#F1F5F9]"
+            >
+              <div
+                class="loading-progress h-full rounded-full
+                       bg-gradient-to-r from-[#7C3AED] to-[#A855F7]"
+              ></div>
             </div>
           </div>
 
-          <div class="mt-5 flex justify-center gap-2">
-            <span class="loading-dot h-2 w-2 rounded-full bg-[var(--primary)]"></span>
-            <span class="loading-dot h-2 w-2 rounded-full bg-[var(--primary-2)] [animation-delay:0.14s]"></span>
-            <span class="loading-dot h-2 w-2 rounded-full bg-[var(--accent)] [animation-delay:0.28s]"></span>
+          <!-- Status -->
+          <div class="mt-5 flex items-center justify-center gap-2">
+            <span
+              class="loading-dot h-1.5 w-1.5 rounded-full bg-[#7C3AED]"
+            ></span>
+
+            <span
+              class="loading-dot h-1.5 w-1.5 rounded-full
+                     bg-[#8B5CF6] [animation-delay:0.15s]"
+            ></span>
+
+            <span
+              class="loading-dot h-1.5 w-1.5 rounded-full
+                     bg-[#A855F7] [animation-delay:0.3s]"
+            ></span>
+          </div>
+
+          <!-- Bottom text -->
+          <div
+            class="mt-5 border-t border-slate-100 pt-4
+                   text-[10px] font-semibold
+                   tracking-wide text-slate-400"
+          >
+            Trải nghiệm học tập thông minh
           </div>
         </div>
       </div>
@@ -71,53 +150,87 @@ defineProps({
 </script>
 
 <style scoped>
-.loading-orbit {
+/* =========================
+   Loading Ring
+========================= */
+
+.loading-ring {
   background:
     conic-gradient(
       from 0deg,
       transparent 0deg,
-      transparent 80deg,
-      var(--primary) 120deg,
-      var(--primary-2) 180deg,
-      var(--accent) 240deg,
-      transparent 300deg,
+      transparent 55deg,
+      #7c3aed 105deg,
+      #8b5cf6 180deg,
+      #a855f7 230deg,
+      transparent 285deg,
       transparent 360deg
     );
+
+  padding: 2px;
+
   mask:
     linear-gradient(#000 0 0) content-box,
     linear-gradient(#000 0 0);
-  padding: 2px;
+
+  mask-composite: exclude;
+
   -webkit-mask:
     linear-gradient(#000 0 0) content-box,
     linear-gradient(#000 0 0);
+
   -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  animation: orbit-spin 1.15s linear infinite;
+
+  animation: ring-spin 1.6s linear infinite;
 }
+
+/* =========================
+   Progress
+========================= */
 
 .loading-progress {
-  width: 38%;
-  animation: progress-slide 1.2s ease-in-out infinite;
+  width: 35%;
+  animation: progress-slide 1.35s ease-in-out infinite;
 }
 
+/* =========================
+   Dots
+========================= */
+
 .loading-dot {
-  animation: dot-bounce 0.85s ease-in-out infinite;
+  animation: dot-pulse 0.9s ease-in-out infinite;
 }
+
+/* =========================
+   Card
+========================= */
+
+.loading-card {
+  animation: card-enter 0.35s ease-out both;
+}
+
+/* =========================
+   Transition
+========================= */
 
 .loading-fade-enter-active,
 .loading-fade-leave-active {
   transition:
-    opacity 0.28s ease,
-    transform 0.28s ease;
+    opacity 0.3s ease,
+    transform 0.3s ease;
 }
 
 .loading-fade-enter-from,
 .loading-fade-leave-to {
   opacity: 0;
-  transform: scale(1.02);
+  transform: scale(0.98);
 }
 
-@keyframes orbit-spin {
+/* =========================
+   Animations
+========================= */
+
+@keyframes ring-spin {
   to {
     transform: rotate(360deg);
   }
@@ -125,29 +238,53 @@ defineProps({
 
 @keyframes progress-slide {
   0% {
-    transform: translateX(-120%);
+    transform: translateX(-140%);
   }
 
   55% {
-    transform: translateX(95%);
+    transform: translateX(100%);
   }
 
   100% {
-    transform: translateX(270%);
+    transform: translateX(300%);
   }
 }
 
-@keyframes dot-bounce {
+@keyframes dot-pulse {
   0%,
-  80%,
   100% {
     transform: translateY(0);
-    opacity: 0.45;
+    opacity: 0.35;
   }
 
-  40% {
-    transform: translateY(-7px);
+  50% {
+    transform: translateY(-3px);
     opacity: 1;
+  }
+}
+
+@keyframes card-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* =========================
+   Reduced Motion
+========================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .loading-ring,
+  .loading-progress,
+  .loading-dot,
+  .loading-card {
+    animation: none;
   }
 }
 </style>

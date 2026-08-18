@@ -3,29 +3,29 @@
 
   <!-- Overlay tài khoản bị khóa -->
   <Transition name="fade">
-    <div v-if="showLockedToast" class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div class="mx-4 w-full max-w-md rounded-[2rem] border border-rose-500/30 bg-[var(--surface)] p-8 shadow-2xl text-center">
-        <div class="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-rose-500/15 text-4xl">🔒</div>
-        <h2 class="text-2xl font-black text-rose-400">Tài khoản bị khóa!</h2>
-        <p class="mt-3 text-sm leading-7 text-[var(--muted)]">Tài khoản của bạn đã bị quản trị viên khóa. Bạn sẽ được chuyển đến trang kháng cáo.</p>
-        <p class="mt-4 text-xs font-bold text-[var(--muted)]">Tự động chuyển hướng sau <span class="text-rose-400">{{ lockedCountdown }}</span> giây...</p>
-        <button class="mt-6 w-full rounded-2xl border border-rose-500/30 bg-rose-500/10 py-3 text-sm font-black text-rose-400 transition hover:bg-rose-500/20" type="button" @click="goToAppeal">Đến trang kháng cáo ngay</button>
+    <div v-if="showLockedToast" class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div class="w-full max-w-md rounded-2xl border border-red-200 bg-white p-6 shadow-xl text-center">
+        <div class="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-red-50 text-2xl text-red-600">🔒</div>
+        <h2 class="text-xl font-bold text-slate-900">Tài khoản bị khóa</h2>
+        <p class="mt-2 text-sm leading-relaxed text-slate-600">Tài khoản của bạn đã bị quản trị viên khóa. Bạn sẽ được chuyển đến trang kháng cáo.</p>
+        <p class="mt-3 text-xs font-semibold text-slate-500">Tự động chuyển hướng sau <span class="text-red-600 font-bold">{{ lockedCountdown }}</span> giây...</p>
+        <button class="mt-5 w-full btn-danger" type="button" @click="goToAppeal">Đến trang kháng cáo ngay</button>
       </div>
     </div>
   </Transition>
 
   <!-- Global Confirm Modal -->
   <Transition name="fade">
-    <div v-if="confirmModal.isOpen" class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
-      <div class="w-full max-w-md rounded-[2.5rem] border border-[var(--border-strong)] bg-[var(--surface)] p-6 shadow-[0_24px_70px_rgba(0,0,0,0.5)] backdrop-blur-2xl transition-all scale-100">
-        <div class="flex items-center gap-3 text-rose-400 mb-4">
-          <span class="text-2xl">⚠️</span>
-          <h3 class="text-xl font-black text-[var(--text)]">{{ confirmModal.title }}</h3>
+    <div v-if="confirmModal.isOpen" class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+      <div class="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-xl">
+        <div class="flex items-center gap-3 text-red-600 mb-3">
+          <span class="text-xl">⚠️</span>
+          <h3 class="text-lg font-bold text-slate-900">{{ confirmModal.title }}</h3>
         </div>
-        <p class="text-sm leading-6 text-[var(--muted)] mb-6">{{ confirmModal.message }}</p>
-        <div class="flex justify-end gap-3">
-          <button @click="confirmModal.isOpen = false" class="rounded-full bg-[var(--surface-soft)] hover:bg-[var(--border-light)] px-5 py-2 text-xs font-black text-[var(--text)] transition">Hủy</button>
-          <button @click="triggerConfirmAction" class="rounded-full bg-rose-500 hover:bg-rose-600 px-5 py-2 text-xs font-black text-white transition hover:-translate-y-0.5">
+        <p class="text-sm leading-relaxed text-slate-600 mb-6">{{ confirmModal.message }}</p>
+        <div class="flex justify-end gap-2.5">
+          <button @click="confirmModal.isOpen = false" class="btn-secondary text-xs">Hủy</button>
+          <button @click="triggerConfirmAction" class="btn-danger text-xs">
             Xác nhận
           </button>
         </div>
@@ -35,10 +35,10 @@
 
   <!-- Global Toast Message -->
   <Transition name="slide-up">
-    <div v-if="toast.isOpen" class="fixed bottom-6 right-6 z-[9999] flex items-center gap-3 rounded-2xl border px-4 py-3 shadow-lg backdrop-blur-xl transition-all"
-         :class="toast.type === 'success' ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400 shadow-[0_12px_40px_rgba(16,185,129,0.1)]' : toast.type === 'warning' ? 'border-amber-500/30 bg-amber-500/10 text-amber-400 shadow-[0_12px_40px_rgba(245,158,11,0.1)]' : 'border-rose-500/30 bg-rose-500/10 text-rose-400 shadow-[0_12px_40px_rgba(244,63,94,0.1)]'">
+    <div v-if="toast.isOpen" class="fixed bottom-6 right-6 z-[9999] flex items-center gap-3 rounded-xl border px-4 py-3 shadow-lg bg-white transition-all"
+         :class="toast.type === 'success' ? 'border-emerald-200 text-emerald-700' : toast.type === 'warning' ? 'border-amber-200 text-amber-700' : 'border-red-200 text-red-700'">
       <span class="text-base">{{ toast.type === 'success' ? '✅' : toast.type === 'warning' ? '⚠️' : '❌' }}</span>
-      <span class="text-sm font-bold">{{ toast.message }}</span>
+      <span class="text-sm font-semibold text-slate-800">{{ toast.message }}</span>
     </div>
   </Transition>
 

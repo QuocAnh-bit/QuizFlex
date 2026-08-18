@@ -11,14 +11,16 @@ class QuizModerated extends Notification
 
     public $quiz;
     public $action;
+    public $reason;
 
     /**
      * Create a new notification instance.
      */
-    public function __construct($quiz, $action)
+    public function __construct($quiz, $action, $reason = null)
     {
         $this->quiz = $quiz;
         $this->action = $action;
+        $this->reason = $reason;
     }
 
     /**
@@ -54,22 +56,29 @@ class QuizModerated extends Notification
         } elseif ($this->action === 'edited') {
             $message = "Admin đã chỉnh sửa nội dung bài Quiz '{$this->quiz->title}' của bạn.";
         } elseif ($this->action === 'hidden') {
-            $message = "Bài Quiz '{$this->quiz->title}' của bạn đã bị ẩn do vi phạm quy định.";
+            $reasonText = $this->reason ? " Lý do: \"{$this->reason}\"." : '';
+            $message = "Bài Quiz '{$this->quiz->title}' của bạn đã bị Admin gỡ công khai (chuyển về chế độ riêng tư) do vi phạm quy định.{$reasonText}";
         } elseif ($this->action === 'shown') {
-            $message = "Bài Quiz '{$this->quiz->title}' của bạn đã được admin hiển thị lại.";
+            $message = "Bài Quiz '{$this->quiz->title}' của bạn đã được admin hiển thị công khai trở lại.";
+        } elseif ($this->action === 'reported') {
+            $reasonText = $this->reason ? " Lý do báo cáo: \"{$this->reason}\"." : '';
+            $message = "Bài Quiz '{$this->quiz->title}' của bạn vừa nhận báo cáo vi phạm.{$reasonText} Vui lòng kiểm tra và cập nhật.";
         } elseif ($this->action === 'resolved') {
-            $message = "Báo cáo vi phạm về bài Quiz '{$this->quiz->title}' của bạn đã được xử lý.";
+            $message = "Báo cáo vi phạm về bài Quiz '{$this->quiz->title}' của bạn đã được Admin xử lý.";
+        } elseif ($this->action === 'dismissed') {
+            $message = "Báo cáo vi phạm về bài Quiz '{$this->quiz->title}' của bạn đã được kiểm duyệt và bỏ qua.";
         }
 
         return [
             'type' => 'quiz_moderated',
-            'title' => 'Bài quiz của bạn đã được kiểm duyệt',
+            'title' => 'Thông báo kiểm duyệt bài Quiz',
             'message' => $message,
             'action' => 'view',
             'action_link' => "/quizzes/{$this->quiz->id}",
             'metadata' => [
                 'quiz_id' => $this->quiz->id,
                 'action' => $this->action,
+                'reason' => $this->reason,
             ],
         ];
     }

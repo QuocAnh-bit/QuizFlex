@@ -1,12 +1,59 @@
 <template>
-  <section class="grid gap-6">
-    <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-soft)] backdrop-blur-2xl"><p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Settings</p><h1 class="mt-2 text-4xl font-black tracking-[-0.06em] text-[var(--text)]">Cài đặt hệ thống</h1><p class="mt-3 max-w-2xl text-sm leading-7 text-[var(--muted)]">Cấu hình giới hạn theo role và visibility mặc định cho quiz mới.</p></div>
-    <div class="grid gap-6 xl:grid-cols-2">
-      <article class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-card)]"><p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">AI limits</p><div class="mt-5 grid gap-3"><div v-for="row in limits" :key="row.role" class="rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface-soft)] p-4"><div class="mb-3"><b class="text-[var(--text)]">{{ row.role }}</b></div><div class="grid gap-3 md:grid-cols-2"><input class="field" :value="row.ai" /><input class="field" :value="row.ocr" /></div></div></div></article>
-      <article class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-card)]"><p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Visibility defaults</p><div class="mt-5 grid gap-3"><label v-for="item in visibility" :key="item" class="flex items-center justify-between rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface-soft)] p-4"><span class="font-bold text-[var(--text)]">{{ item }}</span><input type="radio" name="visibility" class="h-4 w-4 accent-[var(--primary)]" :checked="item === 'Private'" /></label></div><button class="btn-primary mt-5" type="button">Lưu cài đặt</button></article>
+  <section class="max-w-5xl mx-auto py-4 space-y-6">
+    <!-- Header -->
+    <div class="card p-6 sm:p-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+      <div>
+        <p class="text-xs font-bold uppercase tracking-wider text-[#7C3AED]">Cấu hình hệ thống</p>
+        <h1 class="mt-1 text-2xl font-black text-slate-900 sm:text-3xl">Cài đặt hệ thống</h1>
+        <p class="mt-1 text-sm text-slate-600">Cấu hình định mức tài nguyên AI, OCR và tùy chọn hiển thị mặc định.</p>
+      </div>
+    </div>
+
+    <div class="grid gap-6 lg:grid-cols-2">
+      <!-- AI & OCR Limits -->
+      <article class="card p-6 space-y-4">
+        <h2 class="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3">Định mức tài nguyên (AI & OCR)</h2>
+        <div class="space-y-3">
+          <div v-for="row in limits" :key="row.role" class="rounded-xl border border-slate-100 bg-slate-50 p-3.5 space-y-2">
+            <b class="text-xs font-bold text-slate-900 block">{{ row.role }}</b>
+            <div class="grid grid-cols-2 gap-2 text-xs">
+              <div>
+                <span class="text-[10px] text-slate-400 block font-semibold">AI Quota</span>
+                <input class="field text-xs mt-1" :value="row.ai" />
+              </div>
+              <div>
+                <span class="text-[10px] text-slate-400 block font-semibold">OCR Quota</span>
+                <input class="field text-xs mt-1" :value="row.ocr" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- Visibility Defaults -->
+      <article class="card p-6 space-y-4 flex flex-col justify-between">
+        <div class="space-y-4">
+          <h2 class="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3">Hiển thị mặc định khi tạo Quiz</h2>
+          <div class="space-y-2">
+            <label 
+              v-for="item in visibility" 
+              :key="item" 
+              class="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 p-3.5 text-xs font-semibold text-slate-800 cursor-pointer hover:border-purple-200 transition"
+            >
+              <span>{{ item }}</span>
+              <input type="radio" name="visibility" class="text-[#7C3AED]" :checked="item === 'Private'" />
+            </label>
+          </div>
+        </div>
+
+        <button class="btn-primary w-full py-2.5 text-xs" type="button">
+          Lưu cài đặt hệ thống
+        </button>
+      </article>
     </div>
   </section>
 </template>
+
 <script setup>
 const limits = [
   { role: 'Admin', ai: 'Unlimited', ocr: 'Unlimited' },

@@ -1,97 +1,116 @@
 <template>
-  <section class="space-y-6">
-    <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-card)] backdrop-blur-2xl">
-      <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <div>
-          <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Kháng cáo tài khoản</p>
-          <h1 class="mt-2 text-3xl font-black tracking-[-0.05em] text-[var(--text)]">Danh sách kháng cáo</h1>
-        </div>
-        <div class="flex flex-wrap items-center gap-3">
-          <select v-model="statusFilter" class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] px-4 py-2 text-sm font-bold text-[var(--text)] outline-none">
-            <option value="all">Tất cả</option>
-            <option value="pending">Pending</option>
-            <option value="approved">Approved</option>
-            <option value="rejected">Rejected</option>
-          </select>
-          <button class="btn-ghost" type="button" @click="loadRequests">Tải lại</button>
-        </div>
+  <section class="max-w-6xl mx-auto py-4 space-y-6">
+    <!-- Header -->
+    <div class="card p-6 sm:p-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+      <div>
+        <p class="text-xs font-bold uppercase tracking-wider text-[#7C3AED]">Kiểm duyệt tài khoản</p>
+        <h1 class="mt-1 text-2xl font-black text-slate-900 sm:text-3xl">Danh sách đơn kháng cáo</h1>
+        <p class="mt-1 text-sm text-slate-600">Xem xét và xử lý các yêu cầu mở khóa tài khoản từ người dùng.</p>
+      </div>
+      <div class="flex items-center gap-2.5">
+        <select v-model="statusFilter" class="field text-xs" @change="loadRequests">
+          <option value="all">Tất cả trạng thái</option>
+          <option value="pending">Chờ duyệt (Pending)</option>
+          <option value="approved">Đã duyệt (Approved)</option>
+          <option value="rejected">Đã từ chối (Rejected)</option>
+        </select>
+        <button class="btn-secondary text-xs px-3.5 py-1.5" type="button" @click="loadRequests">
+          🔄 Tải lại
+        </button>
       </div>
     </div>
 
-    <div v-if="errorMessage" class="rounded-[2rem] border border-rose-500/30 bg-rose-500/10 p-5 text-sm font-bold text-rose-300">
+    <div v-if="errorMessage" class="rounded-xl border border-red-200 bg-red-50 p-4 text-xs font-bold text-red-700">
       {{ errorMessage }}
     </div>
 
-    <div class="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
-      <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow-card)] backdrop-blur-2xl">
-        <div class="flex items-center justify-between">
-          <h2 class="text-xl font-black text-[var(--text)]">Danh sách kháng cáo</h2>
-          <span class="rounded-full border border-[var(--border)] bg-[var(--chip-active)] px-3 py-1 text-xs font-black text-[var(--primary)]">
-            {{ filteredRequests.length }} mục
+    <!-- Master-Detail Grid -->
+    <div class="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
+      <!-- Left: Requests List -->
+      <div class="card p-5 space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+          <h2 class="text-sm font-bold text-slate-900">Danh sách đơn kháng cáo</h2>
+          <span class="rounded bg-purple-50 text-[#7C3AED] px-2 py-0.5 text-xs font-bold">
+            {{ filteredRequests.length }} đơn
           </span>
         </div>
 
-        <div v-if="isLoading" class="mt-6 text-sm font-semibold text-[var(--muted)]">Đang tải...</div>
-        <div v-else-if="filteredRequests.length === 0" class="mt-6 text-sm font-semibold text-[var(--muted)]">Chưa có kháng cáo nào.</div>
-        <div v-else class="mt-6 space-y-3">
+        <div v-if="isLoading" class="py-10 text-center text-xs text-slate-400">Đang tải danh sách...</div>
+        <div v-else-if="filteredRequests.length === 0" class="py-10 text-center text-xs text-slate-400">Chưa có kháng cáo nào ở trạng thái này.</div>
+        <div v-else class="space-y-2 max-h-[500px] overflow-y-auto pr-1">
           <button
             v-for="item in filteredRequests"
             :key="item.id"
             type="button"
-            class="flex w-full items-start justify-between rounded-[1.4rem] border border-[var(--border)] bg-[var(--surface-soft)] p-4 text-left transition hover:border-[var(--border-strong)]"
+            class="flex w-full items-start justify-between rounded-xl border p-3.5 text-left transition"
+            :class="selectedRequest?.id === item.id ? 'border-[#7C3AED] bg-purple-50/50 shadow-sm' : 'border-slate-100 bg-slate-50 hover:border-slate-200'"
             @click="selectRequest(item)"
           >
             <div>
-              <p class="font-black text-[var(--text)]">{{ item.user?.name || 'Không rõ' }}</p>
-              <p class="mt-1 text-sm font-semibold text-[var(--muted)]">{{ item.user?.email || '' }}</p>
-              <p class="mt-2 text-xs font-bold uppercase tracking-[0.2em] text-[var(--primary)]">{{ formatDate(item.created_at) }}</p>
+              <p class="font-bold text-xs text-slate-900">{{ item.user?.name || 'Không rõ' }}</p>
+              <p class="text-[11px] text-slate-400">{{ item.user?.email || '' }}</p>
+              <span class="text-[10px] text-slate-400 block pt-1 font-medium">{{ formatDate(item.created_at) }}</span>
             </div>
-            <span class="rounded-full px-3 py-1 text-xs font-black" :class="statusBadgeClass(item.status)">{{ item.status }}</span>
+            <span class="rounded px-2 py-0.5 text-[10px] font-bold uppercase" :class="statusBadgeClass(item.status)">
+              {{ item.status }}
+            </span>
           </button>
         </div>
       </div>
 
-      <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow-card)] backdrop-blur-2xl">
-        <div v-if="!selectedRequest" class="grid h-full min-h-[280px] place-items-center text-sm font-semibold text-[var(--muted)]">
-          Chọn một kháng cáo để xem chi tiết.
+      <!-- Right: Request Detail -->
+      <div class="card p-6 space-y-5">
+        <div v-if="!selectedRequest" class="grid h-full min-h-[300px] place-items-center text-xs text-slate-400">
+          Chọn một kháng cáo từ danh sách bên trái để xem chi tiết.
         </div>
-        <div v-else class="space-y-6">
-          <div>
-            <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Chi tiết kháng cáo</p>
-            <h2 class="mt-2 text-2xl font-black text-[var(--text)]">{{ selectedRequest.user?.name || 'Không rõ' }}</h2>
-          </div>
-
-          <div class="rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface-soft)] p-4">
-            <h3 class="text-lg font-black text-[var(--text)]">Thông tin User</h3>
-            <div class="mt-3 space-y-2 text-sm text-[var(--muted)]">
-              <p><span class="font-black text-[var(--text)]">Tên:</span> {{ selectedRequest.user?.name || 'Không rõ' }}</p>
-              <p><span class="font-black text-[var(--text)]">Email:</span> {{ selectedRequest.user?.email || 'Không rõ' }}</p>
-              <p><span class="font-black text-[var(--text)]">Role:</span> {{ selectedRequest.user?.role || 'Không rõ' }}</p>
-            </div>
-          </div>
-
-          <div class="rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface-soft)] p-4">
-            <h3 class="text-lg font-black text-[var(--text)]">Thông tin khóa</h3>
-            <div class="mt-3 space-y-2 text-sm text-[var(--muted)]">
-              <p><span class="font-black text-[var(--text)]">Lý do khóa:</span> {{ selectedRequest.locked_reason || 'Không có thông tin' }}</p>
-              <p><span class="font-black text-[var(--text)]">Ngày khóa:</span> {{ selectedRequest.locked_at || 'Không có thông tin' }}</p>
-            </div>
-          </div>
-
-          <div class="rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface-soft)] p-4">
-            <h3 class="text-lg font-black text-[var(--text)]">Nội dung kháng cáo</h3>
-            <p class="mt-3 text-sm leading-7 text-[var(--muted)]">{{ selectedRequest.message }}</p>
-          </div>
-
-          <div v-if="selectedRequest.status === 'pending'" class="space-y-4">
+        <div v-else class="space-y-4">
+          <div class="border-b border-slate-100 pb-3 flex items-center justify-between">
             <div>
-              <label class="text-sm font-black text-[var(--text)]" for="admin-note">Admin Note</label>
-              <textarea id="admin-note" v-model="adminNote" rows="4" maxlength="1000" class="mt-2 w-full rounded-[1.25rem] border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-sm font-medium text-[var(--text)] outline-none transition focus:border-[var(--primary)]" placeholder="Nhập ghi chú... (bắt buộc khi từ chối)"></textarea>
-              <span v-if="adminNoteError" class="mt-2 block text-xs font-bold text-rose-400">{{ adminNoteError }}</span>
+              <span class="text-[10px] font-bold uppercase text-[#7C3AED]">Chi tiết kháng cáo</span>
+              <h3 class="text-base font-bold text-slate-900">{{ selectedRequest.user?.name || 'Không rõ' }}</h3>
             </div>
-            <div class="flex flex-wrap gap-3">
-              <button class="btn-primary" type="button" :disabled="isActionLoading" @click="approveRequest">Duyệt</button>
-              <button class="btn-ghost" type="button" :disabled="isActionLoading" @click="rejectRequest">Từ chối</button>
+            <span class="rounded px-2.5 py-0.5 text-xs font-bold uppercase" :class="statusBadgeClass(selectedRequest.status)">
+              {{ selectedRequest.status }}
+            </span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 text-xs">
+            <div class="rounded-xl border border-slate-100 bg-slate-50 p-3">
+              <span class="text-[10px] font-bold uppercase text-slate-400 block">Thông tin User</span>
+              <b class="text-slate-900 block mt-0.5">{{ selectedRequest.user?.name }}</b>
+              <span class="text-slate-400 text-[11px] block">{{ selectedRequest.user?.email }}</span>
+            </div>
+            <div class="rounded-xl border border-slate-100 bg-slate-50 p-3">
+              <span class="text-[10px] font-bold uppercase text-slate-400 block">Lý do bị khóa</span>
+              <b class="text-slate-900 block mt-0.5">{{ selectedRequest.locked_reason || 'Không có thông tin' }}</b>
+              <span class="text-slate-400 text-[11px] block">Khóa lúc: {{ formatDate(selectedRequest.locked_at) }}</span>
+            </div>
+          </div>
+
+          <div class="rounded-xl border border-slate-100 bg-slate-50 p-4 space-y-1.5 text-xs">
+            <span class="text-[10px] font-bold uppercase text-slate-400">Nội dung người dùng gửi:</span>
+            <p class="text-slate-800 leading-relaxed text-xs">{{ selectedRequest.message }}</p>
+          </div>
+
+          <div v-if="selectedRequest.status === 'pending'" class="space-y-3 pt-2 border-t border-slate-100 text-xs">
+            <div class="space-y-1">
+              <label class="font-bold text-slate-700 block">Ghi chú phản hồi của Admin</label>
+              <textarea 
+                v-model="adminNote" 
+                rows="3" 
+                maxlength="1000" 
+                class="field text-xs resize-none" 
+                placeholder="Nhập ghi chú phản hồi (bắt buộc khi từ chối)..."
+              ></textarea>
+              <span v-if="adminNoteError" class="text-xs font-bold text-red-600 block">{{ adminNoteError }}</span>
+            </div>
+            <div class="flex items-center justify-end gap-2 pt-1">
+              <button class="btn-secondary text-xs px-3.5 py-1.5 text-red-700 font-bold" type="button" :disabled="isActionLoading" @click="rejectRequest">
+                Từ chối kháng cáo
+              </button>
+              <button class="btn-primary text-xs px-4 py-1.5" type="button" :disabled="isActionLoading" @click="approveRequest">
+                Duyệt & Mở khóa
+              </button>
             </div>
           </div>
         </div>
@@ -200,16 +219,16 @@ const rejectRequest = async () => {
 }
 
 const formatDate = (value) => {
-  if (!value) return 'Không rõ'
+  if (!value) return '-'
   const date = new Date(value)
-  return Number.isNaN(date.getTime()) ? value : date.toLocaleString('vi-VN')
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString('vi-VN')
 }
 
 const statusBadgeClass = (status) => ({
-  pending: 'border-amber-500/25 bg-amber-500/10 text-amber-300',
-  approved: 'border-emerald-500/25 bg-emerald-500/10 text-emerald-300',
-  rejected: 'border-rose-500/25 bg-rose-500/10 text-rose-300',
-}[status] || 'border-[var(--border)] bg-[var(--surface-soft)] text-[var(--muted)]')
+  pending: 'bg-amber-100 text-amber-800',
+  approved: 'bg-emerald-100 text-emerald-800',
+  rejected: 'bg-red-100 text-red-800',
+}[status] || 'bg-slate-100 text-slate-500')
 
 onMounted(loadRequests)
 </script>

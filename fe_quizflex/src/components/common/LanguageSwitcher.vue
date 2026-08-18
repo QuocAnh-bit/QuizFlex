@@ -4,16 +4,15 @@
       type="button"
       @click="isOpen = !isOpen"
       :title="$t('common.language')"
-      class="flex h-10 shrink-0 items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface-soft)] px-3 text-sm font-bold text-[var(--muted)] transition duration-200 hover:-translate-y-0.5 hover:bg-[var(--border-light)] hover:text-[var(--text)] hover:shadow-lg active:scale-95"
+      class="flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 active:scale-95 shadow-sm"
     >
-      <!-- <span class="text-base leading-none">{{ currentLocale.flag }}</span> -->
-      <span class="hidden sm:inline">{{ currentLocale.code.toUpperCase() }}</span>
+      <span>{{ currentLocale.code.toUpperCase() }}</span>
     </button>
 
     <transition name="dropdown-slide">
       <div
         v-if="isOpen"
-        class="absolute right-0 top-full mt-2 w-44 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-1.5 shadow-2xl backdrop-blur-xl z-50"
+        class="absolute right-0 top-full mt-2 w-40 rounded-xl border border-slate-200 bg-white p-1 shadow-xl z-50"
       >
         <button
           v-for="item in locales"
@@ -21,13 +20,13 @@
           type="button"
           @click="selectLocale(item.code)"
           :class="[
-            'flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm font-bold transition',
+            'flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs font-semibold transition',
             locale === item.code
-              ? 'bg-[var(--chip-active)] text-[var(--text)]'
-              : 'text-[var(--muted)] hover:bg-[var(--surface-soft)] hover:text-[var(--text)]'
+              ? 'bg-purple-50 text-[#7C3AED] font-bold'
+              : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900'
           ]"
         >
-          <span class="text-base leading-none">{{ item.flag }}</span>
+          <span class="text-sm leading-none">{{ item.flag }}</span>
           <span>{{ item.label }}</span>
         </button>
       </div>

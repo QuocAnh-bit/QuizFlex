@@ -1,249 +1,247 @@
 <template>
-  <section class="relative my-10">
-    <div class="pointer-events-none absolute -left-20 top-10 h-72 w-72 rounded-full bg-[var(--primary)]/20 blur-3xl"></div>
-    <div class="pointer-events-none absolute -right-20 top-20 h-72 w-72 rounded-full bg-[var(--accent)]/10 blur-3xl"></div>
+  <section class="w-full">
+    <div class="grid gap-5 md:grid-cols-3">
 
-    <div class="relative grid gap-5 xl:grid-cols-2">
-      <article
-        class="group relative min-h-[340px] overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-soft)] backdrop-blur-2xl transition duration-500 hover:-translate-y-2 hover:border-[var(--border-strong)] hover:shadow-[0_28px_90px_rgba(0,0,0,0.32)]"
+      <!-- ===================================================== -->
+      <!-- CARD 1: LÀM QUIZ -->
+      <!-- ===================================================== -->
+      <router-link
+        to="/quizzes"
+        class="group flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_4px_16px_rgba(15,23,42,0.06)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[#7C3AED] hover:shadow-[0_8px_24px_rgba(15,23,42,0.08)]"
       >
-        <div class="pointer-events-none absolute inset-0 bg-gradient-to-br from-[var(--primary)]/18 via-transparent to-[var(--accent)]/10"></div>
-        <div class="pointer-events-none absolute -right-28 -top-28 h-80 w-80 rounded-full bg-[var(--primary)]/25 blur-3xl transition duration-700 group-hover:scale-125 group-hover:opacity-80"></div>
-        <div class="pointer-events-none absolute -bottom-28 left-10 h-72 w-72 rounded-full bg-[var(--accent-2)]/10 blur-3xl transition duration-700 group-hover:scale-110"></div>
+        <div>
 
-        <div class="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[var(--border-strong)] to-transparent"></div>
-
-        <div class="relative z-10 grid h-full gap-8 p-6 sm:p-8 lg:grid-cols-[1.08fr_0.92fr] lg:p-9">
-          <div class="flex flex-col justify-center">
-            <div
-              class="mb-5 flex w-fit items-center gap-2 rounded-full border border-[var(--border-strong)] bg-[var(--chip-active)] px-4 py-2 text-sm font-black text-[var(--primary)] shadow-[0_12px_30px_rgba(155,44,255,0.16)]"
+          <!-- Icon -->
+          <div
+            class="flex h-12 w-12 items-center justify-center rounded-xl bg-[#7C3AED] text-white shadow-sm"
+          >
+            <svg
+              class="h-6 w-6"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
             >
-              <span class="h-2 w-2 rounded-full bg-[var(--primary)] shadow-[0_0_16px_var(--primary)]"></span>
-              Tạo thủ công
-            </div>
+              <!-- Document -->
+              <path
+                d="M6 3h8l4 4v14H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"
+              />
 
-            <h2 class="max-w-md text-4xl font-black leading-[0.92] tracking-[-0.07em] text-[var(--text)] sm:text-3xl">
-              Tạo quiz mới
-              <span class="block bg-gradient-to-r from-[var(--primary)] via-[var(--primary-2)] to-[var(--accent)] bg-clip-text text-transparent">
-                trong vài phút.
-              </span>
-            </h2>
+              <!-- Fold -->
+              <path
+                d="M14 3v5h5"
+              />
 
-            <p class="mt-5 max-w-md text-sm font-medium leading-7 text-[var(--muted)] sm:text-base">
-              Tự nhập câu hỏi, đáp án, thời gian làm bài và chế độ hiển thị cho bộ quiz của bạn.
-            </p>
+              <!-- Lines -->
+              <path
+                d="M8 12h6"
+              />
 
-            <div class="mt-6 flex flex-wrap gap-2">
-              <span
-                v-for="item in createFeatures"
-                :key="item"
-                class="rounded-full border border-[var(--border)] bg-[var(--surface-soft)] px-3 py-2 text-xs font-extrabold text-[var(--muted)] transition duration-300 group-hover:border-[var(--border-strong)] group-hover:text-[var(--text)]"
-              >
-                {{ item }}
-              </span>
-            </div>
+              <path
+                d="M8 16h5"
+              />
 
-            <div class="mt-8 flex flex-wrap items-center gap-3">
-              <router-link
-                to="/dashboard/questions/create"
-                class="group/btn relative inline-flex min-h-12 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-[var(--primary)] via-[var(--primary-2)] to-[var(--accent)] px-6 text-sm font-black text-white shadow-[0_18px_38px_rgba(155,44,255,0.28)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_24px_55px_rgba(155,44,255,0.38)] active:scale-95"
-              >
-                <span class="absolute inset-0 -translate-x-[120%] bg-gradient-to-r from-transparent via-white/35 to-transparent transition duration-700 group-hover/btn:translate-x-[120%]"></span>
-                <span class="relative z-10">Mở Quiz Editor</span>
-              </router-link>
-
-              <span class="text-xs font-bold text-[var(--muted)]">
-                Không cần AI, không cần vòng vo.
-              </span>
-            </div>
+              <path
+                d="M8 8h2"
+              />
+            </svg>
           </div>
 
-          <div class="relative grid place-items-center">
-            <div class="absolute h-64 w-64 rounded-full bg-[var(--chip-active)] blur-2xl"></div>
+          <!-- Title -->
+          <h3
+            class="mt-5 text-xl font-bold text-[#0F172A] group-hover:text-[#7C3AED] transition-colors"
+          >
+            Làm quiz
+          </h3>
 
-            <div
-              class="relative w-full max-w-[310px] overflow-hidden rounded-[1.75rem] border border-[var(--border)] bg-[var(--surface)] shadow-[0_26px_70px_rgba(0,0,0,0.24)] transition duration-500 group-hover:-translate-y-1 group-hover:rotate-1 group-hover:border-[var(--border-strong)]"
-            >
-              <div class="flex h-12 items-center justify-between border-b border-[var(--border)] bg-[var(--surface-soft)] px-4">
-                <div class="flex gap-2">
-                  <span class="h-2.5 w-2.5 rounded-full bg-[#ff5f57]"></span>
-                  <span class="h-2.5 w-2.5 rounded-full bg-[#ffbd2e]"></span>
-                  <span class="h-2.5 w-2.5 rounded-full bg-[#28c840]"></span>
-                </div>
-
-                <span class="rounded-full bg-[var(--chip-active)] px-3 py-1 text-[10px] font-black text-[var(--primary)]">
-                  EDITOR
-                </span>
-              </div>
-
-              <div class="grid gap-3 p-4">
-                <div class="rounded-2xl border border-[var(--border)] bg-gradient-to-br from-[var(--surface-soft)] to-[rgba(155,44,255,0.12)] p-4">
-                  <p class="text-xs font-black text-[var(--primary)]">
-                    Câu hỏi 01
-                  </p>
-                  <h3 class="mt-2 text-sm font-black leading-5 text-[var(--text)]">
-                    Đâu là thành phần chính của một câu hỏi trắc nghiệm?
-                  </h3>
-                </div>
-
-                <div
-                  v-for="answer in previewAnswers"
-                  :key="answer.key"
-                  class="flex items-center gap-3 rounded-2xl border p-3 text-xs font-bold transition duration-300"
-                  :class="answer.active
-                    ? 'border-[var(--border-strong)] bg-[var(--chip-active)] text-[var(--text)]'
-                    : 'border-[var(--border)] bg-[var(--surface-soft)] text-[var(--muted)]'"
-                >
-                  <span
-                    class="grid h-7 w-7 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-[var(--primary)] to-[var(--primary-2)] text-xs font-black text-white"
-                  >
-                    {{ answer.key }}
-                  </span>
-                  {{ answer.text }}
-                </div>
-
-                <div class="mt-1 grid grid-cols-3 gap-2">
-                  <div
-                    v-for="stat in editorStats"
-                    :key="stat.label"
-                    class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-3 text-center"
-                  >
-                    <strong class="block text-sm font-black text-[var(--text)]">
-                      {{ stat.value }}
-                    </strong>
-                    <span class="mt-1 block text-[10px] font-bold text-[var(--muted)]">
-                      {{ stat.label }}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <!-- Description -->
+          <p
+            class="mt-2 text-sm leading-relaxed text-[#64748B]"
+          >
+            Khám phá hàng nghìn câu hỏi và kiểm tra kiến thức của bạn mọi lúc mọi nơi.
+          </p>
         </div>
-      </article>
 
-      <article
-        class="group relative min-h-[340px] overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-soft)] backdrop-blur-2xl transition duration-500 hover:-translate-y-2 hover:border-[var(--border-strong)] hover:shadow-[0_28px_90px_rgba(0,0,0,0.32)]"
+        <!-- Bottom -->
+        <div
+          class="mt-6 flex items-center gap-1 text-sm font-bold text-[#7C3AED]"
+        >
+          <span>
+            Khám phá ngay
+          </span>
+
+          <span
+            class="transition-transform duration-200 group-hover:translate-x-1"
+          >
+            →
+          </span>
+        </div>
+      </router-link>
+
+
+      <!-- ===================================================== -->
+      <!-- CARD 2: PHÒNG BÀI TẬP -->
+      <!-- ===================================================== -->
+      <router-link
+        to="/homework-rooms"
+        class="group flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_4px_16px_rgba(15,23,42,0.06)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[#2563EB] hover:shadow-[0_8px_24px_rgba(15,23,42,0.08)]"
       >
-        <div class="pointer-events-none absolute inset-0 bg-gradient-to-br from-[var(--accent-2)]/12 via-transparent to-[var(--primary-2)]/14"></div>
-        <div class="pointer-events-none absolute -right-28 -top-28 h-80 w-80 rounded-full bg-[var(--accent-2)]/20 blur-3xl transition duration-700 group-hover:scale-125 group-hover:opacity-80"></div>
-        <div class="pointer-events-none absolute -bottom-28 left-10 h-72 w-72 rounded-full bg-[var(--primary-2)]/12 blur-3xl transition duration-700 group-hover:scale-110"></div>
+        <div>
 
-        <div class="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[var(--border-strong)] to-transparent"></div>
-
-        <div class="relative z-10 grid h-full gap-8 p-6 sm:p-8 lg:grid-cols-[1.08fr_0.92fr] lg:p-9">
-          <div class="flex flex-col justify-center">
-            <div
-              class="mb-5 flex w-fit items-center gap-2 rounded-full border border-[var(--border-strong)] bg-[var(--chip-active)] px-4 py-2 text-sm font-black text-[var(--primary)] shadow-[0_12px_30px_rgba(155,44,255,0.16)]"
+          <!-- Icon -->
+          <div
+            class="flex h-12 w-12 items-center justify-center rounded-xl bg-[#2563EB] text-white shadow-sm"
+          >
+            <svg
+              class="h-6 w-6"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
             >
-              <span class="h-2 w-2 rounded-full bg-[var(--accent-2)] shadow-[0_0_16px_var(--accent-2)]"></span>
-              Tạo bằng AI
-            </div>
+              <!-- Book -->
+              <path
+                d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v17H6.5A2.5 2.5 0 0 0 4 22V5.5z"
+              />
 
-            <h2 class="max-w-md text-4xl font-black leading-[0.92] tracking-[-0.07em] text-[var(--text)] sm:text-5xl">
-              AI Quiz
-              <span class="block bg-gradient-to-r from-[var(--accent-2)] via-[var(--primary-2)] to-[var(--accent)] bg-clip-text text-transparent">
-                Generator.
-              </span>
-            </h2>
+              <path
+                d="M4 5.5V22"
+              />
 
-            <p class="mt-5 max-w-md text-sm font-medium leading-7 text-[var(--muted)] sm:text-base">
-              Sinh quiz từ chủ đề, văn bản hoặc tài liệu. Tạo bản nháp nhanh rồi chỉnh lại trước khi lưu.
-            </p>
+              <path
+                d="M8 7h8"
+              />
 
-            <div class="mt-6 flex flex-wrap gap-2">
-              <span
-                v-for="item in aiFeatures"
-                :key="item"
-                class="rounded-full border border-[var(--border)] bg-[var(--surface-soft)] px-3 py-2 text-xs font-extrabold text-[var(--muted)] transition duration-300 group-hover:border-[var(--border-strong)] group-hover:text-[var(--text)]"
-              >
-                {{ item }}
-              </span>
-            </div>
+              <path
+                d="M8 11h8"
+              />
 
-            <div class="mt-8 flex flex-wrap items-center gap-3">
-              <router-link
-                to="/dashboard/questions/ai"
-                class="group/btn relative inline-flex min-h-12 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-[var(--accent-2)] via-[var(--primary-2)] to-[var(--accent)] px-6 text-sm font-black text-white shadow-[0_18px_38px_rgba(155,44,255,0.28)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_24px_55px_rgba(155,44,255,0.38)] active:scale-95"
-              >
-                <span class="absolute inset-0 -translate-x-[120%] bg-gradient-to-r from-transparent via-white/35 to-transparent transition duration-700 group-hover/btn:translate-x-[120%]"></span>
-                <span class="relative z-10">Tạo quiz bằng AI</span>
-              </router-link>
-
-              <span class="text-xs font-bold text-[var(--muted)]">
-                Tạo nhanh, vẫn chỉnh được.
-              </span>
-            </div>
+              <path
+                d="M8 15h5"
+              />
+            </svg>
           </div>
 
-          <div class="relative grid place-items-center">
-            <div class="absolute h-64 w-64 rounded-full bg-[var(--chip-active)] blur-2xl"></div>
+          <!-- Title -->
+          <h3
+            class="mt-5 text-xl font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors"
+          >
+            Phòng bài tập
+          </h3>
 
-            <div class="relative grid h-60 w-60 place-items-center rounded-full border border-[var(--border)] bg-[var(--surface-soft)] shadow-[0_26px_70px_rgba(0,0,0,0.22)] transition duration-500 group-hover:-translate-y-1 group-hover:border-[var(--border-strong)]">
-              <div class="absolute inset-5 rounded-full border border-dashed border-[var(--border-strong)] opacity-80"></div>
-              <div class="absolute inset-12 rounded-full border border-dashed border-[var(--border-strong)] opacity-50"></div>
-
-              <div class="absolute left-7 top-10 h-3 w-3 rounded-full bg-[var(--primary)] shadow-[0_0_22px_var(--primary)]"></div>
-              <div class="absolute right-10 top-8 h-4 w-4 rounded-full bg-[var(--accent-2)] shadow-[0_0_24px_var(--accent-2)]"></div>
-              <div class="absolute bottom-10 left-12 h-4 w-4 rounded-full bg-[var(--accent)] shadow-[0_0_24px_var(--accent)]"></div>
-
-              <div
-                class="relative z-10 grid h-28 w-28 place-items-center rounded-[2rem] bg-gradient-to-br from-[var(--primary)] via-[var(--primary-2)] to-[var(--accent)] text-4xl font-black tracking-[-0.1em] text-white shadow-[0_24px_60px_rgba(155,44,255,0.4)] transition duration-500 group-hover:scale-105 group-hover:rotate-3"
-              >
-                AI
-              </div>
-
-              <div class="absolute bottom-7 right-7 grid gap-2">
-                <span class="h-2 w-24 rounded-full bg-gradient-to-r from-[var(--accent-2)] to-transparent"></span>
-                <span class="h-2 w-16 rounded-full bg-gradient-to-r from-[var(--primary-2)] to-transparent"></span>
-                <span class="h-2 w-20 rounded-full bg-gradient-to-r from-[var(--accent)] to-transparent"></span>
-              </div>
-            </div>
-          </div>
+          <!-- Description -->
+          <p
+            class="mt-2 text-sm leading-relaxed text-[#64748B]"
+          >
+            Tham gia phòng học, hoàn thành bài tập được giao và theo dõi tiến độ học tập chi tiết.
+          </p>
         </div>
-      </article>
+
+        <!-- Bottom -->
+        <div
+          class="mt-6 flex items-center gap-1 text-sm font-bold text-[#2563EB]"
+        >
+          <span>
+            Vào phòng học
+          </span>
+
+          <span
+            class="transition-transform duration-200 group-hover:translate-x-1"
+          >
+            →
+          </span>
+        </div>
+      </router-link>
+
+
+      <!-- ===================================================== -->
+      <!-- CARD 3: PHÒNG THI ĐẤU -->
+      <!-- ===================================================== -->
+      <router-link
+        to="/live-rooms"
+        class="group flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_4px_16px_rgba(15,23,42,0.06)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[#F59E0B] hover:shadow-[0_8px_24px_rgba(15,23,42,0.08)]"
+      >
+        <div>
+
+          <!-- Icon -->
+          <div
+            class="flex h-12 w-12 items-center justify-center rounded-xl bg-[#F59E0B] text-white shadow-sm"
+          >
+            <svg
+              class="h-6 w-6"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <!-- Trophy -->
+              <path
+                d="M8 4h8v5a4 4 0 0 1-8 0V4z"
+              />
+
+              <path
+                d="M8 6H5a2 2 0 0 0 2 4"
+              />
+
+              <path
+                d="M16 6h3a2 2 0 0 1-2 4"
+              />
+
+              <path
+                d="M12 13v4"
+              />
+
+              <path
+                d="M9 21h6"
+              />
+
+              <path
+                d="M10 17h4"
+              />
+            </svg>
+          </div>
+
+          <!-- Title -->
+          <h3
+            class="mt-5 text-xl font-bold text-[#0F172A] group-hover:text-[#F59E0B] transition-colors"
+          >
+            Phòng thi đấu
+          </h3>
+
+          <!-- Description -->
+          <p
+            class="mt-2 text-sm leading-relaxed text-[#64748B]"
+          >
+            Thi đấu trực tiếp cùng bạn bè và người chơi khác trong thời gian thực kiểu Kahoot.
+          </p>
+        </div>
+
+        <!-- Bottom -->
+        <div
+          class="mt-6 flex items-center gap-1 text-sm font-bold text-[#F59E0B]"
+        >
+          <span>
+            Tham gia ngay
+          </span>
+
+          <span
+            class="transition-transform duration-200 group-hover:translate-x-1"
+          >
+            →
+          </span>
+        </div>
+      </router-link>
+
     </div>
   </section>
 </template>
 
 <script setup>
-const createFeatures = [
-  'Thêm câu hỏi',
-  'Cài thời gian',
-  'Chọn quyền truy cập',
-]
-
-const aiFeatures = [
-  'Nhập chủ đề',
-  'Sinh câu hỏi',
-  'Chỉnh và lưu',
-]
-
-const previewAnswers = [
-  {
-    key: 'A',
-    text: 'Câu hỏi, đáp án và điểm số',
-    active: true,
-  },
-  {
-    key: 'B',
-    text: 'Chỉ cần tiêu đề là đủ',
-    active: false,
-  },
-]
-
-const editorStats = [
-  {
-    value: '10',
-    label: 'Câu hỏi',
-  },
-  {
-    value: '12m',
-    label: 'Thời gian',
-  },
-  {
-    value: '3',
-    label: 'Mức độ',
-  },
-]
+// QuizFlex - Modern Education Feature Cards
 </script>

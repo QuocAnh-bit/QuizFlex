@@ -16,6 +16,7 @@ class ReportTicket extends Model
     protected $fillable = [
         'user_id',
         'quiz_id',
+        'question_id',
         'reason',
         'description',
         'status',
@@ -35,5 +36,13 @@ class ReportTicket extends Model
     public function quiz()
     {
         return $this->belongsTo(Quiz::class, 'quiz_id')->withTrashed();
+    }
+
+    /**
+     * Mối quan hệ: Một lượt báo cáo thuộc về một Câu hỏi
+     */
+    public function question()
+    {
+        return $this->belongsTo(Question::class, 'question_id')->withTrashed();
     }
 }

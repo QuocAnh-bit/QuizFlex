@@ -1,17 +1,41 @@
 <template>
-  <section class="grid gap-6">
-    <div class="relative overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-soft)] backdrop-blur-2xl">
-      <div class="relative z-10 flex flex-col justify-between gap-5 xl:flex-row xl:items-end"><div><p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Reports</p><h1 class="mt-2 text-4xl font-black tracking-[-0.06em] text-[var(--text)]">Báo cáo & analytics</h1><p class="mt-3 max-w-2xl text-sm leading-7 text-[var(--muted)]">Tổng hợp hiệu suất quiz từ API quizzes và quiz_attempts.</p></div><div class="flex gap-3"><button class="btn-ghost" type="button" @click="exportCsv">Export CSV</button></div></div>
+  <section class="max-w-6xl mx-auto py-4 space-y-6">
+    <!-- Header -->
+    <div class="card p-6 sm:p-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+      <div>
+        <p class="text-xs font-bold uppercase tracking-wider text-[#7C3AED]">Báo cáo & Phân tích</p>
+        <h1 class="mt-1 text-2xl font-black text-slate-900 sm:text-3xl">Hiệu suất đề thi</h1>
+        <p class="mt-1 text-sm text-slate-600">Tổng hợp lượt làm bài và điểm số trung bình của các bộ quiz trong hệ thống.</p>
+      </div>
+      <button class="btn-secondary text-xs px-3.5 py-1.5" type="button" @click="exportCsv">
+        ⤓ Xuất CSV
+      </button>
     </div>
 
-    <div v-if="errorMessage" class="rounded-[2rem] border border-rose-500/30 bg-rose-500/10 p-5 text-sm font-bold text-rose-300">{{ errorMessage }}</div>
+    <div v-if="errorMessage" class="rounded-xl border border-red-200 bg-red-50 p-4 text-xs font-bold text-red-700">{{ errorMessage }}</div>
 
-    <article class="grid gap-4">
-      <div v-for="row in rows" :key="row.id" class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow-card)]"><div class="flex flex-wrap items-center justify-between gap-4"><div><b class="text-xl text-[var(--text)]">{{ row.title }}</b><p class="mt-1 text-sm text-[var(--muted)]">{{ row.author }} • {{ row.attempts }} lượt làm • {{ row.questions }} câu</p></div><span class="rounded-full bg-[var(--chip-active)] px-4 py-2 text-sm font-black text-[var(--primary)]">{{ row.avgScore }}%</span></div><div class="mt-4 h-3 overflow-hidden rounded-full bg-[var(--surface-soft)]"><div class="h-full rounded-full bg-gradient-to-r from-[var(--primary)] to-[var(--accent)]" :style="{ width: `${row.avgScore}%` }"></div></div></div>
-      <div v-if="!isLoading && rows.length === 0" class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-10 text-center text-sm font-bold text-[var(--muted)]">Chưa có dữ liệu báo cáo.</div>
-    </article>
+    <div class="grid gap-3">
+      <div v-for="row in rows" :key="row.id" class="card p-5 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <b class="text-sm font-bold text-slate-900 block">{{ row.title }}</b>
+            <p class="text-xs text-slate-400 mt-0.5">Tác giả: {{ row.author }} • {{ row.attempts }} lượt làm • {{ row.questions }} câu</p>
+          </div>
+          <span class="rounded-lg bg-purple-50 text-[#7C3AED] px-3 py-1 text-xs font-bold">
+            Điểm TB: {{ row.avgScore }}%
+          </span>
+        </div>
+        <div class="h-2 overflow-hidden rounded-full bg-slate-100">
+          <div class="h-full rounded-full bg-[#7C3AED] transition-all" :style="{ width: `${row.avgScore}%` }"></div>
+        </div>
+      </div>
+      <div v-if="!isLoading && rows.length === 0" class="card p-10 text-center text-xs text-slate-400">
+        Chưa có dữ liệu báo cáo.
+      </div>
+    </div>
   </section>
 </template>
+
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { normalizeQuizCard, quizzesApi } from '@/services/api'

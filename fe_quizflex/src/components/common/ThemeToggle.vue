@@ -12,7 +12,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 
-const theme = ref('dark')
+const theme = ref('light')
 
 const label = computed(() => theme.value === 'dark' ? 'Giao diện tối' : 'Giao diện sáng')
 const icon = computed(() => theme.value === 'dark' ? '☾' : '☀')
@@ -29,6 +29,6 @@ function toggleTheme() {
 
 onMounted(() => {
   const savedTheme = localStorage.getItem('quizflex-theme')
-  applyTheme(savedTheme || 'dark')
+  applyTheme(savedTheme || 'light')
 })
 </script>

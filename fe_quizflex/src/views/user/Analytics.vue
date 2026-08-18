@@ -1,167 +1,168 @@
 <template>
-  <section class="grid gap-6 py-8">
-    <div class="relative overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-soft)] backdrop-blur-2xl">
-      <div class="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[var(--primary)]/15 blur-3xl"></div>
-      <div class="relative z-10">
-        <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">Analytics Dashboard</p>
-        <h1 class="mt-2 text-4xl font-black tracking-[-0.06em] text-[var(--text)]">Phân tích Năng lực</h1>
-        <p class="mt-3 max-w-2xl text-sm leading-7 text-[var(--muted)]">Xem tiến trình điểm số, năng lực theo chủ đề và nhận xét nhanh để định hướng ôn luyện.</p>
+  <section class="max-w-5xl mx-auto py-4 space-y-6">
+    <!-- Header -->
+    <div class="card p-6 sm:p-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+      <div>
+        <p class="text-xs font-bold uppercase tracking-wider text-[#7C3AED]">Báo cáo năng lực</p>
+        <h1 class="mt-1 text-2xl font-black text-slate-900 sm:text-3xl">Phân tích học tập</h1>
+        <p class="mt-1 text-sm text-slate-600">Xem tiến trình điểm số, năng lực theo chủ đề và nhận xét định hướng ôn tập.</p>
       </div>
+      <router-link to="/quizzes" class="btn-primary text-xs shrink-0 self-start sm:self-auto">
+        Làm thêm quiz →
+      </router-link>
     </div>
 
-    <div class="grid gap-4 md:grid-cols-4">
-      <article class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow-card)]">
-        <p class="text-sm font-bold text-[var(--muted)]">Bài đã hoàn thành</p>
-        <b class="mt-2 block text-3xl font-black text-[var(--text)]">{{ summary.totalAttempts }}</b>
+    <!-- 4 Summary Stats -->
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <article class="card p-5">
+        <span class="text-xs font-semibold text-slate-500">Bài đã hoàn thành</span>
+        <b class="mt-2 block text-2xl font-black text-slate-900">{{ summary.totalAttempts }}</b>
       </article>
-      <article class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow-card)]">
-        <p class="text-sm font-bold text-[var(--muted)]">Điểm trung bình</p>
-        <b class="mt-2 block text-3xl font-black text-[var(--text)]">{{ summary.averageScore }}%</b>
+      <article class="card p-5">
+        <span class="text-xs font-semibold text-slate-500">Điểm trung bình</span>
+        <b class="mt-2 block text-2xl font-black text-[#7C3AED]">{{ summary.averageScore }}%</b>
       </article>
-      <article class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow-card)]">
-        <p class="text-sm font-bold text-[var(--muted)]">Điểm tốt nhất</p>
-        <b class="mt-2 block text-3xl font-black text-[var(--text)]">{{ summary.bestScore }}%</b>
+      <article class="card p-5">
+        <span class="text-xs font-semibold text-slate-500">Điểm tốt nhất</span>
+        <b class="mt-2 block text-2xl font-black text-emerald-600">{{ summary.bestScore }}%</b>
       </article>
-      <article class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow-card)]">
-        <p class="text-sm font-bold text-[var(--muted)]">Dữ liệu cập nhật</p>
-        <b class="mt-2 block text-3xl font-black text-[var(--text)]">{{ summary.lastAttemptLabel }}</b>
+      <article class="card p-5">
+        <span class="text-xs font-semibold text-slate-500">Lần làm gần nhất</span>
+        <b class="mt-2 block text-xl font-bold text-slate-800">{{ summary.lastAttemptLabel }}</b>
       </article>
     </div>
 
-    <div class="grid gap-4">
-      <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-card)]">
-        <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">5.1 Biểu đồ tiến trình học tập</p>
-            <h2 class="mt-2 text-2xl font-black text-[var(--text)]">Điểm trung bình theo {{ selectedLabel }}</h2>
-          </div>
-          <div class="flex flex-wrap gap-2">
-            <button
-              v-for="option in periodOptions"
-              :key="option.value"
-              type="button"
-              @click="selectedPeriod = option.value"
-              :class="[
-                'rounded-full border px-4 py-2 text-sm font-bold transition duration-200',
-                selectedPeriod === option.value
-                  ? 'border-[var(--primary)] bg-[var(--primary)]/10 text-[var(--text)]'
-                  : 'border-[var(--border)] bg-[var(--surface-soft)] text-[var(--muted)] hover:border-[var(--border-strong)] hover:bg-[var(--surface)]',
-              ]"
-            >
-              {{ option.label }}
-            </button>
-          </div>
+    <!-- Learning Progress Chart Card -->
+    <div class="card p-6 sm:p-8 space-y-6">
+      <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b border-slate-100 pb-4">
+        <div>
+          <h2 class="text-lg font-bold text-slate-900">Điểm trung bình theo {{ selectedLabel }}</h2>
+          <p class="text-xs text-slate-500">Biểu đồ thể hiện xu hướng điểm số theo thời gian</p>
         </div>
+        <div class="flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1 text-xs">
+          <button
+            v-for="option in periodOptions"
+            :key="option.value"
+            type="button"
+            @click="selectedPeriod = option.value"
+            class="rounded-md px-3 py-1.5 font-bold transition"
+            :class="selectedPeriod === option.value
+              ? 'bg-white text-[#7C3AED] shadow-sm'
+              : 'text-slate-600 hover:text-slate-900'"
+          >
+            {{ option.label }}
+          </button>
+        </div>
+      </div>
 
-        <div class="mt-6">
-          <AppLoadingState 
-            v-if="isLoading" 
-            title="Đang tải dữ liệu phân tích..." 
-            message="Vui lòng chờ trong giây lát để hệ thống tổng hợp tiến trình học tập của bạn."
-            icon="📈"
-          />
-          <AppErrorState 
-            v-else-if="errorMessage" 
-            title="Không thể tải dữ liệu phân tích"
-            :message="errorMessage" 
-            @retry="loadAnalytics"
-          />
-          <div v-else-if="lineSeries.length === 0" class="rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface-soft)] p-10 text-center text-sm font-bold text-[var(--muted)]">Chưa có kết quả hoàn thành để hiển thị biểu đồ. Hoàn thành ít nhất một quiz để xem tiến trình.</div>
-          <div v-else class="overflow-hidden rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface-soft)] p-5">
-            <div class="overflow-x-auto">
-              <svg viewBox="0 0 760 320" class="min-w-full">
-                <defs>
-                  <linearGradient id="analyticsStroke" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stop-color="#8b5cf6" />
-                    <stop offset="100%" stop-color="#ec4899" />
-                  </linearGradient>
-                </defs>
-                <g transform="translate(40,20)">
-                  <line x1="0" y1="250" x2="660" y2="250" stroke="var(--border)" stroke-width="1" />
-                  <line x1="0" y1="0" x2="0" y2="250" stroke="var(--border)" stroke-width="1" />
-                  <g v-for="row in 5" :key="row">
-                    <line x1="0" :y1="50 * (row - 1)" x2="660" :y2="50 * (row - 1)" stroke="var(--border)" stroke-width="1" opacity="0.15" />
-                    <text x="-10" :y="50 * (row - 1) + 4" text-anchor="end" fill="var(--muted)" font-size="11">{{ 100 - (row - 1) * 25 }}%</text>
-                  </g>
-                  <path :d="linePath" fill="none" stroke="url(#analyticsStroke)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
-                  <path :d="areaPath" fill="rgba(139,92,246,0.16)" />
-                  <circle
-                    v-for="point in lineSeries"
-                    :key="point.key"
-                    :cx="point.x"
-                    :cy="point.y"
-                    r="5"
-                    fill="white"
-                    stroke="url(#analyticsStroke)"
-                    stroke-width="3"
-                  />
-                  <g v-for="point in lineSeries" :key="point.key + '-label'">
-                    <text :x="point.x" y="270" text-anchor="middle" fill="var(--muted)" font-size="11">{{ point.label }}</text>
-                  </g>
+      <div>
+        <AppLoadingState 
+          v-if="isLoading" 
+          title="Đang tải dữ liệu phân tích..." 
+          message="Vui lòng chờ trong giây lát để hệ thống tổng hợp tiến trình học tập."
+          icon="📈"
+        />
+        <AppErrorState 
+          v-else-if="errorMessage" 
+          title="Không thể tải dữ liệu phân tích"
+          :message="errorMessage" 
+          @retry="loadAnalytics"
+        />
+        <div v-else-if="lineSeries.length === 0" class="rounded-xl border border-slate-200 bg-slate-50 p-10 text-center text-xs font-semibold text-slate-500">
+          Chưa có kết quả hoàn thành để hiển thị biểu đồ. Hoàn thành ít nhất một quiz để xem tiến trình.
+        </div>
+        <div v-else class="space-y-6">
+          <div class="overflow-x-auto">
+            <svg viewBox="0 0 760 280" class="min-w-full">
+              <g transform="translate(40,20)">
+                <line x1="0" y1="220" x2="680" y2="220" stroke="#e2e8f0" stroke-width="1" />
+                <line x1="0" y1="0" x2="0" y2="220" stroke="#e2e8f0" stroke-width="1" />
+                <g v-for="row in 5" :key="row">
+                  <line x1="0" :y1="44 * (row - 1)" x2="680" :y2="44 * (row - 1)" stroke="#e2e8f0" stroke-width="1" opacity="0.6" stroke-dasharray="3 3" />
+                  <text x="-10" :y="44 * (row - 1) + 4" text-anchor="end" fill="#94a3b8" font-size="11" font-weight="600">{{ 100 - (row - 1) * 25 }}%</text>
                 </g>
-              </svg>
-            </div>
+                <path :d="areaPath" fill="rgba(124, 58, 237, 0.08)" />
+                <path :d="linePath" fill="none" stroke="#7C3AED" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+                <circle
+                  v-for="point in lineSeries"
+                  :key="point.key"
+                  :cx="point.x"
+                  :cy="point.y"
+                  r="4.5"
+                  fill="#ffffff"
+                  stroke="#7C3AED"
+                  stroke-width="2.5"
+                />
+                <g v-for="point in lineSeries" :key="point.key + '-label'">
+                  <text :x="point.x" y="242" text-anchor="middle" fill="#64748b" font-size="11" font-weight="600">{{ point.label }}</text>
+                </g>
+              </g>
+            </svg>
+          </div>
 
-            <div class="mt-6 grid gap-3 sm:grid-cols-3">
-              <div class="rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface)] p-4">
-                <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--muted)]">Mức thấp nhất</p>
-                <p class="mt-3 text-2xl font-black text-[var(--text)]">{{ summary.minScore }}%</p>
-              </div>
-              <div class="rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface)] p-4">
-                <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--muted)]">Mức trung bình</p>
-                <p class="mt-3 text-2xl font-black text-[var(--text)]">{{ summary.averageScore }}%</p>
-              </div>
-              <div class="rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface)] p-4">
-                <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--muted)]">Mức cao nhất</p>
-                <p class="mt-3 text-2xl font-black text-[var(--text)]">{{ summary.bestScore }}%</p>
-              </div>
+          <div class="grid gap-3 sm:grid-cols-3">
+            <div class="rounded-xl border border-slate-100 bg-slate-50 p-3.5 text-center">
+              <span class="text-[11px] font-bold text-slate-400 uppercase">Mức thấp nhất</span>
+              <p class="mt-1 text-xl font-bold text-slate-800">{{ summary.minScore }}%</p>
+            </div>
+            <div class="rounded-xl border border-purple-100 bg-purple-50 p-3.5 text-center">
+              <span class="text-[11px] font-bold text-[#7C3AED] uppercase">Mức trung bình</span>
+              <p class="mt-1 text-xl font-bold text-[#7C3AED]">{{ summary.averageScore }}%</p>
+            </div>
+            <div class="rounded-xl border border-emerald-100 bg-emerald-50 p-3.5 text-center">
+              <span class="text-[11px] font-bold text-emerald-700 uppercase">Mức cao nhất</span>
+              <p class="mt-1 text-xl font-bold text-emerald-700">{{ summary.bestScore }}%</p>
             </div>
           </div>
         </div>
+      </div>
 
-        <div class="mt-6 rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface)] p-5">
-          <p class="text-sm font-bold text-[var(--muted)]">Nhận xét nhanh</p>
-          <p class="mt-3 text-sm leading-7 text-[var(--text)]">{{ quickComment }}</p>
+      <!-- Quick AI / Progress Feedback -->
+      <div class="rounded-xl border border-slate-100 bg-slate-50 p-4 space-y-1">
+        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Nhận xét nhanh</p>
+        <p class="text-xs leading-relaxed text-slate-700">{{ quickComment }}</p>
+      </div>
+    </div>
+
+    <!-- Category Performance Breakdown -->
+    <div class="card p-6 sm:p-8 space-y-6">
+      <div class="border-b border-slate-100 pb-3">
+        <h2 class="text-lg font-bold text-slate-900">Năng lực theo chủ đề</h2>
+        <p class="text-xs text-slate-500">Mức độ hiểu bài phân chia theo từng danh mục môn học</p>
+      </div>
+
+      <div v-if="categoryStats.length === 0" class="rounded-xl border border-slate-200 bg-slate-50 p-8 text-center text-xs font-semibold text-slate-500">
+        Chưa có đủ dữ liệu để phân tích theo chủ đề.
+      </div>
+
+      <div v-else class="grid gap-4">
+        <div v-for="item in categoryStats" :key="item.name" class="space-y-1.5">
+          <div class="flex items-center justify-between text-xs font-bold">
+            <span class="text-slate-800">{{ item.name }}</span>
+            <span class="text-slate-500">{{ item.average }}% · {{ item.count }} bài</span>
+          </div>
+          <div class="h-2.5 w-full overflow-hidden rounded-full bg-slate-100 border border-slate-200">
+            <div
+              class="h-full rounded-full transition-all duration-500"
+              :style="{
+                width: item.average + '%',
+                background: item.average >= 70 ? '#16A34A' : item.average >= 40 ? '#F59E0B' : '#DC2626',
+              }"
+            ></div>
+          </div>
         </div>
       </div>
 
-      <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-card)]">
-  <p class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]">5.2 Năng lực theo chủ đề</p>
-  <h2 class="mt-2 text-2xl font-black text-[var(--text)]">Điểm trung bình theo chủ đề</h2>
-
-  <div v-if="categoryStats.length === 0" class="mt-6 rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface-soft)] p-10 text-center text-sm font-bold text-[var(--muted)]">
-    Chưa có đủ dữ liệu để phân tích theo chủ đề.
-  </div>
-
-  <div v-else class="mt-6 grid gap-4">
-    <div v-for="item in categoryStats" :key="item.name" class="grid gap-2">
-      <div class="flex items-center justify-between text-sm font-bold">
-        <span class="text-[var(--text)]">{{ item.name }}</span>
-        <span class="text-[var(--muted)]">{{ item.average }}% &middot; {{ item.count }} bài</span>
+      <div v-if="strongestCategory || weakestCategory" class="grid gap-3 sm:grid-cols-2 pt-2">
+        <div v-if="strongestCategory" class="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-800">Chủ đề mạnh nhất</span>
+          <p class="mt-1 text-base font-black text-emerald-950">{{ strongestCategory.name }} · {{ strongestCategory.average }}%</p>
+        </div>
+        <div v-if="weakestCategory" class="rounded-xl border border-red-200 bg-red-50 p-4">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-red-800">Cần cải thiện thêm</span>
+          <p class="mt-1 text-base font-black text-red-950">{{ weakestCategory.name }} · {{ weakestCategory.average }}%</p>
+        </div>
       </div>
-      <div class="h-3 w-full overflow-hidden rounded-full bg-[var(--surface-soft)]">
-        <div
-          class="h-full rounded-full"
-          :style="{
-            width: item.average + '%',
-            background: item.average >= 70 ? 'linear-gradient(90deg,#34d399,#10b981)' : item.average >= 40 ? 'linear-gradient(90deg,#fbbf24,#f59e0b)' : 'linear-gradient(90deg,#f87171,#ef4444)',
-          }"
-        ></div>
-      </div>
-    </div>
-  </div>
-
-  <div v-if="strongestCategory || weakestCategory" class="mt-6 grid gap-3 sm:grid-cols-2">
-    <div v-if="strongestCategory" class="rounded-[1.5rem] border border-emerald-500/25 bg-emerald-500/10 p-4">
-      <p class="text-xs font-black uppercase tracking-[0.2em] text-emerald-400">Mạnh nhất</p>
-      <p class="mt-2 text-lg font-black text-[var(--text)]">{{ strongestCategory.name }} &middot; {{ strongestCategory.average }}%</p>
-    </div>
-    <div v-if="weakestCategory" class="rounded-[1.5rem] border border-rose-500/25 bg-rose-500/10 p-4">
-      <p class="text-xs font-black uppercase tracking-[0.2em] text-rose-400">Cần cải thiện</p>
-      <p class="mt-2 text-lg font-black text-[var(--text)]">{{ weakestCategory.name }} &middot; {{ weakestCategory.average }}%</p>
-    </div>
-  </div>
-</div>
     </div>
   </section>
 </template>
@@ -214,10 +215,7 @@ const groupedData = computed(() => {
     .map((attempt) => {
       const date = new Date(attempt.finished_at || attempt.started_at)
       if (Number.isNaN(date.getTime())) return null
-      return {
-        ...attempt,
-        date,
-      }
+      return { ...attempt, date }
     })
     .filter(Boolean)
 
@@ -251,8 +249,8 @@ const groupedData = computed(() => {
 const lineSeries = computed(() => {
   const items = groupedData.value
   if (!items.length) return []
-  const width = 660
-  const height = 250
+  const width = 680
+  const height = 220
   const xStep = items.length > 1 ? width / (items.length - 1) : width / 2
 
   return items.map((item, index) => ({
@@ -272,7 +270,7 @@ const linePath = computed(() => {
 const areaPath = computed(() => {
   if (!lineSeries.value.length) return ''
   const points = lineSeries.value
-  const baseY = 250
+  const baseY = 220
   const path = points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`).join(' ')
   return `${path} L ${points[points.length - 1].x.toFixed(2)} ${baseY} L ${points[0].x.toFixed(2)} ${baseY} Z`
 })

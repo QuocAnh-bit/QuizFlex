@@ -1,20 +1,21 @@
 <template>
-  <div class="flex items-center gap-3">
+  <div class="flex items-center gap-2">
     <!-- Streak -->
-    <div class="flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface-soft)] px-3 py-1.5 text-sm font-bold">
-      🔥 <span class="text-orange-400">{{ stats.current_streak }} ngày</span>
+    <div class="flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-800 shadow-sm" title="Chuỗi học tập liên tục">
+      <span>🔥</span>
+      <span>{{ stats.current_streak }} ngày</span>
     </div>
 
     <!-- XP & Level -->
-    <div class="flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface-soft)] px-3 py-1.5 text-sm font-bold">
-      <span class="text-[var(--primary)]">Lv.{{ stats.level }}</span>
-      <div class="h-2 w-20 overflow-hidden rounded-full bg-[var(--border)]">
+    <div class="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold shadow-sm">
+      <span class="font-extrabold text-[#7C3AED]">Lv.{{ stats.level }}</span>
+      <div class="h-1.5 w-16 overflow-hidden rounded-full bg-slate-100 border border-slate-200">
         <div
-          class="h-full rounded-full bg-gradient-to-r from-[var(--primary)] to-[var(--accent)] transition-all duration-500"
+          class="h-full rounded-full bg-[#7C3AED] transition-all duration-500"
           :style="{ width: xpPercent + '%' }"
         ></div>
       </div>
-      <span class="text-[var(--muted)]">{{ xpInLevel }}/100</span>
+      <span class="text-slate-500 text-[11px]">{{ xpInLevel }}/100</span>
     </div>
   </div>
 </template>
@@ -50,7 +51,6 @@ const fetchStats = async () => {
     const { data } = await api.get('/user/stats')
     stats.value = data
   } catch (e) {
-    // reset về mặc định nếu chưa đăng nhập hoặc lỗi
     stats.value = {
       xp: 0,
       level: 1,
@@ -60,12 +60,10 @@ const fetchStats = async () => {
   }
 }
 
-// Watch thay đổi đường dẫn (đặc biệt khi vừa làm xong quiz và chuyển trang)
 watch(() => route.path, () => {
   fetchStats()
 })
 
-// Đồng bộ khi đăng nhập/đăng xuất/cập nhật user
 const handleUserUpdate = () => {
   fetchStats()
 }
