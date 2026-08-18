@@ -1,292 +1,372 @@
 <template>
-  <section class="grid gap-6">
-    <!-- Top Breadcrumb & Actions Bar -->
-    <div class="space-y-4">
-      <div class="flex items-center gap-2 text-xs font-bold text-[var(--muted)]">
-        <router-link to="/admin" class="hover:text-[var(--primary)] transition">Dashboard</router-link>
-        <span>&rsaquo;</span>
-        <router-link to="/admin/question-bank" class="hover:text-[var(--primary)] transition">Question Bank</router-link>
-        <span>&rsaquo;</span>
-        <span class="text-[var(--text)]">Chi tiết câu hỏi #{{ questionId }}</span>
-      </div>
+  <section class="space-y-6">
+    <!-- Breadcrumb -->
+    <div class="flex items-center gap-2 text-sm text-slate-500">
+      <router-link to="/admin" class="hover:text-[#7C3AED] transition-colors">
+        Dashboard
+      </router-link>
+      <ChevronRight class="h-4 w-4" />
+      <router-link to="/admin/question-bank" class="hover:text-[#7C3AED] transition-colors">
+        Ngân hàng câu hỏi
+      </router-link>
+      <ChevronRight class="h-4 w-4" />
+      <span class="font-medium text-slate-900">Chi tiết #{{ questionId }}</span>
+    </div>
 
-      <div class="relative overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-soft)] backdrop-blur-2xl">
-        <div class="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[var(--primary)]/15 blur-3xl"></div>
-        <div class="relative z-10 flex flex-col justify-between gap-5 xl:flex-row xl:items-center">
-          <div class="flex items-center gap-4">
-            <button
-              type="button"
-              class="grid h-10 w-10 shrink-0 place-items-center rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] text-lg text-[var(--text)] transition hover:bg-[var(--primary)] hover:text-white"
-              title="Quay lại"
-              @click="goBack"
-            >
-              ←
-            </button>
-            <div>
-              <div class="flex items-center gap-3">
-                <h1 class="text-3xl font-black tracking-[-0.05em] text-[var(--text)]">
-                  Chi tiết câu hỏi #{{ questionId }}
-                </h1>
-                <span
-                  class="rounded-full border px-3 py-1 text-xs font-black"
-                  :class="Boolean(question.is_public) ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400' : 'border-amber-500/30 bg-amber-500/10 text-amber-400'"
-                >
-                  {{ Boolean(question.is_public) ? '🌐 Public (Công khai)' : '🔒 Private (Riêng tư)' }}
-                </span>
-              </div>
-              <p class="mt-1 text-xs sm:text-sm text-[var(--muted)]">
-                Xem toàn bộ nội dung, phương án đáp án, phân loại danh mục, tác giả và danh sách Quiz đang sử dụng câu hỏi này.
-              </p>
+    <!-- Header -->
+    <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div class="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
+        <div class="flex items-start gap-4">
+          <button
+            type="button"
+            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:bg-[#7C3AED] hover:text-white"
+            title="Quay lại"
+            @click="goBack"
+          >
+            <ArrowLeft class="h-5 w-5" />
+          </button>
+
+          <div>
+            <div class="flex flex-wrap items-center gap-3">
+              <h1 class="text-2xl font-bold tracking-tight text-slate-900">
+                Chi tiết câu hỏi #{{ questionId }}
+              </h1>
+              <span
+                class="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium"
+                :class="Boolean(question.is_public)
+                  ? 'bg-emerald-50 text-emerald-700'
+                  : 'bg-amber-50 text-amber-700'"
+              >
+                <component :is="Boolean(question.is_public) ? Globe : Lock" class="h-3.5 w-3.5" />
+                {{ Boolean(question.is_public) ? 'Công khai' : 'Riêng tư' }}
+              </span>
             </div>
+            <p class="mt-1 text-sm text-slate-500">
+              Xem nội dung, đáp án, phân loại, tác giả và các quiz đang sử dụng câu hỏi này.
+            </p>
           </div>
+        </div>
 
-          <!-- Actions -->
-          <div class="flex flex-wrap items-center gap-2">
-            <router-link
-              :to="`/admin/questions/${questionId}/edit`"
-              class="btn-primary flex items-center gap-2 px-5 py-2.5 text-xs shadow-lg"
-            >
-              <span>✏️</span>
-              <span>Chỉnh sửa</span>
-            </router-link>
+        <!-- Actions -->
+        <div class="flex flex-wrap items-center gap-2">
+          <router-link
+            :to="`/admin/questions/${questionId}/edit`"
+            class="inline-flex items-center gap-2 rounded-lg bg-[#7C3AED] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#6D28D9]"
+          >
+            <Pencil class="h-4 w-4" />
+            Chỉnh sửa
+          </router-link>
 
-            <button
-              type="button"
-              class="rounded-full border px-4 py-2 text-xs font-black transition hover:-translate-y-0.5"
-              :class="Boolean(question.is_public) ? 'border-amber-500/30 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20' : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'"
-              @click="toggleVisibility"
-            >
-              {{ Boolean(question.is_public) ? '🔒 Gỡ công khai' : '🌐 Công khai' }}
-            </button>
+          <button
+            type="button"
+            class="inline-flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium transition"
+            :class="Boolean(question.is_public)
+              ? 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100'
+              : 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'"
+            @click="toggleVisibility"
+          >
+            <component :is="Boolean(question.is_public) ? Lock : Globe" class="h-4 w-4" />
+            {{ Boolean(question.is_public) ? 'Gỡ công khai' : 'Công khai' }}
+          </button>
 
-            <button
-              type="button"
-              class="rounded-full border border-rose-500/30 bg-rose-500/10 px-4 py-2 text-xs font-black text-rose-400 transition hover:bg-rose-500 hover:text-white"
-              @click="deleteQuestion"
-            >
-              🗑️ Xóa
-            </button>
-          </div>
+          <button
+            type="button"
+            class="inline-flex items-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-medium text-rose-700 transition hover:bg-rose-100"
+            @click="deleteQuestion"
+          >
+            <Trash2 class="h-4 w-4" />
+            Xóa
+          </button>
         </div>
       </div>
     </div>
 
-    <!-- Loading State -->
-    <div v-if="isLoading" class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-12 text-center text-sm font-bold text-[var(--muted)] shadow-[var(--shadow-card)]">
-      <div class="mx-auto mb-3 h-10 w-10 animate-spin rounded-full border-4 border-[var(--primary)] border-t-transparent"></div>
-      Đang tải chi tiết câu hỏi #{{ questionId }}...
+    <!-- Loading -->
+    <div
+      v-if="isLoading"
+      class="rounded-2xl border border-slate-200 bg-white py-16 text-center shadow-sm"
+    >
+      <div class="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-4 border-[#7C3AED] border-t-transparent"></div>
+      <p class="text-sm font-medium text-slate-500">Đang tải chi tiết câu hỏi #{{ questionId }}...</p>
     </div>
 
-    <!-- Error State -->
-    <div v-else-if="errorMessage" class="rounded-[2rem] border border-rose-500/30 bg-rose-500/10 p-6 text-sm font-bold text-rose-300">
-      ⚠️ {{ errorMessage }}
-      <div class="mt-4">
-        <button type="button" class="btn-ghost text-xs" @click="$router.push('/admin/question-bank')">
-          ← Quay lại danh sách câu hỏi
-        </button>
+    <!-- Error -->
+    <div
+      v-else-if="errorMessage"
+      class="rounded-2xl border border-rose-200 bg-rose-50 p-6"
+    >
+      <div class="flex items-start gap-3">
+        <AlertTriangle class="h-5 w-5 shrink-0 text-rose-600" />
+        <div>
+          <p class="text-sm font-medium text-rose-800">{{ errorMessage }}</p>
+          <button
+            type="button"
+            class="mt-3 text-sm font-medium text-rose-700 hover:underline"
+            @click="$router.push('/admin/question-bank')"
+          >
+            ← Quay lại danh sách câu hỏi
+          </button>
+        </div>
       </div>
     </div>
 
-    <!-- Main 2-Column Content Layout -->
+    <!-- Main content -->
     <div v-else class="grid gap-6 lg:grid-cols-12">
-      <!-- LEFT COLUMN (65% width - Reading & Moderation Focus) -->
+      <!-- LEFT COLUMN -->
       <div class="space-y-6 lg:col-span-8">
-        <!-- 1. Question Content Card -->
-        <article class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 sm:p-8 shadow-[var(--shadow-card)] backdrop-blur-2xl">
-          <div class="flex items-center justify-between border-b border-[var(--border)] pb-4 mb-4">
-            <span class="text-xs font-black uppercase tracking-wider text-[var(--primary)]">📝 Nội dung câu hỏi</span>
-            <span class="text-xs font-bold text-[var(--muted)]">Mã ID: #{{ question.id }}</span>
+        <!-- Question Content -->
+        <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+          <div class="mb-4 flex items-center justify-between border-b border-slate-100 pb-4">
+            <span class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#7C3AED]">
+              <FileText class="h-4 w-4" />
+              Nội dung câu hỏi
+            </span>
+            <span class="text-xs font-medium text-slate-500">ID: #{{ question.id }}</span>
           </div>
 
-          <div class="text-lg sm:text-xl font-extrabold text-[var(--text)] leading-relaxed whitespace-pre-line">
+          <div class="text-lg font-semibold leading-relaxed text-slate-900 whitespace-pre-line sm:text-xl">
             {{ question.content }}
           </div>
 
-          <!-- Optional Image Attachment -->
-          <div v-if="question.image_url" class="mt-5 overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)]">
-            <img :src="question.image_url" alt="Question Image" class="max-h-80 w-full object-contain p-2" />
+          <div
+            v-if="question.image_url"
+            class="mt-5 overflow-hidden rounded-xl border border-slate-200 bg-slate-50"
+          >
+            <img
+              :src="question.image_url"
+              alt="Question Image"
+              class="max-h-80 w-full object-contain p-3"
+            />
           </div>
         </article>
 
-        <!-- 2. Answers Breakdown Card -->
-        <article class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 sm:p-8 shadow-[var(--shadow-card)] backdrop-blur-2xl">
-          <div class="flex items-center justify-between border-b border-[var(--border)] pb-4 mb-4">
-            <span class="text-xs font-black uppercase tracking-wider text-[var(--primary)]">🎯 Danh sách phương án đáp án</span>
-            <span class="text-xs font-bold text-[var(--muted)]">Tổng số: {{ (question.answers || []).length }} lựa chọn</span>
+        <!-- Answers -->
+        <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+          <div class="mb-4 flex items-center justify-between border-b border-slate-100 pb-4">
+            <span class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#7C3AED]">
+              <ListChecks class="h-4 w-4" />
+              Phương án đáp án
+            </span>
+            <span class="text-xs font-medium text-slate-500">
+              {{ (question.answers || []).length }} lựa chọn
+            </span>
           </div>
 
           <div class="space-y-3">
             <div
               v-for="ans in question.answers"
               :key="ans.id"
-              class="flex items-start gap-4 rounded-2xl border p-4 transition"
-              :class="ans.is_correct ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300 font-bold shadow-lg shadow-emerald-500/5' : 'border-[var(--border)] bg-[var(--surface-soft)] text-[var(--muted)]'"
+              class="flex items-start gap-4 rounded-xl border p-4 transition"
+              :class="ans.is_correct
+                ? 'border-emerald-200 bg-emerald-50'
+                : 'border-slate-200 bg-slate-50'"
             >
               <span
-                class="grid h-8 w-8 shrink-0 place-items-center rounded-xl font-black text-xs"
-                :class="ans.is_correct ? 'bg-emerald-500 text-slate-950' : 'bg-[var(--surface)] text-[var(--text)] border border-[var(--border)]'"
+                class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold"
+                :class="ans.is_correct
+                  ? 'bg-emerald-600 text-white'
+                  : 'border border-slate-200 bg-white text-slate-700'"
               >
                 {{ ans.key || ans.answer_key }}
               </span>
 
-              <div class="flex-1 min-w-0 pt-1 text-sm sm:text-base leading-relaxed" :class="{ 'text-[var(--text)]': !ans.is_correct }">
+              <div
+                class="min-w-0 flex-1 pt-1 text-sm leading-relaxed sm:text-base"
+                :class="ans.is_correct ? 'font-medium text-emerald-900' : 'text-slate-700'"
+              >
                 {{ ans.content }}
               </div>
 
-              <div v-if="ans.is_correct" class="shrink-0 rounded-full bg-emerald-500/20 border border-emerald-500/40 px-3 py-1 text-xs font-black text-emerald-400">
-                ✓ ĐÁP ÁN ĐÚNG
+              <div
+                v-if="ans.is_correct"
+                class="shrink-0 rounded-md bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700"
+              >
+                Đáp án đúng
               </div>
             </div>
           </div>
         </article>
 
-        <!-- 3. Quizzes Using This Question Card -->
-        <article class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 sm:p-8 shadow-[var(--shadow-card)] backdrop-blur-2xl">
-          <div class="flex items-center justify-between border-b border-[var(--border)] pb-4 mb-4">
-            <span class="text-xs font-black uppercase tracking-wider text-[var(--primary)]">📖 Bài Quiz đang sử dụng câu hỏi này</span>
-            <span class="text-xs font-bold text-[var(--muted)]">{{ (question.using_quizzes || []).length }} bài Quiz</span>
+        <!-- Quizzes using this question -->
+        <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+          <div class="mb-4 flex items-center justify-between border-b border-slate-100 pb-4">
+            <span class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#7C3AED]">
+              <BookOpen class="h-4 w-4" />
+              Quiz đang sử dụng câu hỏi này
+            </span>
+            <span class="text-xs font-medium text-slate-500">
+              {{ (question.using_quizzes || []).length }} bài
+            </span>
           </div>
 
           <div v-if="(question.using_quizzes || []).length > 0" class="grid gap-3 sm:grid-cols-2">
             <div
               v-for="quizItem in question.using_quizzes"
               :key="quizItem.id"
-              class="flex items-center justify-between gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-4 transition hover:border-[var(--border-strong)]"
+              class="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 transition hover:border-slate-300"
             >
               <div class="min-w-0 flex-1">
-                <p class="font-bold text-sm text-[var(--text)] truncate" :title="quizItem.title">
+                <p class="truncate text-sm font-medium text-slate-900" :title="quizItem.title">
                   {{ quizItem.title }}
                 </p>
-                <span class="mt-1 inline-block text-[11px] text-[var(--muted)]">
-                  ID: #{{ quizItem.id }} • {{ quizItem.is_public ? '🌐 Public' : '🔒 Private' }}
-                </span>
+                <p class="mt-0.5 text-xs text-slate-500">
+                  ID: #{{ quizItem.id }} ·
+                  {{ quizItem.is_public ? 'Công khai' : 'Riêng tư' }}
+                </p>
               </div>
               <router-link
                 :to="`/admin/quizzes/${quizItem.id}`"
-                class="btn-ghost !px-3 !py-1 text-xs font-bold text-[var(--primary)] shrink-0"
+                class="shrink-0 text-sm font-medium text-[#7C3AED] hover:underline"
               >
-                Xem Quiz &rsaquo;
+                Xem →
               </router-link>
             </div>
           </div>
 
-          <div v-else class="text-center py-6 text-xs font-bold text-[var(--muted)]">
-            Câu hỏi này chưa gắn trực tiếp với bài Quiz cố định nào (Thuộc Ngân hàng câu hỏi chung).
+          <div v-else class="py-8 text-center text-sm text-slate-500">
+            Câu hỏi này chưa được gắn vào bài quiz nào (thuộc ngân hàng chung).
           </div>
         </article>
 
-        <!-- 4. Report Tickets Card (If reported) -->
-        <article v-if="(question.reports || []).length > 0" class="rounded-[2rem] border border-rose-500/30 bg-rose-500/5 p-6 sm:p-8 shadow-xl backdrop-blur-2xl">
-          <div class="flex items-center justify-between border-b border-rose-500/20 pb-4 mb-4">
-            <span class="text-xs font-black uppercase tracking-wider text-rose-400">⚠️ Ticket Báo cáo vi phạm / Lỗi câu hỏi</span>
-            <span class="text-xs font-bold text-rose-300">{{ question.reports.length }} lượt báo cáo</span>
+        <!-- Reports (if any) -->
+        <article
+          v-if="(question.reports || []).length > 0"
+          class="rounded-2xl border border-rose-200 bg-rose-50 p-6 shadow-sm sm:p-8"
+        >
+          <div class="mb-4 flex items-center justify-between border-b border-rose-100 pb-4">
+            <span class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-rose-700">
+              <AlertTriangle class="h-4 w-4" />
+              Ticket báo cáo
+            </span>
+            <span class="text-xs font-medium text-rose-600">
+              {{ question.reports.length }} lượt
+            </span>
           </div>
 
           <div class="space-y-3">
             <div
               v-for="rep in question.reports"
               :key="rep.id"
-              class="rounded-2xl border border-rose-500/20 bg-slate-950/40 p-4 space-y-2"
+              class="rounded-xl border border-rose-100 bg-white p-4 space-y-2"
             >
-              <div class="flex items-center justify-between text-xs font-bold">
-                <span class="text-rose-300">🚩 Người báo cáo: {{ rep.reporter_name }}</span>
-                <span class="text-[var(--muted)]">{{ formatDate(rep.created_at) }}</span>
+              <div class="flex items-center justify-between text-xs">
+                <span class="font-medium text-rose-700">
+                  Người báo cáo: {{ rep.reporter_name }}
+                </span>
+                <span class="text-slate-500">{{ formatDate(rep.created_at) }}</span>
               </div>
-              <p class="text-xs font-semibold text-[var(--text)]">Lý do: <span class="text-amber-300">{{ rep.reason || 'Báo cáo sai sót câu hỏi' }}</span></p>
-              <p v-if="rep.description" class="text-xs text-[var(--muted)] italic">"{{ rep.description }}"</p>
+              <p class="text-sm text-slate-800">
+                Lý do:
+                <span class="font-medium text-amber-700">
+                  {{ rep.reason || 'Báo cáo sai sót câu hỏi' }}
+                </span>
+              </p>
+              <p v-if="rep.description" class="text-sm italic text-slate-600">
+                “{{ rep.description }}”
+              </p>
             </div>
           </div>
         </article>
       </div>
 
-      <!-- RIGHT COLUMN (35% width - Metadata & Author Focus) -->
+      <!-- RIGHT COLUMN -->
       <div class="space-y-6 lg:col-span-4">
-        <!-- 1. Metadata & Classification Card -->
-        <article class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-card)] backdrop-blur-2xl space-y-4">
-          <h3 class="text-xs font-black uppercase tracking-wider text-[var(--primary)] border-b border-[var(--border)] pb-3">
-            ⚙️ Phân loại & Cấu hình
+        <!-- Classification -->
+        <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
+          <h3 class="flex items-center gap-2 border-b border-slate-100 pb-3 text-xs font-semibold uppercase tracking-wider text-[#7C3AED]">
+            <Settings class="h-4 w-4" />
+            Phân loại & Cấu hình
           </h3>
 
-          <!-- Difficulty -->
-          <div class="flex items-center justify-between text-xs">
-            <span class="font-bold text-[var(--muted)]">Độ khó:</span>
+          <div class="flex items-center justify-between text-sm">
+            <span class="text-slate-500">Độ khó</span>
             <span
-              class="rounded-full border px-3 py-1 font-bold"
-              :class="question.difficulty === 'easy' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : question.difficulty === 'hard' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'"
+              class="rounded-md px-2.5 py-1 text-xs font-medium"
+              :class="{
+                'bg-emerald-50 text-emerald-700': question.difficulty === 'easy',
+                'bg-amber-50 text-amber-700': question.difficulty === 'medium',
+                'bg-rose-50 text-rose-700': question.difficulty === 'hard'
+              }"
             >
-              📊 {{ question.difficulty === 'easy' ? 'Dễ' : question.difficulty === 'hard' ? 'Khó' : 'Trung bình' }}
+              {{ question.difficulty === 'easy' ? 'Dễ' : question.difficulty === 'hard' ? 'Khó' : 'Trung bình' }}
             </span>
           </div>
 
-          <!-- Points -->
-          <div class="flex items-center justify-between text-xs">
-            <span class="font-bold text-[var(--muted)]">Điểm số:</span>
-            <span class="font-black text-[var(--text)]">⭐ {{ question.points || 10 }} điểm</span>
+          <div class="flex items-center justify-between text-sm">
+            <span class="text-slate-500">Điểm số</span>
+            <span class="font-semibold text-slate-900">{{ question.points || 10 }} điểm</span>
           </div>
 
-          <!-- Subject -->
-          <div class="flex items-center justify-between text-xs">
-            <span class="font-bold text-[var(--muted)]">Môn học:</span>
-            <span class="font-bold text-emerald-400">📖 {{ question.subject_name || question.subject?.name || 'Chưa phân loại' }}</span>
+          <div class="flex items-center justify-between text-sm">
+            <span class="text-slate-500">Môn học</span>
+            <span class="font-medium text-slate-900">
+              {{ question.subject_name || question.subject?.name || 'Chưa phân loại' }}
+            </span>
           </div>
 
-          <!-- Grade -->
-          <div class="flex items-center justify-between text-xs">
-            <span class="font-bold text-[var(--muted)]">Khối lớp:</span>
-            <span class="font-bold text-indigo-400">🎓 {{ question.grade_name || question.grade?.name || 'Chưa phân loại' }}</span>
+          <div class="flex items-center justify-between text-sm">
+            <span class="text-slate-500">Khối lớp</span>
+            <span class="font-medium text-slate-900">
+              {{ question.grade_name || question.grade?.name || 'Chưa phân loại' }}
+            </span>
           </div>
 
-          <!-- Topic -->
-          <div class="flex items-center justify-between text-xs" v-if="question.topic_name">
-            <span class="font-bold text-[var(--muted)]">Chủ đề:</span>
-            <span class="font-bold text-[var(--primary)]">🏷️ {{ question.topic_name }}</span>
+          <div v-if="question.topic_name" class="flex items-center justify-between text-sm">
+            <span class="text-slate-500">Chủ đề</span>
+            <span class="font-medium text-[#7C3AED]">{{ question.topic_name }}</span>
           </div>
         </article>
 
-        <!-- 2. Author & Timestamps Card -->
-        <article class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-card)] backdrop-blur-2xl space-y-4">
-          <h3 class="text-xs font-black uppercase tracking-wider text-[var(--primary)] border-b border-[var(--border)] pb-3">
-            👤 Tác giả & Thời gian
+        <!-- Author & timestamps -->
+        <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
+          <h3 class="flex items-center gap-2 border-b border-slate-100 pb-3 text-xs font-semibold uppercase tracking-wider text-[#7C3AED]">
+            <User class="h-4 w-4" />
+            Tác giả & Thời gian
           </h3>
 
-          <!-- Author Info -->
           <div class="flex items-center gap-3">
-            <div class="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-[var(--primary)] to-[var(--primary-2)] text-white font-black text-lg">
+            <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#7C3AED] text-base font-bold text-white">
               {{ (question.author?.name || 'U').charAt(0).toUpperCase() }}
             </div>
             <div class="min-w-0 flex-1">
-              <p class="text-sm font-black text-[var(--text)] truncate">{{ question.author?.name || 'Vô danh' }}</p>
-              <p class="text-xs text-[var(--muted)] truncate">{{ question.author?.email || 'N/A' }}</p>
+              <p class="truncate text-sm font-semibold text-slate-900">
+                {{ question.author?.name || 'Vô danh' }}
+              </p>
+              <p class="truncate text-xs text-slate-500">
+                {{ question.author?.email || 'N/A' }}
+              </p>
             </div>
           </div>
 
-          <div class="space-y-2 border-t border-[var(--border)] pt-3 text-xs font-bold text-[var(--muted)]">
+          <div class="space-y-2 border-t border-slate-100 pt-3 text-sm">
             <div class="flex justify-between">
-              <span>Ngày tạo:</span>
-              <span class="text-[var(--text)]">{{ formatDate(question.created_at) }}</span>
+              <span class="text-slate-500">Ngày tạo</span>
+              <span class="font-medium text-slate-900">{{ formatDate(question.created_at) }}</span>
             </div>
             <div class="flex justify-between">
-              <span>Cập nhật gần nhất:</span>
-              <span class="text-[var(--text)]">{{ formatDate(question.updated_at) }}</span>
+              <span class="text-slate-500">Cập nhật gần nhất</span>
+              <span class="font-medium text-slate-900">{{ formatDate(question.updated_at) }}</span>
             </div>
           </div>
         </article>
 
-        <!-- 3. Navigation Controls Card -->
-        <article class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-card)] backdrop-blur-2xl space-y-3">
+        <!-- Quick actions -->
+        <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-3">
           <router-link
             :to="`/admin/questions/${questionId}/edit`"
-            class="btn-primary w-full justify-center text-xs font-bold"
+            class="flex w-full items-center justify-center gap-2 rounded-lg bg-[#7C3AED] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#6D28D9]"
           >
-            ✏️ Chỉnh sửa câu hỏi này
+            <Pencil class="h-4 w-4" />
+            Chỉnh sửa câu hỏi này
           </router-link>
 
           <button
             type="button"
-            class="btn-ghost w-full justify-center text-xs font-bold text-[var(--muted)]"
+            class="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
             @click="goBack"
           >
-            ← Quay lại
+            <ArrowLeft class="h-4 w-4" />
+            Quay lại
           </button>
         </article>
       </div>
@@ -297,6 +377,20 @@
 <script setup>
 import { ref, onMounted, inject } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import {
+  ChevronRight,
+  ArrowLeft,
+  Pencil,
+  Globe,
+  Lock,
+  Trash2,
+  AlertTriangle,
+  FileText,
+  ListChecks,
+  BookOpen,
+  Settings,
+  User
+} from 'lucide-vue-next'
 import { adminQuestionsApi } from '@/services/api'
 
 const route = useRoute()
@@ -320,9 +414,8 @@ const goBack = () => {
 }
 
 const formatDate = (dateStr) => {
-  if (!dateStr) return '--'
-  const d = new Date(dateStr)
-  return d.toLocaleDateString('vi-VN', {
+  if (!dateStr) return '—'
+  return new Date(dateStr).toLocaleDateString('vi-VN', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
@@ -350,7 +443,10 @@ const toggleVisibility = async () => {
     const isPub = Boolean(updated?.data?.is_public ?? updated?.is_public)
     question.value.is_public = isPub
     if (showToast) {
-      showToast(isPub ? 'Đã công khai câu hỏi thành công.' : 'Đã gỡ công khai (Set Private) câu hỏi.', 'success')
+      showToast(
+        isPub ? 'Đã công khai câu hỏi thành công.' : 'Đã gỡ công khai câu hỏi.',
+        'success'
+      )
     }
   } catch (err) {
     if (showToast) showToast(`Cập nhật thất bại: ${err.message}`, 'error')

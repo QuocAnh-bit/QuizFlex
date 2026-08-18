@@ -1,143 +1,133 @@
 <template>
-  <section class="grid gap-6 text-[var(--text)]" @click="closeDropdown">
-    <!-- Top Breadcrumb & Header Banner -->
-    <div class="space-y-4">
-      <div class="flex items-center gap-2 text-xs font-bold text-[var(--muted)]">
-        <router-link to="/admin" class="hover:text-[var(--primary)] transition">Dashboard</router-link>
-        <span>&rsaquo;</span>
-        <span class="text-[var(--text)]">Quản lý Bộ môn</span>
-      </div>
+  <section class="space-y-6" @click="closeDropdown">
+    <!-- Breadcrumb -->
+    <div class="flex items-center gap-2 text-sm text-slate-500">
+      <router-link to="/admin" class="hover:text-[#7C3AED] transition-colors">
+        Dashboard
+      </router-link>
+      <ChevronRight class="h-4 w-4" />
+      <span class="font-medium text-slate-900">Quản lý Bộ môn</span>
+    </div>
 
-      <div class="relative overflow-hidden rounded-[1.8rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-soft)] backdrop-blur-2xl">
-        <div class="relative z-10 flex flex-col justify-between gap-5 xl:flex-row xl:items-center">
-          <div class="flex items-center gap-4 min-w-0">
-            <div class="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400">
-              <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-              </svg>
-            </div>
-            <div class="min-w-0">
-              <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-[var(--text)] truncate">
-                Quản lý Bộ môn & Danh mục
-              </h1>
-              <p class="mt-1 text-xs sm:text-sm font-medium text-[var(--muted)] leading-relaxed truncate">
-                Danh sách bộ môn hệ thống, cấu hình mã môn, phân nhóm và hỗ trợ xóa mềm an toàn.
-              </p>
-            </div>
+    <!-- Header -->
+    <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div class="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
+        <div class="flex items-start gap-4 min-w-0">
+          <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#F5F3FF] text-[#7C3AED]">
+            <BookOpen class="h-6 w-6" />
           </div>
-
-          <div class="flex shrink-0 items-center gap-3">
-            <button
-              type="button"
-              class="rounded-xl border px-4 py-2.5 text-xs font-bold transition flex items-center gap-2"
-              :class="activeTab === 'trash' ? 'border-purple-500/40 bg-purple-500/10 text-purple-300' : 'border-[var(--border)] bg-[var(--surface-soft)] text-[var(--muted)] hover:text-[var(--text)]'"
-              @click="toggleTab(activeTab === 'trash' ? 'active' : 'trash')"
-            >
-              <span>{{ activeTab === 'trash' ? '🌐 Danh sách chính' : '🗑️ Thùng rác môn học' }}</span>
-              <span v-if="stats.trashed > 0" class="rounded-full bg-rose-500/20 text-rose-300 px-2 py-0.5 text-[10px] font-black border border-rose-500/30">
-                {{ stats.trashed }}
-              </span>
-            </button>
-
-            <button
-              type="button"
-              class="btn-primary flex items-center gap-2 px-5 py-2.5 text-xs font-bold shadow-lg transition hover:scale-105"
-              @click="openCreateModal"
-            >
-              <span class="text-base font-black">+</span>
-              <span>Thêm bộ môn mới</span>
-            </button>
+          <div class="min-w-0">
+            <h1 class="text-2xl font-bold tracking-tight text-slate-900 truncate">
+              Quản lý Bộ môn & Danh mục
+            </h1>
+            <p class="mt-1 text-sm text-slate-500 leading-relaxed">
+              Danh sách bộ môn hệ thống, cấu hình mã môn, phân nhóm và hỗ trợ xóa mềm an toàn.
+            </p>
           </div>
         </div>
 
-        <!-- 4 KPI Stat Cards Row (Minimal SaaS Styling) -->
-        <div class="mt-6 grid grid-cols-2 gap-4 xl:grid-cols-4">
-          <!-- Card 1: Tổng bộ môn -->
-          <div class="rounded-xl border border-[var(--border)] bg-[var(--surface-soft)] p-4 transition hover:border-[var(--border-strong)]">
-            <div class="flex items-center gap-3.5">
-              <div class="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-purple-500/10 text-purple-400 border border-purple-500/20">
-                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
-                </svg>
-              </div>
-              <div class="min-w-0 flex-1">
-                <span class="text-xs font-medium text-[var(--muted)] block truncate">Tổng bộ môn</span>
-                <p class="text-2xl font-bold text-[var(--text)] tracking-tight mt-0.5">{{ stats.total || 0 }}</p>
-              </div>
+        <div class="flex shrink-0 items-center gap-3">
+          <button
+            type="button"
+            class="inline-flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium transition"
+            :class="activeTab === 'trash'
+              ? 'border-[#7C3AED]/30 bg-[#F5F3FF] text-[#7C3AED]'
+              : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'"
+            @click="toggleTab(activeTab === 'trash' ? 'active' : 'trash')"
+          >
+            <component :is="activeTab === 'trash' ? LayoutList : Trash2" class="h-4 w-4" />
+            {{ activeTab === 'trash' ? 'Danh sách chính' : 'Thùng rác môn học' }}
+            <span
+              v-if="stats.trashed > 0"
+              class="rounded-full bg-rose-50 px-2 py-0.5 text-xs font-semibold text-rose-600"
+            >
+              {{ stats.trashed }}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            class="inline-flex items-center gap-2 rounded-lg bg-[#7C3AED] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#6D28D9]"
+            @click="openCreateModal"
+          >
+            <Plus class="h-4 w-4" />
+            Thêm bộ môn mới
+          </button>
+        </div>
+      </div>
+
+      <!-- KPI Stats -->
+      <div class="mt-6 grid grid-cols-2 gap-4 xl:grid-cols-4">
+        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <div class="flex items-center gap-3">
+            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-[#F5F3FF] text-[#7C3AED]">
+              <BookOpen class="h-5 w-5" />
+            </div>
+            <div>
+              <p class="text-xs font-medium text-slate-500">Tổng bộ môn</p>
+              <p class="text-2xl font-bold text-slate-900">{{ stats.total || 0 }}</p>
             </div>
           </div>
+        </div>
 
-          <!-- Card 2: Nhóm Tự nhiên -->
-          <div class="rounded-xl border border-[var(--border)] bg-[var(--surface-soft)] p-4 transition hover:border-emerald-500/30">
-            <div class="flex items-center gap-3.5">
-              <div class="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <circle cx="12" cy="12" r="2"/>
-                  <path d="M12 2a10 10 0 0 0-10 10c0 5.523 4.477 10 10 10s10-4.477 10-10A10 10 0 0 0 12 2z"/>
-                </svg>
-              </div>
-              <div class="min-w-0 flex-1">
-                <span class="text-xs font-medium text-[var(--muted)] block truncate">Khoa học Tự nhiên</span>
-                <p class="text-2xl font-bold text-[var(--text)] tracking-tight mt-0.5">{{ naturalGroupCount }}</p>
-              </div>
+        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <div class="flex items-center gap-3">
+            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+              <Atom class="h-5 w-5" />
+            </div>
+            <div>
+              <p class="text-xs font-medium text-slate-500">Khoa học Tự nhiên</p>
+              <p class="text-2xl font-bold text-slate-900">{{ naturalGroupCount }}</p>
             </div>
           </div>
+        </div>
 
-          <!-- Card 3: Nhóm Xã hội & Ngôn ngữ -->
-          <div class="rounded-xl border border-[var(--border)] bg-[var(--surface-soft)] p-4 transition hover:border-amber-500/30">
-            <div class="flex items-center gap-3.5">
-              <div class="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/>
-                </svg>
-              </div>
-              <div class="min-w-0 flex-1">
-                <span class="text-xs font-medium text-[var(--muted)] block truncate">Xã hội & Ngoại ngữ</span>
-                <p class="text-2xl font-bold text-[var(--text)] tracking-tight mt-0.5">{{ socialGroupCount }}</p>
-              </div>
+        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <div class="flex items-center gap-3">
+            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
+              <Languages class="h-5 w-5" />
+            </div>
+            <div>
+              <p class="text-xs font-medium text-slate-500">Xã hội & Ngoại ngữ</p>
+              <p class="text-2xl font-bold text-slate-900">{{ socialGroupCount }}</p>
             </div>
           </div>
+        </div>
 
-          <!-- Card 4: Thùng rác -->
-          <div class="rounded-xl border border-[var(--border)] bg-[var(--surface-soft)] p-4 transition hover:border-rose-500/30">
-            <div class="flex items-center gap-3.5">
-              <div class="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/20">
-                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                </svg>
-              </div>
-              <div class="min-w-0 flex-1">
-                <span class="text-xs font-medium text-[var(--muted)] block truncate">Thùng rác</span>
-                <p class="text-2xl font-bold text-[var(--text)] tracking-tight mt-0.5">{{ stats.trashed || 0 }}</p>
-              </div>
+        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <div class="flex items-center gap-3">
+            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-rose-50 text-rose-600">
+              <Trash2 class="h-5 w-5" />
+            </div>
+            <div>
+              <p class="text-xs font-medium text-slate-500">Thùng rác</p>
+              <p class="text-2xl font-bold text-slate-900">{{ stats.trashed || 0 }}</p>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Filters & Search Toolbar -->
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3.5 shadow-sm backdrop-blur-xl">
-      <!-- Search Input -->
+    <!-- Filters -->
+    <div class="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
       <div class="relative flex-1 min-w-[240px]">
+        <Search class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
         <input
           v-model="filters.search"
           type="text"
-          class="w-full rounded-lg border border-[var(--border)] bg-[var(--surface-soft)] py-2 pl-9 pr-3 text-xs sm:text-sm font-medium text-[var(--text)] placeholder-[var(--muted)] outline-none transition focus:border-[var(--primary)]"
-          placeholder="🔎 Tìm tên môn hoặc mã môn..."
+          class="w-full rounded-lg border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#7C3AED] focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/20"
+          placeholder="Tìm tên môn hoặc mã môn..."
           @input="debounceSearch"
         />
       </div>
 
-      <!-- Filter Dropdowns -->
       <div class="flex flex-wrap items-center gap-2.5">
         <select
           v-model="filters.category_group"
-          class="rounded-lg border border-[var(--border)] bg-[var(--surface-soft)] px-3.5 py-2 text-xs sm:text-sm font-medium text-[var(--text)] outline-none cursor-pointer transition focus:border-[var(--primary)]"
+          class="rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-[#7C3AED] focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/20"
           @change="fetchSubjects"
         >
-          <option value="">Tất cả nhóm môn ▾</option>
+          <option value="">Tất cả nhóm môn</option>
           <option value="natural">Khoa học Tự nhiên</option>
           <option value="social">Khoa học Xã hội</option>
           <option value="foreign_language">Ngoại ngữ</option>
@@ -148,164 +138,164 @@
         <button
           v-if="filters.search || filters.category_group"
           type="button"
-          class="btn-ghost !px-3 !py-2 text-xs font-bold text-rose-400 hover:bg-rose-500/10"
+          class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-rose-600 transition hover:bg-rose-50"
           @click="resetFilters"
         >
-          ✕ Bỏ lọc
+          <X class="h-4 w-4" />
+          Bỏ lọc
         </button>
       </div>
     </div>
 
-    <!-- Main Content: HIGH PRECISION COMPACT ADMIN TABLE -->
-    <div v-if="isLoading" class="py-16 text-center text-xs font-bold text-[var(--muted)] flex flex-col items-center justify-center gap-2">
-      <div class="h-7 w-7 animate-spin rounded-full border-3 border-[var(--primary)] border-t-transparent"></div>
-      <span>Đang tải danh sách bộ môn...</span>
+    <!-- Loading -->
+    <div v-if="isLoading" class="py-16 text-center">
+      <div class="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-4 border-[#7C3AED] border-t-transparent"></div>
+      <p class="text-sm font-medium text-slate-500">Đang tải danh sách bộ môn...</p>
     </div>
 
-    <div v-else-if="displayedSubjects.length === 0" class="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-12 text-center shadow-sm">
-      <div class="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-xl bg-[var(--surface-soft)] text-xl text-[var(--muted)]">
-        📁
+    <!-- Empty state -->
+    <div
+      v-else-if="displayedSubjects.length === 0"
+      class="rounded-xl border border-slate-200 bg-white p-12 text-center shadow-sm"
+    >
+      <div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-slate-400">
+        <FolderOpen class="h-6 w-6" />
       </div>
-      <h3 class="text-base font-bold text-[var(--text)]">
+      <h3 class="text-base font-medium text-slate-900">
         {{ activeTab === 'trash' ? 'Thùng rác trống' : 'Không tìm thấy bộ môn nào' }}
       </h3>
-      <p class="mt-1 text-xs text-[var(--muted)]">
-        {{ activeTab === 'trash' ? 'Chưa có môn học nào bị xóa mềm.' : 'Thử thay đổi từ khóa tìm kiếm hoặc bấm thêm bộ môn mới.' }}
+      <p class="mt-1 text-sm text-slate-500">
+        {{ activeTab === 'trash'
+          ? 'Chưa có môn học nào bị xóa mềm.'
+          : 'Thử thay đổi từ khóa tìm kiếm hoặc thêm bộ môn mới.' }}
       </p>
     </div>
 
-    <!-- Ultra-Clean Balanced Admin Table (Tỉ lệ cột 36% - 29% - 11% - 11% - 13%) -->
-    <div v-else class="overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-sm">
+    <!-- Table -->
+    <div v-else class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
       <div class="overflow-x-auto">
-        <table class="w-full border-collapse text-left text-sm text-[var(--text)]">
+        <table class="w-full text-left text-sm">
           <thead>
-            <tr class="border-b border-[var(--border)] bg-[var(--surface-soft)] text-xs font-semibold uppercase tracking-wider text-[var(--muted)] h-11">
-              <th class="py-3 pl-6 pr-3 w-[36%] min-w-[210px] align-middle">Môn học</th>
-              <th class="py-3 px-3 w-[28%] min-w-[170px] align-middle">Nhóm môn</th>
-              <th class="py-3 px-2 w-[11%] text-center min-w-[90px] align-middle">Số Quiz</th>
-              <th class="py-3 px-2 w-[11%] text-center min-w-[100px] align-middle">Số câu hỏi</th>
-              <th class="py-3 pl-2 pr-7 w-[14%] text-right min-w-[130px] align-middle">Thao tác</th>
+            <tr class="border-b border-slate-200 bg-slate-50 text-xs font-semibold uppercase tracking-wider text-slate-500">
+              <th class="py-3 pl-6 pr-3 w-[36%] min-w-[210px]">Môn học</th>
+              <th class="py-3 px-3 w-[28%] min-w-[170px]">Nhóm môn</th>
+              <th class="py-3 px-2 w-[11%] text-center min-w-[90px]">Số Quiz</th>
+              <th class="py-3 px-2 w-[11%] text-center min-w-[100px]">Số câu hỏi</th>
+              <th class="py-3 pl-2 pr-7 w-[14%] text-right min-w-[130px]">Thao tác</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-[var(--border)]">
-            <tr 
-              v-for="subject in displayedSubjects" 
+          <tbody class="divide-y divide-slate-100">
+            <tr
+              v-for="subject in displayedSubjects"
               :key="subject.id"
-              class="h-[70px] transition duration-150 hover:bg-[var(--surface-soft)]/60 align-middle"
+              class="transition hover:bg-slate-50"
             >
-              <!-- 1. MÔN HỌC ([Icon 40x40] Tên môn 16px font-700 + #code 12-13px font-bold) -->
-              <td class="py-3 pl-6 pr-3 align-middle">
+              <!-- Môn học -->
+              <td class="py-3.5 pl-6 pr-3">
                 <div class="flex items-center gap-3.5 min-w-0">
-                  <!-- 40x40 Uniform SVG Container -->
-                  <div class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400">
-                    <component :is="renderSubjectIcon(subject.code, subject.name)" />
+                  <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#F5F3FF] text-[#7C3AED]">
+                    <component :is="getSubjectIcon(subject.code, subject.name)" class="h-5 w-5" />
                   </div>
-
                   <div class="min-w-0 flex-1">
-                    <h4 class="font-bold text-base text-[var(--text)] leading-snug truncate">
+                    <h4 class="truncate font-semibold text-slate-900">
                       {{ subject.name }}
                     </h4>
-                    <div class="mt-0.5">
-                      <span class="font-mono text-xs font-bold text-purple-400 tracking-wide">
-                        #{{ subject.code }}
-                      </span>
-                    </div>
+                    <span class="mt-0.5 font-mono text-xs font-medium text-[#7C3AED]">
+                      #{{ subject.code }}
+                    </span>
                   </div>
                 </div>
               </td>
 
-              <!-- 2. NHÓM MÔN (Badge 13px font-semibold) -->
-              <td class="py-3 px-3 align-middle">
+              <!-- Nhóm môn -->
+              <td class="py-3.5 px-3">
                 <span
-                  class="inline-flex items-center gap-1.5 rounded-md px-3 py-1 text-[13px] font-semibold border"
+                  class="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium"
                   :class="getCategoryGroupClass(subject.category_group)"
                 >
                   <span class="h-1.5 w-1.5 rounded-full bg-current"></span>
-                  <span>{{ getCategoryGroupLabel(subject.category_group) }}</span>
+                  {{ getCategoryGroupLabel(subject.category_group) }}
                 </span>
               </td>
 
-              <!-- 3. SỐ QUIZ (Thẳng hàng tuyệt đối theo Tabular Nums) -->
-              <td class="py-3 px-2 text-center align-middle">
-                <div class="inline-flex items-baseline gap-1.5 justify-center font-mono">
-                  <strong class="w-7 text-right tabular-nums text-[16px] font-black text-white leading-none tracking-tight shrink-0">{{ subject.quizzes_count || 0 }}</strong>
-                  <span class="font-sans text-xs font-semibold text-[var(--muted)] opacity-75">Quiz</span>
-                </div>
+              <!-- Số Quiz -->
+              <td class="py-3.5 px-2 text-center">
+                <span class="tabular-nums text-base font-semibold text-slate-900">
+                  {{ subject.quizzes_count || 0 }}
+                </span>
+                <span class="ml-1 text-xs text-slate-500">Quiz</span>
               </td>
 
-              <!-- 4. SỐ CÂU HỎI (Thẳng hàng tuyệt đối theo Tabular Nums) -->
-              <td class="py-3 px-2 text-center align-middle">
-                <div class="inline-flex items-baseline gap-1.5 justify-center font-mono">
-                  <strong class="w-8 text-right tabular-nums text-[16px] font-black text-white leading-none tracking-tight shrink-0">{{ subject.questions_count || 0 }}</strong>
-                  <span class="font-sans text-xs font-semibold text-[var(--muted)] opacity-75">Câu hỏi</span>
-                </div>
+              <!-- Số câu hỏi -->
+              <td class="py-3.5 px-2 text-center">
+                <span class="tabular-nums text-base font-semibold text-slate-900">
+                  {{ subject.questions_count || 0 }}
+                </span>
+                <span class="ml-1 text-xs text-slate-500">Câu hỏi</span>
               </td>
 
-              <!-- 5. THAO TÁC (Thoáng lề phải pr-7 với Nút Sửa 13px + Dropdown menu ⋮) -->
-              <td class="py-3 pl-2 pr-7 text-right align-middle">
+              <!-- Thao tác -->
+              <td class="py-3.5 pl-2 pr-7 text-right">
                 <div class="relative flex items-center justify-end gap-1.5">
                   <template v-if="activeTab === 'active'">
                     <button
                       type="button"
-                      class="rounded-lg border border-[var(--border)] bg-[var(--surface-soft)] px-3 py-1.5 text-[13px] font-bold text-[var(--text)] hover:border-[var(--primary)] hover:text-[var(--primary)] transition"
-                      title="Chỉnh sửa môn học"
+                      class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:border-[#7C3AED] hover:text-[#7C3AED]"
                       @click.stop="openEditModal(subject)"
                     >
                       Sửa
                     </button>
 
-                    <!-- Dropdown Menu Trigger ⋮ -->
                     <button
                       type="button"
-                      class="h-8 w-8 rounded-lg border border-[var(--border)] bg-[var(--surface-soft)] text-xs font-bold text-[var(--muted)] hover:text-[var(--text)] hover:border-[var(--border-strong)] transition flex items-center justify-center"
-                      title="Thao tác khác"
+                      class="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50"
                       @click.stop="toggleDropdown(subject.id)"
                     >
-                      ⋮
+                      <MoreVertical class="h-4 w-4" />
                     </button>
 
-                    <!-- Dropdown Content -->
+                    <!-- Dropdown -->
                     <div
                       v-if="openMenuId === subject.id"
-                      class="absolute right-0 top-10 z-50 min-w-[160px] rounded-xl border border-[var(--border)] bg-[var(--surface)] p-1.5 shadow-xl backdrop-blur-xl text-left grid gap-1"
+                      class="absolute right-0 top-10 z-50 min-w-[170px] rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg"
                       @click.stop
                     >
                       <button
                         type="button"
-                        class="flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-[var(--text)] hover:bg-[var(--surface-soft)] transition"
+                        class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
                         @click="openEditModal(subject); closeDropdown()"
                       >
-                        <span>✏️</span>
-                        <span>Chỉnh sửa</span>
+                        <Pencil class="h-4 w-4" />
+                        Chỉnh sửa
                       </button>
 
                       <router-link
                         :to="`/admin/question-bank?subject_id=${subject.id}`"
-                        class="flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-[var(--text)] hover:bg-[var(--surface-soft)] transition"
+                        class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
                         @click="closeDropdown"
                       >
-                        <span>❓</span>
-                        <span>Xem câu hỏi</span>
+                        <HelpCircle class="h-4 w-4" />
+                        Xem câu hỏi
                       </router-link>
 
                       <router-link
                         :to="`/admin/quizzes?subject_id=${subject.id}`"
-                        class="flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-[var(--text)] hover:bg-[var(--surface-soft)] transition"
+                        class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
                         @click="closeDropdown"
                       >
-                        <span>📝</span>
-                        <span>Xem Quiz</span>
+                        <FileText class="h-4 w-4" />
+                        Xem Quiz
                       </router-link>
 
-                      <div class="border-t border-[var(--border)] my-0.5"></div>
+                      <div class="my-1 border-t border-slate-100"></div>
 
                       <button
                         type="button"
-                        class="flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-rose-400 hover:bg-rose-500/10 transition"
+                        class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-rose-600 hover:bg-rose-50"
                         @click="confirmSoftDelete(subject); closeDropdown()"
                       >
-                        <span>🗑️</span>
-                        <span>Xóa môn học</span>
+                        <Trash2 class="h-4 w-4" />
+                        Xóa môn học
                       </button>
                     </div>
                   </template>
@@ -313,8 +303,7 @@
                   <template v-else>
                     <button
                       type="button"
-                      class="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-[13px] font-bold text-emerald-400 hover:bg-emerald-500/20 transition"
-                      title="Khôi phục môn học"
+                      class="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-sm font-medium text-emerald-700 transition hover:bg-emerald-100"
                       @click="handleRestore(subject)"
                     >
                       Khôi phục
@@ -322,8 +311,7 @@
 
                     <button
                       type="button"
-                      class="rounded-lg border border-rose-500/30 bg-rose-500/10 px-2.5 py-1.5 text-[13px] font-bold text-rose-400 hover:bg-rose-500/20 transition"
-                      title="Xóa vĩnh viễn khỏi CSDL"
+                      class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-sm font-medium text-rose-700 transition hover:bg-rose-100"
                       @click="confirmForceDelete(subject)"
                     >
                       Xóa vĩnh viễn
@@ -337,81 +325,74 @@
       </div>
     </div>
 
-    <!-- MODAL THÊM / SỬA BỘ MÔN (PREMIUM SAAS MODAL) -->
+    <!-- Modal Thêm / Sửa -->
     <div
       v-if="isModalOpen"
-      class="fixed inset-0 z-[100] flex items-center justify-center bg-black/75 p-4 sm:p-6 backdrop-blur-md overflow-y-auto"
+      class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4 sm:p-6"
       @click.self="closeModal"
     >
-      <div class="relative w-full max-w-lg my-auto rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 sm:p-7 shadow-2xl backdrop-blur-2xl grid gap-5">
-        
-        <!-- Modal Header -->
-        <div class="flex items-center justify-between border-b border-[var(--border)] pb-4">
+      <div class="relative w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-xl sm:p-7">
+        <!-- Header -->
+        <div class="mb-5 flex items-center justify-between border-b border-slate-100 pb-4">
           <div class="flex items-center gap-3">
-            <div class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20">
-              <component :is="renderSubjectIcon(modalForm.code, modalForm.name)" />
+            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#F5F3FF] text-[#7C3AED]">
+              <component :is="getSubjectIcon(modalForm.code, modalForm.name)" class="h-5 w-5" />
             </div>
             <div>
-              <h3 class="text-lg font-bold text-[var(--text)]">
+              <h3 class="text-lg font-semibold text-slate-900">
                 {{ isEditing ? 'Chỉnh sửa Bộ môn' : 'Thêm Bộ môn mới' }}
               </h3>
-              <p class="text-xs text-[var(--muted)]">
+              <p class="text-xs text-slate-500">
                 Thiết lập thông tin bộ môn chuẩn hóa toàn hệ thống
               </p>
             </div>
           </div>
-
           <button
             type="button"
-            class="grid h-8 w-8 place-items-center rounded-lg bg-[var(--surface-soft)] text-xs font-bold text-[var(--muted)] hover:text-[var(--text)] transition"
+            class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
             @click="closeModal"
           >
-            ✕
+            <X class="h-4 w-4" />
           </button>
         </div>
 
-        <!-- Modal Form Body -->
-        <form class="grid gap-4" @submit.prevent="saveSubject">
-          
-          <!-- Tên môn & Mã môn Row -->
+        <!-- Form -->
+        <form class="space-y-4" @submit.prevent="saveSubject">
           <div class="grid gap-4 sm:grid-cols-2">
             <div class="space-y-1.5">
-              <label class="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">
-                Tên Bộ môn <span class="text-rose-400">*</span>
+              <label class="text-xs font-medium text-slate-500">
+                Tên Bộ môn <span class="text-rose-500">*</span>
               </label>
               <input
                 v-model="modalForm.name"
                 type="text"
                 required
-                class="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-soft)] p-3 text-xs sm:text-sm font-semibold text-[var(--text)] outline-none transition focus:border-[var(--primary)]"
+                class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 focus:border-[#7C3AED] focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/20"
                 placeholder="VD: Toán học, Tin học..."
                 @input="autoGenerateCode"
               />
             </div>
 
             <div class="space-y-1.5">
-              <label class="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">
-                Mã Bộ môn (Code) <span class="text-rose-400">*</span>
+              <label class="text-xs font-medium text-slate-500">
+                Mã Bộ môn <span class="text-rose-500">*</span>
               </label>
               <input
                 v-model="modalForm.code"
                 type="text"
                 required
-                class="w-full font-mono rounded-xl border border-[var(--border)] bg-[var(--surface-soft)] p-3 text-xs sm:text-sm font-semibold text-purple-400 outline-none transition focus:border-[var(--primary)]"
+                class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 font-mono text-sm text-[#7C3AED] focus:border-[#7C3AED] focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/20"
                 placeholder="VD: math, informatics"
               />
             </div>
           </div>
 
-          <!-- Nhóm danh mục & Thứ tự Row -->
           <div class="grid gap-4 sm:grid-cols-2">
             <div class="space-y-1.5">
-              <label class="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">
-                Nhóm bộ môn
-              </label>
+              <label class="text-xs font-medium text-slate-500">Nhóm bộ môn</label>
               <select
                 v-model="modalForm.category_group"
-                class="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-soft)] p-3 text-xs sm:text-sm font-semibold text-[var(--text)] outline-none cursor-pointer focus:border-[var(--primary)]"
+                class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 focus:border-[#7C3AED] focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/20"
               >
                 <option value="natural">Khoa học Tự nhiên</option>
                 <option value="social">Khoa học Xã hội</option>
@@ -422,35 +403,31 @@
             </div>
 
             <div class="space-y-1.5">
-              <label class="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">
-                Thứ tự hiển thị (Order)
-              </label>
+              <label class="text-xs font-medium text-slate-500">Thứ tự hiển thị</label>
               <input
                 v-model.number="modalForm.order"
                 type="number"
                 min="0"
-                class="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-soft)] p-3 text-xs sm:text-sm font-semibold text-[var(--text)] outline-none focus:border-[var(--primary)]"
+                class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 focus:border-[#7C3AED] focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/20"
                 placeholder="0"
               />
             </div>
           </div>
 
-          <!-- Modal Footer Actions -->
-          <div class="flex items-center justify-end gap-3 border-t border-[var(--border)] pt-4 mt-2">
+          <div class="flex items-center justify-end gap-3 border-t border-slate-100 pt-4">
             <button
               type="button"
-              class="btn-ghost !px-4 !py-2 text-xs font-bold"
+              class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
               @click="closeModal"
             >
               Hủy
             </button>
-
             <button
               type="submit"
-              class="btn-primary !px-6 !py-2 text-xs font-bold shadow-md"
+              class="rounded-lg bg-[#7C3AED] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#6D28D9] disabled:opacity-60"
               :disabled="isSubmitting"
             >
-              {{ isSubmitting ? 'Đang lưu...' : (isEditing ? 'Lưu thay đổi' : 'Tạo môn học ngay') }}
+              {{ isSubmitting ? 'Đang lưu...' : (isEditing ? 'Lưu thay đổi' : 'Tạo môn học') }}
             </button>
           </div>
         </form>
@@ -460,14 +437,37 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, inject, h } from 'vue'
+import { ref, reactive, computed, onMounted, inject } from 'vue'
+import {
+  ChevronRight,
+  BookOpen,
+  Plus,
+  Trash2,
+  LayoutList,
+  Atom,
+  Languages,
+  Search,
+  X,
+  FolderOpen,
+  MoreVertical,
+  Pencil,
+  HelpCircle,
+  FileText,
+  Calculator,
+  FlaskConical,
+  Dna,
+  Landmark,
+  Globe,
+  Scale,
+  Monitor
+} from 'lucide-vue-next'
 import { adminSubjectsApi, formatApiErrorMessage } from '@/services/api'
 
 const showToast = inject('showToast', (msg) => alert(msg))
 
 const isLoading = ref(true)
 const isSubmitting = ref(false)
-const activeTab = ref('active') // 'active' | 'trash'
+const activeTab = ref('active')
 const openMenuId = ref(null)
 
 const subjects = ref([])
@@ -476,12 +476,11 @@ const stats = reactive({ total: 0, trashed: 0 })
 
 const filters = reactive({
   search: '',
-  category_group: '',
+  category_group: ''
 })
 
 let searchTimeout = null
 
-// Modal State
 const isModalOpen = ref(false)
 const isEditing = ref(false)
 const currentSubjectId = ref(null)
@@ -490,108 +489,24 @@ const modalForm = reactive({
   name: '',
   code: '',
   category_group: 'natural',
-  order: 0,
+  order: 0
 })
 
-// Lucide SVG Icon Renderer Component Generator
-const renderSubjectIcon = (code, name) => {
+const getSubjectIcon = (code, name) => {
   const key = ((code || '') + ' ' + (name || '')).toLowerCase()
 
-  // Calculator (Toán học)
-  if (key.includes('math') || key.includes('toan')) {
-    return h('svg', { class: 'h-5 w-5', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', 'stroke-width': '2' }, [
-      h('rect', { x: '4', y: '2', width: '16', height: '20', rx: '2' }),
-      h('line', { x1: '8', y1: '6', x2: '16', y2: '6' }),
-      h('line', { x1: '16', y1: '14', x2: '16', y2: '18' }),
-      h('path', { d: 'M8 10h.01M12 10h.01M16 10h.01M8 14h.01M12 14h.01M8 18h.01M12 18h.01' })
-    ])
-  }
-  // BookOpen (Ngữ văn / Tiếng Việt)
-  if (key.includes('lit') || key.includes('van') || key.includes('viet')) {
-    return h('svg', { class: 'h-5 w-5', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', 'stroke-width': '2' }, [
-      h('path', { d: 'M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z' }),
-      h('path', { d: 'M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z' })
-    ])
-  }
-  // Languages (Tiếng Anh / Ngoại ngữ)
-  if (key.includes('eng') || key.includes('anh') || key.includes('foreign') || key.includes('lang')) {
-    return h('svg', { class: 'h-5 w-5', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', 'stroke-width': '2' }, [
-      h('path', { d: 'm5 8 6 6' }),
-      h('path', { d: 'm4 14 6-6 2-3' }),
-      h('path', { d: 'M2 5h12' }),
-      h('path', { d: 'M7 2h1' }),
-      h('path', { d: 'm22 22-5-10-5 10' }),
-      h('path', { d: 'M14 18h6' })
-    ])
-  }
-  // Atom (Vật lý)
-  if (key.includes('phys') || key.includes('ly')) {
-    return h('svg', { class: 'h-5 w-5', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', 'stroke-width': '2' }, [
-      h('circle', { cx: '12', cy: '12', r: '2' }),
-      h('path', { d: 'M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41' })
-    ])
-  }
-  // FlaskConical (Hóa học)
-  if (key.includes('chem') || key.includes('hoa')) {
-    return h('svg', { class: 'h-5 w-5', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', 'stroke-width': '2' }, [
-      h('path', { d: 'M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2' }),
-      h('line', { x1: '8.5', y1: '2', x2: '15.5', y2: '2' }),
-      h('line', { x1: '7', y1: '16', x2: '17', y2: '16' })
-    ])
-  }
-  // Dna (Sinh học)
-  if (key.includes('bio') || key.includes('sinh')) {
-    return h('svg', { class: 'h-5 w-5', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', 'stroke-width': '2' }, [
-      h('path', { d: 'M2 15c6.667-6 13.333 0 20-6' }),
-      h('path', { d: 'M9 22c1.798-1.998 2.518-3.995 2.807-5.993' }),
-      h('path', { d: 'M15 2c-1.798 1.998-2.518 3.995-2.807 5.993' }),
-      h('path', { d: 'm17 6-2.5 2.5' }),
-      h('path', { d: 'm7 18 2.5-2.5' })
-    ])
-  }
-  // Landmark (Lịch sử)
-  if (key.includes('hist') || key.includes('su')) {
-    return h('svg', { class: 'h-5 w-5', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', 'stroke-width': '2' }, [
-      h('line', { x1: '3', y1: '22', x2: '21', y2: '22' }),
-      h('line', { x1: '6', y1: '18', x2: '6', y2: '11' }),
-      h('line', { x1: '10', y1: '18', x2: '10', y2: '11' }),
-      h('line', { x1: '14', y1: '18', x2: '14', y2: '11' }),
-      h('line', { x1: '18', y1: '18', x2: '18', y2: '11' }),
-      h('polygon', { points: '12 2 20 7 4 7 12 2' })
-    ])
-  }
-  // Globe (Địa lý)
-  if (key.includes('geo') || key.includes('dia')) {
-    return h('svg', { class: 'h-5 w-5', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', 'stroke-width': '2' }, [
-      h('circle', { cx: '12', cy: '12', r: '10' }),
-      h('line', { x1: '2', y1: '12', x2: '22', y2: '12' }),
-      h('path', { d: 'M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z' })
-    ])
-  }
-  // Scale (GDCD / Pháp luật)
-  if (key.includes('civic') || key.includes('gdcd') || key.includes('phap')) {
-    return h('svg', { class: 'h-5 w-5', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', 'stroke-width': '2' }, [
-      h('path', { d: 'm16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1z' }),
-      h('path', { d: 'm2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1z' }),
-      h('path', { d: 'M7 21h10' }),
-      h('path', { d: 'M12 3v18' }),
-      h('path', { d: 'M3 7h18' })
-    ])
-  }
-  // Monitor (Tin học / Công nghệ)
-  if (key.includes('info') || key.includes('tech') || key.includes('tin') || key.includes('cong')) {
-    return h('svg', { class: 'h-5 w-5', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', 'stroke-width': '2' }, [
-      h('rect', { x: '2', y: '3', width: '20', height: '14', rx: '2' }),
-      h('line', { x1: '8', y1: '21', x2: '16', y2: '21' }),
-      h('line', { x1: '12', y1: '17', x2: '12', y2: '21' })
-    ])
-  }
+  if (key.includes('math') || key.includes('toan')) return Calculator
+  if (key.includes('lit') || key.includes('van') || key.includes('viet')) return BookOpen
+  if (key.includes('eng') || key.includes('anh') || key.includes('foreign') || key.includes('lang')) return Languages
+  if (key.includes('phys') || key.includes('ly')) return Atom
+  if (key.includes('chem') || key.includes('hoa')) return FlaskConical
+  if (key.includes('bio') || key.includes('sinh')) return Dna
+  if (key.includes('hist') || key.includes('su')) return Landmark
+  if (key.includes('geo') || key.includes('dia')) return Globe
+  if (key.includes('civic') || key.includes('gdcd') || key.includes('phap')) return Scale
+  if (key.includes('info') || key.includes('tech') || key.includes('tin') || key.includes('cong')) return Monitor
 
-  // Fallback: Book Icon
-  return h('svg', { class: 'h-5 w-5', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', 'stroke-width': '2' }, [
-    h('path', { d: 'M4 19.5A2.5 2.5 0 0 1 6.5 17H20' }),
-    h('path', { d: 'M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z' })
-  ])
+  return BookOpen
 }
 
 const fetchSubjects = async () => {
@@ -620,11 +535,7 @@ const toggleTab = (tab) => {
 }
 
 const toggleDropdown = (id) => {
-  if (openMenuId.value === id) {
-    openMenuId.value = null
-  } else {
-    openMenuId.value = id
-  }
+  openMenuId.value = openMenuId.value === id ? null : id
 }
 
 const closeDropdown = () => {
@@ -633,9 +544,7 @@ const closeDropdown = () => {
 
 const debounceSearch = () => {
   clearTimeout(searchTimeout)
-  searchTimeout = setTimeout(() => {
-    fetchSubjects()
-  }, 300)
+  searchTimeout = setTimeout(() => fetchSubjects(), 300)
 }
 
 const resetFilters = () => {
@@ -644,19 +553,18 @@ const resetFilters = () => {
   fetchSubjects()
 }
 
-const displayedSubjects = computed(() => {
-  return activeTab.value === 'active' ? subjects.value : trashedSubjects.value
-})
+const displayedSubjects = computed(() =>
+  activeTab.value === 'active' ? subjects.value : trashedSubjects.value
+)
 
-const naturalGroupCount = computed(() => {
-  return subjects.value.filter(s => s.category_group === 'natural' || s.category_group === 'technology').length
-})
+const naturalGroupCount = computed(() =>
+  subjects.value.filter(s => s.category_group === 'natural' || s.category_group === 'technology').length
+)
 
-const socialGroupCount = computed(() => {
-  return subjects.value.filter(s => s.category_group === 'social' || s.category_group === 'foreign_language').length
-})
+const socialGroupCount = computed(() =>
+  subjects.value.filter(s => s.category_group === 'social' || s.category_group === 'foreign_language').length
+)
 
-// Muted Premium Category Group Labels & Styling
 const getCategoryGroupLabel = (group) => {
   switch (group) {
     case 'natural': return 'Khoa học Tự nhiên'
@@ -669,15 +577,14 @@ const getCategoryGroupLabel = (group) => {
 
 const getCategoryGroupClass = (group) => {
   switch (group) {
-    case 'natural': return 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400'
-    case 'social': return 'border-amber-500/20 bg-amber-500/10 text-amber-400'
-    case 'foreign_language': return 'border-sky-500/20 bg-sky-500/10 text-sky-400'
-    case 'technology': return 'border-purple-500/20 bg-purple-500/10 text-purple-400'
-    default: return 'border-slate-500/20 bg-slate-500/10 text-slate-300'
+    case 'natural': return 'bg-emerald-50 text-emerald-700'
+    case 'social': return 'bg-amber-50 text-amber-700'
+    case 'foreign_language': return 'bg-sky-50 text-sky-700'
+    case 'technology': return 'bg-[#F5F3FF] text-[#7C3AED]'
+    default: return 'bg-slate-100 text-slate-600'
   }
 }
 
-// Auto generate code from Name
 const autoGenerateCode = () => {
   if (!isEditing.value && modalForm.name) {
     modalForm.code = modalForm.name
@@ -691,7 +598,6 @@ const autoGenerateCode = () => {
   }
 }
 
-// Open Modal
 const openCreateModal = () => {
   isEditing.value = false
   currentSubjectId.value = null
@@ -716,7 +622,6 @@ const closeModal = () => {
   isModalOpen.value = false
 }
 
-// Submit Form
 const saveSubject = async () => {
   if (!modalForm.name.trim() || !modalForm.code.trim()) {
     showToast('Vui lòng nhập tên và mã bộ môn.', 'error')
@@ -732,22 +637,18 @@ const saveSubject = async () => {
       await adminSubjectsApi.create(modalForm)
       showToast(`Đã tạo môn '${modalForm.name}' thành công.`, 'success')
     }
-
     closeModal()
     fetchSubjects()
   } catch (e) {
     console.error('Lỗi khi lưu bộ môn:', e)
-    const errMessage = formatApiErrorMessage(e, 'Có lỗi xảy ra khi lưu môn học.')
-    showToast(errMessage, 'error')
+    showToast(formatApiErrorMessage(e, 'Có lỗi xảy ra khi lưu môn học.'), 'error')
   } finally {
     isSubmitting.value = false
   }
 }
 
-// Actions: Soft Delete, Restore, Force Delete
 const confirmSoftDelete = async (subject) => {
   if (!confirm(`Bạn có chắc chắn muốn chuyển môn học '${subject.name}' vào Thùng rác không?`)) return
-
   try {
     await adminSubjectsApi.softDelete(subject.id)
     showToast(`Đã chuyển môn '${subject.name}' vào Thùng rác.`, 'success')
@@ -771,7 +672,6 @@ const handleRestore = async (subject) => {
 
 const confirmForceDelete = async (subject) => {
   if (!confirm(`HÀNH ĐỘNG NGUY HIỂM: Bạn có chắc muốn XÓA VĨNH VIỄN môn '${subject.name}'? Hành động này không thể hoàn tác!`)) return
-
   try {
     const res = await adminSubjectsApi.forceDelete(subject.id)
     if (res.success) {
@@ -782,8 +682,7 @@ const confirmForceDelete = async (subject) => {
     }
   } catch (e) {
     console.error('Lỗi khi xóa vĩnh viễn môn học:', e)
-    const msg = e.response?.data?.message || 'Không thể xóa vĩnh viễn môn học này.'
-    showToast(msg, 'error')
+    showToast(e.response?.data?.message || 'Không thể xóa vĩnh viễn môn học này.', 'error')
   }
 }
 

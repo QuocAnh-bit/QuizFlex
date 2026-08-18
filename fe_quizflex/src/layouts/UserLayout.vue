@@ -12,13 +12,13 @@
         </router-link>
 
         <!-- Desktop Navigation Links -->
-        <nav class="hidden items-center gap-1.5 md:flex">
+        <nav class="hidden min-w-0 items-center gap-0.5 md:flex">
           <router-link
             v-for="item in mainNav"
             :key="item.to"
             :to="item.to"
             :class="[
-              'rounded-lg px-3.5 py-1.5 text-sm font-semibold transition',
+              'shrink-0 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-sm font-semibold transition',
               isActiveNav(item)
                 ? 'bg-purple-50 text-[#7C3AED] font-bold'
                 : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
@@ -29,7 +29,7 @@
         </nav>
 
         <!-- Right Utilities & User Profile -->
-        <div class="hidden items-center gap-2.5 md:flex">
+        <div class="hidden shrink-0 items-center gap-2.5 md:flex">
           <LanguageSwitcher />
           <StreakXpBar />
 
@@ -122,9 +122,9 @@
                   <router-link
                     to="/dashboard/my-questions"
                     @click="isUserDropdownOpen = false"
-                    class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-bold text-slate-800 transition hover:bg-purple-50 hover:text-[#7C3AED]"
+                    class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-50 hover:text-slate-900"
                   >
-                    <HelpCircle class="h-4 w-4 shrink-0 text-[#7C3AED]" />
+                    <HelpCircle class="h-4 w-4 shrink-0 text-slate-500" />
                     <span>Kho câu hỏi của tôi</span>
                   </router-link>
 
@@ -132,9 +132,9 @@
                   <router-link
                     to="/dashboard/questions"
                     @click="isUserDropdownOpen = false"
-                    class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-bold text-slate-800 transition hover:bg-purple-50 hover:text-[#7C3AED]"
+                    class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-50 hover:text-slate-900"
                   >
-                    <BookOpen class="h-4 w-4 shrink-0 text-[#7C3AED]" />
+                    <BookOpen class="h-4 w-4 shrink-0 text-slate-500" />
                     <span>Kho Quiz của tôi</span>
                   </router-link>
 
