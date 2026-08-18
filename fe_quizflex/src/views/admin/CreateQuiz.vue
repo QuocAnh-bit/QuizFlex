@@ -886,21 +886,1125 @@
     </div>
   </section>
 </template>
-
 <script setup>
-// ... giữ nguyên toàn bộ logic script từ file gốc (không thay đổi business logic)
-// Chỉ cần import thêm Lucide icons:
-
+import { Trash2, Library, Search, X, Check, GripVertical } from "lucide-vue-next";
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import draggable from "vuedraggable";
+import "mathlive";
+import "mathlive/static.css";
+import VisibilityBadge from "@/components/common/VisibilityBadge.vue";
+import UserAvatar from "@/components/common/UserAvatar.vue";
 import {
-  Trash2,
-  Library,
-  Search,
-  X,
-  Check,
-  GripVertical
-} from 'lucide-vue-next'
+  buildEditorDraftFromQuiz,
+  coverToBackground,
+  currentUserStorage,
+  difficultyLabel,
+  formatApiErrorMessage,
+  normalizeQuestion as normalizeApiQuestion,
+  questionsBankApi,
+  quizzesApi,
+  taxonomyApi,
+} from "@/services/api";
 
-// (phần còn lại của <script setup> giữ nguyên như file bạn gửi)
+const route = useRoute();
+const router = useRouter();
+
+const form = reactive({
+  title: "",
+  education_level_id: "",
+  grade_id: "",
+  subject_id: "",
+  topic_name: "",
+  description: "",
+  cover: "",
+  coverFile: null,
+  removeCover: false,
+  durationMinutes: 12,
+  difficulty: "medium",
+  category: "",
+  visibility: route.query?.visibility === "group" ? "group" : "public",
+  roomCode:
+    route.query?.visibility === "group"
+      ? `GR${Math.floor(1000 + Math.random() * 9000)}`
+      : "",
+});
+
+const taxonomyLevels = ref([]);
+const taxonomyAllSubjects = ref([]);
+const topicsList = ref([]);
+const selectedBankTopic = ref("");
+
+const fetchFormTaxonomies = async () => {
+  try {
+    const data = await taxonomyApi.tree();
+    if (data) {
+      taxonomyLevels.value = data.education_levels || [];
+      taxonomyAllSubjects.value = data.subjects || [];
+    }
+  } catch (e) {
+    console.error("Không tải được danh mục taxonomy:", e);
+  }
+};
+
+const fetchTopicsList = async () => {
+  try {
+    const params = {
+      education_level_id: form.education_level_id || undefined,
+      grade_id: form.grade_id || undefined,
+      subject_id: form.subject_id || undefined,
+    };
+    const data = await questionsBankApi.fetchTopics(params);
+    topicsList.value = Array.isArray(data)
+      ? data
+      : data?.data && Array.isArray(data.data)
+      ? data.data
+      : [];
+  } catch (e) {
+    console.error("Không tải được danh sách Chủ đề từ kho:", e);
+  }
+};
+
+const onTaxonomyChange = () => {
+  form.grade_id = form.grade_id || "";
+  fetchTopicsList();
+};
+
+const onBankTopicSelect = () => {
+  if (selectedBankTopic.value) {
+    form.topic_name = selectedBankTopic.value;
+  }
+};
+
+const onTopicInputChange = () => {
+  const text = (form.topic_name || "").trim().toLowerCase();
+  if (!text) {
+    selectedBankTopic.value = "";
+  } else {
+    const found = topicsList.value.find(
+      (t) => t.topic_name.toLowerCase() === text,
+    );
+    selectedBankTopic.value = found ? found.topic_name : "";
+  }
+};
+
+const formAvailableGrades = computed(() => {
+  if (!form.education_level_id) {
+    return taxonomyLevels.value.flatMap((l) => l.grades || []);
+  }
+  const level = taxonomyLevels.value.find(
+    (l) => l.id === Number(form.education_level_id),
+  );
+  return level ? level.grades || [] : [];
+});
+
+const formAvailableSubjects = computed(() => {
+  if (!form.grade_id) {
+    return taxonomyAllSubjects.value;
+  }
+  const grade = formAvailableGrades.value.find(
+    (g) => g.id === Number(form.grade_id),
+  );
+  return grade && grade.subjects ? grade.subjects : taxonomyAllSubjects.value;
+});
+
+const selectedSubjectName = computed(() => {
+  if (!form.subject_id) return "";
+  const sub = taxonomyAllSubjects.value.find((s) => s.id === Number(form.subject_id));
+  return sub ? sub.name : "";
+});
+
+const isImportModalOpen = ref(false);
+const isLoadingImportBank = ref(false);
+const importBankItems = ref([]);
+const selectedImportIds = ref([]);
+const modalTopicsList = ref([]);
+
+const totalImportBankItems = ref(0);
+const currentImportBankPage = ref(1);
+const lastImportBankPage = ref(1);
+
+const importFilters = reactive({
+  search: "",
+  education_level_id: "",
+  grade_id: "",
+  subject_id: "",
+  topic_name: "",
+  difficulty: "",
+  page: 1,
+});
+
+const modalAvailableGrades = computed(() => {
+  if (!importFilters.education_level_id) {
+    return taxonomyLevels.value.flatMap((l) => l.grades || []);
+  }
+  const level = taxonomyLevels.value.find(
+    (l) => l.id === Number(importFilters.education_level_id),
+  );
+  return level ? level.grades || [] : [];
+});
+
+const modalAvailableSubjects = computed(() => {
+  if (!importFilters.grade_id) {
+    return taxonomyAllSubjects.value;
+  }
+  const grade = modalAvailableGrades.value.find(
+    (g) => g.id === Number(importFilters.grade_id),
+  );
+  return grade && grade.subjects ? grade.subjects : taxonomyAllSubjects.value;
+});
+
+const fetchModalTopicsList = async () => {
+  try {
+    const params = {
+      education_level_id: importFilters.education_level_id || undefined,
+      grade_id: importFilters.grade_id || undefined,
+      subject_id: importFilters.subject_id || undefined,
+    };
+    const data = await questionsBankApi.fetchTopics(params);
+    modalTopicsList.value = Array.isArray(data) ? data : [];
+  } catch (e) {
+    console.error("Không tải được danh sách Chủ đề modal:", e);
+  }
+};
+
+const onModalTaxonomyChange = () => {
+  importFilters.grade_id = importFilters.grade_id || "";
+  fetchModalTopicsList();
+  loadImportBank(1);
+};
+
+const openImportModal = async () => {
+  isImportModalOpen.value = true;
+  selectedImportIds.value = [];
+  importFilters.education_level_id = form.education_level_id || "";
+  importFilters.grade_id = form.grade_id || "";
+  importFilters.subject_id = form.subject_id || "";
+  importFilters.topic_name = form.topic_name || "";
+  await fetchModalTopicsList();
+  await loadImportBank(1);
+};
+
+const loadImportBank = async (page = 1) => {
+  isLoadingImportBank.value = true;
+  importFilters.page = page;
+  try {
+    const res = await questionsBankApi.fetchBank({
+      search: importFilters.search || undefined,
+      education_level_id: importFilters.education_level_id || undefined,
+      grade_id: importFilters.grade_id || undefined,
+      subject_id: importFilters.subject_id || undefined,
+      topic_name: importFilters.topic_name || undefined,
+      difficulty: importFilters.difficulty || undefined,
+      page: importFilters.page,
+      per_page: 20,
+    });
+    importBankItems.value = res.items || [];
+    totalImportBankItems.value = res.total || 0;
+    currentImportBankPage.value = res.currentPage || 1;
+    lastImportBankPage.value = res.lastPage || 1;
+  } catch (err) {
+    console.error("Không tải được ngân hàng câu hỏi:", err);
+  } finally {
+    isLoadingImportBank.value = false;
+  }
+};
+
+const isAllImportSelected = computed(() => {
+  if (importBankItems.value.length === 0) return false;
+  return importBankItems.value.every((item) =>
+    selectedImportIds.value.includes(item.id),
+  );
+});
+
+const toggleSelectAllImportBank = () => {
+  if (isAllImportSelected.value) {
+    selectedImportIds.value = [];
+  } else {
+    selectedImportIds.value = importBankItems.value.map((item) => item.id);
+  }
+};
+
+const formatDifficultyLabel = (diff) => {
+  if (diff === "easy") return "Dễ";
+  if (diff === "hard") return "Khó";
+  return "Trung bình";
+};
+
+const getQuestionMetaText = (item) => {
+  const parts = [];
+  const subjectName = item.subject_name || item.subject?.name;
+  if (subjectName) parts.push(subjectName);
+  if (item.topic_name) parts.push(item.topic_name);
+  parts.push(formatDifficultyLabel(item.difficulty));
+  parts.push(item.is_public ? "Public" : "Private");
+  return parts.join(" · ");
+};
+
+const toggleImportSelect = (id) => {
+  const idx = selectedImportIds.value.indexOf(id);
+  if (idx > -1) {
+    selectedImportIds.value.splice(idx, 1);
+  } else {
+    selectedImportIds.value.push(id);
+  }
+};
+
+const confirmImportQuestions = () => {
+  const selectedItems = importBankItems.value.filter((item) =>
+    selectedImportIds.value.includes(item.id),
+  );
+  if (selectedItems.length > 0) {
+    const formatted = normalizeEditorQuestions(selectedItems);
+    questions.value.push(...formatted);
+    if (typeof showToast === 'function') showToast(`Đã chèn ${selectedItems.length} câu hỏi vào Quiz!`, "success");
+  }
+  selectedImportIds.value = [];
+  isImportModalOpen.value = false;
+};
+
+const questionBase = computed(() =>
+  route.path.startsWith("/dashboard")
+    ? "/dashboard/questions"
+    : "/admin/questions",
+);
+
+const visibilityOptions = [
+  {
+    value: "public",
+    short: "PUB",
+    title: "Public",
+    description: "Ai cũng có thể xem và làm bài.",
+  },
+  {
+    value: "private",
+    short: "PRI",
+    title: "Private",
+    description: "Chỉ hiển thị trong khu quản trị.",
+  },
+  {
+    value: "group",
+    short: "GRP",
+    title: "Group",
+    description: "Gắn quiz với room code.",
+  },
+];
+
+const isEditMode = computed(() => Boolean(route.params.id));
+const isSaving = ref(false);
+const errorMessage = ref("");
+const successMessage = ref("");
+const toastMessage = ref("");
+const toastType = ref("success");
+const toastTimer = ref(null);
+const coverInput = ref(null);
+const coverPreview = ref("");
+const questionImageInputs = ref([]);
+const questionCardRefs = ref([]);
+const ocrMode = ref("math");
+
+const questions = ref([]);
+const checklist = [
+  "Có tiêu đề rõ ràng",
+  "Đã chọn Bộ môn học (*)",
+  "Có ảnh bìa hoặc gradient dự phòng",
+  "Ít nhất 1 câu hỏi",
+  "Mỗi câu có đáp án",
+  "Mỗi câu có đáp án đúng",
+  "Group quiz cần có room code",
+];
+
+const dragOptions = {
+  animation: 180,
+  handle: ".drag-handle",
+  ghostClass: "drag-ghost",
+};
+
+const difficultyText = computed(() => difficultyLabel(form.difficulty));
+const creatorProfile = ref(
+  currentUserStorage.get() || { name: "Guest", email: "", avatar: "" },
+);
+const coverBackground = computed(() =>
+  coverToBackground(coverPreview.value || form.cover),
+);
+const selectedCoverLabel = computed(() => {
+  if (form.coverFile) return `Đã chọn: ${form.coverFile.name}`;
+  if (form.cover) return "Đang dùng ảnh bìa đã lưu.";
+  return "Chưa có ảnh bìa. Hệ thống sẽ dùng gradient dự phòng.";
+});
+
+const createId = () => `${Date.now()}_${Math.random().toString(16).slice(2)}`;
+
+const createBlock = (type, value = "") => ({
+  id: createId(),
+  type,
+  value,
+});
+
+const hasMath = (text = "") => {
+  return /(\$.*?\$|\\frac|\\sqrt|\\sum|\\int|\^|_|≤|≥|≠|π|∞|sin|cos|tan|log|ln|[A-Z]'{1}|[a-zA-Z]\d|\d+\/\d+)/.test(
+    String(text),
+  );
+};
+
+const parseBlocks = (text = "") => {
+  const value = String(text || "");
+  const regex = /\$(.*?)\$/g;
+  const blocks = [];
+  let lastIndex = 0;
+  let match;
+
+  while ((match = regex.exec(value)) !== null) {
+    if (match.index > lastIndex) {
+      blocks.push(createBlock("text", value.slice(lastIndex, match.index)));
+    }
+
+    blocks.push(createBlock("math", match[1]));
+    lastIndex = regex.lastIndex;
+  }
+
+  if (lastIndex < value.length) {
+    blocks.push(createBlock("text", value.slice(lastIndex)));
+  }
+
+  if (!blocks.length) {
+    blocks.push(createBlock("text", value));
+  }
+
+  return blocks;
+};
+
+const blocksToString = (blocks = []) => {
+  return blocks
+    .map((block) => {
+      if (block.type === "math") return `$${block.value}$`;
+      return block.value;
+    })
+    .join("")
+    .trim();
+};
+
+const normalizeOptions = (options, type = "single_choice") => {
+  if (type === "fill_blank") return null;
+
+  const source = Array.isArray(options)
+    ? Object.fromEntries(options.map((item) => [item.key, item.text]))
+    : options || {};
+
+  return {
+    A: source.A || "",
+    B: source.B || "",
+    C: source.C || "",
+    D: source.D || "",
+  };
+};
+
+const normalizeEditorQuestion = (item = {}) => {
+  const type = item.type || "single_choice";
+  const questionText = item.question || item.text || "";
+  const options = normalizeOptions(item.options || item.answers, type);
+
+  const correctFromAnswers = Array.isArray(item.answers)
+    ? item.answers.find((answer) => answer.is_correct)?.key
+    : null;
+
+  const correctAnswer =
+    item.correct_answer ||
+    item.correct ||
+    correctFromAnswers ||
+    (type === "multi_choice" ? [] : type === "fill_blank" ? [""] : null);
+
+  const shouldUseMath =
+    ocrMode.value === "math" &&
+    (hasMath(questionText) ||
+      Object.values(options || {}).some((option) => hasMath(option)));
+
+  const optionBlocks = {};
+
+  Object.entries(options || {}).forEach(([key, value]) => {
+    optionBlocks[key] = parseBlocks(value);
+  });
+
+  return {
+    id: item.id || createId(),
+    backend_id: item.backend_id || item.id || null,
+    type,
+    question: questionText,
+    question_blocks: parseBlocks(questionText),
+    options,
+    option_blocks: optionBlocks,
+    correct_answer:
+      type === "multi_choice"
+        ? Array.isArray(correctAnswer)
+          ? correctAnswer
+          : correctAnswer
+            ? [correctAnswer]
+            : []
+        : type === "fill_blank"
+          ? Array.isArray(correctAnswer)
+            ? correctAnswer
+            : correctAnswer
+              ? [correctAnswer]
+              : [""]
+          : correctAnswer || null,
+    points: Number(item.points) || 10,
+    images: item.images || [],
+    allow_math: ocrMode.value === "math",
+    editor_mode: shouldUseMath ? "math" : "normal",
+  };
+};
+
+const normalizeEditorQuestions = (items = []) => {
+  return items.map((item) => normalizeEditorQuestion(item));
+};
+
+const setQuestionMode = (question, mode) => {
+  if (!question.allow_math && mode === "math") return;
+
+  if (mode === "math") {
+    question.question_blocks = parseBlocks(question.question);
+
+    Object.keys(question.options || {}).forEach((key) => {
+      question.option_blocks[key] = parseBlocks(question.options[key]);
+    });
+  } else {
+    question.question = blocksToString(question.question_blocks);
+
+    Object.keys(question.option_blocks || {}).forEach((key) => {
+      question.options[key] = blocksToString(question.option_blocks[key]);
+    });
+  }
+
+  question.editor_mode = mode;
+};
+
+const ensureDefaultOptions = (question) => {
+  if (!question.options) {
+    question.options = {
+      A: "",
+      B: "",
+      C: "",
+      D: "",
+    };
+  }
+
+  if (!question.option_blocks) {
+    question.option_blocks = {};
+  }
+
+  Object.keys(question.options).forEach((key) => {
+    if (!question.option_blocks[key]) {
+      question.option_blocks[key] = parseBlocks(question.options[key]);
+    }
+  });
+};
+
+const changeQuestionType = (question) => {
+  if (question.type === "fill_blank") {
+    question.options = null;
+    question.option_blocks = {};
+
+    if (!Array.isArray(question.correct_answer)) {
+      question.correct_answer = question.correct_answer
+        ? [question.correct_answer]
+        : [""];
+    }
+
+    if (!question.correct_answer.length) {
+      question.correct_answer.push("");
+    }
+  }
+
+  if (question.type === "single_choice") {
+    ensureDefaultOptions(question);
+
+    if (Array.isArray(question.correct_answer)) {
+      question.correct_answer = question.correct_answer[0] || null;
+    }
+  }
+
+  if (question.type === "multi_choice") {
+    ensureDefaultOptions(question);
+
+    if (!Array.isArray(question.correct_answer)) {
+      question.correct_answer = question.correct_answer
+        ? [question.correct_answer]
+        : [];
+    }
+  }
+};
+
+const addFillAnswer = (question) => {
+  if (!Array.isArray(question.correct_answer)) {
+    question.correct_answer = [];
+  }
+
+  question.correct_answer.push("");
+};
+
+const removeFillAnswer = (question, index) => {
+  question.correct_answer.splice(index, 1);
+
+  if (!question.correct_answer.length) {
+    question.correct_answer.push("");
+  }
+};
+
+const addTextBlock = (blocks) => {
+  blocks.push(createBlock("text", ""));
+};
+
+const addMathBlock = (blocks) => {
+  blocks.push(createBlock("math", "x^2"));
+};
+
+const updateMathBlock = (blocks, index, event) => {
+  blocks[index].value = event.target.value;
+};
+
+const removeBlock = (blocks, index) => {
+  blocks.splice(index, 1);
+
+  if (!blocks.length) {
+    blocks.push(createBlock("text", ""));
+  }
+};
+
+const getTextBlockStyle = (value = "") => {
+  const length = String(value || "").length;
+  const width = Math.min(Math.max(length + 10, 18), 90);
+
+  return {
+    width: `${width}ch`,
+    height: "56px",
+    minHeight: "56px",
+  };
+};
+
+const getNormalTextareaStyle = (value = "") => {
+  const text = String(value || "");
+  const length = text.length;
+  const rows = Math.max(1, Math.ceil(length / 95));
+
+  return {
+    minHeight: `${rows * 28 + 34}px`,
+  };
+};
+
+const getMathBlockStyle = (value = "") => {
+  const length = String(value || "").length;
+  const width = Math.min(Math.max(length + 8, 16), 70);
+
+  return {
+    width: `${width}ch`,
+  };
+};
+
+const setQuestionImageInputRef = (el, index) => {
+  if (el) questionImageInputs.value[index] = el;
+};
+
+const openQuestionImagePicker = (index) => {
+  questionImageInputs.value[index]?.click();
+};
+
+const fileToDataUrl = (file) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error("Không đọc được ảnh"));
+    reader.readAsDataURL(file);
+  });
+};
+
+const handleQuestionImage = async (event, question) => {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  if (!file.type.startsWith("image/")) {
+    errorMessage.value = "File đính kèm phải là ảnh.";
+    showToast(errorMessage.value, "error");
+    event.target.value = "";
+    return;
+  }
+
+  if (file.size > 4 * 1024 * 1024) {
+    errorMessage.value = "Ảnh câu hỏi tối đa 4MB.";
+    showToast(errorMessage.value, "error");
+    event.target.value = "";
+    return;
+  }
+
+  const preview = await fileToDataUrl(file);
+
+  if (!question.images) question.images = [];
+
+  question.images.push({
+    id: createId(),
+    name: file.name,
+    type: file.type,
+    size: file.size,
+    preview,
+    file,
+  });
+
+  event.target.value = "";
+};
+
+const removeQuestionImage = (question, index) => {
+  question.images.splice(index, 1);
+};
+
+const setQuestionCardRef = (el, index) => {
+  questionCardRefs.value[index] = el;
+};
+
+const scrollToLastQuestion = () => {
+  nextTick(() => {
+    const lastIndex = questions.value.length - 1;
+    const target = questionCardRefs.value[lastIndex];
+    target?.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+};
+
+const clearToast = () => {
+  if (toastTimer.value) {
+    clearTimeout(toastTimer.value);
+    toastTimer.value = null;
+  }
+  toastMessage.value = "";
+};
+
+const showToast = (message, type = "success") => {
+  clearToast();
+  toastMessage.value = message;
+  toastType.value = type;
+  toastTimer.value = window.setTimeout(() => {
+    clearToast();
+  }, 5000);
+};
+
+const addQuestion = (type = "single_choice") => {
+  questions.value.push(
+    normalizeEditorQuestion({
+      type,
+      question: "",
+      options:
+        type === "fill_blank"
+          ? null
+          : {
+              A: "",
+              B: "",
+              C: "",
+              D: "",
+            },
+      correct_answer:
+        type === "multi_choice" ? [] : type === "fill_blank" ? [""] : null,
+      images: [],
+    }),
+  );
+
+  scrollToLastQuestion();
+};
+
+const removeQuestion = (index) => {
+  if (questions.value.length === 1) {
+    errorMessage.value = "Quiz cần ít nhất 1 câu hỏi.";
+    showToast(errorMessage.value, "error");
+    return;
+  }
+
+  questions.value.splice(index, 1);
+  questionCardRefs.value.splice(index, 1);
+};
+
+const buildSavePayload = () => {
+  return questions.value.map((q, index) => {
+    const question =
+      q.editor_mode === "math" ? blocksToString(q.question_blocks) : q.question;
+
+    const options = {};
+
+    if (q.type !== "fill_blank") {
+      Object.keys(q.options || {}).forEach((key) => {
+        options[key] =
+          q.editor_mode === "math"
+            ? blocksToString(q.option_blocks[key])
+            : q.options[key];
+      });
+    }
+
+    const answers =
+      q.type === "fill_blank"
+        ? []
+        : Object.keys(options).map((key, answerIndex) => ({
+            key,
+            text: String(options[key] || "").trim(),
+            order: answerIndex,
+            is_correct:
+              q.type === "multi_choice"
+                ? q.correct_answer.includes(key)
+                : q.correct_answer === key,
+          }));
+
+    return {
+      id: q.backend_id || undefined,
+      type: q.type,
+      question,
+      text: question,
+      options: q.type === "fill_blank" ? null : options,
+      correct_answer: q.correct_answer,
+      correct: q.type === "single_choice" ? q.correct_answer : undefined,
+      order: index,
+      points: Number(q.points) || 10,
+      answers,
+      images: (q.images || []).map((image) => ({
+        name: image.name,
+        type: image.type,
+        size: image.size,
+        preview: image.preview,
+      })),
+    };
+  });
+};
+
+const openCoverPicker = () => coverInput.value?.click();
+
+const revokeCoverPreview = () => {
+  if (coverPreview.value?.startsWith("blob:")) {
+    URL.revokeObjectURL(coverPreview.value);
+  }
+};
+
+const clearSelectedCoverFile = () => {
+  revokeCoverPreview();
+  form.coverFile = null;
+  coverPreview.value = "";
+
+  if (coverInput.value) coverInput.value.value = "";
+};
+
+const handleCoverFileChange = (event) => {
+  const [file] = event.target.files || [];
+  if (!file) return;
+
+  if (!file.type.startsWith("image/")) {
+    errorMessage.value = "File bìa phải là ảnh.";
+    event.target.value = "";
+    return;
+  }
+
+  if (file.size > 4 * 1024 * 1024) {
+    errorMessage.value = "Ảnh bìa tối đa 4MB.";
+    event.target.value = "";
+    return;
+  }
+
+  revokeCoverPreview();
+  form.coverFile = file;
+  form.removeCover = false;
+  coverPreview.value = URL.createObjectURL(file);
+  errorMessage.value = "";
+};
+
+const removeCover = () => {
+  clearSelectedCoverFile();
+  form.cover = "";
+  form.removeCover = true;
+};
+
+const makePayload = () => {
+  const currentUser = currentUserStorage.get();
+
+  const payload = {
+    user_id: currentUser?.id,
+    title: form.title.trim(),
+    education_level_id: form.education_level_id || undefined,
+    grade_id: form.grade_id || undefined,
+    subject_id: form.subject_id || undefined,
+    topic_name: form.topic_name ? form.topic_name.trim() : undefined,
+    category: form.topic_name ? form.topic_name.trim() : undefined,
+    description: form.description.trim(),
+    duration_minutes: Number(form.durationMinutes) || 12,
+    difficulty: form.difficulty,
+    visibility: form.visibility,
+    roomCode: form.roomCode.trim(),
+    questions: buildSavePayload(),
+  };
+
+  if (form.coverFile) {
+    payload.cover_file = form.coverFile;
+  } else if (form.removeCover) {
+    payload.remove_cover = true;
+  }
+
+  return payload;
+};
+
+const focusAndHighlightElement = (targetId, questionIndex = null) => {
+  let el = null;
+  if (questionIndex !== null && questionCardRefs.value && questionCardRefs.value[questionIndex]) {
+    el = questionCardRefs.value[questionIndex];
+  } else if (targetId) {
+    el = document.getElementById(targetId);
+  }
+
+  if (el) {
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    if (typeof el.focus === "function") {
+      el.focus();
+    }
+    el.classList.add("ring-4", "ring-rose-500/60", "border-rose-500");
+    setTimeout(() => {
+      el.classList.remove("ring-4", "ring-rose-500/60", "border-rose-500");
+    }, 2500);
+  }
+};
+
+const validateBeforeSave = () => {
+  if (!form.title.trim()) {
+    return { message: "Bạn chưa nhập tiêu đề quiz.", targetId: "quiz-title-input" };
+  }
+  if (!form.subject_id) {
+    return { message: "Vui lòng chọn Bộ môn cho bài quiz.", targetId: "quiz-subject-select" };
+  }
+
+  const duration = Number(form.durationMinutes);
+  if (!Number.isFinite(duration) || duration < 1 || duration > 1440) {
+    return { message: "Thời gian làm bài phải từ 1 đến 1440 phút.", targetId: "quiz-duration-input" };
+  }
+
+  if (form.visibility === "group" && !form.roomCode.trim()) {
+    return { message: "Quiz dạng group cần có room code.", targetId: "quiz-room-code-input" };
+  }
+
+  if (questions.value.length === 0) {
+    return { message: "Quiz cần ít nhất 1 câu hỏi." };
+  }
+
+  for (const [index, q] of questions.value.entries()) {
+    const questionText =
+      q.editor_mode === "math" ? blocksToString(q.question_blocks) : q.question;
+
+    if (!questionText.trim()) {
+      return { message: `Câu ${index + 1} chưa có nội dung.`, questionIndex: index };
+    }
+
+    if (q.type !== "fill_blank") {
+      const options = {};
+
+      Object.keys(q.options || {}).forEach((key) => {
+        options[key] =
+          q.editor_mode === "math"
+            ? blocksToString(q.option_blocks[key])
+            : q.options[key];
+      });
+
+      if (Object.values(options).some((value) => !String(value).trim())) {
+        return { message: `Câu ${index + 1} còn đáp án trống.`, questionIndex: index };
+      }
+
+      if (q.type === "single_choice" && !q.correct_answer) {
+        return { message: `Câu ${index + 1} chưa chọn đáp án đúng.`, questionIndex: index };
+      }
+
+      if (q.type === "multi_choice" && !q.correct_answer.length) {
+        return { message: `Câu ${index + 1} chưa chọn đáp án đúng.`, questionIndex: index };
+      }
+    }
+
+    if (q.type === "fill_blank") {
+      if (!q.correct_answer.some((answer) => String(answer).trim())) {
+        return { message: `Câu ${index + 1} chưa có đáp án điền đúng.`, questionIndex: index };
+      }
+    }
+  }
+
+  return null;
+};
+
+const saveQuiz = async () => {
+  const errorInfo = validateBeforeSave();
+  successMessage.value = "";
+
+  if (errorInfo) {
+    errorMessage.value = errorInfo.message;
+    showToast(errorInfo.message, "error");
+    focusAndHighlightElement(errorInfo.targetId, errorInfo.questionIndex);
+    return;
+  }
+
+  isSaving.value = true;
+
+  try {
+    const payload = makePayload();
+
+    const saved = isEditMode.value
+      ? await quizzesApi.update(route.params.id, payload)
+      : await quizzesApi.create(payload);
+
+    successMessage.value = isEditMode.value
+      ? "Đã cập nhật quiz."
+      : "Đã tạo quiz mới.";
+    showToast(successMessage.value, "success");
+
+    if (!isEditMode.value) {
+      router.push(`${questionBase.value}/edit/${saved.id}`);
+    }
+  } catch (error) {
+    errorMessage.value = formatApiErrorMessage(error, "Lưu thất bại. Vui lòng kiểm tra lại thông tin.");
+    showToast(errorMessage.value, "error");
+  } finally {
+    isSaving.value = false;
+  }
+};
+
+const loadQuizForEdit = async () => {
+  if (!isEditMode.value) return;
+
+  try {
+    const quiz = await quizzesApi.getForEdit(route.params.id);
+
+    form.title = quiz.title || "";
+    form.education_level_id = quiz.education_level_id || "";
+    form.grade_id = quiz.grade_id || "";
+    form.subject_id = quiz.subject_id || "";
+    form.topic_name = quiz.topic_name || "";
+    await fetchTopicsList();
+    onTopicInputChange();
+    form.description = quiz.description || "";
+    form.cover = quiz.cover || "";
+    form.coverFile = null;
+    form.removeCover = false;
+    coverPreview.value = "";
+    form.durationMinutes =
+      quiz.duration_minutes || Math.ceil((quiz.time_limit_seconds || 720) / 60);
+    form.difficulty = quiz.difficulty || "medium";
+    form.visibility = quiz.visibility || "public";
+    form.roomCode = quiz.room_code || "";
+
+    questions.value = normalizeEditorQuestions(
+      (quiz.questions || []).map((question) => {
+        const normalized = normalizeApiQuestion(question);
+
+        return {
+          id: normalized.id,
+          question: normalized.question,
+          type: normalized.type || "single_choice",
+          options: Object.fromEntries(
+            (normalized.answers || []).map((answer) => [answer.key, answer.text]),
+          ),
+          correct_answer: normalized.correct || normalized.correct_answer || "A",
+          points: normalized.points || 10,
+          images: normalized.images || [],
+        };
+      }),
+    );
+
+    if (questions.value.length === 0) addQuestion("single_choice");
+  } catch (error) {
+    errorMessage.value = `Không tải được quiz để sửa: ${error.message}`;
+  }
+};
+
+const hydrateDraft = (draft) => {
+  const normalized = buildEditorDraftFromQuiz(draft);
+
+  form.title = normalized.title || form.title;
+  form.tag = normalized.tag || "AI";
+  form.description = normalized.description || form.description;
+  form.durationMinutes = normalized.durationMinutes || form.durationMinutes;
+  form.difficulty = normalized.difficulty || form.difficulty;
+  form.category = normalized.category || form.category;
+  form.visibility = normalized.visibility || form.visibility;
+  form.roomCode = normalized.roomCode || form.roomCode;
+
+  questions.value = normalized.questions.length
+    ? normalizeEditorQuestions(
+        normalized.questions.map((question) => ({
+          id: question.id || null,
+          question: question.text || "",
+          type: question.type || "single_choice",
+          options: Object.fromEntries(
+            (question.answers || []).map((answer) => [answer.key, answer.text]),
+          ),
+          correct_answer: question.correct || "A",
+          points: question.points || 10,
+          images: question.images || [],
+        })),
+      )
+    : [];
+
+  if (!questions.value.length) addQuestion("single_choice");
+};
+
+const loadOcrDraft = () => {
+  if (isEditMode.value) return;
+
+  const draft = sessionStorage.getItem("quizflex_ai_draft");
+  if (draft) {
+    try {
+      const parsed = JSON.parse(draft);
+      hydrateDraft(parsed);
+      sessionStorage.removeItem("quizflex_ai_draft");
+      return;
+    } catch {
+      sessionStorage.removeItem("quizflex_ai_draft");
+    }
+  }
+
+  const rawQuestions = sessionStorage.getItem("quizflex_questions");
+  if (rawQuestions) {
+    try {
+      const parsed = JSON.parse(rawQuestions);
+
+      if (Array.isArray(parsed) && parsed.length) {
+        form.tag = "OCR";
+        form.category = "OCR";
+        form.visibility = "private";
+        questions.value = normalizeEditorQuestions(parsed);
+        sessionStorage.removeItem("quizflex_questions");
+        return;
+      }
+    } catch {
+      sessionStorage.removeItem("quizflex_questions");
+    }
+  }
+
+  const text = sessionStorage.getItem("quizflex_ocr_text");
+  if (text) {
+    form.description = text.slice(0, 500);
+  }
+
+  if (!questions.value.length) {
+    addQuestion("single_choice");
+  }
+};
+
+const syncCreatorProfile = (event) => {
+  creatorProfile.value =
+    event?.detail ??
+    currentUserStorage.get() ?? { name: "Guest", email: "", avatar: "" };
+};
+
+onMounted(async () => {
+  syncCreatorProfile();
+  window.addEventListener("quizflex-user-updated", syncCreatorProfile);
+  window.addEventListener("storage", syncCreatorProfile);
+
+  await fetchFormTaxonomies();
+  await fetchTopicsList();
+  await loadQuizForEdit();
+  loadOcrDraft();
+});
+
+onBeforeUnmount(() => {
+  clearToast();
+  revokeCoverPreview();
+  window.removeEventListener("quizflex-user-updated", syncCreatorProfile);
+  window.removeEventListener("storage", syncCreatorProfile);
+});
 </script>
 
 <style scoped>
