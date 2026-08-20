@@ -21,26 +21,7 @@ class AIService
 
     public function __construct()
     {
-        $openrouterKey = trim((string) config('services.openrouter.api_key', ''));
-        $deepseekKey = trim((string) config('services.deepseek.api_key', ''));
-
-        $this->usesOpenRouter = $openrouterKey !== '';
-
-        if ($this->usesOpenRouter) {
-            $this->apiKey = $openrouterKey;
-            $this->baseUri = $this->normalizeBaseUri((string) config('services.openrouter.base_uri', 'https://openrouter.ai/api/v1'));
-            $this->model = trim((string) config('services.openrouter.model', 'deepseek/deepseek-chat-v3-0324')) ?: 'deepseek/deepseek-chat-v3-0324';
-
-            $timeout = (int) config('services.openrouter.timeout', config('services.deepseek.timeout', 120));
-            $connectTimeout = (int) config('services.openrouter.connect_timeout', config('services.deepseek.connect_timeout', 30));
-        } else {
-            $this->apiKey = $deepseekKey;
-            $this->baseUri = $this->normalizeBaseUri((string) config('services.deepseek.base_uri', 'https://api.deepseek.com'));
-            $this->model = trim((string) config('services.deepseek.model', 'deepseek-chat')) ?: 'deepseek-chat';
-
-            $timeout = (int) config('services.deepseek.timeout', 120);
-            $connectTimeout = (int) config('services.deepseek.connect_timeout', 30);
-        }
+        $this->configureProviderFromConfig();
 
         if ($this->apiKey === '') {
             throw new RuntimeException('Missing AI API key. Set OPENROUTER_API_KEY or DEEPSEEK_API_KEY in backend .env, then run php artisan optimize:clear.');
@@ -49,9 +30,93 @@ class AIService
         $this->http = new GuzzleClient([
             'base_uri' => $this->baseUri . '/',
             'verify' => $this->resolveVerifyOption(),
-            'timeout' => $timeout,
-            'connect_timeout' => $connectTimeout,
+            'timeout' => $this->getCurrentTimeout(),
+            'connect_timeout' => $this->getCurrentConnectTimeout(),
         ]);
+    }
+
+    private function configureProviderFromConfig(): void
+    {
+        $openrouterKey = trim((string) config('services.openrouter.api_key', ''));
+        $deepseekKey = trim((string) config('services.deepseek.api_key', ''));
+
+        $this->usesOpenRouter = $openrouterKey !== '' && ($deepseekKey === '' || $openrouterKey !== '');
+
+        if ($this->usesOpenRouter) {
+            $this->apiKey = $openrouterKey;
+            $this->baseUri = $this->normalizeBaseUri((string) config('services.openrouter.base_uri', 'https://openrouter.ai/api/v1'));
+            $this->model = trim((string) config('services.openrouter.model', 'deepseek/deepseek-chat-v3-0324')) ?: 'deepseek/deepseek-chat-v3-0324';
+            return;
+        }
+
+        $this->apiKey = $deepseekKey;
+        $this->baseUri = $this->normalizeBaseUri((string) config('services.deepseek.base_uri', 'https://api.deepseek.com'));
+        $this->model = trim((string) config('services.deepseek.model', 'deepseek-chat')) ?: 'deepseek-chat';
+    }
+
+    private function switchToAlternativeProvider(): void
+    {
+        $openrouterKey = trim((string) config('services.openrouter.api_key', ''));
+        $deepseekKey = trim((string) config('services.deepseek.api_key', ''));
+
+        if ($this->usesOpenRouter && $deepseekKey !== '') {
+            $this->usesOpenRouter = false;
+            $this->apiKey = $deepseekKey;
+            $this->baseUri = $this->normalizeBaseUri((string) config('services.deepseek.base_uri', 'https://api.deepseek.com'));
+            $this->model = trim((string) config('services.deepseek.model', 'deepseek-chat')) ?: 'deepseek-chat';
+            return;
+        }
+
+        if (!$this->usesOpenRouter && $openrouterKey !== '') {
+            $this->usesOpenRouter = true;
+            $this->apiKey = $openrouterKey;
+            $this->baseUri = $this->normalizeBaseUri((string) config('services.openrouter.base_uri', 'https://openrouter.ai/api/v1'));
+            $this->model = trim((string) config('services.openrouter.model', 'deepseek/deepseek-chat-v3-0324')) ?: 'deepseek/deepseek-chat-v3-0324';
+        }
+    }
+
+    private function shouldFallbackToAlternativeProvider(string $message): bool
+    {
+        $normalized = strtolower($message);
+
+        if (str_contains($normalized, 'response_format')) {
+            return false;
+        }
+
+        $authSignals = [
+            'user not found',
+            'missing authentication header',
+            'authentication header is empty',
+            'invalid api key',
+            'unauthorized',
+            'forbidden',
+            '401',
+            '403',
+            'authentication failed',
+            'api key',
+        ];
+
+        foreach ($authSignals as $signal) {
+            if (str_contains($normalized, $signal)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function getCurrentTimeout(): int
+    {
+        return $this->usesOpenRouter
+            ? (int) config('services.openrouter.timeout', config('services.deepseek.timeout', 120))
+            : (int) config('services.deepseek.timeout', 120);
+    }
+
+    private function getCurrentConnectTimeout(): int
+    {
+        return $this->usesOpenRouter
+            ? (int) config('services.openrouter.connect_timeout', config('services.deepseek.connect_timeout', 30))
+            : (int) config('services.deepseek.connect_timeout', 30);
     }
 
     public function generateQuiz(string $prompt, int $count = 10): array
@@ -1019,12 +1084,33 @@ PROMPT;
         try {
             return $this->sendChatCompletion($payload);
         } catch (RuntimeException $exception) {
-            if (!str_contains(strtolower($exception->getMessage()), 'response_format')) {
-                throw $exception;
+            $message = $exception->getMessage();
+            $lower = strtolower($message);
+
+            if (
+                str_contains($lower, 'response_format')
+            ) {
+                unset($payload['response_format']);
+                return $this->sendChatCompletion($payload);
             }
 
-            unset($payload['response_format']);
-            return $this->sendChatCompletion($payload);
+            if ($this->shouldFallbackToAlternativeProvider($message)) {
+                $beforeProvider = $this->usesOpenRouter;
+                $this->switchToAlternativeProvider();
+
+                if ($beforeProvider !== $this->usesOpenRouter) {
+                    $payload['model'] = $this->model;
+                    if (!$this->usesOpenRouter) {
+                        $payload['response_format'] = ['type' => 'json_object'];
+                    } else {
+                        unset($payload['response_format']);
+                    }
+
+                    return $this->sendChatCompletion($payload);
+                }
+            }
+
+            throw $exception;
         }
     }
 

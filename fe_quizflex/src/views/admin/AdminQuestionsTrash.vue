@@ -1,238 +1,300 @@
 <template>
-  <section class="grid gap-6">
-    <!-- Top Breadcrumb & Header Banner -->
-    <div class="space-y-4">
-      <div class="flex items-center gap-2 text-xs font-bold text-[var(--muted)]">
-        <router-link to="/admin" class="hover:text-[var(--primary)] transition">Dashboard</router-link>
-        <span>&rsaquo;</span>
-        <router-link to="/admin/question-bank" class="hover:text-[var(--primary)] transition">Question Bank</router-link>
-        <span>&rsaquo;</span>
-        <span class="text-rose-400 font-bold">Thùng rác câu hỏi</span>
-      </div>
+  <section class="space-y-6">
+    <!-- Breadcrumb -->
+    <div class="flex items-center gap-2 text-sm text-slate-500">
+      <router-link to="/admin" class="hover:text-[#7C3AED] transition-colors">
+        Dashboard
+      </router-link>
+      <ChevronRight class="h-4 w-4" />
+      <router-link to="/admin/question-bank" class="hover:text-[#7C3AED] transition-colors">
+        Ngân hàng câu hỏi
+      </router-link>
+      <ChevronRight class="h-4 w-4" />
+      <span class="font-medium text-rose-600">Thùng rác câu hỏi</span>
+    </div>
 
-      <div class="relative overflow-hidden rounded-[2rem] border border-rose-500/30 bg-[var(--surface)] p-6 shadow-[var(--shadow-soft)] backdrop-blur-2xl">
-        <div class="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-rose-500/15 blur-3xl"></div>
+    <!-- Header -->
+    <div class="rounded-2xl border border-rose-200 bg-white p-6 shadow-sm">
+      <div class="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
+        <div class="flex items-start gap-4">
+          <button
+            type="button"
+            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:bg-[#7C3AED] hover:text-white"
+            title="Quay lại"
+            @click="$router.push('/admin/question-bank')"
+          >
+            <ArrowLeft class="h-5 w-5" />
+          </button>
 
-        <div class="relative z-10 flex flex-col justify-between gap-5 xl:flex-row xl:items-center">
-          <div class="flex items-center gap-4">
-            <button
-              type="button"
-              class="grid h-10 w-10 shrink-0 place-items-center rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] text-lg text-[var(--text)] transition hover:bg-[var(--primary)] hover:text-white"
-              title="Quay lại"
-              @click="$router.push('/admin/question-bank')"
-            >
-              ←
-            </button>
-            <div>
-              <div class="flex items-center gap-3">
-                <h1 class="text-3xl font-black tracking-[-0.05em] text-rose-400">
-                  🗑️ Thùng rác câu hỏi
-                </h1>
-                <span class="rounded-full bg-rose-500/20 border border-rose-500/30 px-3 py-1 text-xs font-black text-rose-300">
-                  {{ trashCount }} câu hỏi đã xóa
-                </span>
-              </div>
-              <p class="mt-1 text-xs sm:text-sm text-[var(--muted)]">
-                Quản lý các câu hỏi đã bị xóa mềm khỏi hệ thống. Bạn có thể khôi phục lại hoặc xóa vĩnh viễn khỏi cơ sở dữ liệu.
-              </p>
+          <div>
+            <div class="flex flex-wrap items-center gap-3">
+              <h1 class="text-2xl font-bold tracking-tight text-slate-900">
+                Thùng rác câu hỏi
+              </h1>
+              <span class="inline-flex items-center gap-1.5 rounded-md bg-rose-50 px-2.5 py-1 text-xs font-medium text-rose-700">
+                <Trash2 class="h-3.5 w-3.5" />
+                {{ trashCount }} câu hỏi đã xóa
+              </span>
             </div>
-          </div>
-
-          <div class="flex shrink-0 items-center gap-3">
-            <router-link
-              to="/admin/question-bank"
-              class="btn-ghost flex items-center gap-2 px-5 py-2.5 text-xs font-bold text-[var(--text)]"
-            >
-              <span>← Quay lại Ngân hàng câu hỏi</span>
-            </router-link>
+            <p class="mt-1 text-sm text-slate-500">
+              Quản lý các câu hỏi đã bị xóa mềm. Bạn có thể khôi phục hoặc xóa vĩnh viễn khỏi hệ thống.
+            </p>
           </div>
         </div>
+
+        <router-link
+          to="/admin/question-bank"
+          class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+        >
+          <ArrowLeft class="h-4 w-4" />
+          Quay lại Ngân hàng câu hỏi
+        </router-link>
       </div>
     </div>
 
-    <!-- Search Bar Panel -->
-    <article class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-5 shadow-[var(--shadow-card)] backdrop-blur-2xl">
-      <div class="flex items-center gap-3 rounded-2xl border border-[var(--border)] bg-[var(--input-bg)] px-4 py-2.5 transition focus-within:border-[var(--border-strong)] max-w-xl">
-        <span class="text-base text-[var(--muted)]">🔍</span>
-        <input
-          v-model="search"
-          type="text"
-          placeholder="Tìm câu hỏi trong thùng rác theo nội dung..."
-          class="w-full bg-transparent text-xs font-semibold text-[var(--text)] outline-none placeholder:text-[var(--muted)]"
-          @keyup.enter="fetchTrash(1)"
-        />
-        <button type="button" class="btn-primary !py-1 !px-3 text-xs font-bold shrink-0" @click="fetchTrash(1)">
+    <!-- Search -->
+    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div class="flex max-w-xl items-center gap-3">
+        <div class="relative flex-1">
+          <Search class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <input
+            v-model="search"
+            type="text"
+            placeholder="Tìm câu hỏi trong thùng rác theo nội dung..."
+            class="w-full rounded-lg border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#7C3AED] focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/20"
+            @keyup.enter="fetchTrash(1)"
+          />
+        </div>
+        <button
+          type="button"
+          class="rounded-lg bg-[#7C3AED] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#6D28D9]"
+          @click="fetchTrash(1)"
+        >
           Tìm kiếm
         </button>
       </div>
-    </article>
+    </div>
 
-    <!-- Bulk Actions Panel (Hiển thị khi tick chọn câu hỏi) -->
-    <transition enter-active-class="transition duration-300 ease-out" enter-from-class="-translate-y-2 opacity-0" enter-to-class="translate-y-0 opacity-100" leave-active-class="transition duration-200 ease-in" leave-from-class="translate-y-0 opacity-100" leave-to-class="-translate-y-2 opacity-0">
-      <div v-if="selectedIds.length > 0" class="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-rose-500/40 bg-rose-500/10 p-4 shadow-lg backdrop-blur-xl">
-        <div class="flex items-center gap-3">
-          <span class="grid h-8 w-8 place-items-center rounded-xl bg-rose-500 text-white text-xs font-black">
-            {{ selectedIds.length }}
-          </span>
-          <span class="text-sm font-black text-white">Đã chọn {{ selectedIds.length }} câu hỏi trong thùng rác</span>
-        </div>
-
-        <div class="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            class="rounded-full border border-emerald-500/30 bg-emerald-500/20 px-4 py-2 text-xs font-black text-emerald-300 transition hover:bg-emerald-500/30"
-            @click="handleBulkRestore"
-          >
-            ♻️ Khôi phục hàng loạt
-          </button>
-
-          <button
-            type="button"
-            class="rounded-full border border-rose-500/40 bg-rose-600/30 px-4 py-2 text-xs font-black text-rose-200 transition hover:bg-rose-600/50"
-            @click="handleBulkForceDelete"
-          >
-            🔥 Xóa vĩnh viễn hàng loạt
-          </button>
-
-          <button
-            type="button"
-            class="rounded-full border border-[var(--border)] bg-[var(--surface-soft)] px-3 py-2 text-xs font-bold text-[var(--muted)] hover:text-[var(--text)]"
-            @click="selectedIds = []"
-          >
-            Hủy chọn
-          </button>
-        </div>
+    <!-- Bulk actions -->
+    <div
+      v-if="selectedIds.length > 0"
+      class="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-rose-200 bg-rose-50 p-4"
+    >
+      <div class="flex items-center gap-3">
+        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-600 text-sm font-bold text-white">
+          {{ selectedIds.length }}
+        </span>
+        <span class="text-sm font-semibold text-slate-900">
+          Đã chọn {{ selectedIds.length }} câu hỏi trong thùng rác
+        </span>
       </div>
-    </transition>
 
-    <!-- Data Table Container -->
-    <div class="overflow-x-auto rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-card)] backdrop-blur-2xl">
-      <table class="w-full border-collapse text-left text-xs sm:text-sm text-[var(--text)]">
-        <thead>
-          <tr class="border-b border-[var(--border)] bg-[var(--surface-soft)] text-[11px] font-black uppercase tracking-wider text-[var(--muted)]">
-            <th class="p-4 w-10 text-center">
-              <input
-                type="checkbox"
-                class="h-4 w-4 rounded border-[var(--border)] accent-[var(--primary)] cursor-pointer"
-                :checked="isAllSelected"
-                @change="toggleSelectAll"
-              />
-            </th>
-            <th class="p-4 w-16 text-center">ID</th>
-            <th class="p-4 min-w-[260px]">NỘI DUNG CÂU HỎI</th>
-            <th class="p-4 text-center">MÔN HỌC</th>
-            <th class="p-4 text-center">KHỐI LỚP</th>
-            <th class="p-4 text-center">NGƯỜI TẠO</th>
-            <th class="p-4 text-center">NGÀY XÓA</th>
-            <th class="p-4 text-center min-w-[140px]">THAO TÁC</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-[var(--border)]">
-          <tr
-            v-for="q in questions"
-            :key="q.id"
-            class="transition hover:bg-[var(--surface-soft)]/60"
-            :class="{ 'bg-rose-500/10': selectedIds.includes(q.id) }"
-          >
-            <td class="p-4 text-center">
-              <input
-                type="checkbox"
-                class="h-4 w-4 rounded border-[var(--border)] accent-[var(--primary)] cursor-pointer"
-                :value="q.id"
-                v-model="selectedIds"
-              />
-            </td>
+      <div class="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          class="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3.5 py-2 text-sm font-medium text-emerald-700 transition hover:bg-emerald-100"
+          @click="handleBulkRestore"
+        >
+          <RotateCcw class="h-4 w-4" />
+          Khôi phục hàng loạt
+        </button>
 
-            <td class="p-4 text-center font-black text-rose-400">
-              #{{ q.id }}
-            </td>
+        <button
+          type="button"
+          class="inline-flex items-center gap-1.5 rounded-lg border border-rose-300 bg-rose-100 px-3.5 py-2 text-sm font-medium text-rose-700 transition hover:bg-rose-200"
+          @click="handleBulkForceDelete"
+        >
+          <Flame class="h-4 w-4" />
+          Xóa vĩnh viễn hàng loạt
+        </button>
 
-            <td class="p-4 max-w-md">
-              <div class="font-bold text-[var(--text)] line-clamp-2 leading-relaxed" :title="q.content">
-                {{ q.content }}
-              </div>
-            </td>
-
-            <td class="p-4 text-center">
-              <span v-if="q.subject_name" class="inline-flex items-center gap-1 rounded-full bg-[var(--surface-soft)] border border-[var(--border)] px-2.5 py-1 text-xs font-bold text-[var(--text)]">
-                📖 {{ q.subject_name }}
-              </span>
-              <span v-else class="text-xs text-[var(--muted)]">--</span>
-            </td>
-
-            <td class="p-4 text-center">
-              <span v-if="q.grade_name" class="inline-flex items-center gap-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 px-2.5 py-1 text-xs font-bold text-indigo-300">
-                🎓 {{ q.grade_name }}
-              </span>
-              <span v-else class="text-xs text-[var(--muted)]">--</span>
-            </td>
-
-            <td class="p-4 text-center text-xs font-bold text-[var(--muted)]">
-              👤 {{ q.author_name || 'Vô danh' }}
-            </td>
-
-            <td class="p-4 text-center text-xs font-semibold text-rose-400">
-              {{ formatDate(q.deleted_at || q.updated_at) }}
-            </td>
-
-            <td class="p-4 text-center whitespace-nowrap space-x-2">
-              <button
-                type="button"
-                class="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs font-black text-emerald-300 transition hover:bg-emerald-500 hover:text-slate-950"
-                @click="restoreSingle(q.id)"
-              >
-                ♻️ Khôi phục
-              </button>
-
-              <button
-                type="button"
-                class="rounded-full border border-rose-500/30 bg-rose-500/10 px-3 py-1.5 text-xs font-black text-rose-400 transition hover:bg-rose-600 hover:text-white"
-                @click="forceDeleteSingle(q.id)"
-              >
-                🔥 Xóa vĩnh viễn
-              </button>
-            </td>
-          </tr>
-
-          <!-- Empty State -->
-          <tr v-if="!isLoading && questions.length === 0">
-            <td colspan="8" class="text-center py-12 text-[var(--muted)] font-bold">
-              <div class="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-2xl bg-[var(--surface-soft)] text-2xl">🗑️</div>
-              <p class="text-base text-[var(--text)]">Thùng rác câu hỏi trống</p>
-              <p class="text-xs font-normal mt-1">Không có câu hỏi nào bị xóa mềm trong thùng rác.</p>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-
-      <div v-if="isLoading" class="text-center py-10 text-[var(--muted)] font-bold">
-        <div class="mx-auto mb-2 h-8 w-8 animate-spin rounded-full border-4 border-rose-500 border-t-transparent"></div>
-        Đang tải danh sách Thùng rác...
+        <button
+          type="button"
+          class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+          @click="selectedIds = []"
+        >
+          Hủy chọn
+        </button>
       </div>
     </div>
 
-    <!-- Pagination Controls -->
-    <div v-if="lastPage > 1" class="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 shadow-[var(--shadow-card)] text-xs font-bold">
-      <div class="text-[var(--muted)]">
-        Trang <strong class="text-[var(--text)]">{{ currentPage }}</strong> / {{ lastPage }} (Tổng {{ trashCount }} câu)
+    <!-- Table -->
+    <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+          <thead>
+            <tr class="border-b border-slate-200 bg-slate-50 text-xs font-semibold uppercase tracking-wider text-slate-500">
+              <th class="w-12 p-4 text-center">
+                <input
+                  type="checkbox"
+                  class="h-4 w-4 rounded border-slate-300 text-[#7C3AED] focus:ring-[#7C3AED]"
+                  :checked="isAllSelected"
+                  @change="toggleSelectAll"
+                />
+              </th>
+              <th class="w-16 p-4 text-center">ID</th>
+              <th class="min-w-[260px] p-4">Nội dung câu hỏi</th>
+              <th class="p-4 text-center">Môn học</th>
+              <th class="p-4 text-center">Khối lớp</th>
+              <th class="p-4 text-center">Người tạo</th>
+              <th class="p-4 text-center">Ngày xóa</th>
+              <th class="min-w-[160px] p-4 text-center">Thao tác</th>
+            </tr>
+          </thead>
+
+          <tbody class="divide-y divide-slate-100">
+            <tr
+              v-for="q in questions"
+              :key="q.id"
+              class="transition hover:bg-slate-50"
+              :class="{ 'bg-rose-50/60': selectedIds.includes(q.id) }"
+            >
+              <td class="p-4 text-center">
+                <input
+                  type="checkbox"
+                  class="h-4 w-4 rounded border-slate-300 text-[#7C3AED] focus:ring-[#7C3AED]"
+                  :value="q.id"
+                  v-model="selectedIds"
+                />
+              </td>
+
+              <td class="p-4 text-center font-semibold text-rose-600">
+                #{{ q.id }}
+              </td>
+
+              <td class="max-w-md p-4">
+                <div class="line-clamp-2 font-medium text-slate-900" :title="q.content">
+                  {{ q.content }}
+                </div>
+              </td>
+
+              <td class="p-4 text-center">
+                <span
+                  v-if="q.subject_name"
+                  class="inline-flex items-center rounded-md bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700"
+                >
+                  {{ q.subject_name }}
+                </span>
+                <span v-else class="text-xs text-slate-400">—</span>
+              </td>
+
+              <td class="p-4 text-center">
+                <span
+                  v-if="q.grade_name"
+                  class="inline-flex items-center rounded-md bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-700"
+                >
+                  {{ q.grade_name }}
+                </span>
+                <span v-else class="text-xs text-slate-400">—</span>
+              </td>
+
+              <td class="p-4 text-center text-xs font-medium text-slate-500">
+                <div class="flex items-center justify-center gap-1.5">
+                  <User class="h-3.5 w-3.5" />
+                  <span class="max-w-[110px] truncate">{{ q.author_name || 'Vô danh' }}</span>
+                </div>
+              </td>
+
+              <td class="p-4 text-center text-xs font-medium text-rose-600">
+                {{ formatDate(q.deleted_at || q.updated_at) }}
+              </td>
+
+              <td class="space-x-1.5 p-4 text-center whitespace-nowrap">
+                <button
+                  type="button"
+                  class="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 transition hover:bg-emerald-100"
+                  @click="restoreSingle(q.id)"
+                >
+                  <RotateCcw class="h-3.5 w-3.5" />
+                  Khôi phục
+                </button>
+
+                <button
+                  type="button"
+                  class="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-700 transition hover:bg-rose-100"
+                  @click="forceDeleteSingle(q.id)"
+                >
+                  <Flame class="h-3.5 w-3.5" />
+                  Xóa vĩnh viễn
+                </button>
+              </td>
+            </tr>
+
+            <!-- Empty state -->
+            <tr v-if="!isLoading && questions.length === 0">
+              <td colspan="8" class="py-16 text-center">
+                <div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-slate-400">
+                  <Trash2 class="h-6 w-6" />
+                </div>
+                <p class="text-base font-medium text-slate-900">Thùng rác câu hỏi trống</p>
+                <p class="mt-1 text-sm text-slate-500">
+                  Không có câu hỏi nào bị xóa mềm trong thùng rác.
+                </p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Loading -->
+      <div v-if="isLoading" class="py-12 text-center">
+        <div class="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-4 border-rose-500 border-t-transparent"></div>
+        <p class="text-sm font-medium text-slate-500">Đang tải danh sách Thùng rác...</p>
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    <div
+      v-if="lastPage > 1"
+      class="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+    >
+      <div class="text-sm text-slate-500">
+        Trang <span class="font-semibold text-slate-900">{{ currentPage }}</span> / {{ lastPage }}
+        (Tổng {{ trashCount }} câu)
       </div>
 
       <div class="flex items-center gap-1">
-        <button class="btn-ghost !p-2 text-xs" :disabled="currentPage <= 1" @click="fetchTrash(1)">&laquo;</button>
-        <button class="btn-ghost !p-2 text-xs" :disabled="currentPage <= 1" @click="fetchTrash(currentPage - 1)">&lt;</button>
+        <button
+          class="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:bg-slate-50 disabled:opacity-40"
+          :disabled="currentPage <= 1"
+          @click="fetchTrash(1)"
+        >
+          <ChevronsLeft class="h-4 w-4" />
+        </button>
+        <button
+          class="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:bg-slate-50 disabled:opacity-40"
+          :disabled="currentPage <= 1"
+          @click="fetchTrash(currentPage - 1)"
+        >
+          <ChevronLeft class="h-4 w-4" />
+        </button>
 
         <button
           v-for="p in visiblePages"
           :key="p"
-          class="h-8 w-8 rounded-xl text-xs font-black transition duration-150"
-          :class="p === currentPage ? 'bg-rose-500 text-white shadow-md' : 'bg-[var(--surface-soft)] text-[var(--text)] hover:bg-rose-500/20'"
+          class="flex h-8 w-8 items-center justify-center rounded-lg text-sm font-medium transition"
+          :class="p === currentPage
+            ? 'bg-rose-600 text-white'
+            : 'border border-slate-200 text-slate-700 hover:bg-slate-50'"
           @click="fetchTrash(p)"
         >
           {{ p }}
         </button>
 
-        <button class="btn-ghost !p-2 text-xs" :disabled="currentPage >= lastPage" @click="fetchTrash(currentPage + 1)">&gt;</button>
-        <button class="btn-ghost !p-2 text-xs" :disabled="currentPage >= lastPage" @click="fetchTrash(lastPage)">&raquo;</button>
+        <button
+          class="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:bg-slate-50 disabled:opacity-40"
+          :disabled="currentPage >= lastPage"
+          @click="fetchTrash(currentPage + 1)"
+        >
+          <ChevronRight class="h-4 w-4" />
+        </button>
+        <button
+          class="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:bg-slate-50 disabled:opacity-40"
+          :disabled="currentPage >= lastPage"
+          @click="fetchTrash(lastPage)"
+        >
+          <ChevronsRight class="h-4 w-4" />
+        </button>
       </div>
     </div>
   </section>
@@ -240,6 +302,18 @@
 
 <script setup>
 import { ref, computed, onMounted, inject } from 'vue'
+import {
+  ChevronRight,
+  ArrowLeft,
+  Trash2,
+  Search,
+  RotateCcw,
+  Flame,
+  User,
+  ChevronLeft,
+  ChevronsLeft,
+  ChevronsRight
+} from 'lucide-vue-next'
 import { adminQuestionsApi } from '@/services/api'
 
 const showToast = inject('showToast')
@@ -273,16 +347,13 @@ const visiblePages = computed(() => {
   if (end - start + 1 < maxPages) {
     start = Math.max(1, end - maxPages + 1)
   }
-  for (let i = start; i <= end; i++) {
-    pages.push(i)
-  }
+  for (let i = start; i <= end; i++) pages.push(i)
   return pages
 })
 
 const formatDate = (dateStr) => {
-  if (!dateStr) return '--'
-  const d = new Date(dateStr)
-  return d.toLocaleDateString('vi-VN', {
+  if (!dateStr) return '—'
+  return new Date(dateStr).toLocaleDateString('vi-VN', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',

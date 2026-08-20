@@ -209,7 +209,7 @@ const menu = computed(() => [
       { label: 'Quản lý câu hỏi', to: '/admin/question-bank', icon: HelpCircle },
       { label: 'Tạo câu hỏi mới', to: '/admin/question-bank/create-question', icon: FolderPlus },
       { label: 'Kho quiz', to: '/admin/questions', icon: Package },
-      { label: 'Tạo quiz', to: '/admin/questions/create', icon: Plus },
+      
       { label: 'AI Generator', to: '/admin/questions/ai', icon: BrainCircuit },
       { label: 'OCR Upload', to: '/admin/questions/ocr', icon: Camera },
       { label: 'Quản lý Bộ môn', to: '/admin/subjects', icon: BookOpen },

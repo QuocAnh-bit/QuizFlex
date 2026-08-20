@@ -255,11 +255,19 @@ class GenerateQuizJob implements ShouldQueue
 
             $question = Question::create([
                 'quiz_id' => $quiz->id,
+                'user_id' => $job->user_id,
                 'content' => trim((string) $questionData['content']),
                 'image_url' => null,
                 'type' => $correctAnswers > 1 ? 'multiple_choice' : 'single_choice',
                 'order' => $questionIndex,
                 'points' => 1,
+            ]);
+
+            $quiz->questions()->syncWithoutDetaching([
+                $question->id => [
+                    'order' => $questionIndex,
+                    'points' => 1,
+                ],
             ]);
 
             foreach ($questionData['answers'] as $answerIndex => $answerData) {
@@ -272,7 +280,7 @@ class GenerateQuizJob implements ShouldQueue
             }
         }
 
-        return $quiz;
+        return $quiz->fresh(['questions.answers']);
     }
 
     private function buildPromptFromJob(AiJob $job): string

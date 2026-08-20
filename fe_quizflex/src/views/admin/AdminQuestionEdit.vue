@@ -1,121 +1,142 @@
 <template>
-  <section class="grid gap-6">
-    <!-- Top Breadcrumb & Actions Header Bar -->
-    <div class="space-y-4">
-      <div class="flex items-center gap-2 text-xs font-bold text-[var(--muted)]">
-        <router-link to="/admin" class="hover:text-[var(--primary)] transition">Dashboard</router-link>
-        <span>&rsaquo;</span>
-        <router-link to="/admin/question-bank" class="hover:text-[var(--primary)] transition">Question Bank</router-link>
-        <span>&rsaquo;</span>
-        <span class="text-[var(--text)]">{{ isEditMode ? `Chỉnh sửa câu hỏi #${questionId}` : 'Tạo câu hỏi mới' }}</span>
-      </div>
+  <section class="space-y-6">
+    <!-- Breadcrumb -->
+    <div class="flex items-center gap-2 text-sm text-slate-500">
+      <router-link to="/admin" class="hover:text-[#7C3AED] transition-colors">
+        Dashboard
+      </router-link>
+      <ChevronRight class="h-4 w-4" />
+      <router-link to="/admin/question-bank" class="hover:text-[#7C3AED] transition-colors">
+        Ngân hàng câu hỏi
+      </router-link>
+      <ChevronRight class="h-4 w-4" />
+      <span class="font-medium text-slate-900">
+        {{ isEditMode ? `Chỉnh sửa #${questionId}` : 'Tạo câu hỏi mới' }}
+      </span>
+    </div>
 
-      <div class="relative overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-soft)] backdrop-blur-2xl">
-        <div class="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[var(--primary)]/15 blur-3xl"></div>
-        <div class="relative z-10 flex flex-col justify-between gap-5 xl:flex-row xl:items-center">
-          <div class="flex items-center gap-4">
-            <button
-              type="button"
-              class="grid h-10 w-10 shrink-0 place-items-center rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] text-lg text-[var(--text)] transition hover:bg-[var(--primary)] hover:text-white"
-              title="Quay lại"
-              @click="goBack"
-            >
-              ←
-            </button>
-            <div>
-              <h1 class="text-3xl font-black tracking-[-0.05em] text-[var(--text)]">
-                {{ isEditMode ? `Chỉnh sửa câu hỏi #${questionId}` : 'Tạo câu hỏi mới' }}
-              </h1>
-              <p class="mt-1 text-xs sm:text-sm text-[var(--muted)]">
-                Soạn thảo nội dung câu hỏi, đính kèm hình ảnh, thiết lập đáp án đúng và phân loại thuộc tính môn học.
-              </p>
-            </div>
+    <!-- Header -->
+    <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div class="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
+        <div class="flex items-start gap-4">
+          <button
+            type="button"
+            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:bg-[#7C3AED] hover:text-white"
+            title="Quay lại"
+            @click="goBack"
+          >
+            <ArrowLeft class="h-5 w-5" />
+          </button>
+
+          <div>
+            <h1 class="text-2xl font-bold tracking-tight text-slate-900">
+              {{ isEditMode ? `Chỉnh sửa câu hỏi #${questionId}` : 'Tạo câu hỏi mới' }}
+            </h1>
+            <p class="mt-1 text-sm text-slate-500">
+              Soạn thảo nội dung, đính kèm hình ảnh, thiết lập đáp án đúng và phân loại thuộc tính.
+            </p>
           </div>
+        </div>
 
-          <!-- Sticky Top Action Buttons -->
-          <div class="flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              class="btn-ghost flex items-center gap-2 px-5 py-2.5 text-xs font-bold"
-              @click="goBack"
-            >
-              <span>✕</span>
-              <span>Hủy bỏ</span>
-            </button>
+        <!-- Top actions -->
+        <div class="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            @click="goBack"
+          >
+            <X class="h-4 w-4" />
+            Hủy bỏ
+          </button>
 
-            <button
-              type="button"
-              class="btn-primary flex items-center gap-2 px-6 py-2.5 text-xs font-black shadow-xl"
-              :disabled="isSubmitting"
-              @click="saveQuestion"
-            >
-              <span>💾</span>
-              <span>{{ isSubmitting ? 'Đang lưu...' : (isEditMode ? 'Lưu thay đổi' : 'Tạo câu hỏi') }}</span>
-            </button>
-          </div>
+          <button
+            type="button"
+            class="inline-flex items-center gap-2 rounded-lg bg-[#7C3AED] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#6D28D9] disabled:opacity-60"
+            :disabled="isSubmitting"
+            @click="saveQuestion"
+          >
+            <Save class="h-4 w-4" />
+            {{ isSubmitting ? 'Đang lưu...' : (isEditMode ? 'Lưu thay đổi' : 'Tạo câu hỏi') }}
+          </button>
         </div>
       </div>
     </div>
 
-    <!-- Loading State -->
-    <div v-if="isLoading" class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-12 text-center text-sm font-bold text-[var(--muted)] shadow-[var(--shadow-card)]">
-      <div class="mx-auto mb-3 h-10 w-10 animate-spin rounded-full border-4 border-[var(--primary)] border-t-transparent"></div>
-      Đang nạp dữ liệu câu hỏi...
+    <!-- Loading -->
+    <div
+      v-if="isLoading"
+      class="rounded-2xl border border-slate-200 bg-white py-16 text-center shadow-sm"
+    >
+      <div class="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-4 border-[#7C3AED] border-t-transparent"></div>
+      <p class="text-sm font-medium text-slate-500">Đang nạp dữ liệu câu hỏi...</p>
     </div>
 
-    <!-- Main 2-Column Form Layout -->
+    <!-- Form -->
     <form v-else @submit.prevent="saveQuestion" class="grid gap-6 lg:grid-cols-12">
-      <!-- LEFT COLUMN (65% width - Editor & Answers) -->
+      <!-- LEFT COLUMN -->
       <div class="space-y-6 lg:col-span-8">
-        <!-- 1. Question Content Form Card -->
-        <article class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 sm:p-8 shadow-[var(--shadow-card)] backdrop-blur-2xl space-y-4">
-          <div class="flex items-center justify-between border-b border-[var(--border)] pb-3">
-            <label class="text-xs font-black uppercase tracking-wider text-[var(--primary)]">
-              📝 Nội dung câu hỏi *
+        <!-- Question Content -->
+        <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8 space-y-5">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <label class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#7C3AED]">
+              <FileText class="h-4 w-4" />
+              Nội dung câu hỏi *
             </label>
-            <span class="text-xs text-[var(--muted)]">Hỗ trợ định dạng văn bản & xuống dòng</span>
+            <span class="text-xs text-slate-500">Hỗ trợ xuống dòng</span>
           </div>
 
           <textarea
             v-model="form.content"
             rows="5"
             required
-            class="field w-full text-base font-semibold leading-relaxed"
+            class="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-base font-medium leading-relaxed text-slate-900 placeholder:text-slate-400 focus:border-[#7C3AED] focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/20"
             placeholder="Nhập câu hỏi trắc nghiệm ở đây..."
           ></textarea>
 
-          <!-- Optional Image URL Input & Live Preview -->
-          <div class="space-y-2 pt-2 border-t border-[var(--border)]">
-            <label class="block text-xs font-bold text-[var(--muted)]">
-              🖼️ Đường dẫn hình ảnh minh họa (URL)
+          <!-- Image URL -->
+          <div class="space-y-2 border-t border-slate-100 pt-4">
+            <label class="flex items-center gap-2 text-xs font-medium text-slate-500">
+              <ImageIcon class="h-4 w-4" />
+              Đường dẫn hình ảnh minh họa (URL)
             </label>
             <input
               v-model="form.image_url"
               type="url"
-              class="field w-full text-xs font-semibold"
+              class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#7C3AED] focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/20"
               placeholder="https://example.com/image.png"
             />
 
-            <!-- Live Image Thumbnail Preview -->
-            <div v-if="form.image_url" class="mt-3 overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] max-w-md">
-              <p class="p-2 text-[10px] font-bold text-[var(--muted)] border-b border-[var(--border)]">Xem trước hình ảnh:</p>
-              <img :src="form.image_url" alt="Preview Image" class="max-h-60 w-full object-contain p-2" @error="onImageError" />
+            <div
+              v-if="form.image_url"
+              class="mt-3 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 max-w-md"
+            >
+              <p class="border-b border-slate-100 px-3 py-1.5 text-xs font-medium text-slate-500">
+                Xem trước hình ảnh
+              </p>
+              <img
+                :src="form.image_url"
+                alt="Preview"
+                class="max-h-60 w-full object-contain p-3"
+                @error="onImageError"
+              />
             </div>
           </div>
         </article>
 
-        <!-- 2. Answers Options Editor Card -->
-        <article class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 sm:p-8 shadow-[var(--shadow-card)] backdrop-blur-2xl space-y-4">
-          <div class="flex items-center justify-between border-b border-[var(--border)] pb-3">
-            <label class="text-xs font-black uppercase tracking-wider text-[var(--primary)]">
-              🎯 Danh sách phương án đáp án *
+        <!-- Answers Editor -->
+        <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8 space-y-5">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <label class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#7C3AED]">
+              <ListChecks class="h-4 w-4" />
+              Phương án đáp án *
             </label>
             <button
               type="button"
-              class="text-xs font-black text-[var(--primary)] hover:underline flex items-center gap-1"
+              class="inline-flex items-center gap-1.5 text-sm font-medium text-[#7C3AED] hover:underline"
               @click="addAnswerRow"
             >
-              <span>+ Thêm phương án</span>
+              <Plus class="h-4 w-4" />
+              Thêm phương án
             </button>
           </div>
 
@@ -123,9 +144,9 @@
             <div
               v-for="(ans, index) in form.answers"
               :key="index"
-              class="flex flex-col sm:flex-row sm:items-center gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-4 transition focus-within:border-[var(--border-strong)]"
+              class="flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 transition focus-within:border-[#7C3AED]/40 sm:flex-row sm:items-center"
             >
-              <span class="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-black/30 text-xs font-black text-[var(--text)] border border-[var(--border)]">
+              <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-xs font-bold text-slate-700">
                 {{ String.fromCharCode(65 + index) }}
               </span>
 
@@ -134,129 +155,140 @@
                 type="text"
                 required
                 :placeholder="`Nội dung phương án ${String.fromCharCode(65 + index)}...`"
-                class="field flex-1 text-sm font-semibold"
+                class="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:border-[#7C3AED] focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/20"
               />
 
-              <!-- Correct Answer Checkbox -->
-              <label class="flex items-center gap-2 cursor-pointer text-xs font-bold text-emerald-400 shrink-0 bg-emerald-500/10 border border-emerald-500/30 px-3.5 py-2.5 rounded-xl transition hover:bg-emerald-500/20">
+              <label
+                class="flex cursor-pointer items-center gap-2 rounded-lg border px-3.5 py-2.5 text-xs font-medium transition shrink-0"
+                :class="ans.is_correct
+                  ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                  : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'"
+              >
                 <input
                   type="checkbox"
                   v-model="ans.is_correct"
-                  class="h-4 w-4 accent-emerald-500 cursor-pointer"
+                  class="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
                 />
-                <span>{{ ans.is_correct ? '✓ Đáp án đúng' : 'Đáp án sai' }}</span>
+                <span>{{ ans.is_correct ? 'Đáp án đúng' : 'Đáp án sai' }}</span>
               </label>
 
-              <!-- Remove Answer Option Row -->
               <button
-                type="button"
-                class="text-rose-400 hover:text-rose-300 text-sm font-black p-2 shrink-0 self-end sm:self-center"
-                title="Xóa phương án này"
                 v-if="form.answers.length > 2"
+                type="button"
+                class="self-end rounded-lg p-2 text-rose-500 transition hover:bg-rose-50 sm:self-center"
+                title="Xóa phương án này"
                 @click="removeAnswerRow(index)"
               >
-                ✕
+                <X class="h-4 w-4" />
               </button>
             </div>
           </div>
         </article>
       </div>
 
-      <!-- RIGHT COLUMN (35% width - Classification & Config) -->
+      <!-- RIGHT COLUMN -->
       <div class="space-y-6 lg:col-span-4">
-        <!-- 1. Categorization & Metadata Panel Card -->
-        <article class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-card)] backdrop-blur-2xl space-y-4">
-          <h3 class="text-xs font-black uppercase tracking-wider text-[var(--primary)] border-b border-[var(--border)] pb-3">
-            ⚙️ Phân loại & Thuộc tính
+        <!-- Classification -->
+        <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
+          <h3 class="flex items-center gap-2 border-b border-slate-100 pb-3 text-xs font-semibold uppercase tracking-wider text-[#7C3AED]">
+            <Settings class="h-4 w-4" />
+            Phân loại & Thuộc tính
           </h3>
 
-          <!-- Subject Select -->
           <div>
-            <label class="block text-xs font-bold text-[var(--muted)] mb-1.5">Môn học</label>
-            <select v-model="form.subject_id" class="field text-xs font-bold">
+            <label class="mb-1.5 block text-xs font-medium text-slate-500">Môn học</label>
+            <select
+              v-model="form.subject_id"
+              class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 focus:border-[#7C3AED] focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/20"
+            >
               <option :value="null">-- Chọn môn học --</option>
               <option v-for="s in subjects" :key="s.id" :value="s.id">{{ s.name }}</option>
             </select>
           </div>
 
-          <!-- Grade Select -->
           <div>
-            <label class="block text-xs font-bold text-[var(--muted)] mb-1.5">Khối lớp</label>
-            <select v-model="form.grade_id" class="field text-xs font-bold">
+            <label class="mb-1.5 block text-xs font-medium text-slate-500">Khối lớp</label>
+            <select
+              v-model="form.grade_id"
+              class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 focus:border-[#7C3AED] focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/20"
+            >
               <option :value="null">-- Chọn khối lớp --</option>
               <option v-for="g in grades" :key="g.id" :value="g.id">{{ g.name }}</option>
             </select>
           </div>
 
-          <!-- Topic Input -->
           <div>
-            <label class="block text-xs font-bold text-[var(--muted)] mb-1.5">Chủ đề bài học</label>
+            <label class="mb-1.5 block text-xs font-medium text-slate-500">Chủ đề bài học</label>
             <input
               v-model="form.topic_name"
               type="text"
-              class="field text-xs font-bold"
+              class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#7C3AED] focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/20"
               placeholder="VD: Hàm số, Văn học dân gian..."
             />
           </div>
 
-          <!-- Difficulty Select -->
           <div>
-            <label class="block text-xs font-bold text-[var(--muted)] mb-1.5">Độ khó câu hỏi</label>
-            <select v-model="form.difficulty" class="field text-xs font-bold">
+            <label class="mb-1.5 block text-xs font-medium text-slate-500">Độ khó</label>
+            <select
+              v-model="form.difficulty"
+              class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 focus:border-[#7C3AED] focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/20"
+            >
               <option value="easy">Dễ (Nhận biết)</option>
               <option value="medium">Vừa (Thông hiểu)</option>
               <option value="hard">Khó (Vận dụng)</option>
             </select>
           </div>
 
-          <!-- Points Input -->
           <div>
-            <label class="block text-xs font-bold text-[var(--muted)] mb-1.5">Điểm số (Points)</label>
+            <label class="mb-1.5 block text-xs font-medium text-slate-500">Điểm số</label>
             <input
               v-model.number="form.points"
               type="number"
               min="1"
               max="100"
-              class="field text-xs font-bold"
+              class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 focus:border-[#7C3AED] focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/20"
             />
           </div>
         </article>
 
-        <!-- 2. Visibility Status Config Card -->
-        <article class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-card)] backdrop-blur-2xl space-y-4">
-          <h3 class="text-xs font-black uppercase tracking-wider text-[var(--primary)] border-b border-[var(--border)] pb-3">
-            🌐 Quyền hiển thị câu hỏi
+        <!-- Visibility -->
+        <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
+          <h3 class="flex items-center gap-2 border-b border-slate-100 pb-3 text-xs font-semibold uppercase tracking-wider text-[#7C3AED]">
+            <Globe class="h-4 w-4" />
+            Quyền hiển thị
           </h3>
 
-          <div class="flex items-center justify-between gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-4">
+          <label class="flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 transition hover:bg-slate-100">
             <div>
-              <p class="text-xs font-bold text-[var(--text)]">Công khai ngân hàng chung</p>
-              <p class="text-[10px] text-[var(--muted)]">Mọi người dùng có thể tìm & dùng câu này</p>
+              <p class="text-sm font-medium text-slate-900">Công khai ngân hàng chung</p>
+              <p class="text-xs text-slate-500">Mọi người dùng có thể tìm & sử dụng câu này</p>
             </div>
             <input
               type="checkbox"
               v-model="form.is_public"
-              class="h-6 w-6 accent-[var(--primary)] cursor-pointer"
+              class="h-5 w-5 rounded border-slate-300 text-[#7C3AED] focus:ring-[#7C3AED]"
             />
-          </div>
+          </label>
         </article>
 
-        <!-- 3. Bottom Action Buttons Panel Card -->
-        <article class="rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-card)] backdrop-blur-2xl space-y-3">
+        <!-- Bottom actions -->
+        <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-3">
           <button
             type="submit"
-            class="btn-primary w-full justify-center text-xs font-black shadow-xl py-3"
+            class="flex w-full items-center justify-center gap-2 rounded-lg bg-[#7C3AED] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#6D28D9] disabled:opacity-60"
             :disabled="isSubmitting"
           >
-            💾 {{ isSubmitting ? 'Đang lưu...' : (isEditMode ? 'Lưu thay đổi câu hỏi' : 'Tạo mới câu hỏi') }}
+            <Save class="h-4 w-4" />
+            {{ isSubmitting ? 'Đang lưu...' : (isEditMode ? 'Lưu thay đổi câu hỏi' : 'Tạo mới câu hỏi') }}
           </button>
 
           <button
             type="button"
-            class="btn-ghost w-full justify-center text-xs font-bold text-[var(--muted)] py-2.5"
+            class="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
             @click="goBack"
           >
-            ← Hủy bỏ & Quay lại
+            <ArrowLeft class="h-4 w-4" />
+            Hủy bỏ & Quay lại
           </button>
         </article>
       </div>
@@ -267,6 +299,18 @@
 <script setup>
 import { ref, reactive, computed, onMounted, inject } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import {
+  ChevronRight,
+  ArrowLeft,
+  X,
+  Save,
+  FileText,
+  Image as ImageIcon,
+  ListChecks,
+  Plus,
+  Settings,
+  Globe
+} from 'lucide-vue-next'
 import { adminQuestionsApi, formatApiErrorMessage, taxonomyApi } from '@/services/api'
 
 const route = useRoute()
@@ -335,7 +379,7 @@ const loadQuestionDetail = async () => {
       form.grade_id = data.grade_id || null
       form.topic_name = data.topic_name || ''
       form.is_public = Boolean(data.is_public)
-      
+
       if (Array.isArray(data.answers) && data.answers.length > 0) {
         form.answers = data.answers.map(a => ({
           id: a.id,
@@ -381,7 +425,9 @@ const saveQuestion = async () => {
 
   for (let i = 0; i < form.answers.length; i++) {
     if (!form.answers[i].content.trim()) {
-      if (showToast) showToast(`Vui lòng nhập nội dung cho Phương án ${String.fromCharCode(65 + i)}!`, 'error')
+      if (showToast) {
+        showToast(`Vui lòng nhập nội dung cho Phương án ${String.fromCharCode(65 + i)}!`, 'error')
+      }
       return
     }
   }
