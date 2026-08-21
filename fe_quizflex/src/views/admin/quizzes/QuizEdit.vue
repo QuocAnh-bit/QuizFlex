@@ -13,9 +13,9 @@
           <h1 class="mt-1 text-2xl font-black text-slate-900 sm:text-3xl">Chỉnh sửa Quiz</h1>
           <p class="mt-1 text-sm text-slate-600">Cập nhật thông tin quiz, danh sách câu hỏi và cấu hình đáp án.</p>
         </div>
-        <RouterLink to="/admin/quizzes" class="btn-secondary text-xs px-3.5 py-1.5">
+        <button type="button" class="btn-secondary text-xs px-3.5 py-1.5" @click="goBack">
           ← Quay lại
-        </RouterLink>
+        </button>
       </div>
 
       <!-- Main Form Card -->
@@ -300,13 +300,27 @@ const saveQuiz = async () => {
 
     if (showToast) showToast('Cập nhật quiz thành công', 'success')
     setTimeout(() => {
-      router.push('/admin/quizzes')
+      if (route.path.startsWith('/admin')) {
+        router.push('/admin/quizzes')
+      } else {
+        router.push('/dashboard/questions')
+      }
     }, 800)
   } catch (err) {
     console.error(err)
     if (showToast) showToast('Cập nhật thất bại', 'error')
   } finally {
     saving.value = false
+  }
+}
+
+const goBack = () => {
+  if (window.history.length > 1) {
+    router.back()
+  } else if (route.path.startsWith('/admin')) {
+    router.push('/admin/quizzes')
+  } else {
+    router.push('/dashboard/questions')
   }
 }
 

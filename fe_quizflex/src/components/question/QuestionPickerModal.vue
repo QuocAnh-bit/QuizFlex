@@ -392,6 +392,10 @@ const props = defineProps({
     type: String,
     default: 'manual',
   },
+  initialFilters: {
+    type: Object,
+    default: () => ({}),
+  },
 })
 
 const emit = defineEmits(['update:modelValue', 'close', 'confirm'])
@@ -752,6 +756,29 @@ const handleConfirm = () => {
   emit('close')
 }
 
+const applyInitialFilters = () => {
+  if (props.initialFilters && typeof props.initialFilters === 'object') {
+    if (props.initialFilters.education_level_id !== undefined) {
+      filters.education_level_id = props.initialFilters.education_level_id || ''
+    }
+    if (props.initialFilters.grade_id !== undefined) {
+      filters.grade_id = props.initialFilters.grade_id || ''
+    }
+    if (props.initialFilters.subject_id !== undefined) {
+      filters.subject_id = props.initialFilters.subject_id || ''
+    }
+    if (props.initialFilters.topic_name !== undefined) {
+      filters.topic_name = props.initialFilters.topic_name || ''
+    }
+    if (props.initialFilters.difficulty !== undefined) {
+      filters.difficulty = props.initialFilters.difficulty || ''
+    }
+    if (props.initialFilters.search !== undefined) {
+      filters.search = props.initialFilters.search || ''
+    }
+  }
+}
+
 /* =========================================================
    WATCHERS & LIFECYCLE
 ========================================================= */
@@ -760,6 +787,7 @@ watch(
   async (isOpen) => {
     if (isOpen) {
       localSelectedIds.value = Array.isArray(props.modelValue) ? [...props.modelValue] : []
+      applyInitialFilters()
       await fetchTaxonomy()
       await fetchTopicsList()
       await hydrateSelectedCache(localSelectedIds.value)
@@ -772,6 +800,7 @@ watch(
 onMounted(async () => {
   if (props.isOpen) {
     localSelectedIds.value = Array.isArray(props.modelValue) ? [...props.modelValue] : []
+    applyInitialFilters()
     await fetchTaxonomy()
     await fetchTopicsList()
     await hydrateSelectedCache(localSelectedIds.value)

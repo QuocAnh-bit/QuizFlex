@@ -264,7 +264,27 @@ class QuestionController extends Controller
             return response()->json(['success' => false, 'message' => 'Bạn cần đăng nhập.'], 401);
         }
 
-        $questionIds = collect($validated['question_ids'] ?? [])->unique()->values()->all();
+        $rawQuestionIds = collect($validated['question_ids'] ?? [])->unique()->values()->all();
+        $questionIds = [];
+
+        if (!empty($rawQuestionIds)) {
+            $allowedCount = Question::query()
+                ->whereIn('id', $rawQuestionIds)
+                ->where(function ($q) use ($user) {
+                    $q->where('is_public', true)
+                      ->orWhere('user_id', $user->id);
+                })
+                ->count();
+
+            if ($allowedCount !== count($rawQuestionIds)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Một hoặc nhiều câu hỏi không tồn tại hoặc bạn không có quyền sử dụng (câu hỏi riêng tư của người khác).',
+                ], 403);
+            }
+
+            $questionIds = $rawQuestionIds;
+        }
 
         $easyCount = (int)($validated['easy_count'] ?? 0);
         $mediumCount = (int)($validated['medium_count'] ?? 0);

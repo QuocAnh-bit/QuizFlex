@@ -13,21 +13,21 @@
         <!-- Top Navigation & Title -->
         <div>
           <button 
-            type="button"
+            type="button" 
             class="inline-flex items-center gap-2 text-xs font-bold text-[var(--muted)] hover:text-[var(--primary)] transition duration-200 mb-3"
             @click="goBack"
           >
-            <span>← Quay lại kho câu hỏi</span>
+            <span>← Quay lại</span>
           </button>
 
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h1 class="text-3xl sm:text-4xl font-black tracking-[-0.06em] text-[var(--text)] flex items-center gap-3">
-                <span>Tạo bộ đề</span>
+                <span>Tạo Quiz</span>
                 <span class="inline-block h-2.5 w-2.5 rounded-full bg-[var(--primary)] shadow-[0_0_12px_var(--primary)]"></span>
               </h1>
               <p class="mt-2 text-sm leading-6 text-[var(--muted)] max-w-xl">
-                Tùy chỉnh phân bổ độ khó, phạm vi kiến thức hoặc đóng gói bộ đề thi từ ngân hàng câu hỏi.
+                Tùy chỉnh phân bổ độ khó, phạm vi kiến thức hoặc đóng gói câu hỏi từ Kho cá nhân & Ngân hàng câu hỏi.
               </p>
             </div>
 
@@ -49,6 +49,17 @@
               >
                 <span>Chọn thủ công ({{ selectedIds.length }})</span>
               </button>
+            </div>
+          </div>
+
+          <!-- Mode Scope Notice -->
+          <div class="mt-4 rounded-2xl border border-sky-500/30 bg-sky-500/10 p-3.5 flex items-start gap-3 text-xs leading-relaxed text-[var(--muted)]">
+            <span class="text-sky-400 text-sm shrink-0 mt-0.5">ℹ️</span>
+            <div class="space-y-0.5">
+              <span class="font-bold text-[var(--text)]">Phạm vi nguồn câu hỏi:</span>
+              <p>
+                Chế độ <strong>Tự động phân bổ độ khó</strong> chỉ lấy câu hỏi từ Ngân hàng câu hỏi đã kiểm duyệt. Để sử dụng hoặc kết hợp các câu hỏi trong <strong>Kho câu hỏi cá nhân</strong> của bạn, hãy chọn chế độ <strong>Chọn thủ công</strong>.
+              </p>
             </div>
           </div>
         </div>
@@ -411,6 +422,14 @@
                       <p class="text-xs sm:text-sm font-semibold text-[var(--text)] truncate">
                         {{ q.content || q.text || `Câu hỏi #${q.id}` }}
                       </p>
+
+                      <!-- Display correct answer key -->
+                      <div v-if="getCorrectAnswerKey(q)" class="mt-1 flex items-center gap-1.5 text-xs font-bold text-emerald-400">
+                        <span class="rounded bg-emerald-500/10 px-1.5 py-0.5 text-[10px] text-emerald-300 border border-emerald-500/20">
+                          ✓ Đáp án đúng:
+                        </span>
+                        <span class="truncate">{{ getCorrectAnswerKey(q) }}</span>
+                      </div>
                     </div>
                   </div>
 
@@ -467,7 +486,7 @@
             class="btn-primary !px-8 !py-3 text-xs font-black shadow-lg shadow-[var(--primary)]/25 hover:shadow-[var(--primary)]/40 transition duration-200 hover:-translate-y-0.5" 
             :disabled="isSubmitting || (mode === 'random' && (totalMatrixQuestions === 0 || matrixWarnings.length > 0)) || (mode === 'manual' && selectedIds.length === 0)"
           >
-            {{ isSubmitting ? "Đang tạo bộ đề..." : "Tạo bộ đề" }}
+            {{ isSubmitting ? "Đang tạo Quiz..." : "Tạo Quiz" }}
           </button>
         </div>
       </div>
@@ -614,6 +633,7 @@
   <QuestionPickerModal
     v-model="selectedIds"
     :is-open="isPickerModalOpen"
+    :initial-filters="filters"
     @close="isPickerModalOpen = false"
     @confirm="handlePickerConfirm"
   />
@@ -794,12 +814,13 @@ const openQuestionPicker = () => {
   isPickerModalOpen.value = true
 }
 
-const handlePickerConfirm = ({ ids, questions }) => {
+const handlePickerConfirm = async ({ ids, questions }) => {
   selectedIds.value = [...ids]
   if (Array.isArray(questions)) {
     questions.forEach(q => {
       selectedQuestionsMap.value.set(q.id, q)
     })
+    await ensureAnswerKeysForSelectedQuestions(questions)
   }
   updateFormTitle()
 }
@@ -829,6 +850,32 @@ const publicBankCount = computed(() => {
   return selectedQuestionsDisplayList.value.filter(q => q.source === 'public_bank').length
 })
 
+const ensureAnswerKeysForSelectedQuestions = async (questionsList) => {
+  if (!Array.isArray(questionsList) || questionsList.length === 0) return
+  const needDetailFetch = questionsList.filter(q => {
+    return !q.answers || q.answers.length === 0 || !q.answers.some(a => a.is_correct !== undefined)
+  })
+
+  if (needDetailFetch.length === 0) return
+
+  await Promise.all(
+    needDetailFetch.map(async (q) => {
+      try {
+        const detail = await questionsBankApi.getQuestion(q.id)
+        if (detail && detail.answers) {
+          selectedQuestionsMap.value.set(q.id, {
+            ...q,
+            ...detail,
+            answers: detail.answers,
+          })
+        }
+      } catch (e) {
+        console.error(`Không thể tải đáp án câu hỏi #${q.id}:`, e)
+      }
+    })
+  )
+}
+
 const hydrateSelectedQuestions = async (ids) => {
   const missingIds = ids.filter(id => !selectedQuestionsMap.value.has(id))
   if (missingIds.length === 0) return
@@ -847,22 +894,32 @@ const hydrateSelectedQuestions = async (ids) => {
         selectedQuestionsMap.value.set(q.id, { ...q, source: 'my_bank' })
       })
     }
+
+    const allLoaded = ids.map(id => selectedQuestionsMap.value.get(id)).filter(Boolean)
+    await ensureAnswerKeysForSelectedQuestions(allLoaded)
   } catch (e) {
     console.error('Không tải được chi tiết câu hỏi:', e)
   }
 }
 
 const getCorrectAnswerKey = (question) => {
-  if (!question || !Array.isArray(question.answers)) return null
-  const correctAns = question.answers.find(a => Boolean(a.is_correct))
-  if (!correctAns) return null
-  const key = correctAns.answer_key || correctAns.key || ''
-  const text = correctAns.text || correctAns.content || ''
-  return key ? (text ? `${key}. ${text}` : key) : text
+  if (!question || !Array.isArray(question.answers) || question.answers.length === 0) return null
+  const correctAnswers = question.answers.filter(a => Boolean(a.is_correct))
+  if (correctAnswers.length === 0) return null
+
+  return correctAnswers.map((correctAns, idx) => {
+    const key = correctAns.answer_key || correctAns.key || (question.type === 'single_choice' || question.type === 'multi_choice' ? String.fromCharCode(65 + idx) : '')
+    const text = correctAns.text || correctAns.content || ''
+    return key ? (text ? `${key}. ${text}` : key) : text
+  }).join(' | ')
 }
 
 const goBack = () => {
-  router.back()
+  if (window.history.length > 1) {
+    router.back()
+  } else {
+    router.push('/quizzes')
+  }
 }
 
 const switchMode = (newMode) => {
@@ -873,12 +930,12 @@ const switchMode = (newMode) => {
 const updateFormTitle = () => {
   if (!quizForm.title) {
     if (mode.value === 'manual') {
-      quizForm.title = `Bộ đề thi đóng gói từ ${selectedIds.value.length} câu đã chọn`
+      quizForm.title = `Quiz đóng gói từ ${selectedIds.value.length} câu đã chọn`
       quizForm.time_limit_minutes = Math.max(selectedIds.value.length, 10)
     } else {
       quizForm.title = filters.topic_name 
-        ? `Bộ đề thi tự động - Chủ đề: ${filters.topic_name}`
-        : `Bộ đề ôn tập tự động ${totalMatrixQuestions.value} câu`
+        ? `Quiz ôn tập tự động - Chủ đề: ${filters.topic_name}`
+        : `Quiz ôn tập tự động ${totalMatrixQuestions.value} câu`
       quizForm.time_limit_minutes = Math.max(totalMatrixQuestions.value, 10)
     }
   }
@@ -970,14 +1027,33 @@ const onTopicInputChange = () => {
 }
 
 const handleCreateQuizSubmit = async () => {
-  if (!quizForm.title.trim()) return
-  if (!filters.subject_id) {
-    if (showToast) showToast('Vui lòng chọn Bộ môn cho bộ đề thi!', 'error')
-    else alert('Vui lòng chọn Bộ môn cho bộ đề thi!')
+  if (!quizForm.title.trim()) {
+    if (showToast) showToast('Vui lòng nhập tên Quiz!', 'error')
+    else alert('Vui lòng nhập tên Quiz!')
     return
   }
-  if (mode.value === 'random' && matrixWarnings.value.length > 0) return
-  if (mode.value === 'manual' && selectedIds.value.length === 0) return
+  if (!filters.subject_id) {
+    if (showToast) showToast('Vui lòng chọn Bộ môn cho Quiz!', 'error')
+    else alert('Vui lòng chọn Bộ môn cho Quiz!')
+    return
+  }
+  if (mode.value === 'random') {
+    if (totalMatrixQuestions.value === 0) {
+      if (showToast) showToast('Vui lòng chọn số lượng câu hỏi phân bổ!', 'error')
+      else alert('Vui lòng chọn số lượng câu hỏi phân bổ!')
+      return
+    }
+    if (matrixWarnings.value.length > 0) {
+      if (showToast) showToast('Số lượng câu hỏi vượt quá số lượng hiện có trong kho!', 'error')
+      else alert('Số lượng câu hỏi vượt quá số lượng hiện có trong kho!')
+      return
+    }
+  }
+  if (mode.value === 'manual' && selectedIds.value.length === 0) {
+    if (showToast) showToast('Vui lòng chọn ít nhất 1 câu hỏi cho Quiz!', 'error')
+    else alert('Vui lòng chọn ít nhất 1 câu hỏi cho Quiz!')
+    return
+  }
 
   isSubmitting.value = true
   try {
@@ -1007,12 +1083,12 @@ const handleCreateQuizSubmit = async () => {
     }
 
     const createdQuiz = await questionsBankApi.createQuizFromBank(payload)
-    if (showToast) showToast('Tạo bộ đề thi thành công!', 'success')
+    if (showToast) showToast('Tạo Quiz thành công!', 'success')
     
     if (createdQuiz && createdQuiz.id) {
       router.push(`/quizzes/${createdQuiz.id}`)
     } else {
-      router.push('/question-bank')
+      router.push('/quizzes')
     }
   } catch (e) {
     if (showToast) showToast(`Không thể tạo Quiz: ${e.message}`, 'error')

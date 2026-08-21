@@ -272,62 +272,13 @@
     </article>
 
     <!-- =========================================================
-         SELECTION BAR
+         INFO & STATS BAR
     ========================================================== -->
     <div
       v-if="questions.length > 0"
       class="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-[var(--border)] bg-[var(--surface-soft)] p-4"
     >
-      <div class="flex flex-wrap items-center gap-3">
-        <!-- Custom Select All -->
-        <label
-          class="group flex cursor-pointer items-center gap-2.5 text-sm font-bold text-[var(--text)]"
-        >
-          <span
-            class="relative flex h-5 w-5 shrink-0 items-center justify-center"
-          >
-            <input
-              type="checkbox"
-              :checked="isAllSelected"
-              class="peer absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
-              @change="toggleSelectAll"
-            />
-
-            <span
-              class="flex h-5 w-5 items-center justify-center rounded-md border-2 border-slate-300 bg-white transition-all duration-150 peer-hover:border-[var(--primary)] peer-checked:border-[var(--primary)] peer-checked:bg-[var(--primary)]"
-            >
-              <Check
-                v-if="isAllSelected"
-                :size="13"
-                :stroke-width="3"
-                class="text-white"
-              />
-            </span>
-          </span>
-
-          <span>
-            Chọn tất cả {{ questions.length }} câu trên trang
-          </span>
-        </label>
-
-        <!-- Selected count -->
-        <span
-          class="inline-flex items-center gap-1.5 rounded-lg bg-[var(--primary)]/10 px-2.5 py-1.5 text-xs font-bold text-[var(--primary)]"
-        >
-          <Check
-            :size="13"
-            :stroke-width="2.8"
-          />
-
-          <span>
-            Đã chọn {{ selectedIds.length }} câu hỏi
-          </span>
-        </span>
-      </div>
-
-      <div
-        class="flex flex-wrap items-center gap-3 text-xs font-bold text-[var(--muted)]"
-      >
+      <div class="flex flex-wrap items-center gap-3 text-xs font-bold text-[var(--muted)]">
         <span class="inline-flex items-center gap-1.5">
           <List
             :size="14"
@@ -399,39 +350,9 @@
         <article
           v-for="q in questions"
           :key="q.id"
-          class="rounded-xl border p-5 transition-all duration-200"
-          :class="
-            selectedIds.includes(q.id)
-              ? 'border-[var(--primary)] bg-[var(--primary)]/5 shadow-[0_4px_18px_rgba(124,58,237,0.06)]'
-              : 'border-[var(--border)] bg-[var(--surface)] hover:border-[var(--border-strong)]'
-          "
+          class="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-5 transition-all duration-200 hover:border-[var(--border-strong)]"
         >
           <div class="flex items-start gap-4">
-            <!-- =================================================
-                 CUSTOM QUESTION CHECKBOX
-            ================================================== -->
-            <label
-              class="relative mt-0.5 flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center"
-            >
-              <input
-                type="checkbox"
-                :value="q.id"
-                v-model="selectedIds"
-                class="peer absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
-              />
-
-              <span
-                class="flex h-5 w-5 items-center justify-center rounded-md border-2 border-slate-300 bg-white shadow-sm transition-all duration-150 peer-hover:border-[var(--primary)] peer-checked:border-[var(--primary)] peer-checked:bg-[var(--primary)] peer-focus-visible:ring-2 peer-focus-visible:ring-[var(--primary)]/20"
-              >
-                <Check
-                  v-if="selectedIds.includes(q.id)"
-                  :size="13"
-                  :stroke-width="3"
-                  class="text-white"
-                />
-              </span>
-            </label>
-
             <div class="min-w-0 flex-1">
               <!-- =================================================
                    QUESTION META
@@ -851,7 +772,6 @@ const router = useRouter();
 ========================================================= */
 
 const questions = ref([]);
-const selectedIds = ref([]);
 const topicsList = ref([]);
 
 const revealedQuestionIds = ref(new Set());
@@ -929,57 +849,6 @@ const pagination = reactive({
   total: 0,
 });
 
-/* =========================================================
-   MODAL FILTERS
-========================================================= */
-
-const modalFilters = reactive({
-  education_level_id: "",
-  grade_id: "",
-  subject_id: "",
-  topic_name: "",
-});
-
-const modalTopicsList = ref([]);
-
-const modalPoolStats = reactive({
-  easy: 0,
-  medium: 0,
-  hard: 0,
-  total: 0,
-});
-
-const isModalOpen = ref(false);
-const modalMode = ref("manual");
-
-/* =========================================================
-   QUIZ FORM
-========================================================= */
-
-const quizForm = reactive({
-  title: "",
-  topic_name: "",
-  description: "",
-  easy_count: 3,
-  medium_count: 5,
-  hard_count: 2,
-  time_limit_minutes: 15,
-  shuffle_questions: true,
-  visibility: "public",
-});
-
-/* =========================================================
-   COMPUTED
-========================================================= */
-
-const totalMatrixQuestions = computed(() => {
-  return (
-    (quizForm.easy_count || 0) +
-    (quizForm.medium_count || 0) +
-    (quizForm.hard_count || 0)
-  );
-});
-
 const pageStartItem = computed(() => {
   if (pagination.total === 0) return 0;
 
@@ -1024,43 +893,6 @@ const visiblePages = computed(() => {
   }
 
   return pages;
-});
-
-/* =========================================================
-   MATRIX WARNINGS
-========================================================= */
-
-const matrixWarnings = computed(() => {
-  const warnings = [];
-
-  if (
-    quizForm.easy_count >
-    modalPoolStats.easy
-  ) {
-    warnings.push(
-      `Không đủ câu hỏi Dễ. Hiện trong ngân hàng chỉ có ${modalPoolStats.easy} câu.`
-    );
-  }
-
-  if (
-    quizForm.medium_count >
-    modalPoolStats.medium
-  ) {
-    warnings.push(
-      `Không đủ câu hỏi Vừa. Hiện trong ngân hàng chỉ có ${modalPoolStats.medium} câu.`
-    );
-  }
-
-  if (
-    quizForm.hard_count >
-    modalPoolStats.hard
-  ) {
-    warnings.push(
-      `Không đủ câu hỏi Khó. Hiện trong ngân hàng chỉ có ${modalPoolStats.hard} câu.`
-    );
-  }
-
-  return warnings;
 });
 
 /* =========================================================
@@ -1136,136 +968,7 @@ const fetchTopicsList = async () => {
   }
 };
 
-const fetchModalTopicsList = async () => {
-  try {
-    const params = {
-      education_level_id:
-        modalFilters.education_level_id ||
-        undefined,
 
-      grade_id:
-        modalFilters.grade_id ||
-        undefined,
-
-      subject_id:
-        modalFilters.subject_id ||
-        undefined,
-    };
-
-    const data =
-      await questionsBankApi.fetchTopics(
-        params
-      );
-
-    modalTopicsList.value =
-      Array.isArray(data)
-        ? data
-        : (
-            data?.data &&
-            Array.isArray(data.data)
-              ? data.data
-              : []
-          );
-  } catch (e) {
-    console.error(
-      "Không tải được danh sách Chuyên đề Modal:",
-      e
-    );
-  }
-};
-
-/* =========================================================
-   MODAL STATS
-========================================================= */
-
-const updateModalAvailableCount =
-  async () => {
-    try {
-      const params = {
-        education_level_id:
-          modalFilters.education_level_id ||
-          undefined,
-
-        grade_id:
-          modalFilters.grade_id ||
-          undefined,
-
-        subject_id:
-          modalFilters.subject_id ||
-          undefined,
-
-        topic_name:
-          modalFilters.topic_name ||
-          undefined,
-      };
-
-      const res =
-        await questionsBankApi.fetchStats(
-          params
-        );
-
-      const stats =
-        res?.easy !== undefined
-          ? res
-          : (
-              res?.data ?? {
-                easy: 0,
-                medium: 0,
-                hard: 0,
-                total: 0,
-              }
-            );
-
-      modalPoolStats.easy =
-        stats.easy || 0;
-
-      modalPoolStats.medium =
-        stats.medium || 0;
-
-      modalPoolStats.hard =
-        stats.hard || 0;
-
-      modalPoolStats.total =
-        stats.total || 0;
-
-      if (
-        quizForm.easy_count >
-        modalPoolStats.easy
-      ) {
-        quizForm.easy_count = Math.min(
-          3,
-          modalPoolStats.easy
-        );
-      }
-
-      if (
-        quizForm.medium_count >
-        modalPoolStats.medium
-      ) {
-        quizForm.medium_count =
-          Math.min(
-            5,
-            modalPoolStats.medium
-          );
-      }
-
-      if (
-        quizForm.hard_count >
-        modalPoolStats.hard
-      ) {
-        quizForm.hard_count =
-          Math.min(
-            2,
-            modalPoolStats.hard
-          );
-      }
-    } catch (e) {
-      console.error(
-        "Không đếm được số câu khả dụng trong Modal:",
-        e
-      );
-    }
-  };
 
 /* =========================================================
    AVAILABLE GRADES / SUBJECTS
@@ -1311,49 +1014,7 @@ const availableSubjects = computed(() => {
     : allSubjects.value;
 });
 
-const modalAvailableGrades =
-  computed(() => {
-    if (
-      !modalFilters.education_level_id
-    ) {
-      return taxonomyLevels.value.flatMap(
-        (l) => l.grades || []
-      );
-    }
 
-    const level =
-      taxonomyLevels.value.find(
-        (l) =>
-          l.id ===
-          Number(
-            modalFilters.education_level_id
-          )
-      );
-
-    return level
-      ? level.grades || []
-      : [];
-  });
-
-const modalAvailableSubjects =
-  computed(() => {
-    if (!modalFilters.grade_id) {
-      return allSubjects.value;
-    }
-
-    const grade =
-      modalAvailableGrades.value.find(
-        (g) =>
-          g.id ===
-          Number(modalFilters.grade_id)
-      );
-
-    return grade &&
-      grade.subjects &&
-      grade.subjects.length
-      ? grade.subjects
-      : allSubjects.value;
-  });
 
 /* =========================================================
    FILTER EVENTS
@@ -1369,55 +1030,7 @@ const onGradeSubjectChange = () => {
   onFilterSubmit();
 };
 
-const onModalLevelChange = () => {
-  modalFilters.grade_id = "";
-  onModalGradeSubjectChange();
-};
 
-const onModalGradeSubjectChange =
-  () => {
-    fetchModalTopicsList();
-    updateModalAvailableCount();
-  };
-
-const onModalTopicSelectChange =
-  () => {
-    quizForm.topic_name =
-      modalFilters.topic_name || "";
-
-    if (
-      modalMode.value === "random" &&
-      modalFilters.topic_name
-    ) {
-      quizForm.title =
-        `Bộ đề thi tự động - Chủ đề: ${modalFilters.topic_name}`;
-    }
-
-    updateModalAvailableCount();
-  };
-
-const onQuizFormTopicInput = () => {
-  const trimmed =
-    (
-      quizForm.topic_name || ""
-    ).trim();
-
-  const found =
-    modalTopicsList.value.find(
-      (t) =>
-        t.topic_name.toLowerCase() ===
-        trimmed.toLowerCase()
-    );
-
-  if (found) {
-    modalFilters.topic_name =
-      found.topic_name;
-  } else if (!trimmed) {
-    modalFilters.topic_name = "";
-  }
-
-  updateModalAvailableCount();
-};
 
 const selectTopic = (topicName) => {
   filters.topic_name = topicName;
@@ -1543,78 +1156,9 @@ const applyRouteFilters = () => {
     "string"
       ? route.query.topic_name
       : "";
-
-  if (route.query.ids) {
-    const parsedIds = String(
-      route.query.ids
-    )
-      .split(",")
-      .map(Number)
-      .filter(Boolean);
-
-    const merged = new Set([
-      ...selectedIds.value,
-      ...parsedIds,
-    ]);
-
-    selectedIds.value =
-      Array.from(merged);
-  }
 };
 
-/* =========================================================
-   DIFFICULTY
-========================================================= */
 
-const difficultyText = (diff) => {
-  switch (diff) {
-    case "easy":
-      return "Dễ";
-
-    case "hard":
-      return "Khó";
-
-    default:
-      return "Vừa";
-  }
-};
-
-/* =========================================================
-   SELECT ALL
-========================================================= */
-
-const isAllSelected = computed(() => {
-  if (questions.value.length === 0) {
-    return false;
-  }
-
-  return questions.value.every((q) =>
-    selectedIds.value.includes(q.id)
-  );
-});
-
-const toggleSelectAll = () => {
-  const currentPageIds =
-    questions.value.map(
-      (q) => q.id
-    );
-
-  if (isAllSelected.value) {
-    selectedIds.value =
-      selectedIds.value.filter(
-        (id) =>
-          !currentPageIds.includes(id)
-      );
-  } else {
-    const set = new Set([
-      ...selectedIds.value,
-      ...currentPageIds,
-    ]);
-
-    selectedIds.value =
-      Array.from(set);
-  }
-};
 
 /* =========================================================
    LOAD QUESTIONS
@@ -1712,7 +1256,7 @@ const goToCreateExam = (
   mode = "random"
 ) => {
   const query = {
-    mode: "random",
+    mode: mode === "manual" ? "manual" : "random",
 
     education_level_id:
       filters.education_level_id ||
