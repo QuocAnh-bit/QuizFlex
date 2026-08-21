@@ -70,6 +70,12 @@ class QuestionModerated extends Notification
         } elseif ($this->action === 'dismissed') {
             $title = 'ℹ️ Báo cáo câu hỏi đã được bỏ qua';
             $message = "Báo cáo vi phạm đối với câu hỏi #{$this->question->id} của bạn đã được kiểm duyệt và bỏ qua (không có vi phạm).";
+        } elseif ($this->action === 'approved') {
+            $title = '🎉 Câu hỏi của bạn đã được duyệt vào Ngân hàng câu hỏi';
+            $message = "Câu hỏi #{$this->question->id} (\"{$snippet}\") của bạn đã được Admin phê duyệt và đưa vào Ngân hàng câu hỏi dùng chung.";
+        } elseif ($this->action === 'rejected') {
+            $title = '❌ Yêu cầu duyệt câu hỏi vào Ngân hàng bị từ chối';
+            $message = "Yêu cầu đưa câu hỏi #{$this->question->id} (\"{$snippet}\") vào Ngân hàng đã bị từ chối. Lý do: \"{$reasonText}\".";
         } elseif ($this->action === 'deleted') {
             $title = '❌ Câu hỏi của bạn đã bị xóa';
             $message = "Câu hỏi #{$this->question->id} của bạn đã bị gỡ bỏ vĩnh viễn do vi phạm nghiêm trọng quy định.";

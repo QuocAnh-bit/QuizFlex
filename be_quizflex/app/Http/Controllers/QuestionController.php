@@ -23,7 +23,7 @@ class QuestionController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Danh sách câu hỏi',
-            'data' => $quiz->questions->map(fn(Question $question) => $this->formatQuestion($question))->values(),
+            'data' => $quiz->questions->map(fn(Question $question) => $this->formatQuestion($question, true))->values(),
         ]);
     }
 
@@ -84,10 +84,23 @@ class QuestionController extends Controller
             $query->where('difficulty', $request->query('difficulty'));
         }
 
+        if ($request->filled('ids')) {
+            $ids = $request->input('ids');
+            if (is_string($ids)) {
+                $ids = explode(',', $ids);
+            }
+            $ids = array_filter(array_map('intval', (array) $ids));
+            if (!empty($ids)) {
+                $query->whereIn('id', $ids);
+            }
+        }
+
+        $includeAnswerKey = $request->filled('ids');
+
         // Bốc ngẫu nhiên nếu có cờ random
         if ($request->boolean('random')) {
             $limit = min(max((int) $request->query('limit', 10), 1), 100);
-            $questions = $query->inRandomOrder()->take($limit)->get()->map(fn(Question $q) => $this->formatQuestion($q));
+            $questions = $query->inRandomOrder()->take($limit)->get()->map(fn(Question $q) => $this->formatQuestion($q, $includeAnswerKey));
 
             return response()->json([
                 'success' => true,
@@ -97,8 +110,9 @@ class QuestionController extends Controller
         }
 
         $query->latest();
-        $perPage = min(max((int) $request->query('per_page', 20), 1), 100);
-        $questions = $query->paginate($perPage)->through(fn(Question $q) => $this->formatQuestion($q));
+        $defaultPerPage = $request->filled('ids') ? 100 : 20;
+        $perPage = min(max((int) $request->query('per_page', $defaultPerPage), 1), 500);
+        $questions = $query->paginate($perPage)->through(fn(Question $q) => $this->formatQuestion($q, $includeAnswerKey));
 
         return response()->json([
             'success' => true,
@@ -403,7 +417,7 @@ class QuestionController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Tạo câu hỏi thành công',
-            'data' => $this->formatQuestion($question),
+            'data' => $this->formatQuestion($question, true),
         ], 201);
     }
 
@@ -414,7 +428,7 @@ class QuestionController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Chi tiết câu hỏi',
-            'data' => $this->formatQuestion($question),
+            'data' => $this->formatQuestion($question, true),
         ]);
     }
 
@@ -449,7 +463,7 @@ class QuestionController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Cập nhật câu hỏi thành công',
-            'data' => $this->formatQuestion($question),
+            'data' => $this->formatQuestion($question, true),
         ]);
     }
 
@@ -527,8 +541,18 @@ class QuestionController extends Controller
         }
     }
 
-    private function formatQuestion(Question $question): array
+    private function formatQuestion(Question $question, bool $includeAnswerKey = false): array
     {
+        $user = auth('api')->user();
+        if (!$includeAnswerKey && $user) {
+            $isOwner = ($question->user_id && $question->user_id === $user->id) ||
+                       ($question->quiz && $question->quiz->user_id === $user->id) ||
+                       in_array(strtolower($user->role ?? ''), ['admin', 'superadmin']);
+            if ($isOwner) {
+                $includeAnswerKey = true;
+            }
+        }
+
         $pendingReport = \App\Models\ReportTicket::where('question_id', $question->id)
             ->where('status', 'pending')
             ->latest()
@@ -536,7 +560,7 @@ class QuestionController extends Controller
 
         $latestReport = $pendingReport ?? \App\Models\ReportTicket::where('question_id', $question->id)->latest()->first();
         $hasPendingReport = $pendingReport !== null;
-        $isLockedByAdmin = !$question->is_public && ($hasPendingReport || ($latestReport !== null && $latestReport->status !== 'dismissed'));
+        $isLockedByAdmin = $hasPendingReport || ($latestReport !== null && $latestReport->status !== 'dismissed');
 
         return [
             'id' => $question->id,
@@ -556,22 +580,32 @@ class QuestionController extends Controller
             'subject_name' => $question->subject?->name,
             'topic_name' => $question->topic_name,
             'is_public' => (bool) $question->is_public,
+            'bank_submission_status' => $question->bank_submission_status ?? 'none',
+            'bank_submission_note' => $question->bank_submission_note,
+            'bank_submission_at' => $question->bank_submission_at ? $question->bank_submission_at->toIso8601String() : null,
             'has_report' => $hasPendingReport,
             'is_locked_by_admin' => $isLockedByAdmin,
             'report_reason' => $pendingReport?->reason ?? $pendingReport?->description ?? ($isLockedByAdmin ? ($latestReport?->reason ?? $latestReport?->description) : null),
             'order' => $question->order,
             'points' => $question->points ?? 10,
             'created_at' => $question->created_at,
-            'answers' => $question->answers->map(fn(Answer $answer, int $index) => [
-                'id' => $answer->id,
-                'question_id' => $answer->question_id,
-                'content' => $answer->content,
-                'text' => $answer->content,
-                'answer_key' => chr(65 + ($answer->order ?? $index)),
-                'key' => chr(65 + ($answer->order ?? $index)),
-                'is_correct' => (bool) $answer->is_correct,
-                'order' => $answer->order,
-            ])->values(),
+            'answers' => $question->answers->map(function (Answer $answer, int $index) use ($includeAnswerKey) {
+                $ans = [
+                    'id' => $answer->id,
+                    'question_id' => $answer->question_id,
+                    'content' => $answer->content,
+                    'text' => $answer->content,
+                    'answer_key' => chr(65 + ($answer->order ?? $index)),
+                    'key' => chr(65 + ($answer->order ?? $index)),
+                    'order' => $answer->order,
+                ];
+
+                if ($includeAnswerKey) {
+                    $ans['is_correct'] = (bool) $answer->is_correct;
+                }
+
+                return $ans;
+            })->values(),
         ];
     }
 
@@ -621,9 +655,21 @@ class QuestionController extends Controller
             $query->where('difficulty', $request->query('difficulty'));
         }
 
+        if ($request->filled('ids')) {
+            $ids = $request->input('ids');
+            if (is_string($ids)) {
+                $ids = explode(',', $ids);
+            }
+            $ids = array_filter(array_map('intval', (array) $ids));
+            if (!empty($ids)) {
+                $query->whereIn('id', $ids);
+            }
+        }
+
         $query->latest();
-        $perPage = min(max((int) $request->query('per_page', 20), 1), 100);
-        $questions = $query->paginate($perPage)->through(fn(Question $q) => $this->formatQuestion($q));
+        $defaultPerPage = $request->filled('ids') ? 100 : 20;
+        $perPage = min(max((int) $request->query('per_page', $defaultPerPage), 1), 500);
+        $questions = $query->paginate($perPage)->through(fn(Question $q) => $this->formatQuestion($q, true));
 
         return response()->json([
             'success' => true,
@@ -647,7 +693,7 @@ class QuestionController extends Controller
             ->where('user_id', $user->id)
             ->latest()
             ->get()
-            ->map(fn(Question $q) => $this->formatQuestion($q));
+            ->map(fn(Question $q) => $this->formatQuestion($q, true));
 
         return response()->json([
             'success' => true,
@@ -695,8 +741,10 @@ class QuestionController extends Controller
             'answers.*.content.required' => 'Vui lòng điền đầy đủ nội dung cho tất cả các lựa chọn đáp án.',
         ]);
 
-        DB::transaction(function () use ($question, $validated) {
-            $question->update([
+        $isAdmin = strtolower($user->role ?? '') === 'admin';
+
+        DB::transaction(function () use ($question, $validated, $isAdmin) {
+            $updateData = [
                 'content' => trim($validated['content']),
                 'difficulty' => $validated['difficulty'] ?? $question->difficulty ?? 'medium',
                 'points' => $validated['points'] ?? $question->points ?? 10,
@@ -704,8 +752,21 @@ class QuestionController extends Controller
                 'grade_id' => array_key_exists('grade_id', $validated) ? $validated['grade_id'] : $question->grade_id,
                 'subject_id' => array_key_exists('subject_id', $validated) ? $validated['subject_id'] : $question->subject_id,
                 'topic_name' => array_key_exists('topic_name', $validated) ? $validated['topic_name'] : $question->topic_name,
-                'is_public' => array_key_exists('is_public', $validated) ? (bool)$validated['is_public'] : (bool)$question->is_public,
-            ]);
+            ];
+
+            if ($isAdmin && array_key_exists('is_public', $validated)) {
+                $updateData['is_public'] = (bool)$validated['is_public'];
+                if ($updateData['is_public']) {
+                    $updateData['bank_submission_status'] = 'approved';
+                }
+            } else {
+                // Người dùng chỉnh sửa: không thể tự công khai trực tiếp
+                $updateData['is_public'] = false;
+                $updateData['bank_submission_status'] = 'none';
+                $updateData['bank_submission_note'] = null;
+            }
+
+            $question->update($updateData);
 
             if (isset($validated['answers'])) {
                 $this->syncAnswers($question, $validated['answers'], null);
@@ -717,7 +778,7 @@ class QuestionController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Cập nhật câu hỏi thành công!',
-            'data' => $this->formatQuestion($question->fresh(['answers', 'educationLevel', 'grade', 'subject'])),
+            'data' => $this->formatQuestion($question->fresh(['answers', 'educationLevel', 'grade', 'subject']), true),
         ]);
     }
 
@@ -737,7 +798,7 @@ class QuestionController extends Controller
     }
 
     /**
-     * Tạo câu hỏi mới (Công khai hoặc Riêng tư)
+     * Tạo câu hỏi mới (Mặc định Riêng tư, muốn vào Ngân hàng phải gửi duyệt)
      */
     public function storeQuestion(Request $request)
     {
@@ -762,9 +823,11 @@ class QuestionController extends Controller
             'answers.*.is_correct' => ['nullable', 'boolean'],
         ]);
 
-        $isPublic = isset($validated['is_public']) ? (bool)$validated['is_public'] : false;
+        $isAdmin = strtolower($user->role ?? '') === 'admin';
+        $isPublic = $isAdmin && isset($validated['is_public']) ? (bool)$validated['is_public'] : false;
+        $bankSubmissionStatus = $isPublic ? 'approved' : 'none';
 
-        $question = DB::transaction(function () use ($user, $validated, $isPublic) {
+        $question = DB::transaction(function () use ($user, $validated, $isPublic, $bankSubmissionStatus) {
             $q = Question::create([
                 'user_id' => $user->id,
                 'content' => trim($validated['content']),
@@ -776,6 +839,7 @@ class QuestionController extends Controller
                 'subject_id' => $validated['subject_id'] ?? null,
                 'topic_name' => $validated['topic_name'] ?? null,
                 'is_public' => $isPublic,
+                'bank_submission_status' => $bankSubmissionStatus,
             ]);
 
             if (isset($validated['answers'])) {
@@ -788,8 +852,264 @@ class QuestionController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Tạo câu hỏi mới thành công!',
-            'data' => $this->formatQuestion($question->fresh(['answers', 'educationLevel', 'grade', 'subject'])),
+            'data' => $this->formatQuestion($question->fresh(['answers', 'educationLevel', 'grade', 'subject']), true),
         ], 201);
+    }
+
+    /**
+     * Gửi yêu cầu duyệt câu hỏi cá nhân vào Ngân hàng câu hỏi
+     */
+    public function submitToBank($id)
+    {
+        $user = auth('api')->user();
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Unauthenticated.'], 401);
+        }
+
+        $question = Question::with(['answers', 'educationLevel', 'grade', 'subject'])->find($id);
+        if (!$question) {
+            return response()->json(['success' => false, 'message' => 'Không tìm thấy câu hỏi.'], 404);
+        }
+
+        if ($question->user_id !== $user->id && strtolower($user->role ?? '') !== 'admin') {
+            return response()->json(['success' => false, 'message' => 'Bạn không có quyền gửi duyệt câu hỏi này.'], 403);
+        }
+
+        $question->update([
+            'bank_submission_status' => 'pending',
+            'bank_submission_at' => now(),
+            'bank_submission_note' => null,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Đã gửi yêu cầu kiểm duyệt câu hỏi vào Ngân hàng thành công!',
+            'data' => $this->formatQuestion($question->fresh(['answers', 'educationLevel', 'grade', 'subject']), true),
+        ]);
+    }
+
+    /**
+     * Gửi yêu cầu duyệt câu hỏi HÀNG LOẠT vào Ngân hàng
+     */
+    public function bulkSubmitToBank(Request $request)
+    {
+        $user = auth('api')->user();
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Unauthenticated.'], 401);
+        }
+
+        $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'integer|exists:questions,id',
+        ]);
+
+        $ids = $request->input('ids');
+        $updatedCount = Question::whereIn('id', $ids)
+            ->where('user_id', $user->id)
+            ->update([
+                'bank_submission_status' => 'pending',
+                'bank_submission_at' => now(),
+                'bank_submission_note' => null,
+            ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Đã gửi yêu cầu kiểm duyệt {$updatedCount} câu hỏi vào Ngân hàng thành công!",
+        ]);
+    }
+
+    /**
+     * Admin: Danh sách yêu cầu duyệt câu hỏi vào Ngân hàng
+     */
+    public function adminBankRequests(Request $request)
+    {
+        $query = Question::query()
+            ->with(['answers', 'user:id,name,email,avatar', 'quiz.user:id,name,email,avatar', 'educationLevel', 'grade', 'subject']);
+
+        $status = $request->query('status', 'pending');
+        if ($status !== 'all') {
+            $query->where('bank_submission_status', $status);
+        } else {
+            $query->whereIn('bank_submission_status', ['pending', 'approved', 'rejected']);
+        }
+
+        if ($request->filled('search')) {
+            $keyword = trim((string) $request->query('search'));
+            $query->where(function ($q) use ($keyword) {
+                $q->where('content', 'like', "%{$keyword}%")
+                  ->orWhereHas('user', fn($uq) => $uq->where('name', 'like', "%{$keyword}%"));
+            });
+        }
+
+        if ($request->filled('subject_id')) {
+            $query->where('subject_id', $request->query('subject_id'));
+        }
+
+        if ($request->filled('grade_id')) {
+            $query->where('grade_id', $request->query('grade_id'));
+        }
+
+        if ($request->filled('difficulty')) {
+            $query->where('difficulty', $request->query('difficulty'));
+        }
+
+        $pendingCount = Question::where('bank_submission_status', 'pending')->count();
+        $approvedCount = Question::where('bank_submission_status', 'approved')->count();
+        $rejectedCount = Question::where('bank_submission_status', 'rejected')->count();
+
+        $query->latest('bank_submission_at')->latest('updated_at');
+        $perPage = min(max((int) $request->query('per_page', 15), 1), 100);
+        $paginated = $query->paginate($perPage);
+
+        $items = collect($paginated->items())->map(function (Question $q) {
+            $formatted = $this->formatQuestion($q, true);
+            $formatted['author_name'] = $q->user?->name ?? $q->quiz?->user?->name ?? 'Vô danh';
+            $formatted['author_email'] = $q->user?->email ?? $q->quiz?->user?->email;
+            $formatted['author_avatar'] = $q->user?->avatar ?? $q->quiz?->user?->avatar;
+            return $formatted;
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Danh sách yêu cầu duyệt câu hỏi vào Ngân hàng',
+            'data' => [
+                'items' => $items,
+                'total' => $paginated->total(),
+                'current_page' => $paginated->currentPage(),
+                'last_page' => $paginated->lastPage(),
+                'per_page' => $paginated->perPage(),
+                'stats' => [
+                    'pending' => $pendingCount,
+                    'approved' => $approvedCount,
+                    'rejected' => $rejectedCount,
+                    'total' => $pendingCount + $approvedCount + $rejectedCount,
+                ],
+            ]
+        ]);
+    }
+
+    /**
+     * Admin: Phê duyệt 1 câu hỏi vào Ngân hàng
+     */
+    public function adminApproveBankRequest($id)
+    {
+        $question = Question::with(['user', 'quiz.user', 'answers', 'educationLevel', 'grade', 'subject'])->findOrFail($id);
+        $question->update([
+            'is_public' => true,
+            'bank_submission_status' => 'approved',
+            'bank_submission_note' => null,
+        ]);
+
+        $author = $question->user ?? $question->quiz?->user;
+        if ($author) {
+            $author->notify(new QuestionModerated($question, 'approved'));
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "Đã duyệt câu hỏi #{$question->id} vào Ngân hàng câu hỏi thành công!",
+            'data' => $this->formatQuestion($question->fresh(['answers', 'educationLevel', 'grade', 'subject']), true),
+        ]);
+    }
+
+    /**
+     * Admin: Từ chối 1 câu hỏi vào Ngân hàng
+     */
+    public function adminRejectBankRequest(Request $request, $id)
+    {
+        $request->validate([
+            'note' => 'required|string|max:1000',
+        ], [
+            'note.required' => 'Vui lòng nhập lý do từ chối kiểm duyệt.',
+        ]);
+
+        $question = Question::with(['user', 'quiz.user', 'answers', 'educationLevel', 'grade', 'subject'])->findOrFail($id);
+        $note = trim($request->input('note'));
+
+        $question->update([
+            'is_public' => false,
+            'bank_submission_status' => 'rejected',
+            'bank_submission_note' => $note,
+        ]);
+
+        $author = $question->user ?? $question->quiz?->user;
+        if ($author) {
+            $author->notify(new QuestionModerated($question, 'rejected', $note));
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "Đã từ chối duyệt câu hỏi #{$question->id}.",
+            'data' => $this->formatQuestion($question->fresh(['answers', 'educationLevel', 'grade', 'subject']), true),
+        ]);
+    }
+
+    /**
+     * Admin: Phê duyệt HÀNG LOẠT câu hỏi vào Ngân hàng
+     */
+    public function adminBulkApproveBankRequests(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'integer|exists:questions,id',
+        ]);
+
+        $ids = $request->input('ids');
+        $questions = Question::with(['user', 'quiz.user'])->whereIn('id', $ids)->get();
+
+        Question::whereIn('id', $ids)->update([
+            'is_public' => true,
+            'bank_submission_status' => 'approved',
+            'bank_submission_note' => null,
+        ]);
+
+        foreach ($questions as $question) {
+            $author = $question->user ?? $question->quiz?->user;
+            if ($author) {
+                $author->notify(new QuestionModerated($question, 'approved'));
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "Đã phê duyệt " . count($ids) . " câu hỏi vào Ngân hàng thành công!",
+        ]);
+    }
+
+    /**
+     * Admin: Từ chối HÀNG LOẠT câu hỏi vào Ngân hàng
+     */
+    public function adminBulkRejectBankRequests(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'integer|exists:questions,id',
+            'note' => 'required|string|max:1000',
+        ], [
+            'note.required' => 'Vui lòng nhập lý do từ chối kiểm duyệt.',
+        ]);
+
+        $ids = $request->input('ids');
+        $note = trim($request->input('note'));
+        $questions = Question::with(['user', 'quiz.user'])->whereIn('id', $ids)->get();
+
+        Question::whereIn('id', $ids)->update([
+            'is_public' => false,
+            'bank_submission_status' => 'rejected',
+            'bank_submission_note' => $note,
+        ]);
+
+        foreach ($questions as $question) {
+            $author = $question->user ?? $question->quiz?->user;
+            if ($author) {
+                $author->notify(new QuestionModerated($question, 'rejected', $note));
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "Đã từ chối kiểm duyệt " . count($ids) . " câu hỏi.",
+        ]);
     }
 
     /**
@@ -843,7 +1163,7 @@ class QuestionController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Khôi phục câu hỏi thành công!',
-            'data' => $this->formatQuestion($question->fresh(['answers', 'educationLevel', 'grade', 'subject'])),
+            'data' => $this->formatQuestion($question->fresh(['answers', 'educationLevel', 'grade', 'subject']), true),
         ]);
     }
 
@@ -930,7 +1250,7 @@ class QuestionController extends Controller
         $paginated = $query->paginate($perPage);
 
         $items = collect($paginated->items())->map(function (Question $q) {
-            $formatted = $this->formatQuestion($q);
+            $formatted = $this->formatQuestion($q, true);
             $formatted['author_name'] = $q->user?->name ?? $q->quiz?->user?->name ?? 'Vô danh';
             $formatted['author_email'] = $q->user?->email ?? $q->quiz?->user?->email;
             $formatted['author_avatar'] = $q->user?->avatar ?? $q->quiz?->user?->avatar;
@@ -980,7 +1300,7 @@ class QuestionController extends Controller
             $author->notify(new QuestionModerated($question, $action, $reason));
         }
 
-        $formatted = $this->formatQuestion($question);
+        $formatted = $this->formatQuestion($question, true);
         $formatted['author_name'] = $question->user?->name ?? 'Vô danh';
 
         return response()->json([
@@ -1064,7 +1384,7 @@ class QuestionController extends Controller
             'subject'
         ])->findOrFail($id);
 
-        $formatted = $this->formatQuestion($question);
+        $formatted = $this->formatQuestion($question, true);
 
         $authorName = $question->user?->name ?? $question->quiz?->user?->name ?? 'Vô danh';
         $authorEmail = $question->user?->email ?? $question->quiz?->user?->email;
@@ -1170,7 +1490,7 @@ class QuestionController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Cập nhật câu hỏi thành công',
-            'data' => $this->formatQuestion($question),
+            'data' => $this->formatQuestion($question, true),
         ]);
     }
 
@@ -1189,7 +1509,7 @@ class QuestionController extends Controller
 
         $query->latest('deleted_at');
         $perPage = min(max((int) $request->query('per_page', 15), 1), 100);
-        $paginator = $query->paginate($perPage)->through(fn(Question $q) => $this->formatQuestion($q));
+        $paginator = $query->paginate($perPage)->through(fn(Question $q) => $this->formatQuestion($q, true));
 
         $trashCount = Question::onlyTrashed()->count();
 
@@ -1218,7 +1538,7 @@ class QuestionController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Khôi phục câu hỏi thành công!',
-            'data' => $this->formatQuestion($question->fresh(['answers', 'educationLevel', 'grade', 'subject'])),
+            'data' => $this->formatQuestion($question->fresh(['answers', 'educationLevel', 'grade', 'subject']), true),
         ]);
     }
 

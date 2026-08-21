@@ -339,23 +339,6 @@
             Tổng {{ pagination.total }} câu hỏi
           </span>
         </span>
-
-        <!-- Create from selected -->
-        <button
-          v-if="selectedIds.length > 0"
-          class="btn-primary inline-flex items-center gap-2 text-xs"
-          type="button"
-          @click="goToCreateExam('manual')"
-        >
-          <FileCheck2
-            :size="13"
-            :stroke-width="2.2"
-          />
-
-          <span>
-            Tạo bộ đề từ {{ selectedIds.length }} câu đã chọn
-          </span>
-        </button>
       </div>
     </div>
 
@@ -532,20 +515,47 @@
                   </span>
                 </span>
 
-                <!-- Report -->
-                <button
-                  type="button"
-                  class="ml-auto inline-flex items-center gap-1 rounded-md border border-rose-500/30 bg-rose-500/10 px-2 py-0.5 text-[11px] font-bold text-rose-400 transition hover:bg-rose-500/15"
-                  title="Báo cáo vi phạm hoặc sai sót ở câu hỏi này"
-                  @click="openReportModal(q.id)"
-                >
-                  <Flag
-                    :size="12"
-                    :stroke-width="2"
-                  />
+                <!-- Xem đáp án button & Report button -->
+                <div class="ml-auto flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    class="inline-flex items-center gap-1 rounded-md border border-[var(--border)] bg-[var(--surface)] px-2.5 py-0.5 text-[11px] font-bold text-[var(--text)] transition hover:bg-[var(--chip-active)] cursor-pointer"
+                    title="Xem đáp án của câu hỏi này"
+                    @click="toggleRevealAnswer(q.id)"
+                  >
+                    <Loader2
+                      v-if="loadingAnswerId === q.id"
+                      :size="12"
+                      class="animate-spin text-[var(--primary)]"
+                    />
+                    <EyeOff
+                      v-else-if="revealedQuestionIds.has(q.id)"
+                      :size="12"
+                      class="text-emerald-400"
+                    />
+                    <Eye
+                      v-else
+                      :size="12"
+                      class="text-[var(--muted)]"
+                    />
 
-                  <span>Báo cáo</span>
-                </button>
+                    <span>{{ revealedQuestionIds.has(q.id) ? 'Ẩn đáp án' : 'Xem đáp án' }}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    class="inline-flex items-center gap-1 rounded-md border border-rose-500/30 bg-rose-500/10 px-2 py-0.5 text-[11px] font-bold text-rose-400 transition hover:bg-rose-500/15"
+                    title="Báo cáo vi phạm hoặc sai sót ở câu hỏi này"
+                    @click="openReportModal(q.id)"
+                  >
+                    <Flag
+                      :size="12"
+                      :stroke-width="2"
+                    />
+
+                    <span>Báo cáo</span>
+                  </button>
+                </div>
               </div>
 
               <!-- Question -->
@@ -556,7 +566,7 @@
               </h3>
 
               <!-- =================================================
-                   ANSWERS
+                   ANSWERS (Neutral by default, highlighted only when revealed)
               ================================================== -->
               <div
                 v-if="
@@ -568,16 +578,17 @@
                 <div
                   v-for="ans in q.answers"
                   :key="ans.id"
-                  class="flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold"
+                  class="flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors duration-150"
                   :class="
-                    ans.is_correct
-                      ? 'border-emerald-500/30 bg-emerald-500/5 font-bold text-emerald-300'
+                    isAnswerCorrectRevealed(q.id, ans)
+                      ? 'border-emerald-500/40 bg-emerald-500/10 font-bold text-emerald-300 shadow-sm'
                       : 'border-[var(--border)] bg-[var(--surface-soft)] text-[var(--muted)]'
                   "
                 >
                   <!-- Answer key -->
                   <span
-                    class="grid h-5 w-5 shrink-0 place-items-center rounded-md bg-black/25 text-[10px] font-black"
+                    class="grid h-5 w-5 shrink-0 place-items-center rounded-md text-[10px] font-black"
+                    :class="isAnswerCorrectRevealed(q.id, ans) ? 'bg-emerald-500 text-white' : 'bg-black/25 text-[var(--text)]'"
                   >
                     {{ ans.key }}
                   </span>
@@ -587,10 +598,10 @@
                     {{ ans.text || ans.content }}
                   </span>
 
-                  <!-- Correct -->
+                  <!-- Correct (only if revealed) -->
                   <span
-                    v-if="ans.is_correct"
-                    class="ml-auto inline-flex shrink-0 items-center gap-1 text-xs text-emerald-400"
+                    v-if="isAnswerCorrectRevealed(q.id, ans)"
+                    class="ml-auto inline-flex shrink-0 items-center gap-1 text-xs text-emerald-400 font-bold"
                   >
                     <CheckCircle2
                       :size="14"
@@ -806,6 +817,9 @@ import {
   List,
   Tag,
   Check,
+  Eye,
+  EyeOff,
+  Loader2,
 } from "lucide-vue-next";
 
 import {
@@ -840,12 +854,56 @@ const questions = ref([]);
 const selectedIds = ref([]);
 const topicsList = ref([]);
 
+const revealedQuestionIds = ref(new Set());
+const revealedAnswersMap = ref(new Map());
+const loadingAnswerId = ref(null);
+
 const isLoading = ref(false);
 const errorMessage = ref("");
 const isSubmitting = ref(false);
 
 const taxonomyLevels = ref([]);
 const allSubjects = ref([]);
+
+/* =========================================================
+   REVEAL ANSWER LOGIC
+========================================================= */
+
+const toggleRevealAnswer = async (questionId) => {
+  if (revealedQuestionIds.value.has(questionId)) {
+    revealedQuestionIds.value.delete(questionId);
+    return;
+  }
+
+  if (!revealedAnswersMap.value.has(questionId)) {
+    loadingAnswerId.value = questionId;
+    try {
+      const detail = await questionsBankApi.getQuestion(questionId);
+      if (detail) {
+        revealedAnswersMap.value.set(questionId, detail);
+      }
+    } catch (e) {
+      console.error("Không thể tải đáp án câu hỏi:", e);
+    } finally {
+      loadingAnswerId.value = null;
+    }
+  }
+
+  revealedQuestionIds.value.add(questionId);
+};
+
+const isAnswerCorrectRevealed = (questionId, ans) => {
+  if (!revealedQuestionIds.value.has(questionId)) return false;
+  const detail = revealedAnswersMap.value.get(questionId);
+  if (!detail || !detail.answers) return false;
+  const matchedAns = detail.answers.find(
+    (a) =>
+      (ans.id && a.id === ans.id) ||
+      a.key === ans.key ||
+      a.answer_key === ans.key
+  );
+  return Boolean(matchedAns?.is_correct);
+};
 
 /* =========================================================
    FILTERS
@@ -1651,10 +1709,10 @@ const loadQuestions = async () => {
 ========================================================= */
 
 const goToCreateExam = (
-  mode = "auto"
+  mode = "random"
 ) => {
   const query = {
-    mode,
+    mode: "random",
 
     education_level_id:
       filters.education_level_id ||
@@ -1672,14 +1730,6 @@ const goToCreateExam = (
       filters.topic_name ||
       undefined,
   };
-
-  if (
-    mode === "manual" &&
-    selectedIds.value.length > 0
-  ) {
-    query.ids =
-      selectedIds.value.join(",");
-  }
 
   router.push({
     path: "/question-bank/create-exam",

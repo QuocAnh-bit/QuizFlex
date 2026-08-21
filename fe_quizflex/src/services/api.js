@@ -127,6 +127,10 @@ export const questionsBankApi = {
   async createQuestion(payload) {
     const { data } = await api.post('/questions', payload);
     return unwrap(data);
+  },
+  async getQuestion(id) {
+    const { data } = await api.get(`/questions/${id}`);
+    return unwrap(data);
   }
 };
 
@@ -164,6 +168,46 @@ export const myQuestionsApi = {
   async forceDelete(id) {
     const { data } = await api.delete(`/user/my-questions/${id}/force`);
     return data;
+  },
+  async submitToBank(id) {
+    const { data } = await api.post(`/user/my-questions/${id}/submit-to-bank`);
+    return unwrap(data);
+  },
+  async bulkSubmitToBank(ids) {
+    const { data } = await api.post('/user/my-questions/bulk-submit-to-bank', { ids });
+    return unwrap(data);
+  }
+};
+
+export const adminBankRequestsApi = {
+  async fetchRequests(params = {}) {
+    const { data } = await api.get('/admin/question-bank-requests', { params });
+    const payload = unwrap(data);
+    const items = Array.isArray(payload?.items) ? payload.items : (Array.isArray(payload) ? payload : []);
+    return {
+      items,
+      total: payload?.total ?? items.length,
+      currentPage: payload?.current_page ?? 1,
+      lastPage: payload?.last_page ?? 1,
+      perPage: payload?.per_page ?? 15,
+      stats: payload?.stats ?? { pending: 0, approved: 0, rejected: 0, total: 0 }
+    };
+  },
+  async approve(id) {
+    const { data } = await api.post(`/admin/question-bank-requests/${id}/approve`);
+    return unwrap(data);
+  },
+  async reject(id, payload = {}) {
+    const { data } = await api.post(`/admin/question-bank-requests/${id}/reject`, payload);
+    return unwrap(data);
+  },
+  async bulkApprove(ids) {
+    const { data } = await api.post('/admin/question-bank-requests/bulk-approve', { ids });
+    return unwrap(data);
+  },
+  async bulkReject(ids, note) {
+    const { data } = await api.post('/admin/question-bank-requests/bulk-reject', { ids, note });
+    return unwrap(data);
   }
 };
 

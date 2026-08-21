@@ -141,6 +141,36 @@
         </div>
       </div>
 
+      <!-- SELECTION & BULK ACTION BAR -->
+      <div v-if="questions.length > 0" class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface-soft)] p-3">
+        <div class="flex items-center gap-3">
+          <label class="flex items-center gap-2 text-xs font-bold text-[var(--text)] cursor-pointer select-none">
+            <input
+              type="checkbox"
+              :checked="isCurrentPageAllSelected"
+              class="h-4 w-4 rounded accent-[var(--primary)] cursor-pointer"
+              @change="toggleSelectAllOnPage"
+            />
+            <span>Chọn tất cả trên trang này</span>
+          </label>
+          <span v-if="selectedQuestionIds.length > 0" class="rounded-lg bg-[var(--primary)]/10 px-2 py-0.5 text-xs font-bold text-[var(--primary)]">
+            Đã chọn {{ selectedQuestionIds.length }} câu hỏi
+          </span>
+        </div>
+
+        <div v-if="selectedQuestionIds.length > 0" class="flex items-center gap-2">
+          <button
+            type="button"
+            class="inline-flex items-center gap-1.5 rounded-lg bg-[var(--primary)] px-3.5 py-1.5 text-xs font-bold text-white shadow-md shadow-[var(--primary)]/25 hover:opacity-90 transition disabled:opacity-50 cursor-pointer"
+            :disabled="isSubmittingToBank"
+            @click="bulkSubmitQuestionsToBank"
+          >
+            <Send :size="13" />
+            <span>Gửi duyệt vào Ngân hàng ({{ selectedQuestionIds.length }} câu)</span>
+          </button>
+        </div>
+      </div>
+
       <div class="grid gap-3">
         <article
           v-for="q in questions"
@@ -168,73 +198,109 @@
           </div>
 
           <div class="flex flex-col xl:flex-row xl:items-start justify-between gap-4">
-            <div class="flex-1 min-w-0">
-              <div class="flex flex-wrap items-center gap-1.5 mb-3">
-                <span class="rounded-md border border-[var(--border)] bg-[var(--surface-soft)] px-2 py-0.5 text-[11px] font-bold text-[var(--muted)]">#{{ q.id }}</span>
-                <span
-                  class="inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-[11px] font-bold"
-                  :class="{
-                    'bg-emerald-500/10 text-emerald-400': q.difficulty === 'easy',
-                    'bg-amber-500/10 text-amber-400': q.difficulty === 'medium',
-                    'bg-rose-500/10 text-rose-400': q.difficulty === 'hard'
-                  }"
-                >
+            <div class="flex items-start gap-3 flex-1 min-w-0">
+              <!-- Selection checkbox -->
+              <input
+                type="checkbox"
+                :checked="selectedQuestionIds.includes(q.id)"
+                class="h-4 w-4 rounded accent-[var(--primary)] mt-1 shrink-0 cursor-pointer"
+                @change="toggleSelectQuestion(q.id)"
+              />
+
+              <div class="flex-1 min-w-0">
+                <div class="flex flex-wrap items-center gap-1.5 mb-3">
+                  <span class="rounded-md border border-[var(--border)] bg-[var(--surface-soft)] px-2 py-0.5 text-[11px] font-bold text-[var(--muted)]">#{{ q.id }}</span>
                   <span
-                    class="h-1.5 w-1.5 rounded-full"
+                    class="inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-[11px] font-bold"
                     :class="{
-                      'bg-emerald-400': q.difficulty === 'easy',
-                      'bg-amber-400': q.difficulty === 'medium',
-                      'bg-rose-400': q.difficulty === 'hard'
+                      'bg-emerald-500/10 text-emerald-400': q.difficulty === 'easy',
+                      'bg-amber-500/10 text-amber-400': q.difficulty === 'medium',
+                      'bg-rose-500/10 text-rose-400': q.difficulty === 'hard'
                     }"
-                  ></span>
-                  {{ difficultyText(q.difficulty) }}
-                </span>
-
-                <span v-if="highlightedUpdatedQuestionId === q.id" class="inline-flex items-center gap-1 rounded-md bg-emerald-600 text-white dark:bg-emerald-800 dark:text-emerald-100 px-2 py-0.5 text-[11px] font-bold">
-                  <CheckCircle2 :size="12" />
-                  <span>Đã cập nhật &amp; Chờ duyệt lại</span>
-                </span>
-                <span v-else-if="q.is_locked_by_admin" class="inline-flex items-center gap-1 rounded-md bg-rose-500/10 text-rose-300 border border-rose-500/30 px-2 py-0.5 text-[11px] font-bold" :title="q.report_reason ? `Lý do: ${q.report_reason}` : ''">
-                  <Lock :size="12" />
-                  <span>Đã bị Admin khóa / Gỡ công khai {{ q.report_reason ? `(Lý do: ${q.report_reason})` : '' }}</span>
-                </span>
-                <span v-else-if="q.has_report" class="inline-flex items-center gap-1 rounded-md bg-amber-500/10 text-amber-300 border border-amber-500/30 px-2 py-0.5 text-[11px] font-bold">
-                  <Flag :size="12" />
-                  <span>Có báo cáo vi phạm</span>
-                </span>
-                <span v-else-if="!q.is_public" class="inline-flex items-center gap-1 rounded-md bg-amber-500/5 text-amber-400 border border-amber-500/20 px-2 py-0.5 text-[11px] font-bold">
-                  <Lock :size="12" />
-                  <span>Riêng tư</span>
-                </span>
-
-                <span v-if="q.grade_name" class="rounded-md bg-indigo-600/15 text-indigo-400 px-2 py-0.5 text-[11px] font-bold">{{ q.grade_name }}</span>
-                <span v-if="q.subject_name" class="rounded-md bg-emerald-600/15 text-emerald-400 px-2 py-0.5 text-[11px] font-bold">{{ q.subject_name }}</span>
-                <span v-if="q.topic_name" class="rounded-md bg-purple-600/15 text-purple-300 px-2 py-0.5 text-[11px] font-bold">Chủ đề: {{ q.topic_name }}</span>
-                <span v-if="q.quiz_title" class="rounded-md bg-slate-700/25 text-slate-300 px-2 py-0.5 text-[11px] font-bold truncate max-w-[200px]">Quiz: {{ q.quiz_title }}</span>
-              </div>
-
-              <h3 class="text-base font-black text-[var(--text)] leading-snug">{{ q.content || q.text }}</h3>
-
-              <!-- Answers Grid -->
-              <div v-if="q.answers && q.answers.length > 0" class="mt-4 grid gap-2 md:grid-cols-2">
-                <div
-                  v-for="ans in q.answers"
-                  :key="ans.id"
-                  class="flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold"
-                  :class="ans.is_correct ? 'border-emerald-500/30 bg-emerald-500/5 text-emerald-300 font-bold' : 'border-[var(--border)] bg-[var(--surface-soft)] text-[var(--muted)]'"
-                >
-                  <span class="grid h-5 w-5 place-items-center rounded-md bg-black/25 font-black text-[10px] shrink-0">{{ ans.key }}</span>
-                  <span class="truncate">{{ ans.text || ans.content }}</span>
-                  <span v-if="ans.is_correct" class="ml-auto inline-flex items-center gap-1 text-emerald-400 text-xs shrink-0">
-                    <Check :size="13" />
-                    <span>Đúng</span>
+                  >
+                    <span
+                      class="h-1.5 w-1.5 rounded-full"
+                      :class="{
+                        'bg-emerald-400': q.difficulty === 'easy',
+                        'bg-amber-400': q.difficulty === 'medium',
+                        'bg-rose-400': q.difficulty === 'hard'
+                      }"
+                    ></span>
+                    {{ difficultyText(q.difficulty) }}
                   </span>
+
+                  <!-- Status badge for bank submission -->
+                  <span v-if="q.bank_submission_status === 'pending'" class="inline-flex items-center gap-1 rounded-md bg-amber-500/15 text-amber-400 border border-amber-500/30 px-2 py-0.5 text-[11px] font-bold">
+                    <Clock :size="12" />
+                    <span>Đang chờ duyệt</span>
+                  </span>
+                  <span v-else-if="q.bank_submission_status === 'approved' || q.is_public" class="inline-flex items-center gap-1 rounded-md bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 text-[11px] font-bold">
+                    <Globe :size="12" />
+                    <span>Đã vào Ngân hàng</span>
+                  </span>
+                  <span v-else-if="q.bank_submission_status === 'rejected'" class="inline-flex items-center gap-1 rounded-md bg-rose-500/15 text-rose-300 border border-rose-500/30 px-2 py-0.5 text-[11px] font-bold" :title="q.bank_submission_note ? `Lý do từ chối: ${q.bank_submission_note}` : 'Bị từ chối'">
+                    <XCircle :size="12" />
+                    <span>Bị từ chối {{ q.bank_submission_note ? `— Lý do: ${q.bank_submission_note}` : '' }}</span>
+                  </span>
+                  <span v-else class="inline-flex items-center gap-1 rounded-md bg-slate-500/15 text-slate-400 border border-slate-500/30 px-2 py-0.5 text-[11px] font-bold">
+                    <Lock :size="12" />
+                    <span>Riêng tư</span>
+                  </span>
+
+                  <span v-if="highlightedUpdatedQuestionId === q.id" class="inline-flex items-center gap-1 rounded-md bg-emerald-600 text-white dark:bg-emerald-800 dark:text-emerald-100 px-2 py-0.5 text-[11px] font-bold">
+                    <CheckCircle2 :size="12" />
+                    <span>Đã cập nhật &amp; Chờ duyệt lại</span>
+                  </span>
+                  <span v-else-if="q.is_locked_by_admin" class="inline-flex items-center gap-1 rounded-md bg-rose-500/10 text-rose-300 border border-rose-500/30 px-2 py-0.5 text-[11px] font-bold" :title="q.report_reason ? `Lý do: ${q.report_reason}` : ''">
+                    <Lock :size="12" />
+                    <span>Đã bị Admin khóa / Gỡ công khai {{ q.report_reason ? `(Lý do: ${q.report_reason})` : '' }}</span>
+                  </span>
+                  <span v-else-if="q.has_report" class="inline-flex items-center gap-1 rounded-md bg-amber-500/10 text-amber-300 border border-amber-500/30 px-2 py-0.5 text-[11px] font-bold">
+                    <Flag :size="12" />
+                    <span>Có báo cáo vi phạm</span>
+                  </span>
+
+                  <span v-if="q.grade_name" class="rounded-md bg-indigo-600/15 text-indigo-400 px-2 py-0.5 text-[11px] font-bold">{{ q.grade_name }}</span>
+                  <span v-if="q.subject_name" class="rounded-md bg-emerald-600/15 text-emerald-400 px-2 py-0.5 text-[11px] font-bold">{{ q.subject_name }}</span>
+                  <span v-if="q.topic_name" class="rounded-md bg-purple-600/15 text-purple-300 px-2 py-0.5 text-[11px] font-bold">Chủ đề: {{ q.topic_name }}</span>
+                  <span v-if="q.quiz_title" class="rounded-md bg-slate-700/25 text-slate-300 px-2 py-0.5 text-[11px] font-bold truncate max-w-[200px]">Quiz: {{ q.quiz_title }}</span>
+                </div>
+
+                <h3 class="text-base font-black text-[var(--text)] leading-snug">{{ q.content || q.text }}</h3>
+
+                <!-- Answers Grid -->
+                <div v-if="q.answers && q.answers.length > 0" class="mt-4 grid gap-2 md:grid-cols-2">
+                  <div
+                    v-for="ans in q.answers"
+                    :key="ans.id"
+                    class="flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold"
+                    :class="ans.is_correct ? 'border-emerald-500/30 bg-emerald-500/5 text-emerald-300 font-bold' : 'border-[var(--border)] bg-[var(--surface-soft)] text-[var(--muted)]'"
+                  >
+                    <span class="grid h-5 w-5 place-items-center rounded-md bg-black/25 font-black text-[10px] shrink-0">{{ ans.key }}</span>
+                    <span class="truncate">{{ ans.text || ans.content }}</span>
+                    <span v-if="ans.is_correct" class="ml-auto inline-flex items-center gap-1 text-emerald-400 text-xs shrink-0">
+                      <Check :size="13" />
+                      <span>Đúng</span>
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
 
             <!-- Action buttons -->
             <div class="flex items-center gap-2 shrink-0 self-end xl:self-start pt-2 xl:pt-0">
+              <!-- Nút Gửi duyệt vào Ngân hàng -->
+              <button
+                v-if="q.bank_submission_status === 'none' || q.bank_submission_status === 'rejected'"
+                type="button"
+                class="inline-flex items-center gap-1.5 rounded-lg border border-purple-500/40 bg-purple-500/10 px-3.5 py-2 text-xs font-bold text-purple-400 hover:bg-purple-500/20 transition cursor-pointer"
+                title="Gửi yêu cầu đưa câu hỏi này vào Ngân hàng dùng chung"
+                @click="submitQuestionToBank(q.id)"
+              >
+                <Send :size="13" />
+                <span>Gửi duyệt</span>
+              </button>
+
               <router-link
                 :to="`/dashboard/my-questions/${q.id}/edit`"
                 class="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface-soft)] px-3.5 py-2 text-xs font-bold text-[var(--text)] transition hover:border-[var(--border-strong)] hover:bg-[var(--chip-active)]"
@@ -451,6 +517,10 @@ import {
   Pencil,
   ChevronLeft,
   ChevronRight,
+  Send,
+  Clock,
+  Globe,
+  XCircle,
 } from 'lucide-vue-next'
 
 const route = useRoute()
@@ -475,6 +545,8 @@ const showToast = inject('showToast')
 
 const questions = ref([])
 const topicsList = ref([])
+const selectedQuestionIds = ref([])
+const isSubmittingToBank = ref(false)
 const isLoading = ref(false)
 const errorMessage = ref('')
 
@@ -536,6 +608,66 @@ const visiblePages = computed(() => {
   }
   return pages
 })
+
+const isCurrentPageAllSelected = computed(() => {
+  if (questions.value.length === 0) return false
+  return questions.value.every(q => selectedQuestionIds.value.includes(q.id))
+})
+
+const toggleSelectQuestion = (id) => {
+  const index = selectedQuestionIds.value.indexOf(id)
+  if (index > -1) {
+    selectedQuestionIds.value.splice(index, 1)
+  } else {
+    selectedQuestionIds.value.push(id)
+  }
+}
+
+const toggleSelectAllOnPage = () => {
+  const pageIds = questions.value.map(q => q.id)
+  if (isCurrentPageAllSelected.value) {
+    selectedQuestionIds.value = selectedQuestionIds.value.filter(id => !pageIds.includes(id))
+  } else {
+    pageIds.forEach(id => {
+      if (!selectedQuestionIds.value.includes(id)) {
+        selectedQuestionIds.value.push(id)
+      }
+    })
+  }
+}
+
+const submitQuestionToBank = async (id) => {
+  try {
+    const res = await myQuestionsApi.submitToBank(id)
+    if (showToast) {
+      showToast(res?.message || 'Đã gửi yêu cầu duyệt câu hỏi vào Ngân hàng!', 'success')
+    }
+    await loadQuestions()
+  } catch (e) {
+    if (showToast) {
+      showToast(`Không thể gửi duyệt: ${e.message}`, 'error')
+    }
+  }
+}
+
+const bulkSubmitQuestionsToBank = async () => {
+  if (selectedQuestionIds.value.length === 0) return
+  isSubmittingToBank.value = true
+  try {
+    const res = await myQuestionsApi.bulkSubmitToBank(selectedQuestionIds.value)
+    if (showToast) {
+      showToast(res?.message || 'Đã gửi yêu cầu duyệt câu hỏi vào Ngân hàng!', 'success')
+    }
+    selectedQuestionIds.value = []
+    await loadQuestions()
+  } catch (e) {
+    if (showToast) {
+      showToast(`Không thể gửi duyệt: ${e.message}`, 'error')
+    }
+  } finally {
+    isSubmittingToBank.value = false
+  }
+}
 
 const hasActiveFilters = computed(() => {
   return Boolean(filters.search || filters.education_level_id || filters.grade_id || filters.subject_id || filters.topic_name || filters.difficulty)

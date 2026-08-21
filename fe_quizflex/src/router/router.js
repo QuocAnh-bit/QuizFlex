@@ -504,6 +504,17 @@ const routes = [
     },
   },
   {
+    path: "/admin/question-bank-requests",
+    name: "admin-question-bank-requests",
+    component: () => import("@/views/admin/QuestionBankRequests.vue"),
+    meta: {
+      layout: "admin",
+      title: "Duyệt câu hỏi vào Ngân hàng",
+      requiresAuth: true,
+      roles: adminRoles,
+    },
+  },
+  {
     path: "/admin/rooms",
     name: "admin-rooms",
     component: () => import("@/views/admin/Rooms.vue"),

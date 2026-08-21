@@ -206,39 +206,27 @@
             </div>
           </div>
 
-          <!-- 4. Phạm vi hiển thị -->
+          <!-- 4. Lưu trữ & Quy trình Ngân hàng câu hỏi -->
           <div class="grid gap-4 pt-5 border-t border-[var(--border)]">
             <h2 class="text-lg font-black tracking-[-0.04em] text-[var(--text)] flex items-center">
               <span class="h-4 w-1 rounded-full bg-[var(--primary)] inline-block mr-2.5 shadow-[0_0_8px_var(--primary)]"></span>
-              <span>4. Phạm vi hiển thị</span>
+              <span>4. Lưu trữ & Kiểm duyệt</span>
             </h2>
 
-            <div class="grid md:grid-cols-2 gap-4">
-              <label 
-                class="flex items-start gap-3 rounded-2xl border p-4 cursor-pointer transition duration-200"
-                :class="!form.is_public ? 'border-amber-500/60 bg-amber-500/10 text-[var(--text)] shadow-sm' : 'border-[var(--border)] bg-[var(--surface-soft)] text-[var(--muted)] hover:border-[var(--border-strong)]'"
-              >
-                <input type="radio" v-model="form.is_public" :value="false" class="mt-1 accent-amber-500 h-4 w-4" />
-                <div class="grid gap-1">
-                  <span class="font-black text-sm text-amber-300 flex items-center gap-1.5">
-                    <span>🔒</span> Riêng tư
-                  </span>
-                  <span class="text-xs leading-relaxed text-[var(--muted)]">Lưu vào kho cá nhân của bạn để sử dụng khi tạo quiz.</span>
+            <div class="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4">
+              <div class="flex items-start gap-3">
+                <div class="rounded-xl bg-amber-500/20 p-2.5 text-amber-400">
+                  <span class="text-lg">🔒</span>
                 </div>
-              </label>
-
-              <label 
-                class="flex items-start gap-3 rounded-2xl border p-4 cursor-pointer transition duration-200"
-                :class="form.is_public ? 'border-[var(--primary)] bg-[var(--primary)]/10 text-[var(--text)] shadow-sm' : 'border-[var(--border)] bg-[var(--surface-soft)] text-[var(--muted)] hover:border-[var(--border-strong)]'"
-              >
-                <input type="radio" v-model="form.is_public" :value="true" class="mt-1 accent-[var(--primary)] h-4 w-4" />
                 <div class="grid gap-1">
-                  <span class="font-black text-sm text-[var(--primary)] flex items-center gap-1.5">
-                    <span>🌐</span> Công khai
+                  <span class="font-black text-sm text-[var(--text)]">
+                    Lưu vào Kho câu hỏi cá nhân
                   </span>
-                  <span class="text-xs leading-relaxed text-[var(--muted)]">Chia sẻ lên ngân hàng câu hỏi dùng chung cho mọi người.</span>
+                  <span class="text-xs leading-relaxed text-[var(--muted)]">
+                    Mọi chỉnh sửa sẽ được lưu trong Kho cá nhân của bạn. Sau khi chỉnh sửa hoàn tất, bạn có thể gửi yêu cầu kiểm duyệt để đưa câu hỏi vào Ngân hàng dùng chung từ trang <strong>Kho câu hỏi của tôi</strong>.
+                  </span>
                 </div>
-              </label>
+              </div>
             </div>
           </div>
 

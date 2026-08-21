@@ -96,6 +96,8 @@ Route::middleware('auth:api')->group(function () {
     Route::delete('/user/my-questions/{id}', [QuestionController::class, 'softDeleteQuestion']);
     Route::post('/user/my-questions/{id}/restore', [QuestionController::class, 'restoreQuestion']);
     Route::delete('/user/my-questions/{id}/force', [QuestionController::class, 'forceDeleteQuestion']);
+    Route::post('/user/my-questions/{id}/submit-to-bank', [QuestionController::class, 'submitToBank']);
+    Route::post('/user/my-questions/bulk-submit-to-bank', [QuestionController::class, 'bulkSubmitToBank']);
 
 
     Route::middleware('role:admin')->group(function () {
@@ -147,6 +149,13 @@ Route::middleware('auth:api')->group(function () {
         Route::patch('/admin/questions/{id}/toggle-visibility', [QuestionController::class, 'adminToggleVisibility']);
         Route::post('/admin/questions/bulk-visibility', [QuestionController::class, 'adminBulkToggleVisibility']);
         Route::post('/admin/questions/bulk-delete', [QuestionController::class, 'adminBulkDelete']);
+
+        // Quản lý yêu cầu duyệt câu hỏi vào Ngân hàng cho admin
+        Route::get('/admin/question-bank-requests', [QuestionController::class, 'adminBankRequests']);
+        Route::post('/admin/question-bank-requests/{id}/approve', [QuestionController::class, 'adminApproveBankRequest']);
+        Route::post('/admin/question-bank-requests/{id}/reject', [QuestionController::class, 'adminRejectBankRequest']);
+        Route::post('/admin/question-bank-requests/bulk-approve', [QuestionController::class, 'adminBulkApproveBankRequests']);
+        Route::post('/admin/question-bank-requests/bulk-reject', [QuestionController::class, 'adminBulkRejectBankRequests']);
 
         // Quản lý bộ môn (Subjects) cho admin
         Route::get('/admin/subjects', [AdminSubjectController::class, 'index']);

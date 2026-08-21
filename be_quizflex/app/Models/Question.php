@@ -22,6 +22,9 @@ class Question extends Model
         'subject_id',
         'topic_name',
         'is_public',
+        'bank_submission_status',
+        'bank_submission_note',
+        'bank_submission_at',
         'order',
         'points',
         'question',
@@ -30,6 +33,7 @@ class Question extends Model
 
     protected $casts = [
         'is_public' => 'boolean',
+        'bank_submission_at' => 'datetime',
         'order' => 'integer',
         'points' => 'integer',
     ];

@@ -357,39 +357,95 @@
           <!-- DÙNG CHO MODE MANUAL: Danh sách câu hỏi đã chọn -->
           <div v-else class="grid gap-3 pt-3">
             <div v-if="selectedIds.length > 0" class="grid gap-3">
-              <div class="flex items-center justify-between text-xs font-bold text-[var(--muted)]">
-                <span>Đã chọn {{ selectedIds.length }} câu hỏi từ ngân hàng.</span>
-                <button type="button" class="text-[var(--primary)] hover:underline font-bold cursor-pointer" @click="saveDraftAndGoToBank">
-                  + Chọn thêm câu hỏi khác
+              <div class="flex flex-wrap items-center justify-between gap-3 text-xs font-bold">
+                <div class="flex items-center gap-2 text-[var(--muted)]">
+                  <span>Đã chọn <strong class="text-[var(--text)]">{{ selectedIds.length }}</strong> câu hỏi</span>
+                  <span v-if="myBankCount > 0 || publicBankCount > 0" class="inline-flex items-center gap-1.5 text-[11px] rounded-lg bg-[var(--surface-soft)] px-2.5 py-1 border border-[var(--border)]">
+                    <span v-if="myBankCount > 0" class="text-emerald-400">👤 Kho của tôi: {{ myBankCount }}</span>
+                    <span v-if="myBankCount > 0 && publicBankCount > 0" class="text-[var(--border)]">•</span>
+                    <span v-if="publicBankCount > 0" class="text-sky-400">🌐 Ngân hàng: {{ publicBankCount }}</span>
+                  </span>
+                </div>
+
+                <button
+                  type="button"
+                  class="btn-ghost inline-flex items-center gap-1.5 text-xs font-bold text-[var(--primary)] hover:bg-[var(--chip-active)] !py-1.5 !px-3 border border-[var(--border)] cursor-pointer"
+                  @click="openQuestionPicker"
+                >
+                  <span>+ Chọn thêm câu hỏi</span>
                 </button>
               </div>
 
-              <div class="flex flex-wrap gap-2">
-                <span 
-                  v-for="id in selectedIds" 
-                  :key="id" 
-                  class="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border)] bg-[var(--surface-soft)] px-3 py-1 text-xs font-bold text-[var(--text)]"
+              <!-- Danh sách câu hỏi rút gọn trong chế độ Manual -->
+              <div class="grid gap-2 max-h-[420px] overflow-y-auto pr-1">
+                <div
+                  v-for="(q, idx) in selectedQuestionsDisplayList"
+                  :key="q.id"
+                  class="flex items-center justify-between gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-3 sm:p-3.5 transition hover:border-[var(--border-strong)]"
                 >
-                  <span>#{{ id }}</span>
-                  <button 
-                    type="button" 
-                    class="text-[var(--muted)] hover:text-rose-400 font-black transition cursor-pointer"
-                    title="Bỏ chọn câu hỏi này"
-                    @click="removeSelectedId(id)"
+                  <div class="flex items-center gap-3 min-w-0 flex-1">
+                    <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-[var(--surface)] text-xs font-black text-[var(--muted)] border border-[var(--border)]">
+                      {{ idx + 1 }}
+                    </span>
+
+                    <div class="min-w-0 flex-1">
+                      <div class="flex flex-wrap items-center gap-1.5 mb-1">
+                        <span class="font-mono text-xs font-bold text-[var(--primary)]">#{{ q.id }}</span>
+                        <span
+                          class="rounded-full px-2 py-0.5 text-[10px] font-black"
+                          :class="getDifficultyClass(q.difficulty)"
+                        >
+                          {{ getDifficultyLabel(q.difficulty) }}
+                        </span>
+                        <span
+                          class="rounded-full px-2 py-0.5 text-[10px] font-bold"
+                          :class="q.source === 'my_bank' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-sky-500/10 text-sky-400 border border-sky-500/20'"
+                        >
+                          {{ q.source === 'my_bank' ? '👤 Kho của tôi' : '🌐 Ngân hàng' }}
+                        </span>
+                        <span v-if="q.subject_name" class="text-[10px] text-[var(--muted)] font-medium">
+                          • {{ q.subject_name }}
+                        </span>
+                      </div>
+
+                      <p class="text-xs sm:text-sm font-semibold text-[var(--text)] truncate">
+                        {{ q.content || q.text || `Câu hỏi #${q.id}` }}
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    class="h-8 w-8 shrink-0 flex items-center justify-center rounded-xl text-[var(--muted)] hover:bg-rose-500/10 hover:text-rose-400 transition cursor-pointer"
+                    title="Bỏ câu hỏi này"
+                    @click="removeSelectedQuestion(q.id)"
                   >
                     ✕
                   </button>
-                </span>
+                </div>
               </div>
             </div>
 
-            <div v-else class="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-5 text-center grid gap-3">
-              <p class="text-xs font-bold text-amber-300">
-                Bạn chưa chọn câu hỏi nào từ Ngân hàng câu hỏi.
-              </p>
+            <!-- Empty state for manual mode -->
+            <div v-else class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-8 text-center grid gap-3">
+              <div class="flex justify-center">
+                <span class="text-3xl">📚</span>
+              </div>
               <div>
-                <button type="button" class="btn-primary inline-flex items-center gap-2 text-xs !py-2 cursor-pointer" @click="saveDraftAndGoToBank">
-                  <span>📚 Chọn câu hỏi từ Ngân hàng</span>
+                <p class="text-sm font-bold text-[var(--text)]">
+                  Chưa có câu hỏi nào được chọn
+                </p>
+                <p class="text-xs text-[var(--muted)] mt-1 max-w-md mx-auto">
+                  Hãy chọn các câu hỏi từ Kho câu hỏi của tôi hoặc Ngân hàng câu hỏi công khai để đưa vào đề thi.
+                </p>
+              </div>
+              <div class="pt-2">
+                <button
+                  type="button"
+                  class="btn-primary inline-flex items-center gap-2 text-xs !py-2.5 !px-5 cursor-pointer shadow-md shadow-[var(--primary)]/20"
+                  @click="openQuestionPicker"
+                >
+                  <span>📚 Chọn câu hỏi cho bộ đề</span>
                 </button>
               </div>
             </div>
@@ -553,12 +609,21 @@
       </article>
     </aside>
   </section>
+
+  <!-- QUESTION PICKER MODAL -->
+  <QuestionPickerModal
+    v-model="selectedIds"
+    :is-open="isPickerModalOpen"
+    @close="isPickerModalOpen = false"
+    @confirm="handlePickerConfirm"
+  />
 </template>
 
 <script setup>
 import { computed, inject, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { coverToBackground, questionsBankApi, taxonomyApi } from '@/services/api'
+import QuestionPickerModal from '@/components/question/QuestionPickerModal.vue'
+import { coverToBackground, myQuestionsApi, questionsBankApi, taxonomyApi } from '@/services/api'
 
 const route = useRoute()
 const router = useRouter()
@@ -566,6 +631,9 @@ const showToast = inject('showToast')
 
 const mode = ref(route.query.mode === 'manual' ? 'manual' : 'random')
 const isSubmitting = ref(false)
+
+const isPickerModalOpen = ref(false)
+const selectedQuestionsMap = ref(new Map())
 
 const coverInput = ref(null)
 const formCoverFile = ref(null)
@@ -694,59 +762,103 @@ const availableSubjects = computed(() => {
   return grade && grade.subjects && grade.subjects.length ? grade.subjects : allSubjects.value
 })
 
-const removeSelectedId = (id) => {
+/* =========================================================
+   DIFFICULTY HELPERS
+========================================================= */
+const getDifficultyClass = (diff) => {
+  switch (diff) {
+    case 'easy':
+      return 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+    case 'hard':
+      return 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+    default:
+      return 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+  }
+}
+
+const getDifficultyLabel = (diff) => {
+  switch (diff) {
+    case 'easy':
+      return 'Dễ'
+    case 'hard':
+      return 'Khó'
+    default:
+      return 'Vừa'
+  }
+}
+
+/* =========================================================
+   MANUAL QUESTION PICKER LOGIC
+========================================================= */
+const openQuestionPicker = () => {
+  isPickerModalOpen.value = true
+}
+
+const handlePickerConfirm = ({ ids, questions }) => {
+  selectedIds.value = [...ids]
+  if (Array.isArray(questions)) {
+    questions.forEach(q => {
+      selectedQuestionsMap.value.set(q.id, q)
+    })
+  }
+  updateFormTitle()
+}
+
+const removeSelectedQuestion = (id) => {
   selectedIds.value = selectedIds.value.filter(item => item !== id)
+  selectedQuestionsMap.value.delete(id)
+  updateFormTitle()
 }
 
-const saveDraftAndGoToBank = () => {
-  const draftData = {
-    title: quizForm.title,
-    description: quizForm.description,
-    time_limit_minutes: quizForm.time_limit_minutes,
-    shuffle_questions: quizForm.shuffle_questions,
-    visibility: quizForm.visibility,
-    topic_name: quizForm.topic_name,
-    easy_count: quizForm.easy_count,
-    medium_count: quizForm.medium_count,
-    hard_count: quizForm.hard_count,
-    mode: mode.value,
-  }
-  try {
-    sessionStorage.setItem('quizflex_create_exam_draft', JSON.stringify(draftData))
-  } catch (e) {
-    console.error('Failed to save exam draft:', e)
-  }
+const selectedQuestionsDisplayList = computed(() => {
+  return selectedIds.value.map(id => {
+    return selectedQuestionsMap.value.get(id) || {
+      id,
+      content: `Câu hỏi #${id}`,
+      difficulty: 'medium',
+      source: 'public_bank',
+    }
+  })
+})
 
-  const query = {
-    ids: selectedIds.value.length ? selectedIds.value.join(',') : undefined,
-    education_level_id: filters.education_level_id || undefined,
-    grade_id: filters.grade_id || undefined,
-    subject_id: filters.subject_id || undefined,
-    topic_name: filters.topic_name || undefined,
-  }
-  router.push({ path: '/question-bank', query })
-}
+const myBankCount = computed(() => {
+  return selectedQuestionsDisplayList.value.filter(q => q.source === 'my_bank').length
+})
 
-const restoreDraft = () => {
+const publicBankCount = computed(() => {
+  return selectedQuestionsDisplayList.value.filter(q => q.source === 'public_bank').length
+})
+
+const hydrateSelectedQuestions = async (ids) => {
+  const missingIds = ids.filter(id => !selectedQuestionsMap.value.has(id))
+  if (missingIds.length === 0) return
   try {
-    const raw = sessionStorage.getItem('quizflex_create_exam_draft')
-    if (raw) {
-      const draft = JSON.parse(raw)
-      if (draft.title) quizForm.title = draft.title
-      if (draft.description !== undefined) quizForm.description = draft.description
-      if (draft.time_limit_minutes) quizForm.time_limit_minutes = draft.time_limit_minutes
-      if (draft.shuffle_questions !== undefined) quizForm.shuffle_questions = draft.shuffle_questions
-      if (draft.visibility) quizForm.visibility = draft.visibility
-      if (draft.topic_name) quizForm.topic_name = draft.topic_name
-      if (draft.easy_count !== undefined) quizForm.easy_count = draft.easy_count
-      if (draft.medium_count !== undefined) quizForm.medium_count = draft.medium_count
-      if (draft.hard_count !== undefined) quizForm.hard_count = draft.hard_count
-      if (draft.mode) mode.value = draft.mode
-      sessionStorage.removeItem('quizflex_create_exam_draft')
+    const publicRes = await questionsBankApi.fetchBank({ ids: missingIds, per_page: missingIds.length })
+    const publicItems = publicRes?.items || (Array.isArray(publicRes) ? publicRes : [])
+    publicItems.forEach(q => {
+      selectedQuestionsMap.value.set(q.id, { ...q, source: 'public_bank' })
+    })
+
+    const stillMissing = ids.filter(id => !selectedQuestionsMap.value.has(id))
+    if (stillMissing.length > 0) {
+      const userRes = await myQuestionsApi.fetchBank({ ids: stillMissing, per_page: stillMissing.length })
+      const userItems = userRes?.items || (Array.isArray(userRes) ? userRes : [])
+      userItems.forEach(q => {
+        selectedQuestionsMap.value.set(q.id, { ...q, source: 'my_bank' })
+      })
     }
   } catch (e) {
-    console.error('Failed to restore exam draft:', e)
+    console.error('Không tải được chi tiết câu hỏi:', e)
   }
+}
+
+const getCorrectAnswerKey = (question) => {
+  if (!question || !Array.isArray(question.answers)) return null
+  const correctAns = question.answers.find(a => Boolean(a.is_correct))
+  if (!correctAns) return null
+  const key = correctAns.answer_key || correctAns.key || ''
+  const text = correctAns.text || correctAns.content || ''
+  return key ? (text ? `${key}. ${text}` : key) : text
 }
 
 const goBack = () => {
@@ -911,9 +1023,11 @@ const handleCreateQuizSubmit = async () => {
 }
 
 onMounted(async () => {
-  restoreDraft()
   await fetchTaxonomy()
   await fetchTopicsList()
   await updatePoolStats()
+  if (selectedIds.value.length > 0) {
+    await hydrateSelectedQuestions(selectedIds.value)
+  }
 })
 </script>

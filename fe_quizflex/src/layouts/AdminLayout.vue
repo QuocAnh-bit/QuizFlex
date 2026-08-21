@@ -138,6 +138,7 @@ import {
   BookOpen,
   BrainCircuit,
   Camera,
+  CheckSquare,
   ChevronDown,
   ClipboardList,
   CreditCard,
@@ -207,6 +208,7 @@ const menu = computed(() => [
     items: [
       { label: 'Tổng quan', to: '/admin', icon: LayoutDashboard },
       { label: 'Quản lý câu hỏi', to: '/admin/question-bank', icon: HelpCircle },
+      { label: 'Duyệt vào Ngân hàng', to: '/admin/question-bank-requests', icon: CheckSquare },
       { label: 'Tạo câu hỏi mới', to: '/admin/question-bank/create-question', icon: FolderPlus },
       { label: 'Kho quiz', to: '/admin/questions', icon: Package },
       
