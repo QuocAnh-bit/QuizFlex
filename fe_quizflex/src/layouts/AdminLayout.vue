@@ -144,14 +144,13 @@ import {
   CreditCard,
   Flag,
   HelpCircle,
-  FolderPlus,
   LayoutDashboard,
   Package,
   Plus,
   Settings,
   Users,
   Video,
-} from '@lucide/vue'
+} from 'lucide-vue-next'
 
 import BrandLogo from '@/components/common/BrandLogo.vue'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
@@ -178,13 +177,16 @@ const isGroupOpen = (label) => {
 
 const fetchReportCount = async () => {
   try {
-    const token = localStorage.getItem('quizflex_access_token')
-    const { data } = await axios.get('/api/admin/report-tickets/count', {
-      headers: { Authorization: `Bearer ${token}` }
+    const token = localStorage.getItem('token')
+    if (!token) return
+    const res = await axios.get('/api/admin/report-tickets', {
+      headers: { Authorization: `Bearer ${token}` },
+      params: { status: 'pending', per_page: 1 },
     })
-    reportCount.value = data.count || 0
-  } catch (error) {
-    console.error('Lỗi khi lấy số lượng báo cáo:', error)
+    const payload = res.data?.data ?? res.data
+    reportCount.value = payload?.stats?.pending ?? (payload?.total ?? 0)
+  } catch (err) {
+    console.error('Không thể lấy số lượng báo cáo chờ xử lý:', err)
   }
 }
 
@@ -209,7 +211,6 @@ const menu = computed(() => [
       { label: 'Tổng quan', to: '/admin', icon: LayoutDashboard },
       { label: 'Quản lý câu hỏi', to: '/admin/question-bank', icon: HelpCircle },
       { label: 'Duyệt vào Ngân hàng', to: '/admin/question-bank-requests', icon: CheckSquare },
-      { label: 'Tạo câu hỏi mới', to: '/admin/question-bank/create-question', icon: FolderPlus },
       { label: 'Kho quiz', to: '/admin/questions', icon: Package },
       
       { label: 'AI Generator', to: '/admin/questions/ai', icon: BrainCircuit },

@@ -65,9 +65,9 @@
             class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-medium text-slate-700 outline-none focus:border-[#7C3AED] focus:bg-white cursor-pointer"
             @change="loadRequests(true)"
           >
-            <option value="pending">⏳ Chờ duyệt (Pending)</option>
-            <option value="approved">✅ Đã duyệt (Approved)</option>
-            <option value="rejected">❌ Đã từ chối (Rejected)</option>
+            <option value="pending">Chờ duyệt (Pending)</option>
+            <option value="approved">Đã duyệt (Approved)</option>
+            <option value="rejected">Đã từ chối (Rejected)</option>
             <option value="all">Tất cả trạng thái</option>
           </select>
         </div>

@@ -11,7 +11,7 @@
       </router-link>
       <ChevronRight class="h-4 w-4" />
       <span class="font-medium text-slate-900">
-        {{ isEditMode ? `Chỉnh sửa #${questionId}` : 'Tạo câu hỏi mới' }}
+        Chỉnh sửa câu hỏi #{{ questionId }}
       </span>
     </div>
 
@@ -30,10 +30,10 @@
 
           <div>
             <h1 class="text-2xl font-bold tracking-tight text-slate-900">
-              {{ isEditMode ? `Chỉnh sửa câu hỏi #${questionId}` : 'Tạo câu hỏi mới' }}
+              Chỉnh sửa câu hỏi #{{ questionId }}
             </h1>
             <p class="mt-1 text-sm text-slate-500">
-              Soạn thảo nội dung, đính kèm hình ảnh, thiết lập đáp án đúng và phân loại thuộc tính.
+              Điều chỉnh nội dung, đính chính đáp án đúng và phân loại thuộc tính cho câu hỏi trong Ngân hàng.
             </p>
           </div>
         </div>
@@ -56,7 +56,7 @@
             @click="saveQuestion"
           >
             <Save class="h-4 w-4" />
-            {{ isSubmitting ? 'Đang lưu...' : (isEditMode ? 'Lưu thay đổi' : 'Tạo câu hỏi') }}
+            {{ isSubmitting ? 'Đang lưu...' : 'Lưu thay đổi' }}
           </button>
         </div>
       </div>
@@ -440,19 +440,9 @@ const saveQuestion = async () => {
 
   isSubmitting.value = true
   try {
-    if (isEditMode.value) {
-      await adminQuestionsApi.update(questionId.value, form)
-      if (showToast) showToast('Cập nhật câu hỏi thành công!', 'success')
-      router.push(`/admin/questions/${questionId.value}`)
-    } else {
-      const created = await adminQuestionsApi.createQuestion(form)
-      if (showToast) showToast('Tạo câu hỏi mới thành công!', 'success')
-      if (created && created.id) {
-        router.push(`/admin/questions/${created.id}`)
-      } else {
-        router.push('/admin/question-bank')
-      }
-    }
+    await adminQuestionsApi.update(questionId.value, form)
+    if (showToast) showToast('Cập nhật câu hỏi thành công!', 'success')
+    router.push(`/admin/questions/${questionId.value}`)
   } catch (err) {
     const msg = formatApiErrorMessage(err, 'Lưu thất bại. Vui lòng kiểm tra lại.')
     if (showToast) showToast(msg, 'error')

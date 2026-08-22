@@ -287,11 +287,6 @@ export const adminQuestionsApi = {
     return unwrap(data);
   },
 
-  async createQuestion(payload) {
-    const { data } = await api.post('/questions', payload);
-    return unwrap(data);
-  },
-
   async remove(id) {
     const { data } = await api.delete(`/user/my-questions/${id}`);
     return data;

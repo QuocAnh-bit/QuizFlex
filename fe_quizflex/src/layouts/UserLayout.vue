@@ -318,7 +318,7 @@ import {
   X,
   ChevronDown,
   LayoutDashboard,
-} from '@lucide/vue'
+} from 'lucide-vue-next'
 
 import BrandLogo from '@/components/common/BrandLogo.vue'
 import LanguageSwitcher from '@/components/common/LanguageSwitcher.vue'

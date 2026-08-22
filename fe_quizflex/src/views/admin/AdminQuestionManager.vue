@@ -36,11 +36,11 @@
           </router-link>
 
           <router-link
-            to="/admin/question-bank/create-question"
+            to="/admin/question-bank-requests"
             class="inline-flex items-center gap-2 rounded-lg bg-[#7C3AED] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#6D28D9]"
           >
-            <Plus class="h-4 w-4" />
-            Tạo câu hỏi mới
+            <CheckSquare class="h-4 w-4" />
+            Duyệt vào Ngân hàng
           </router-link>
         </div>
       </div>
@@ -503,7 +503,7 @@ import { useRouter } from 'vue-router'
 import {
   Shield,
   Trash2,
-  Plus,
+  CheckSquare,
   FileText,
   Globe,
   Lock,

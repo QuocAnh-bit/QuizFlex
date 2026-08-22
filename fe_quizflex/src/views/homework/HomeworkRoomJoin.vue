@@ -122,7 +122,7 @@ import {
   DoorOpen,
   LoaderCircle,
   LogIn,
-} from '@lucide/vue'
+} from 'lucide-vue-next'
 import { homeworkApi } from '@/services/api'
 
 const router = useRouter()

@@ -245,7 +245,7 @@ import {
   Medal,
   GraduationCap,
   Sparkles,
-} from '@lucide/vue'
+} from 'lucide-vue-next'
 
 import { gamificationApi } from '@/services/api'
 

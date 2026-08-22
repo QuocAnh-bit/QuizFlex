@@ -198,7 +198,8 @@
               <button
                 v-if="form.answers.length > 2"
                 type="button"
-                class="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-slate-400 transition hover:bg-rose-50 hover:text-rose-600"
+                class="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 cursor-pointer"
+                aria-label="Xóa đáp án"
                 title="Xóa đáp án"
                 @click="removeAnswerChoice(idx)"
               >

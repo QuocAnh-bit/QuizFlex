@@ -27,8 +27,6 @@ use App\Http\Controllers\ReportTicketController;
 use App\Http\Controllers\NotificationController;
 
 Route::get('/taxonomies/tree', [TaxonomyController::class, 'tree']);
-Route::get('/questions/bank', [QuestionController::class, 'bank']);
-Route::post('/quizzes/from-bank', [QuestionController::class, 'createQuizFromBank']);
 
 Route::get('/test', function () {
     return response()->json([

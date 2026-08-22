@@ -75,9 +75,15 @@
           <!-- Overall Counter Summary Pill -->
           <div class="ml-auto text-xs font-bold text-[var(--muted)] hidden sm:flex items-center gap-2">
             <span class="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2.5 py-1 text-[11px]">
-              <span class="text-emerald-400">👤 Kho: {{ myBankSelectedCount }}</span>
+              <span class="inline-flex items-center gap-1 text-emerald-400">
+                <User :size="12" />
+                <span>Kho: {{ myBankSelectedCount }}</span>
+              </span>
               <span class="text-[var(--border)]">•</span>
-              <span class="text-sky-400">🌐 Ngân hàng: {{ publicBankSelectedCount }}</span>
+              <span class="inline-flex items-center gap-1 text-sky-400">
+                <Globe :size="12" />
+                <span>Ngân hàng: {{ publicBankSelectedCount }}</span>
+              </span>
             </span>
           </div>
         </div>
@@ -184,10 +190,11 @@
           <button
             v-if="questions.length > 0"
             type="button"
-            class="text-[var(--primary)] hover:underline font-bold cursor-pointer text-xs"
+            class="text-[var(--primary)] hover:underline font-bold cursor-pointer text-xs inline-flex items-center gap-1.5"
             @click="toggleSelectAllCurrentPage"
           >
-            {{ isCurrentPageAllSelected ? '✕ Bỏ chọn trang này' : '✓ Chọn tất cả trang này' }}
+            <component :is="isCurrentPageAllSelected ? X : Check" :size="13" />
+            <span>{{ isCurrentPageAllSelected ? 'Bỏ chọn trang này' : 'Chọn tất cả trang này' }}</span>
           </button>
         </div>
       </div>
@@ -202,7 +209,7 @@
 
         <!-- Empty State -->
         <div v-else-if="questions.length === 0" class="flex flex-col items-center justify-center py-16 text-center text-xs text-[var(--muted)]">
-          <span class="text-3xl mb-2">🔍</span>
+          <Search :size="36" class="text-[var(--muted)] mb-2" />
           <p class="font-bold text-sm text-[var(--text)]">Không tìm thấy câu hỏi phù hợp</p>
           <p class="mt-1">Hãy thử điều chỉnh lại bộ lọc hoặc từ khóa tìm kiếm.</p>
         </div>
@@ -243,10 +250,11 @@
 
                 <!-- Source Badge -->
                 <span
-                  class="rounded-full px-2 py-0.5 text-[10px] font-bold"
+                  class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold"
                   :class="activeTab === 'my_bank' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-sky-500/10 text-sky-400 border border-sky-500/20'"
                 >
-                  {{ activeTab === 'my_bank' ? '👤 Kho của tôi' : '🌐 Ngân hàng' }}
+                  <component :is="activeTab === 'my_bank' ? User : Globe" :size="11" />
+                  <span>{{ activeTab === 'my_bank' ? 'Kho của tôi' : 'Ngân hàng' }}</span>
                 </span>
 
                 <!-- Subject / Grade -->

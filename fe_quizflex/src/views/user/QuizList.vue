@@ -558,7 +558,7 @@ import {
   BookOpen,
   Zap,
   RotateCcw,
-} from "@lucide/vue";
+} from "lucide-vue-next";
 
 import AppErrorState from "@/components/common/AppErrorState.vue";
 import VisibilityBadge from "@/components/common/VisibilityBadge.vue";

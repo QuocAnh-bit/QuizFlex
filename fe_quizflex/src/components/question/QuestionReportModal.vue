@@ -4,13 +4,23 @@
       <!-- Header -->
       <div class="flex items-center justify-between border-b border-[var(--border)] pb-4 mb-4">
         <div class="flex items-center gap-3">
-          <span class="text-2xl">🚩</span>
+          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-500/20 text-rose-400 border border-rose-500/30">
+            <Flag :size="20" />
+          </div>
           <div>
             <h3 class="text-xl font-black text-white">Báo cáo vi phạm câu hỏi #{{ questionId }}</h3>
             <p class="text-xs text-[var(--muted)]">Giúp QuizFlex làm sạch nội dung bằng cách báo cáo sai sót</p>
           </div>
         </div>
-        <button type="button" class="text-lg font-black text-[var(--muted)] hover:text-rose-400" @click="closeModal">✕</button>
+        <button
+          type="button"
+          class="flex h-8 w-8 items-center justify-center rounded-xl text-[var(--muted)] hover:text-rose-400 hover:bg-rose-500/10 transition cursor-pointer"
+          aria-label="Đóng"
+          title="Đóng"
+          @click="closeModal"
+        >
+          <X :size="16" />
+        </button>
       </div>
 
       <!-- Form -->
@@ -39,7 +49,7 @@
         <div class="flex items-center justify-end gap-3 pt-4 border-t border-[var(--border)]">
           <button type="button" class="btn-ghost text-xs" @click="closeModal">Hủy</button>
           <button type="submit" class="btn-primary text-xs flex items-center gap-2" :disabled="isSubmitting || !selectedReason">
-            <span>🚩</span>
+            <Flag :size="13" />
             <span>{{ isSubmitting ? 'Đang gửi...' : 'Gửi báo cáo' }}</span>
           </button>
         </div>
@@ -50,6 +60,7 @@
 
 <script setup>
 import { ref, inject } from 'vue'
+import { Flag, X } from 'lucide-vue-next'
 import { reportApi } from '@/services/api'
 
 const props = defineProps({

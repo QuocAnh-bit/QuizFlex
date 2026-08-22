@@ -27,5 +27,5 @@
 </template>
 
 <script setup>
-import { UserRound } from '@lucide/vue'
+import { UserRound } from 'lucide-vue-next'
 </script>

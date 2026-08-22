@@ -784,7 +784,7 @@ import {
   WalletCards,
   Zap,
   X
-} from '@lucide/vue'
+} from 'lucide-vue-next'
 
 import {
   currentUserStorage,

@@ -282,7 +282,7 @@ import {
   ListChecks,
   Clock3,
   UsersRound,
-} from '@lucide/vue'
+} from 'lucide-vue-next'
 
 import AppLoadingState from '@/components/common/AppLoadingState.vue'
 import AppErrorState from '@/components/common/AppErrorState.vue'
