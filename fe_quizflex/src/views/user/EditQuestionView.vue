@@ -53,7 +53,7 @@
             </div>
 
             <p class="mt-2 text-sm leading-6 text-[var(--muted)]">
-              Cập nhật chi tiết nội dung câu hỏi, độ khó, môn học, các phương án đáp án và phạm vi hiển thị. Sau khi cập nhật, hệ thống sẽ gửi thông báo đính chính cho Admin kiểm duyệt.
+              Cập nhật chi tiết nội dung câu hỏi, độ khó, môn học, các phương án đáp án và thông tin phân loại. Sau khi lưu thay đổi, câu hỏi chưa được gửi lại cho Admin; bạn có thể chủ động bấm "Gửi duyệt" tại Kho câu hỏi để gửi yêu cầu kiểm duyệt mới.
             </p>
           </div>
 
@@ -657,7 +657,7 @@ const saveQuestion = async () => {
     }
 
     await myQuestionsApi.update(questionId.value, payload)
-    if (showToast) showToast('Cập nhật đính chính thành công! Đã gửi thông báo cho Admin kiểm duyệt.', 'success')
+    if (showToast) showToast('Đã lưu thay đổi thành công! Vui lòng bấm "Gửi duyệt" tại Kho câu hỏi để gửi yêu cầu kiểm duyệt lại cho Admin.', 'success')
     router.push(`/dashboard/my-questions?question_id=${questionId.value}&updated=1`)
   } catch (err) {
     const msg = formatApiErrorMessage(err, 'Cập nhật thất bại. Vui lòng kiểm tra lại.')

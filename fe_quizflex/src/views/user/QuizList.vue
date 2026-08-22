@@ -84,7 +84,7 @@
           <select
             v-model="filters.grade_id"
             class="field w-full pl-9 text-xs"
-            @change="loadQuizzes"
+            @change="onFilterChange"
           >
             <option value="">
               Tất cả Lớp
@@ -111,7 +111,7 @@
           <select
             v-model="filters.subject_id"
             class="field w-full pl-9 text-xs"
-            @change="loadQuizzes"
+            @change="onFilterChange"
           >
             <option value="">
               Tất cả Môn học
@@ -138,7 +138,7 @@
           <select
             v-model="filters.difficulty"
             class="field w-full pl-9 text-xs"
-            @change="loadQuizzes"
+            @change="onFilterChange"
           >
             <option value="">
               Tất cả độ khó
@@ -177,7 +177,7 @@
             v-model="filters.search"
             class="field w-full pl-9 text-xs"
             placeholder="Tìm kiếm quiz, chuyên đề, từ khóa..."
-            @keyup.enter="loadQuizzes"
+            @keyup.enter="onFilterChange"
           />
         </div>
 
@@ -192,7 +192,7 @@
           <select
             v-model="filters.visibility"
             class="field w-full pl-9 text-xs"
-            @change="loadQuizzes"
+            @change="onFilterChange"
           >
             <option value="all">
               Tất cả chế độ
@@ -248,7 +248,7 @@
           <button
             type="button"
             class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 transition-all duration-200 hover:border-[#7C3AED]/30 hover:bg-[#F5F3FF] hover:text-[#7C3AED] active:scale-[0.98]"
-            @click="loadQuizzes"
+            @click="onFilterChange"
           >
             <Search
               :size="14"
@@ -390,9 +390,14 @@
             <!-- Content -->
             <div class="space-y-3 p-5">
               <!-- Visibility + Difficulty -->
-              <div class="flex items-center gap-2">
+              <div class="flex items-center gap-1.5 flex-wrap">
                 <VisibilityBadge
                   :value="quiz.visibility"
+                />
+
+                <StatusBadge
+                  v-if="quiz.review_status === 'pending_review' || quiz.review_status === 'rejected'"
+                  :value="quiz.review_status"
                 />
 
                 <span
@@ -490,6 +495,22 @@
       </div>
 
       <!-- =======================================================
+           PAGINATION
+      ======================================================== -->
+      <AppPagination
+        v-if="pagination.total > 0"
+        :current-page="pagination.currentPage"
+        :last-page="pagination.lastPage"
+        :total="pagination.total"
+        :per-page="pagination.perPage"
+        :show-per-page-selector="true"
+        :per-page-options="[12, 24, 48]"
+        item-label="bài quiz"
+        @update:current-page="onPageChange"
+        @update:per-page="onPerPageChange"
+      />
+
+      <!-- =======================================================
            EMPTY STATE
       ======================================================== -->
       <div
@@ -562,6 +583,8 @@ import {
 
 import AppErrorState from "@/components/common/AppErrorState.vue";
 import VisibilityBadge from "@/components/common/VisibilityBadge.vue";
+import StatusBadge from "@/components/common/StatusBadge.vue";
+import AppPagination from "@/components/common/AppPagination.vue";
 
 import {
   currentUserStorage,
@@ -585,6 +608,13 @@ const quizzes = ref([]);
 const isLoading = ref(false);
 const errorMessage = ref("");
 const tags = ref([]);
+
+const pagination = reactive({
+  currentPage: 1,
+  lastPage: 1,
+  total: 0,
+  perPage: 12,
+});
 
 const taxonomyLevels = ref([]);
 const allSubjects = ref([]);
@@ -690,12 +720,18 @@ const availableSubjects = computed(() => {
 });
 
 /* =========================================================
-   LEVEL CHANGE
+   LEVEL & FILTER CHANGE
 ========================================================= */
 
 const onLevelChange = () => {
   filters.grade_id = "";
-  loadQuizzes();
+  pagination.currentPage = 1;
+  loadQuizzes(1);
+};
+
+const onFilterChange = () => {
+  pagination.currentPage = 1;
+  loadQuizzes(1);
 };
 
 /* =========================================================
@@ -713,6 +749,35 @@ const hasActiveFilters = computed(() => {
 });
 
 /* =========================================================
+   PAGINATION ACTIONS
+========================================================= */
+
+const onPageChange = (page) => {
+  pagination.currentPage = page;
+  router.push({
+    query: {
+      ...route.query,
+      page,
+    },
+  });
+  loadQuizzes(page);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+const onPerPageChange = (perPage) => {
+  pagination.perPage = perPage;
+  pagination.currentPage = 1;
+  router.push({
+    query: {
+      ...route.query,
+      page: 1,
+      per_page: perPage,
+    },
+  });
+  loadQuizzes(1);
+};
+
+/* =========================================================
    RESET FILTERS
 ========================================================= */
 
@@ -723,12 +788,13 @@ const resetFilters = () => {
   filters.grade_id = "";
   filters.subject_id = "";
   filters.tag = "all";
+  pagination.currentPage = 1;
 
   router.push({
     path: "/quizzes",
   });
 
-  loadQuizzes();
+  loadQuizzes(1);
 };
 
 /* =========================================================
@@ -785,18 +851,30 @@ const applyRouteFilters = () => {
     : currentUserStorage.get()
       ? "all"
       : "public";
+
+  pagination.currentPage = route.query.page
+    ? Math.max(1, Number(route.query.page))
+    : 1;
+
+  pagination.perPage = route.query.per_page
+    ? Math.max(1, Number(route.query.per_page))
+    : 12;
 };
 
 /* =========================================================
    LOAD QUIZZES
 ========================================================= */
 
-const loadQuizzes = async () => {
+const loadQuizzes = async (page = pagination.currentPage) => {
   isLoading.value = true;
   errorMessage.value = "";
+  pagination.currentPage = page;
 
   try {
     const params = {
+      page,
+      per_page: pagination.perPage,
+
       search:
         filters.search || undefined,
 
@@ -820,17 +898,12 @@ const loadQuizzes = async () => {
         undefined,
     };
 
-    const data =
-      await quizzesApi.list(params);
+    const res = await quizzesApi.fetchPaginated(params);
 
-    const list = Array.isArray(data)
-      ? data
-      : (
-          data?.data &&
-          Array.isArray(data.data)
-            ? data.data
-            : []
-        );
+    const list = res.items || [];
+    pagination.total = res.total || 0;
+    pagination.lastPage = res.lastPage || 1;
+    pagination.currentPage = res.currentPage || page;
 
     quizzes.value = list.map((q) => {
       const card =
@@ -864,6 +937,9 @@ const loadQuizzes = async () => {
   } catch (error) {
     errorMessage.value =
       `Không tải được quiz: ${error.message}`;
+    quizzes.value = [];
+    pagination.total = 0;
+    pagination.lastPage = 1;
   } finally {
     isLoading.value = false;
   }
@@ -902,7 +978,7 @@ onMounted(async () => {
 
   applyRouteFilters();
 
-  await loadQuizzes();
+  await loadQuizzes(pagination.currentPage);
 });
 </script>
 

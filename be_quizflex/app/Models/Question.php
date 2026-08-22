@@ -13,6 +13,8 @@ class Question extends Model
     protected $fillable = [
         'quiz_id',
         'user_id',
+        'origin_question_id',
+        'fingerprint',
         'content',
         'image_url',
         'type',
@@ -60,6 +62,16 @@ class Question extends Model
         return $this->belongsTo(User::class, 'user_id');
     }
 
+    public function originQuestion()
+    {
+        return $this->belongsTo(Question::class, 'origin_question_id');
+    }
+
+    public function snapshots()
+    {
+        return $this->hasMany(Question::class, 'origin_question_id');
+    }
+
     public function educationLevel()
     {
         return $this->belongsTo(EducationLevel::class);
@@ -78,5 +90,20 @@ class Question extends Model
     public function answers()
     {
         return $this->hasMany(Answer::class)->orderBy('order');
+    }
+
+    public function reviewRequests()
+    {
+        return $this->hasMany(QuestionReviewRequest::class, 'question_id')->orderBy('revision_number', 'desc');
+    }
+
+    public function latestReviewRequest()
+    {
+        return $this->hasOne(QuestionReviewRequest::class, 'question_id')->latestOfMany();
+    }
+
+    public function pendingReviewRequest()
+    {
+        return $this->hasOne(QuestionReviewRequest::class, 'question_id')->where('status', 'pending');
     }
 }

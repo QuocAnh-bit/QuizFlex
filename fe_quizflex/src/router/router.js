@@ -504,6 +504,17 @@ const routes = [
     },
   },
   {
+    path: "/admin/quiz-review-requests",
+    name: "admin-quiz-review-requests",
+    component: () => import("@/views/admin/QuizReviewRequests.vue"),
+    meta: {
+      layout: "admin",
+      title: "Duyệt Quiz công khai",
+      requiresAuth: true,
+      roles: adminRoles,
+    },
+  },
+  {
     path: "/admin/rooms",
     name: "admin-rooms",
     component: () => import("@/views/admin/Rooms.vue"),

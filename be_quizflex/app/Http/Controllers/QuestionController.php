@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Answer;
 use App\Models\Question;
+use App\Models\QuestionReviewRequest;
 use App\Models\Quiz;
 use App\Models\User;
 use App\Notifications\QuestionModerated;
 use App\Notifications\ReportAuthorUpdated;
+use App\Services\QuestionReviewService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -16,6 +18,11 @@ use Illuminate\Validation\Rule;
 
 class QuestionController extends Controller
 {
+    public function __construct(
+        protected ?QuestionReviewService $reviewService = null
+    ) {
+        $this->reviewService = $reviewService ?? app(QuestionReviewService::class);
+    }
     public function index(Quiz $quiz)
     {
         $quiz->load('questions.answers');
@@ -228,6 +235,7 @@ class QuestionController extends Controller
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
+            'mode' => ['nullable', 'string', Rule::in(['manual', 'auto', 'random'])],
             'education_level_id' => ['nullable', 'integer', 'exists:education_levels,id'],
             'grade_id' => ['nullable', 'integer', 'exists:grades,id'],
             'subject_id' => ['nullable', 'integer', 'exists:subjects,id'],
@@ -264,10 +272,32 @@ class QuestionController extends Controller
             return response()->json(['success' => false, 'message' => 'Bạn cần đăng nhập.'], 401);
         }
 
+        $isAdmin = strtolower($user->role ?? '') === 'admin';
+        $modeInput = strtolower(trim((string) ($validated['mode'] ?? '')));
         $rawQuestionIds = collect($validated['question_ids'] ?? [])->unique()->values()->all();
+        $hasQuestionIds = !empty($rawQuestionIds);
+        $hasMatrixCounts = (isset($validated['easy_count']) && (int)$validated['easy_count'] > 0)
+            || (isset($validated['medium_count']) && (int)$validated['medium_count'] > 0)
+            || (isset($validated['hard_count']) && (int)$validated['hard_count'] > 0)
+            || (isset($validated['random_count']) && (int)$validated['random_count'] > 0);
+
+        if ($modeInput === 'auto' || $modeInput === 'random' || (!$hasQuestionIds && $hasMatrixCounts)) {
+            $creationMode = 'auto';
+        } else {
+            $creationMode = 'manual';
+        }
+
         $questionIds = [];
 
-        if (!empty($rawQuestionIds)) {
+        if ($creationMode === 'manual') {
+            // Chế độ CHỌN THỦ CÔNG: Cho phép dùng câu hỏi từ Kho cá nhân của user hoặc Ngân hàng công khai
+            if (!$hasQuestionIds) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Vui lòng chọn ít nhất 1 câu hỏi cho Quiz thủ công.',
+                ], 422);
+            }
+
             $allowedCount = Question::query()
                 ->whereIn('id', $rawQuestionIds)
                 ->where(function ($q) use ($user) {
@@ -284,14 +314,33 @@ class QuestionController extends Controller
             }
 
             $questionIds = $rawQuestionIds;
+        } else {
+            // Chế độ TỰ ĐỘNG: Nguồn duy nhất là Question Bank (is_public = true)
+            // Nếu request auto cố tình gửi question_ids, kiểm tra 100% câu hỏi phải là Bank public
+            if ($hasQuestionIds) {
+                $bankCount = Question::query()
+                    ->whereIn('id', $rawQuestionIds)
+                    ->where('is_public', true)
+                    ->count();
+
+                if ($bankCount !== count($rawQuestionIds)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Chế độ tạo tự động chỉ chấp nhận câu hỏi từ Ngân hàng câu hỏi công khai đã được kiểm duyệt.',
+                    ], 422);
+                }
+
+                $questionIds = $rawQuestionIds;
+            }
         }
 
         $easyCount = (int)($validated['easy_count'] ?? 0);
         $mediumCount = (int)($validated['medium_count'] ?? 0);
         $hardCount = (int)($validated['hard_count'] ?? 0);
 
-        // TH1: Sử dụng Cấu trúc Phân bổ Độ khó (Easy / Medium / Hard Breakdown)
+        // TH1: Sử dụng Cấu trúc Phân bổ Độ khó (TỰ ĐỘNG PHÂN BỔ - Auto Mode)
         if (empty($questionIds) && ($easyCount > 0 || $mediumCount > 0 || $hardCount > 0)) {
+            $creationMode = 'auto';
             $baseQuery = function () use ($validated) {
                 $q = Question::query();
                 $this->applyPublicQuestionScope($q);
@@ -330,8 +379,9 @@ class QuestionController extends Controller
             }
             $questionIds = $sampled->all();
         }
-        // TH2: Sử dụng bốc ngẫu nhiên tổng số N câu đơn thuần
+        // TH2: Sử dụng bốc ngẫu nhiên tổng số N câu đơn thuần (TỰ ĐỘNG PHÂN BỔ - Auto Mode)
         elseif (empty($questionIds) && !empty($validated['random_count'])) {
+            $creationMode = 'auto';
             $query = Question::query();
             $this->applyPublicQuestionScope($query);
 
@@ -369,15 +419,26 @@ class QuestionController extends Controller
             ? ((int)$validated['time_limit_minutes']) * 60
             : max(count($questionIds) * 60, 600);
 
-        $isPublic = isset($validated['is_public']) ? (bool)$validated['is_public'] : true;
-        $status = $validated['status'] ?? ($isPublic ? 'published' : 'draft');
+        // QUY TẮC NGHIỆP VỤ:
+        // 1. Chế độ THỦ CÔNG (Manual): Bắt buộc PRIVATE cho user thường (chờ gửi yêu cầu duyệt Admin).
+        // 2. Chế độ TỰ ĐỘNG (Auto): Do 100% câu hỏi đã từ Ngân hàng được kiểm duyệt, cho phép Public hoặc Private theo lựa chọn.
+        if ($creationMode === 'manual') {
+            $isPublic = $isAdmin && isset($validated['is_public']) ? (bool)$validated['is_public'] : false;
+            $reviewStatus = $isPublic ? 'approved' : 'draft';
+            $status = $isPublic ? 'published' : 'draft';
+        } else {
+            $isPublic = isset($validated['is_public']) ? (bool)$validated['is_public'] : true;
+            $reviewStatus = $isPublic ? 'approved' : 'draft';
+            $status = $validated['status'] ?? ($isPublic ? 'published' : 'draft');
+        }
+
         $displayTopicName = $validated['quiz_topic_name'] ?? $validated['topic_name'] ?? null;
 
-        $quiz = DB::transaction(function () use ($validated, $user, $questionIds, $timeLimitSeconds, $isPublic, $status, $displayTopicName, $coverUrl) {
+        $quiz = DB::transaction(function () use ($validated, $user, $questionIds, $timeLimitSeconds, $creationMode, $isPublic, $status, $reviewStatus, $displayTopicName, $coverUrl) {
             $quiz = Quiz::create([
                 'user_id' => $user->id,
                 'title' => $validated['title'],
-                'description' => $validated['description'] ?? 'Bộ đề thi được tạo tự động từ Ngân hàng câu hỏi',
+                'description' => $validated['description'] ?? ($creationMode === 'auto' ? 'Bộ đề thi được tạo tự động từ Ngân hàng câu hỏi' : 'Bộ đề thi tạo thủ công'),
                 'education_level_id' => $validated['education_level_id'] ?? null,
                 'grade_id' => $validated['grade_id'] ?? null,
                 'subject_id' => $validated['subject_id'] ?? null,
@@ -385,12 +446,14 @@ class QuestionController extends Controller
                 'tag' => $validated['tag'] ?? null,
                 'difficulty' => $validated['difficulty'] ?? 'medium',
                 'category' => $displayTopicName ?? 'General',
+                'creation_mode' => $creationMode,
+                'review_status' => $reviewStatus,
                 'status' => $status,
                 'is_public' => $isPublic,
                 'time_limit_seconds' => $timeLimitSeconds,
                 'cover' => $coverUrl,
-                'badge' => $validated['badge'] ?? 'AUTO',
-                'icon' => $validated['icon'] ?? '🎯',
+                'badge' => $validated['badge'] ?? ($creationMode === 'auto' ? 'AUTO' : 'QUIZ'),
+                'icon' => $validated['icon'] ?? ($creationMode === 'auto' ? '🎯' : '📝'),
             ]);
 
             $syncData = [];
@@ -407,9 +470,13 @@ class QuestionController extends Controller
         });
 
         $quizController = new QuizController();
+        $message = $creationMode === 'manual'
+            ? 'Tạo Quiz thủ công thành công! (Mặc định ở chế độ Riêng tư, bạn có thể gửi yêu cầu duyệt để công khai).'
+            : 'Tạo Quiz tự động từ Ngân hàng câu hỏi thành công!';
+
         return response()->json([
             'success' => true,
-            'message' => 'Tạo Quiz ma trận từ Ngân hàng câu hỏi thành công!',
+            'message' => $message,
             'data' => $quizController->formatQuiz($quiz, true),
         ], 201);
     }
@@ -780,10 +847,16 @@ class QuestionController extends Controller
                     $updateData['bank_submission_status'] = 'approved';
                 }
             } else {
-                // Người dùng chỉnh sửa: không thể tự công khai trực tiếp
+                // Người dùng chỉnh sửa câu hỏi:
                 $updateData['is_public'] = false;
-                $updateData['bank_submission_status'] = 'none';
-                $updateData['bank_submission_note'] = null;
+                // Nếu câu hỏi trước đó là approved và user sửa nội dung cá nhân, reset về none
+                if ($question->bank_submission_status === 'approved') {
+                    $updateData['bank_submission_status'] = 'none';
+                    $updateData['bank_submission_note'] = null;
+                }
+                // Nếu đang là 'rejected', 'none', 'pending': GIỮ NGUYÊN trạng thái hiện tại.
+                // Không tự động chuyển sang pending, không xóa lý do bị từ chối trước đó,
+                // chỉ khi người dùng chủ động bấm 'Gửi duyệt' thì mới tạo revision mới.
             }
 
             $question->update($updateData);
@@ -808,8 +881,12 @@ class QuestionController extends Controller
             return;
         }
 
-        $hasReport = \App\Models\ReportTicket::where('question_id', $question->id)->exists();
-        if ($hasReport || !$question->is_public) {
+        // Chỉ gửi thông báo ReportAuthorUpdated cho Admin nếu câu hỏi này thực sự đang có Báo cáo vi phạm chờ xử lý
+        $hasPendingReport = \App\Models\ReportTicket::where('question_id', $question->id)
+            ->where('status', 'pending')
+            ->exists();
+
+        if ($hasPendingReport) {
             $admins = User::whereIn('role', ['admin', 'ADMIN'])->get();
             if ($admins->isNotEmpty()) {
                 Notification::send($admins, new ReportAuthorUpdated($question, 'question', $user));
@@ -879,7 +956,7 @@ class QuestionController extends Controller
     /**
      * Gửi yêu cầu duyệt câu hỏi cá nhân vào Ngân hàng câu hỏi
      */
-    public function submitToBank($id)
+    public function submitToBank(Request $request, $id)
     {
         $user = auth('api')->user();
         if (!$user) {
@@ -895,16 +972,16 @@ class QuestionController extends Controller
             return response()->json(['success' => false, 'message' => 'Bạn không có quyền gửi duyệt câu hỏi này.'], 403);
         }
 
-        $question->update([
-            'bank_submission_status' => 'pending',
-            'bank_submission_at' => now(),
-            'bank_submission_note' => null,
-        ]);
+        $note = $request->input('note') ?? $request->input('request_note');
+        $reviewRequest = $this->reviewService->submitToBank($question, $user, $note);
 
         return response()->json([
             'success' => true,
             'message' => 'Đã gửi yêu cầu kiểm duyệt câu hỏi vào Ngân hàng thành công!',
-            'data' => $this->formatQuestion($question->fresh(['answers', 'educationLevel', 'grade', 'subject']), true),
+            'data' => [
+                'question' => $this->formatQuestion($question->fresh(['answers', 'educationLevel', 'grade', 'subject']), true),
+                'review_request' => $this->reviewService->formatRevision($reviewRequest),
+            ],
         ]);
     }
 
@@ -924,17 +1001,33 @@ class QuestionController extends Controller
         ]);
 
         $ids = $request->input('ids');
-        $updatedCount = Question::whereIn('id', $ids)
+        $questions = Question::with(['answers', 'educationLevel', 'grade', 'subject'])
+            ->whereIn('id', $ids)
             ->where('user_id', $user->id)
-            ->update([
-                'bank_submission_status' => 'pending',
-                'bank_submission_at' => now(),
-                'bank_submission_note' => null,
-            ]);
+            ->get();
+
+        $successCount = 0;
+        $errors = [];
+
+        foreach ($questions as $question) {
+            try {
+                $this->reviewService->submitToBank($question, $user);
+                $successCount++;
+            } catch (\Throwable $e) {
+                $errors[] = "Câu hỏi #{$question->id}: " . $e->getMessage();
+            }
+        }
+
+        if ($successCount === 0 && !empty($errors)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không thể gửi duyệt các câu hỏi đã chọn: ' . implode('; ', $errors),
+            ], 422);
+        }
 
         return response()->json([
             'success' => true,
-            'message' => "Đã gửi yêu cầu kiểm duyệt {$updatedCount} câu hỏi vào Ngân hàng thành công!",
+            'message' => "Đã gửi yêu cầu kiểm duyệt {$successCount} câu hỏi vào Ngân hàng thành công!" . (!empty($errors) ? " (Bỏ qua " . count($errors) . " câu hỏi)" : ""),
         ]);
     }
 
@@ -944,7 +1037,16 @@ class QuestionController extends Controller
     public function adminBankRequests(Request $request)
     {
         $query = Question::query()
-            ->with(['answers', 'user:id,name,email,avatar', 'quiz.user:id,name,email,avatar', 'educationLevel', 'grade', 'subject']);
+            ->with([
+                'answers',
+                'user:id,name,email,avatar',
+                'quiz.user:id,name,email,avatar',
+                'educationLevel',
+                'grade',
+                'subject',
+                'latestReviewRequest.reviewer:id,name,email,avatar',
+                'latestReviewRequest.user:id,name,email,avatar',
+            ]);
 
         $status = $request->query('status', 'pending');
         if ($status !== 'all') {
@@ -986,6 +1088,14 @@ class QuestionController extends Controller
             $formatted['author_name'] = $q->user?->name ?? $q->quiz?->user?->name ?? 'Vô danh';
             $formatted['author_email'] = $q->user?->email ?? $q->quiz?->user?->email;
             $formatted['author_avatar'] = $q->user?->avatar ?? $q->quiz?->user?->avatar;
+
+            $latestReq = $q->latestReviewRequest;
+            $formatted['revision_number'] = $latestReq?->revision_number ?? 1;
+            $formatted['review_request_id'] = $latestReq?->id;
+            $formatted['rejection_reason'] = $latestReq?->rejection_reason ?? $q->bank_submission_note;
+            $formatted['reviewer_name'] = $latestReq?->reviewer?->name;
+            $formatted['reviewed_at'] = $latestReq?->reviewed_at ? $latestReq->reviewed_at->toIso8601String() : null;
+
             return $formatted;
         });
 
@@ -1009,26 +1119,74 @@ class QuestionController extends Controller
     }
 
     /**
+     * Admin: Xem chi tiết yêu cầu duyệt câu hỏi kèm Diff (Previous vs Current)
+     */
+    public function adminShowBankRequest($id)
+    {
+        $user = auth('api')->user();
+        if (!$user || strtolower($user->role ?? '') !== 'admin') {
+            return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
+        }
+
+        $question = Question::with(['answers', 'user', 'educationLevel', 'grade', 'subject'])->findOrFail($id);
+        $diffData = $this->reviewService->getReviewDetailsWithDiff($question);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'question' => $this->formatQuestion($question, true),
+                'current_revision' => $diffData['current_revision'],
+                'previous_revision' => $diffData['previous_revision'],
+                'history' => $diffData['history'],
+            ],
+        ]);
+    }
+
+    /**
+     * User / Admin: Xem lịch sử các lần gửi duyệt của 1 câu hỏi
+     */
+    public function questionReviewHistory($id)
+    {
+        $user = auth('api')->user();
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Unauthenticated.'], 401);
+        }
+
+        $question = Question::findOrFail($id);
+        $isAdmin = strtolower($user->role ?? '') === 'admin';
+
+        if (!$isAdmin && $question->user_id !== $user->id) {
+            return response()->json(['success' => false, 'message' => 'Bạn không có quyền xem thông tin này.'], 403);
+        }
+
+        $historyData = $this->reviewService->getReviewDetailsWithDiff($question);
+
+        return response()->json([
+            'success' => true,
+            'data' => $historyData['history'],
+        ]);
+    }
+
+    /**
      * Admin: Phê duyệt 1 câu hỏi vào Ngân hàng
      */
     public function adminApproveBankRequest($id)
     {
-        $question = Question::with(['user', 'quiz.user', 'answers', 'educationLevel', 'grade', 'subject'])->findOrFail($id);
-        $question->update([
-            'is_public' => true,
-            'bank_submission_status' => 'approved',
-            'bank_submission_note' => null,
-        ]);
-
-        $author = $question->user ?? $question->quiz?->user;
-        if ($author) {
-            $author->notify(new QuestionModerated($question, 'approved'));
+        $user = auth('api')->user();
+        if (!$user || strtolower($user->role ?? '') !== 'admin') {
+            return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
         }
+
+        $question = Question::with(['user', 'quiz.user', 'answers', 'educationLevel', 'grade', 'subject'])->findOrFail($id);
+        $reviewRequest = $this->reviewService->approveQuestion($question, $user);
 
         return response()->json([
             'success' => true,
             'message' => "Đã duyệt câu hỏi #{$question->id} vào Ngân hàng câu hỏi thành công!",
-            'data' => $this->formatQuestion($question->fresh(['answers', 'educationLevel', 'grade', 'subject']), true),
+            'data' => [
+                'question' => $this->formatQuestion($question->fresh(['answers', 'educationLevel', 'grade', 'subject']), true),
+                'review_request' => $this->reviewService->formatRevision($reviewRequest),
+            ],
         ]);
     }
 
@@ -1037,6 +1195,11 @@ class QuestionController extends Controller
      */
     public function adminRejectBankRequest(Request $request, $id)
     {
+        $user = auth('api')->user();
+        if (!$user || strtolower($user->role ?? '') !== 'admin') {
+            return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
+        }
+
         $request->validate([
             'note' => 'required|string|max:1000',
         ], [
@@ -1045,22 +1208,15 @@ class QuestionController extends Controller
 
         $question = Question::with(['user', 'quiz.user', 'answers', 'educationLevel', 'grade', 'subject'])->findOrFail($id);
         $note = trim($request->input('note'));
-
-        $question->update([
-            'is_public' => false,
-            'bank_submission_status' => 'rejected',
-            'bank_submission_note' => $note,
-        ]);
-
-        $author = $question->user ?? $question->quiz?->user;
-        if ($author) {
-            $author->notify(new QuestionModerated($question, 'rejected', $note));
-        }
+        $reviewRequest = $this->reviewService->rejectQuestion($question, $user, $note);
 
         return response()->json([
             'success' => true,
             'message' => "Đã từ chối duyệt câu hỏi #{$question->id}.",
-            'data' => $this->formatQuestion($question->fresh(['answers', 'educationLevel', 'grade', 'subject']), true),
+            'data' => [
+                'question' => $this->formatQuestion($question->fresh(['answers', 'educationLevel', 'grade', 'subject']), true),
+                'review_request' => $this->reviewService->formatRevision($reviewRequest),
+            ],
         ]);
     }
 
@@ -1069,25 +1225,21 @@ class QuestionController extends Controller
      */
     public function adminBulkApproveBankRequests(Request $request)
     {
+        $user = auth('api')->user();
+        if (!$user || strtolower($user->role ?? '') !== 'admin') {
+            return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
+        }
+
         $request->validate([
             'ids' => 'required|array|min:1',
             'ids.*' => 'integer|exists:questions,id',
         ]);
 
         $ids = $request->input('ids');
-        $questions = Question::with(['user', 'quiz.user'])->whereIn('id', $ids)->get();
-
-        Question::whereIn('id', $ids)->update([
-            'is_public' => true,
-            'bank_submission_status' => 'approved',
-            'bank_submission_note' => null,
-        ]);
+        $questions = Question::with(['user', 'quiz.user', 'answers', 'educationLevel', 'grade', 'subject'])->whereIn('id', $ids)->get();
 
         foreach ($questions as $question) {
-            $author = $question->user ?? $question->quiz?->user;
-            if ($author) {
-                $author->notify(new QuestionModerated($question, 'approved'));
-            }
+            $this->reviewService->approveQuestion($question, $user);
         }
 
         return response()->json([
@@ -1101,6 +1253,11 @@ class QuestionController extends Controller
      */
     public function adminBulkRejectBankRequests(Request $request)
     {
+        $user = auth('api')->user();
+        if (!$user || strtolower($user->role ?? '') !== 'admin') {
+            return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
+        }
+
         $request->validate([
             'ids' => 'required|array|min:1',
             'ids.*' => 'integer|exists:questions,id',
@@ -1111,19 +1268,10 @@ class QuestionController extends Controller
 
         $ids = $request->input('ids');
         $note = trim($request->input('note'));
-        $questions = Question::with(['user', 'quiz.user'])->whereIn('id', $ids)->get();
-
-        Question::whereIn('id', $ids)->update([
-            'is_public' => false,
-            'bank_submission_status' => 'rejected',
-            'bank_submission_note' => $note,
-        ]);
+        $questions = Question::with(['user', 'quiz.user', 'answers', 'educationLevel', 'grade', 'subject'])->whereIn('id', $ids)->get();
 
         foreach ($questions as $question) {
-            $author = $question->user ?? $question->quiz?->user;
-            if ($author) {
-                $author->notify(new QuestionModerated($question, 'rejected', $note));
-            }
+            $this->reviewService->rejectQuestion($question, $user, $note);
         }
 
         return response()->json([

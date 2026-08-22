@@ -20,6 +20,23 @@
 
       <!-- Main Form Card -->
       <article class="card p-6 sm:p-8 space-y-5">
+        <!-- Review Status Banners -->
+        <div v-if="form.review_status === 'pending_review'" class="flex items-start gap-3 rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 text-xs font-bold text-amber-900 shadow-sm">
+          <Clock class="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+          <div class="grid gap-0.5">
+            <span class="text-amber-800">Bài Quiz đang trong quá trình Admin xét duyệt công khai</span>
+            <span class="text-[11px] font-normal text-amber-700">Nếu bạn chỉnh sửa và lưu nội dung, bài Quiz sẽ trở về bản nháp và bạn cần gửi lại yêu cầu duyệt.</span>
+          </div>
+        </div>
+
+        <div v-else-if="form.review_status === 'rejected'" class="flex items-start gap-3 rounded-2xl border border-rose-500/40 bg-rose-500/10 p-4 text-xs font-bold text-rose-900 shadow-sm">
+          <AlertCircle class="mt-0.5 h-4 w-4 shrink-0 text-rose-500" />
+          <div class="grid gap-0.5">
+            <span class="text-rose-800">Yêu cầu công khai đã bị Admin từ chối: "{{ form.rejection_reason || 'Nội dung chưa đạt tiêu chuẩn' }}"</span>
+            <span class="text-[11px] font-normal text-rose-700">Hãy chỉnh sửa lại các câu hỏi phù hợp và gửi lại yêu cầu duyệt sau khi lưu.</span>
+          </div>
+        </div>
+
         <div class="space-y-1">
           <label class="text-xs font-bold text-slate-700 block">Tên Quiz</label>
           <input v-model="form.title" class="field text-xs" placeholder="Nhập tên quiz..." required />
@@ -47,11 +64,14 @@
 
           <div class="space-y-1">
             <label class="text-xs font-bold text-slate-700 block">Hiển thị</label>
-            <select v-model="form.visibility" class="field text-xs">
-              <option value="public">Public</option>
+            <select v-model="form.visibility" class="field text-xs" :disabled="form.creation_mode === 'manual' && !isAdmin">
+              <option v-if="form.creation_mode !== 'manual' || isAdmin" value="public">Public</option>
               <option value="private">Private</option>
               <option value="group">Group</option>
             </select>
+            <p v-if="form.creation_mode === 'manual' && !isAdmin" class="text-[10px] text-amber-600 font-medium mt-1">
+              Quiz thủ công cần gửi yêu cầu để Admin kiểm duyệt trước khi công khai.
+            </p>
           </div>
         </div>
 
@@ -156,8 +176,8 @@
 <script setup>
 import { ref, computed, onMounted, inject } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { TriangleAlert } from 'lucide-vue-next'
-import api from '@/services/api'
+import { TriangleAlert, Clock, AlertCircle } from 'lucide-vue-next'
+import api, { authApi, currentUserStorage } from '@/services/api'
 
 const route = useRoute()
 const router = useRouter()
@@ -165,12 +185,18 @@ const loading = ref(false)
 const saving = ref(false)
 const showToast = inject('showToast')
 
+const currentUser = currentUserStorage.get()
+const isAdmin = computed(() => currentUser && String(currentUser.role || '').toLowerCase() === 'admin')
+
 const form = ref({
   title: '',
   description: '',
   category: '',
   difficulty: 'medium',
-  visibility: 'public',
+  creation_mode: 'manual',
+  review_status: 'draft',
+  rejection_reason: '',
+  visibility: 'private',
   questions: []
 })
 
@@ -191,6 +217,9 @@ const fetchQuiz = async () => {
       description: quiz.description || '',
       category: quiz.category || '',
       difficulty: quiz.difficulty || 'medium',
+      creation_mode: quiz.creation_mode || 'manual',
+      review_status: quiz.review_status || 'draft',
+      rejection_reason: quiz.rejection_reason || '',
       visibility: quiz.room_code ? 'group' : (quiz.is_public ? 'public' : 'private'),
       questions: (quiz.questions || []).map(q => ({
         id: q.id,

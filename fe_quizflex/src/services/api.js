@@ -134,6 +134,41 @@ export const questionsBankApi = {
   }
 };
 
+export const quizReviewApi = {
+  async requestReview(quizId, payload = {}) {
+    const { data } = await api.post(`/quizzes/${quizId}/request-review`, payload);
+    return unwrap(data);
+  },
+  async getReviewHistory(quizId) {
+    const { data } = await api.get(`/quizzes/${quizId}/review-history`);
+    return unwrap(data);
+  },
+  async fetchAdminReviewRequests(params = {}) {
+    const { data } = await api.get('/admin/quiz-review-requests', { params });
+    return unwrap(data);
+  },
+  async getAdminReviewRequest(id) {
+    const { data } = await api.get(`/admin/quiz-review-requests/${id}`);
+    return unwrap(data);
+  },
+  async adminApprove(id) {
+    const { data } = await api.post(`/admin/quiz-review-requests/${id}/approve`);
+    return unwrap(data);
+  },
+  async adminReject(id, reason) {
+    const { data } = await api.post(`/admin/quiz-review-requests/${id}/reject`, { reason, note: reason });
+    return unwrap(data);
+  },
+  async adminBulkApprove(ids) {
+    const { data } = await api.post('/admin/quiz-review-requests/bulk-approve', { ids });
+    return unwrap(data);
+  },
+  async adminBulkReject(ids, reason) {
+    const { data } = await api.post('/admin/quiz-review-requests/bulk-reject', { ids, reason, note: reason });
+    return unwrap(data);
+  }
+};
+
 export const myQuestionsApi = {
   async fetchBank(params = {}) {
     const { data } = await api.get('/user/my-questions', { params });
@@ -169,12 +204,16 @@ export const myQuestionsApi = {
     const { data } = await api.delete(`/user/my-questions/${id}/force`);
     return data;
   },
-  async submitToBank(id) {
-    const { data } = await api.post(`/user/my-questions/${id}/submit-to-bank`);
+  async submitToBank(id, payload = {}) {
+    const { data } = await api.post(`/user/my-questions/${id}/submit-to-bank`, payload);
     return unwrap(data);
   },
   async bulkSubmitToBank(ids) {
     const { data } = await api.post('/user/my-questions/bulk-submit-to-bank', { ids });
+    return unwrap(data);
+  },
+  async fetchReviewHistory(id) {
+    const { data } = await api.get(`/user/my-questions/${id}/review-history`);
     return unwrap(data);
   }
 };
@@ -192,6 +231,10 @@ export const adminBankRequestsApi = {
       perPage: payload?.per_page ?? 15,
       stats: payload?.stats ?? { pending: 0, approved: 0, rejected: 0, total: 0 }
     };
+  },
+  async fetchRequestDetail(id) {
+    const { data } = await api.get(`/admin/question-bank-requests/${id}`);
+    return unwrap(data);
   },
   async approve(id) {
     const { data } = await api.post(`/admin/question-bank-requests/${id}/approve`);
@@ -637,6 +680,10 @@ export const authApi = {
 
     this.clearSession();
   },
+
+  getCurrentUser() {
+    return currentUserStorage.get();
+  },
 };
 
 export const usersApi = {
@@ -745,6 +792,32 @@ export const quizzesApi = {
   async list(params = {}) {
     const { data } = await api.get("/quizzes", { params });
     return unwrapCollection(data);
+  },
+
+  async fetchPaginated(params = {}) {
+    const { data } = await api.get("/quizzes", { params });
+    const payload = unwrap(data);
+    const items = Array.isArray(payload) ? payload : (Array.isArray(payload?.data) ? payload.data : (payload?.items ?? []));
+    const total = payload?.total ?? items.length;
+    const currentPage = payload?.current_page ?? payload?.currentPage ?? 1;
+    const lastPage = payload?.last_page ?? payload?.lastPage ?? 1;
+    const perPage = payload?.per_page ?? payload?.perPage ?? 12;
+    const from = payload?.from ?? (total > 0 ? (currentPage - 1) * perPage + 1 : 0);
+    const to = payload?.to ?? Math.min(currentPage * perPage, total);
+    return { items, total, currentPage, lastPage, perPage, from, to };
+  },
+
+  async adminList(params = {}) {
+    const { data } = await api.get("/admin/quizzes", { params });
+    const payload = unwrap(data);
+    const items = Array.isArray(payload) ? payload : (Array.isArray(payload?.data) ? payload.data : (payload?.items ?? []));
+    const total = payload?.total ?? items.length;
+    const currentPage = payload?.current_page ?? payload?.currentPage ?? 1;
+    const lastPage = payload?.last_page ?? payload?.lastPage ?? 1;
+    const perPage = payload?.per_page ?? payload?.perPage ?? 10;
+    const from = payload?.from ?? (total > 0 ? (currentPage - 1) * perPage + 1 : 0);
+    const to = payload?.to ?? Math.min(currentPage * perPage, total);
+    return { items, total, currentPage, lastPage, perPage, from, to };
   },
 
   async get(id) {

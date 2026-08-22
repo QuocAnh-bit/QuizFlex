@@ -71,16 +71,7 @@ class QuizPolicy
 
     /**
      * Determine whether the user can delete the model.
-      */
-    // public function delete(User $user, Quiz $quiz): bool
-    // {
-    //     $role = strtolower($user->role ?? 'user');
-    //     if ($role === 'admin') {
-    //         return true;
-    //     }
-    //     return $user->id == $quiz->user_id;
-    // }
-
+     */
     public function delete(User $user, Quiz $quiz): bool
     {
         // Chủ quiz luôn được xóa quiz của chính mình
@@ -113,6 +104,28 @@ class QuizPolicy
      * Determine whether the user can permanently delete the model.
      */
     public function forceDelete(User $user, Quiz $quiz): bool
+    {
+        return strtolower($user->role ?? 'user') === 'admin';
+    }
+
+    /**
+     * Determine whether the user can request review for public release.
+     */
+    public function requestReview(User $user, Quiz $quiz): bool
+    {
+        $role = strtolower($user->role ?? 'user');
+        if ($role === 'admin') {
+            return true;
+        }
+
+        // Tác giả chỉ được gửi duyệt nếu là chủ sở hữu và không đang trong trạng thái pending_review
+        return ($user->id === $quiz->user_id) && ($quiz->review_status !== 'pending_review');
+    }
+
+    /**
+     * Determine whether the user can moderate (approve/reject) quiz reviews.
+     */
+    public function moderate(User $user): bool
     {
         return strtolower($user->role ?? 'user') === 'admin';
     }

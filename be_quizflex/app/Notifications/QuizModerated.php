@@ -60,6 +60,11 @@ class QuizModerated extends Notification
             $message = "Bài Quiz '{$this->quiz->title}' của bạn đã bị Admin gỡ công khai (chuyển về chế độ riêng tư) do vi phạm quy định.{$reasonText}";
         } elseif ($this->action === 'shown') {
             $message = "Bài Quiz '{$this->quiz->title}' của bạn đã được admin hiển thị công khai trở lại.";
+        } elseif ($this->action === 'approved') {
+            $message = "🎉 Chúc mừng! Bài Quiz '{$this->quiz->title}' của bạn đã được Admin phê duyệt và chính thức công khai cho cộng đồng.";
+        } elseif ($this->action === 'rejected') {
+            $reasonText = $this->reason ? " Lý do: \"{$this->reason}\"." : '';
+            $message = "Yêu cầu công khai bài Quiz '{$this->quiz->title}' của bạn đã bị từ chối.{$reasonText} Bạn có thể chỉnh sửa nội dung và gửi lại yêu cầu duyệt.";
         } elseif ($this->action === 'reported') {
             $reasonText = $this->reason ? " Lý do báo cáo: \"{$this->reason}\"." : '';
             $message = "Bài Quiz '{$this->quiz->title}' của bạn vừa nhận báo cáo vi phạm.{$reasonText} Vui lòng kiểm tra và cập nhật.";

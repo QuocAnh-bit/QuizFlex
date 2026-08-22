@@ -140,6 +140,7 @@ import {
   Camera,
   CheckSquare,
   ChevronDown,
+  ClipboardCheck,
   ClipboardList,
   CreditCard,
   Flag,
@@ -211,6 +212,7 @@ const menu = computed(() => [
       { label: 'Tổng quan', to: '/admin', icon: LayoutDashboard },
       { label: 'Quản lý câu hỏi', to: '/admin/question-bank', icon: HelpCircle },
       { label: 'Duyệt vào Ngân hàng', to: '/admin/question-bank-requests', icon: CheckSquare },
+      { label: 'Duyệt Quiz công khai', to: '/admin/quiz-review-requests', icon: ClipboardCheck },
       { label: 'Kho quiz', to: '/admin/questions', icon: Package },
       
       { label: 'AI Generator', to: '/admin/questions/ai', icon: BrainCircuit },

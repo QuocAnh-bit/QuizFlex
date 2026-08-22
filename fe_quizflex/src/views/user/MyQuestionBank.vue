@@ -98,19 +98,21 @@
       <!-- Focused Question Banner -->
       <div v-if="focusedQuestionId" class="mb-1">
         <!-- SUCCESS BANNER (When question was just updated) -->
-        <div v-if="highlightedUpdatedQuestionId === focusedQuestionId" class="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div v-if="highlightedUpdatedQuestionId === focusedQuestionId" class="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div class="flex items-center gap-3">
-            <CheckCircle2 :size="20" class="shrink-0 text-emerald-400" />
+            <CheckCircle2 :size="20" class="shrink-0 text-amber-500" />
             <div>
-              <h4 class="font-black text-emerald-700 dark:text-emerald-300 text-sm">
-                Đã hoàn tất đính chính câu hỏi #{{ focusedQuestionId }}
+              <h4 class="font-black text-amber-700 dark:text-amber-300 text-sm">
+                Đã lưu thay đổi cho câu hỏi #{{ focusedQuestionId }}
               </h4>
-              <p class="text-xs text-slate-700 dark:text-slate-300 mt-0.5 font-semibold">Nội dung đã được lưu thành công và đã tự động chuyển sang trạng thái <strong>Chờ Admin duyệt lại</strong>.</p>
+              <p class="text-xs text-slate-700 dark:text-slate-300 mt-0.5 font-semibold">
+                Nội dung đã được cập nhật thành công. Câu hỏi <strong>chưa được gửi lại cho Admin</strong>. Vui lòng bấm <strong>"Gửi duyệt"</strong> ở thẻ bên dưới để gửi yêu cầu kiểm duyệt lại.
+              </p>
             </div>
           </div>
           <button
             type="button"
-            class="shrink-0 inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/15 px-3 py-1.5 text-xs font-bold text-emerald-800 dark:text-emerald-200 hover:bg-emerald-500/25 transition"
+            class="shrink-0 inline-flex items-center gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/15 px-3 py-1.5 text-xs font-bold text-amber-800 dark:text-amber-200 hover:bg-amber-500/25 transition"
             @click="clearQuestionFocus"
           >
             <Eye :size="13" />
@@ -187,12 +189,12 @@
           ]"
         >
           <!-- Success Banner if updated -->
-          <div v-if="highlightedUpdatedQuestionId === q.id" class="mb-4 flex items-center justify-between rounded-lg border border-emerald-500/30 bg-emerald-500/15 p-3 text-xs font-bold text-emerald-950 dark:text-emerald-100">
+          <div v-if="highlightedUpdatedQuestionId === q.id" class="mb-4 flex items-center justify-between rounded-lg border border-amber-500/30 bg-amber-500/15 p-3 text-xs font-bold text-amber-950 dark:text-amber-100">
             <div class="flex items-center gap-2">
               <CheckCircle2 :size="16" />
-              <span>Đã cập nhật đính chính nội dung câu hỏi thành công! Hệ thống đã tự động chuyển câu hỏi sang trạng thái Chờ duyệt lại.</span>
+              <span>Đã lưu thay đổi nội dung câu hỏi thành công! Vui lòng bấm "Gửi duyệt" bên dưới để gửi yêu cầu kiểm duyệt lại cho Admin.</span>
             </div>
-            <button type="button" class="text-emerald-900 dark:text-emerald-200 hover:text-black dark:hover:text-white ml-2" @click="clearQuestionFocus">
+            <button type="button" class="text-amber-900 dark:text-amber-200 hover:text-black dark:hover:text-white ml-2 cursor-pointer" @click="clearQuestionFocus">
               <X :size="14" />
             </button>
           </div>
@@ -247,9 +249,9 @@
                     <span>Riêng tư</span>
                   </span>
 
-                  <span v-if="highlightedUpdatedQuestionId === q.id" class="inline-flex items-center gap-1 rounded-md bg-emerald-600 text-white dark:bg-emerald-800 dark:text-emerald-100 px-2 py-0.5 text-[11px] font-bold">
+                  <span v-if="highlightedUpdatedQuestionId === q.id" class="inline-flex items-center gap-1 rounded-md bg-amber-500 text-white dark:bg-amber-700 dark:text-amber-100 px-2 py-0.5 text-[11px] font-bold">
                     <CheckCircle2 :size="12" />
-                    <span>Đã cập nhật &amp; Chờ duyệt lại</span>
+                    <span>Đã lưu chỉnh sửa (Chưa gửi duyệt)</span>
                   </span>
                   <span v-else-if="q.is_locked_by_admin" class="inline-flex items-center gap-1 rounded-md bg-rose-500/10 text-rose-300 border border-rose-500/30 px-2 py-0.5 text-[11px] font-bold" :title="q.report_reason ? `Lý do: ${q.report_reason}` : ''">
                     <Lock :size="12" />
@@ -640,7 +642,7 @@ const submitQuestionToBank = async (id) => {
   try {
     const res = await myQuestionsApi.submitToBank(id)
     if (showToast) {
-      showToast(res?.message || 'Đã gửi yêu cầu duyệt câu hỏi vào Ngân hàng!', 'success')
+      showToast(res?.message || 'Đã gửi yêu cầu duyệt câu hỏi cho Admin thành công!', 'success')
     }
     await loadQuestions()
   } catch (e) {
@@ -656,7 +658,7 @@ const bulkSubmitQuestionsToBank = async () => {
   try {
     const res = await myQuestionsApi.bulkSubmitToBank(selectedQuestionIds.value)
     if (showToast) {
-      showToast(res?.message || 'Đã gửi yêu cầu duyệt câu hỏi vào Ngân hàng!', 'success')
+      showToast(res?.message || 'Đã gửi yêu cầu duyệt câu hỏi cho Admin thành công!', 'success')
     }
     selectedQuestionIds.value = []
     await loadQuestions()
@@ -841,7 +843,7 @@ const saveEditQuestion = async () => {
     const updated = await myQuestionsApi.update(editForm.id, payload)
     isEditModalOpen.value = false
     hasAutoOpenedModal.value = true
-    if (showToast) showToast('Cập nhật đính chính thành công! Đã gửi thông báo cho Admin kiểm duyệt.', 'success')
+    if (showToast) showToast('Đã lưu thay đổi thành công! Vui lòng bấm "Gửi duyệt" để gửi yêu cầu kiểm duyệt lại cho Admin.', 'success')
     loadQuestions()
   } catch (err) {
     if (showToast) showToast(`Cập nhật thất bại: ${err.message}`, 'error')
