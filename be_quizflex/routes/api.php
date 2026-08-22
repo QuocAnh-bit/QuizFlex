@@ -149,6 +149,7 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/admin/questions/bulk-force-delete', [QuestionController::class, 'adminBulkForceDelete']);
         Route::get('/admin/questions/{id}', [QuestionController::class, 'adminShow']);
         Route::put('/admin/questions/{id}', [QuestionController::class, 'adminUpdate']);
+        Route::delete('/admin/questions/{id}', [QuestionController::class, 'adminDelete']);
         Route::patch('/admin/questions/{id}/toggle-visibility', [QuestionController::class, 'adminToggleVisibility']);
         Route::post('/admin/questions/bulk-visibility', [QuestionController::class, 'adminBulkToggleVisibility']);
         Route::post('/admin/questions/bulk-delete', [QuestionController::class, 'adminBulkDelete']);

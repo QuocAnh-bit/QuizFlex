@@ -248,19 +248,28 @@ class GenerateQuizJob implements ShouldQueue
             'badge' => 'AI',
         ]);
 
+        $snapshotService = app(\App\Services\QuestionSnapshotService::class);
         foreach ($questions as $questionIndex => $questionData) {
             $correctAnswers = collect($questionData['answers'])
                 ->filter(fn(array $answer): bool => !empty($answer['is_correct']))
                 ->count();
+
+            $type = $correctAnswers > 1 ? 'multiple_choice' : 'single_choice';
+            $fingerprint = $snapshotService->computeFingerprintFromSnapshot(
+                $questionData['content'],
+                $type,
+                $questionData['answers']
+            );
 
             $question = Question::create([
                 'quiz_id' => $quiz->id,
                 'user_id' => $job->user_id,
                 'content' => trim((string) $questionData['content']),
                 'image_url' => null,
-                'type' => $correctAnswers > 1 ? 'multiple_choice' : 'single_choice',
+                'type' => $type,
                 'order' => $questionIndex,
                 'points' => 1,
+                'fingerprint' => $fingerprint,
             ]);
 
             $quiz->questions()->syncWithoutDetaching([

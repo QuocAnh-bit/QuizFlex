@@ -24,7 +24,7 @@ class QuizReviewController extends Controller
             return response()->json(['success' => false, 'message' => 'Unauthenticated.'], 401);
         }
 
-        $quiz = Quiz::with('questions')->findOrFail($id);
+        $quiz = Quiz::with('questions.answers')->findOrFail($id);
 
         if (Gate::forUser($user)->denies('requestReview', $quiz)) {
             return response()->json([
@@ -43,7 +43,7 @@ class QuizReviewController extends Controller
             'message' => 'Đã gửi yêu cầu công khai bài Quiz thành công! Admin sẽ xem xét và phản hồi sớm nhất.',
             'data' => [
                 'quiz' => $quizController->formatQuiz($quiz->fresh(['user', 'educationLevel', 'grade', 'subject'])),
-                'review_request' => $reviewRequest,
+                'review_request' => $this->reviewService->formatRevision($reviewRequest),
             ],
         ], 201);
     }
@@ -61,18 +61,15 @@ class QuizReviewController extends Controller
         $quiz = Quiz::findOrFail($id);
         $isAdmin = strtolower($user->role ?? '') === 'admin';
 
-        if (!$isAdmin && $quiz->user_id !== $user->id) {
+        if (!$isAdmin && (int) $quiz->user_id !== (int) $user->id) {
             return response()->json(['success' => false, 'message' => 'Bạn không có quyền xem thông tin này.'], 403);
         }
 
-        $history = QuizReviewRequest::where('quiz_id', $quiz->id)
-            ->with(['user:id,name,email,avatar', 'reviewer:id,name,email,avatar'])
-            ->latest()
-            ->get();
+        $diffData = $this->reviewService->getReviewDetailsWithDiff($quiz);
 
         return response()->json([
             'success' => true,
-            'data' => $history,
+            'data' => $diffData['history'],
         ]);
     }
 
@@ -101,17 +98,26 @@ class QuizReviewController extends Controller
         if ($request->filled('search')) {
             $keyword = trim((string) $request->query('search'));
             $query->where(function ($q) use ($keyword) {
-                $q->whereHas('quiz', fn($qz) => $qz->where('title', 'like', "%{$keyword}%"))
+                $q->where('snapshot_title', 'like', "%{$keyword}%")
+                  ->orWhereHas('quiz', fn($qz) => $qz->where('title', 'like', "%{$keyword}%"))
                   ->orWhereHas('user', fn($uq) => $uq->where('name', 'like', "%{$keyword}%"));
             });
         }
 
         if ($request->filled('subject_id')) {
-            $query->whereHas('quiz', fn($qz) => $qz->where('subject_id', $request->query('subject_id')));
+            $subjectId = $request->query('subject_id');
+            $query->where(function ($q) use ($subjectId) {
+                $q->where('snapshot_subject_id', $subjectId)
+                  ->orWhereHas('quiz', fn($qz) => $qz->where('subject_id', $subjectId));
+            });
         }
 
         if ($request->filled('grade_id')) {
-            $query->whereHas('quiz', fn($qz) => $qz->where('grade_id', $request->query('grade_id')));
+            $gradeId = $request->query('grade_id');
+            $query->where(function ($q) use ($gradeId) {
+                $q->where('snapshot_grade_id', $gradeId)
+                  ->orWhereHas('quiz', fn($qz) => $qz->where('grade_id', $gradeId));
+            });
         }
 
         $pendingCount = QuizReviewRequest::where('status', 'pending')->count();
@@ -142,7 +148,7 @@ class QuizReviewController extends Controller
     }
 
     /**
-     * Admin: Xem chi tiết 1 yêu cầu duyệt Quiz
+     * Admin: Xem chi tiết 1 yêu cầu duyệt Quiz kèm Diff (Current vs Previous)
      */
     public function adminShow($id)
     {
@@ -160,13 +166,30 @@ class QuizReviewController extends Controller
             'quiz.questions.user:id,name,email',
             'user:id,name,email,avatar',
             'reviewer:id,name,email,avatar',
-        ])->findOrFail($id);
+        ])->find($id);
+
+        if (!$reviewRequest) {
+            $quiz = Quiz::with([
+                'user:id,name,email,avatar',
+                'educationLevel',
+                'grade',
+                'subject',
+                'questions.answers',
+                'questions.user:id,name,email',
+            ])->findOrFail($id);
+            $reviewRequest = QuizReviewRequest::where('quiz_id', $quiz->id)->latest('id')->first();
+        }
+
+        if (!$reviewRequest) {
+            return response()->json(['success' => false, 'message' => 'Không tìm thấy yêu cầu duyệt.'], 404);
+        }
+
+        $diffData = $this->reviewService->getReviewDetailsWithDiff($reviewRequest);
 
         $quizController = new QuizController();
-        $formattedQuiz = $quizController->formatQuiz($reviewRequest->quiz, true);
+        $formattedQuiz = $reviewRequest->quiz ? $quizController->formatQuiz($reviewRequest->quiz, true) : null;
 
-        // Đánh dấu nguồn gốc của từng câu hỏi (Từ Ngân hàng hay từ Kho của User)
-        if (isset($formattedQuiz['questions'])) {
+        if ($formattedQuiz && isset($formattedQuiz['questions'])) {
             $formattedQuiz['questions'] = collect($formattedQuiz['questions'])->map(function ($q) {
                 $qModel = $q instanceof \App\Models\Question ? $q : \App\Models\Question::find($q['id']);
                 $q['source'] = ($qModel && $qModel->is_public) ? 'public_bank' : 'my_bank';
@@ -179,6 +202,11 @@ class QuizReviewController extends Controller
             'data' => [
                 'review_request' => $reviewRequest,
                 'quiz' => $formattedQuiz,
+                'current_revision' => $diffData['current_revision'],
+                'previous_revision' => $diffData['previous_revision'],
+                'previous_rejection_reason' => $diffData['previous_rejection_reason'],
+                'diff' => $diffData['diff'],
+                'history' => $diffData['history'],
             ],
         ]);
     }
@@ -193,20 +221,21 @@ class QuizReviewController extends Controller
             return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
         }
 
-        // $id có thể là review_request_id hoặc quiz_id
         $reviewRequest = QuizReviewRequest::find($id);
         if ($reviewRequest) {
-            $quiz = $reviewRequest->quiz;
+            $target = $reviewRequest;
         } else {
-            $quiz = Quiz::findOrFail($id);
+            $target = Quiz::findOrFail($id);
         }
 
-        $result = $this->reviewService->approveQuiz($quiz, $user);
+        $result = $this->reviewService->approveQuiz($target, $user);
 
         return response()->json([
             'success' => true,
-            'message' => "Đã phê duyệt và công khai bài Quiz '{$quiz->title}' thành công!",
-            'data' => $result,
+            'message' => "Đã phê duyệt và công khai bài Quiz thành công!",
+            'data' => [
+                'review_request' => $this->reviewService->formatRevision($result),
+            ],
         ]);
     }
 
@@ -233,20 +262,21 @@ class QuizReviewController extends Controller
             ], 422);
         }
 
-        // $id có thể là review_request_id hoặc quiz_id
         $reviewRequest = QuizReviewRequest::find($id);
         if ($reviewRequest) {
-            $quiz = $reviewRequest->quiz;
+            $target = $reviewRequest;
         } else {
-            $quiz = Quiz::findOrFail($id);
+            $target = Quiz::findOrFail($id);
         }
 
-        $result = $this->reviewService->rejectQuiz($quiz, $user, $reason);
+        $result = $this->reviewService->rejectQuiz($target, $user, $reason);
 
         return response()->json([
             'success' => true,
-            'message' => "Đã từ chối duyệt bài Quiz '{$quiz->title}'.",
-            'data' => $result,
+            'message' => "Đã từ chối duyệt bài Quiz.",
+            'data' => [
+                'review_request' => $this->reviewService->formatRevision($result),
+            ],
         ]);
     }
 
@@ -270,9 +300,9 @@ class QuizReviewController extends Controller
 
         foreach ($ids as $id) {
             $reviewReq = QuizReviewRequest::find($id);
-            $quiz = $reviewReq ? $reviewReq->quiz : Quiz::find($id);
-            if ($quiz) {
-                $this->reviewService->approveQuiz($quiz, $user);
+            $target = $reviewReq ?: Quiz::find($id);
+            if ($target) {
+                $this->reviewService->approveQuiz($target, $user);
                 $approvedCount++;
             }
         }
@@ -306,9 +336,9 @@ class QuizReviewController extends Controller
 
         foreach ($ids as $id) {
             $reviewReq = QuizReviewRequest::find($id);
-            $quiz = $reviewReq ? $reviewReq->quiz : Quiz::find($id);
-            if ($quiz) {
-                $this->reviewService->rejectQuiz($quiz, $user, $reason);
+            $target = $reviewReq ?: Quiz::find($id);
+            if ($target) {
+                $this->reviewService->rejectQuiz($target, $user, $reason);
                 $rejectedCount++;
             }
         }

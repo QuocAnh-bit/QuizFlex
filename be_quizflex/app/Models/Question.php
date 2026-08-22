@@ -40,6 +40,16 @@ class Question extends Model
         'points' => 'integer',
     ];
 
+    protected static function booted()
+    {
+        static::saving(function (Question $question) {
+            if (empty($question->fingerprint) && !empty($question->content)) {
+                $snapshotService = app(\App\Services\QuestionSnapshotService::class);
+                $question->fingerprint = $snapshotService->computeFingerprint($question);
+            }
+        });
+    }
+
     public function quiz()
     {
         return $this->belongsTo(Quiz::class);

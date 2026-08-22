@@ -13,11 +13,13 @@ class QuizReviewRequested extends Notification
 
     public $quiz;
     public $author;
+    public int $revisionNumber;
 
-    public function __construct(Quiz $quiz, User $author)
+    public function __construct(Quiz $quiz, User $author, int $revisionNumber = 1)
     {
         $this->quiz = $quiz;
         $this->author = $author;
+        $this->revisionNumber = $revisionNumber;
     }
 
     public function via(object $notifiable): array
@@ -32,10 +34,12 @@ class QuizReviewRequested extends Notification
 
     public function toArray(object $notifiable): array
     {
+        $revText = $this->revisionNumber > 1 ? " (Lần #{$this->revisionNumber})" : "";
+
         return [
             'type' => 'quiz_review_requested',
             'title' => '🔔 Yêu cầu duyệt Quiz công khai',
-            'message' => "Tác giả {$this->author->name} đã gửi yêu cầu duyệt công khai cho bài Quiz '{$this->quiz->title}'.",
+            'message' => "Tác giả {$this->author->name} đã gửi yêu cầu duyệt công khai cho bài Quiz '{$this->quiz->title}'{$revText}.",
             'action' => 'review',
             'action_link' => "/admin/quiz-review-requests?quiz_id={$this->quiz->id}",
             'metadata' => [
@@ -43,6 +47,7 @@ class QuizReviewRequested extends Notification
                 'author_id' => $this->author->id,
                 'author_name' => $this->author->name,
                 'quiz_title' => $this->quiz->title,
+                'revision_number' => $this->revisionNumber,
             ],
         ];
     }

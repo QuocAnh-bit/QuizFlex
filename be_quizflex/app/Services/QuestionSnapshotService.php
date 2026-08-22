@@ -4,48 +4,61 @@ namespace App\Services;
 
 use App\Models\Answer;
 use App\Models\Question;
+use App\Models\QuestionReviewRequest;
 use Illuminate\Support\Facades\DB;
 
 class QuestionSnapshotService
 {
     /**
-     * Tính toán Fingerprint (Mã băm chuẩn hóa SHA-256) cho câu hỏi và danh sách đáp án
+     * Tính toán Fingerprint từ dữ liệu Snapshot (dùng cho QuestionReviewRequest hoặc mảng dữ liệu)
      */
-    public function computeFingerprint(Question $question): string
+    public function computeFingerprintFromSnapshot(?string $content, ?string $type, array $answers): string
     {
-        $cleanContent = mb_strtolower(trim(preg_replace('/\s+/u', ' ', strip_tags($question->content ?? ''))), 'UTF-8');
-        $type = strtolower(trim((string) ($question->type ?? 'single_choice')));
+        $cleanContent = mb_strtolower(trim(preg_replace('/\s+/u', ' ', strip_tags($content ?? ''))), 'UTF-8');
+        $cleanType = strtolower(trim((string) ($type ?? 'single_choice')));
 
-        // Chuẩn hóa và sắp xếp các đáp án theo thứ tự bảng chữ cái để không phụ thuộc hoán vị A/B/C/D
-        $answers = $question->relationLoaded('answers') ? $question->answers : $question->answers()->get();
         $answerItems = [];
-
         foreach ($answers as $ans) {
-            $ansContent = mb_strtolower(trim(preg_replace('/\s+/u', ' ', strip_tags($ans->content ?? ''))), 'UTF-8');
-            $isCorrect = $ans->is_correct ? '1' : '0';
+            $ansContentText = is_array($ans) ? ($ans['content'] ?? $ans['text'] ?? '') : ($ans->content ?? '');
+            $ansContent = mb_strtolower(trim(preg_replace('/\s+/u', ' ', strip_tags((string)$ansContentText))), 'UTF-8');
+            $isCorrect = (is_array($ans) ? !empty($ans['is_correct']) : !empty($ans->is_correct)) ? '1' : '0';
             $answerItems[] = "{$ansContent}::{$isCorrect}";
         }
 
         sort($answerItems, SORT_STRING);
         $canonicalAnswers = implode('||', $answerItems);
 
-        $canonicalString = "{$cleanContent}###{$type}###{$canonicalAnswers}";
+        $canonicalString = "{$cleanContent}###{$cleanType}###{$canonicalAnswers}";
 
         return hash('sha256', $canonicalString);
     }
 
     /**
+     * Tính toán Fingerprint (Mã băm chuẩn hóa SHA-256) cho câu hỏi và danh sách đáp án
+     */
+    public function computeFingerprint(Question $question): string
+    {
+        $answers = $question->relationLoaded('answers') ? $question->answers : $question->answers()->get();
+        return $this->computeFingerprintFromSnapshot($question->content, $question->type, $answers->all());
+    }
+
+    /**
      * Tìm kiếm câu hỏi đã tồn tại trong Ngân hàng công khai theo Fingerprint
      */
-    public function findExistingBankQuestion(string $fingerprint): ?Question
+    public function findExistingBankQuestion(string $fingerprint, bool $lockForUpdate = false): ?Question
     {
         if (empty($fingerprint)) {
             return null;
         }
 
-        return Question::where('fingerprint', $fingerprint)
-            ->where('is_public', true)
-            ->first();
+        $query = Question::where('fingerprint', $fingerprint)
+            ->where('is_public', true);
+
+        if ($lockForUpdate) {
+            $query->lockForUpdate();
+        }
+
+        return $query->first();
     }
 
     /**
@@ -56,9 +69,16 @@ class QuestionSnapshotService
         return DB::transaction(function () use ($originalQuestion) {
             $fingerprint = $this->computeFingerprint($originalQuestion);
 
+            // Kiểm tra xem đã tồn tại snapshot trong Ngân hàng câu hỏi chưa
+            $existingBankQuestion = $this->findExistingBankQuestion($fingerprint, true);
+            if ($existingBankQuestion) {
+                return $existingBankQuestion->loadMissing('answers');
+            }
+
             $snapshot = Question::create([
                 'user_id' => $originalQuestion->user_id,
                 'origin_question_id' => $originalQuestion->id,
+                'quiz_id' => null,
                 'is_public' => true,
                 'bank_submission_status' => 'approved',
                 'bank_submission_at' => $originalQuestion->bank_submission_at ?? now(),
@@ -89,4 +109,60 @@ class QuestionSnapshotService
             return $snapshot->fresh('answers');
         });
     }
+
+    /**
+     * Tạo một bản Snapshot mới của câu hỏi vào Ngân hàng dựa trên QuestionReviewRequest
+     */
+    public function createSnapshotFromReviewRequest(QuestionReviewRequest $reviewRequest, ?int $reviewedById = null): Question
+    {
+        return DB::transaction(function () use ($reviewRequest) {
+            $originalQuestion = $reviewRequest->question;
+            $snapshotAnswers = $reviewRequest->snapshot_answers ?? [];
+
+            $fingerprint = $this->computeFingerprintFromSnapshot(
+                $reviewRequest->snapshot_content,
+                $reviewRequest->snapshot_type,
+                $snapshotAnswers
+            );
+
+            // Kiểm tra xem đã tồn tại snapshot trong Ngân hàng với fingerprint này chưa (không phụ thuộc origin_question_id)
+            $existingSnapshot = $this->findExistingBankQuestion($fingerprint, true);
+
+            if ($existingSnapshot) {
+                return $existingSnapshot->loadMissing('answers');
+            }
+
+            $snapshot = Question::create([
+                'user_id' => $reviewRequest->user_id ?? $originalQuestion?->user_id,
+                'origin_question_id' => $reviewRequest->question_id,
+                'quiz_id' => null,
+                'is_public' => true,
+                'bank_submission_status' => 'approved',
+                'bank_submission_at' => $originalQuestion?->bank_submission_at ?? now(),
+                'content' => $reviewRequest->snapshot_content,
+                'image_url' => $reviewRequest->snapshot_image_url,
+                'type' => $reviewRequest->snapshot_type ?? 'single_choice',
+                'difficulty' => $reviewRequest->snapshot_difficulty ?? 'medium',
+                'education_level_id' => $reviewRequest->snapshot_education_level_id,
+                'grade_id' => $reviewRequest->snapshot_grade_id,
+                'subject_id' => $reviewRequest->snapshot_subject_id,
+                'topic_name' => $reviewRequest->snapshot_topic_name,
+                'points' => $reviewRequest->snapshot_points ?? 10,
+                'order' => 0,
+                'fingerprint' => $fingerprint,
+            ]);
+
+            foreach ($snapshotAnswers as $index => $ans) {
+                Answer::create([
+                    'question_id' => $snapshot->id,
+                    'content' => is_array($ans) ? ($ans['content'] ?? $ans['text'] ?? '') : (string)$ans,
+                    'is_correct' => is_array($ans) ? (bool)($ans['is_correct'] ?? false) : false,
+                    'order' => is_array($ans) ? ($ans['order'] ?? $index) : $index,
+                ]);
+            }
+
+            return $snapshot->fresh('answers');
+        });
+    }
 }
+

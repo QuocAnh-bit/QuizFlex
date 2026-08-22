@@ -219,26 +219,44 @@
           <div
             v-for="q in questions"
             :key="q.id"
-            class="group flex cursor-pointer items-start gap-3.5 rounded-2xl border p-4 transition-all duration-200 select-none"
-            :class="localSelectedIds.includes(q.id)
-              ? 'border-[var(--primary)] bg-[var(--primary)]/10 shadow-sm'
-              : 'border-[var(--border)] bg-[var(--surface-soft)] hover:border-[var(--border-strong)] hover:bg-[var(--chip-active)]'"
+            class="group flex items-start gap-3.5 rounded-2xl border p-4 transition-all duration-200 select-none"
+            :class="[
+              isQuestionDisabled(q.id)
+                ? 'opacity-60 cursor-not-allowed border-[var(--border)] bg-[var(--surface-soft)]/50'
+                : 'cursor-pointer',
+              !isQuestionDisabled(q.id) && localSelectedIds.includes(q.id)
+                ? 'border-[var(--primary)] bg-[var(--primary)]/10 shadow-sm'
+                : (!isQuestionDisabled(q.id) ? 'border-[var(--border)] bg-[var(--surface-soft)] hover:border-[var(--border-strong)] hover:bg-[var(--chip-active)]' : '')
+            ]"
             @click="toggleSelectQuestion(q)"
           >
             <!-- Checkbox Box -->
             <div
               class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-lg border transition-all duration-150"
-              :class="localSelectedIds.includes(q.id)
-                ? 'border-[var(--primary)] bg-[var(--primary)] text-white shadow-sm'
-                : 'border-slate-300 dark:border-slate-600 bg-[var(--surface)] group-hover:border-[var(--primary)]'"
+              :class="[
+                isQuestionDisabled(q.id)
+                  ? 'border-slate-300 dark:border-slate-700 bg-slate-200 dark:bg-slate-800 text-slate-400'
+                  : (localSelectedIds.includes(q.id)
+                    ? 'border-[var(--primary)] bg-[var(--primary)] text-white shadow-sm'
+                    : 'border-slate-300 dark:border-slate-600 bg-[var(--surface)] group-hover:border-[var(--primary)]')
+              ]"
             >
-              <Check v-if="localSelectedIds.includes(q.id)" :size="13" :stroke-width="3" />
+              <Check v-if="isQuestionDisabled(q.id) || localSelectedIds.includes(q.id)" :size="13" :stroke-width="3" />
             </div>
 
             <!-- Question Info -->
             <div class="min-w-0 flex-1">
               <div class="mb-1.5 flex flex-wrap items-center gap-2">
                 <span class="font-mono text-xs font-bold text-[var(--primary)]">#{{ q.id }}</span>
+
+                <!-- Already In Quiz Badge -->
+                <span
+                  v-if="isQuestionDisabled(q.id)"
+                  class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-black bg-slate-500/15 text-slate-500 border border-slate-500/20"
+                >
+                  <Check :size="10" />
+                  <span>Đã có trong đề</span>
+                </span>
 
                 <!-- Difficulty Badge -->
                 <span
@@ -404,6 +422,10 @@ const props = defineProps({
     type: Object,
     default: () => ({}),
   },
+  disabledIds: {
+    type: Array,
+    default: () => [],
+  },
 })
 
 const emit = defineEmits(['update:modelValue', 'close', 'confirm'])
@@ -486,9 +508,17 @@ const availableSubjects = computed(() => {
   return grade && grade.subjects && grade.subjects.length ? grade.subjects : allSubjects.value
 })
 
+const isQuestionDisabled = (questionId) => {
+  return Array.isArray(props.disabledIds) && props.disabledIds.includes(questionId)
+}
+
+const selectableQuestions = computed(() => {
+  return questions.value.filter(q => !isQuestionDisabled(q.id))
+})
+
 const isCurrentPageAllSelected = computed(() => {
-  if (questions.value.length === 0) return false
-  return questions.value.every(q => localSelectedIds.value.includes(q.id))
+  if (selectableQuestions.value.length === 0) return false
+  return selectableQuestions.value.every(q => localSelectedIds.value.includes(q.id))
 })
 
 /* =========================================================
@@ -677,6 +707,7 @@ const changePage = (page) => {
    SELECTION HANDLING
 ========================================================= */
 const toggleSelectQuestion = (question) => {
+  if (isQuestionDisabled(question.id)) return
   const index = localSelectedIds.value.indexOf(question.id)
   if (index > -1) {
     localSelectedIds.value.splice(index, 1)
@@ -690,11 +721,13 @@ const toggleSelectQuestion = (question) => {
 }
 
 const toggleSelectAllCurrentPage = () => {
-  const currentPageIds = questions.value.map(q => q.id)
+  const selectable = selectableQuestions.value
+  if (selectable.length === 0) return
+  const selectableIds = selectable.map(q => q.id)
   if (isCurrentPageAllSelected.value) {
-    localSelectedIds.value = localSelectedIds.value.filter(id => !currentPageIds.includes(id))
+    localSelectedIds.value = localSelectedIds.value.filter(id => !selectableIds.includes(id))
   } else {
-    questions.value.forEach(q => {
+    selectable.forEach(q => {
       if (!localSelectedIds.value.includes(q.id)) {
         localSelectedIds.value.push(q.id)
         selectedQuestionCache.value.set(q.id, {

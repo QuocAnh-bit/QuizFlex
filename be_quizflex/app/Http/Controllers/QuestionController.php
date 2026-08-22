@@ -10,18 +10,22 @@ use App\Models\User;
 use App\Notifications\QuestionModerated;
 use App\Notifications\ReportAuthorUpdated;
 use App\Services\QuestionReviewService;
+use App\Services\QuestionSnapshotService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class QuestionController extends Controller
 {
     public function __construct(
-        protected ?QuestionReviewService $reviewService = null
+        protected ?QuestionReviewService $reviewService = null,
+        protected ?QuestionSnapshotService $snapshotService = null
     ) {
         $this->reviewService = $reviewService ?? app(QuestionReviewService::class);
+        $this->snapshotService = $snapshotService ?? app(QuestionSnapshotService::class);
     }
     public function index(Quiz $quiz)
     {
@@ -272,6 +276,13 @@ class QuestionController extends Controller
             return response()->json(['success' => false, 'message' => 'Bạn cần đăng nhập.'], 401);
         }
 
+        if (Gate::forUser($user)->denies('create', Quiz::class)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Admin không được tạo Quiz trực tiếp.',
+            ], 403);
+        }
+
         $isAdmin = strtolower($user->role ?? '') === 'admin';
         $modeInput = strtolower(trim((string) ($validated['mode'] ?? '')));
         $rawQuestionIds = collect($validated['question_ids'] ?? [])->unique()->values()->all();
@@ -483,17 +494,70 @@ class QuestionController extends Controller
 
     public function store(Request $request, Quiz $quiz)
     {
-        Gate::forUser(auth('api')->user())->authorize('update', $quiz);
+        $user = auth('api')->user();
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Unauthenticated.'], 401);
+        }
+
+        if (Gate::forUser($user)->denies('create', Question::class) || Gate::forUser($user)->denies('update', $quiz)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn không có quyền tạo câu hỏi vào Quiz này.',
+            ], 403);
+        }
 
         $data = $this->validateQuestionPayload($request);
+        $content = $data['content'] ?? $data['text'];
+        $type = $data['type'] ?? 'single_choice';
+        $rawAnswers = $data['answers'] ?? [];
+        $correct = $data['correct'] ?? null;
 
-        $question = DB::transaction(function () use ($quiz, $data) {
+        $correctKeys = collect(is_array($correct) ? $correct : [$correct])
+            ->filter(fn($value) => $value !== null && $value !== '')
+            ->map(fn($value) => strtoupper((string) $value))
+            ->values()
+            ->all();
+
+        $normalizedAnswers = [];
+        foreach ($rawAnswers as $index => $answerData) {
+            $ansContent = trim((string) ($answerData['content'] ?? $answerData['text'] ?? ''));
+            if ($ansContent === '') continue;
+            $key = strtoupper((string) ($answerData['key'] ?? chr(65 + $index)));
+            $isCorrect = array_key_exists('is_correct', $answerData)
+                ? (bool) $answerData['is_correct']
+                : in_array($key, $correctKeys, true);
+            $normalizedAnswers[] = [
+                'content' => $ansContent,
+                'is_correct' => $isCorrect,
+            ];
+        }
+
+        $fingerprint = $this->snapshotService->computeFingerprintFromSnapshot($content, $type, $normalizedAnswers);
+
+        // Kiểm tra câu hỏi trùng trong kho cá nhân / quiz của user
+        $duplicate = Question::where(function ($q) use ($user, $quiz) {
+                $q->where('user_id', $user->id)
+                    ->orWhere('quiz_id', $quiz->id);
+            })
+            ->whereNull('origin_question_id')
+            ->where('fingerprint', $fingerprint)
+            ->exists();
+
+        if ($duplicate) {
+            throw ValidationException::withMessages([
+                'content' => 'Câu hỏi với nội dung và tập đáp án này đã tồn tại trong kho cá nhân của bạn.',
+            ]);
+        }
+
+        $question = DB::transaction(function () use ($quiz, $data, $content, $type, $fingerprint, $user) {
             $question = $quiz->questions()->create([
-                'content' => $data['content'] ?? $data['text'],
+                'user_id' => $user->id,
+                'content' => $content,
                 'image_url' => $data['image_url'] ?? null,
-                'type' => $data['type'] ?? 'single_choice',
+                'type' => $type,
                 'order' => $data['order'] ?? ($quiz->questions()->max('order') + 1),
                 'points' => $data['points'] ?? 10,
+                'fingerprint' => $fingerprint,
             ]);
 
             $this->syncAnswers($question, $data['answers'] ?? [], $data['correct'] ?? null);
@@ -521,18 +585,78 @@ class QuestionController extends Controller
 
     public function update(Request $request, Question $question)
     {
+        $user = auth('api')->user();
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Unauthenticated.'], 401);
+        }
+
         $question->loadMissing('quiz');
-        Gate::forUser(auth('api')->user())->authorize('update', $question->quiz);
+        if (Gate::forUser($user)->denies('update', $question)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn không có quyền sửa câu hỏi này.',
+            ], 403);
+        }
 
         $data = $this->validateQuestionPayload($request, true);
 
-        $question = DB::transaction(function () use ($question, $data) {
+        $content = $data['content'] ?? $data['text'] ?? $question->content;
+        $type = $data['type'] ?? $question->type;
+        $rawAnswers = array_key_exists('answers', $data) ? $data['answers'] : null;
+        $correct = $data['correct'] ?? null;
+
+        if ($rawAnswers !== null) {
+            $correctKeys = collect(is_array($correct) ? $correct : [$correct])
+                ->filter(fn($value) => $value !== null && $value !== '')
+                ->map(fn($value) => strtoupper((string) $value))
+                ->values()
+                ->all();
+
+            $normalizedAnswers = [];
+            foreach ($rawAnswers as $index => $answerData) {
+                $ansContent = trim((string) ($answerData['content'] ?? $answerData['text'] ?? ''));
+                if ($ansContent === '') continue;
+                $key = strtoupper((string) ($answerData['key'] ?? chr(65 + $index)));
+                $isCorrect = array_key_exists('is_correct', $answerData)
+                    ? (bool) $answerData['is_correct']
+                    : in_array($key, $correctKeys, true);
+                $normalizedAnswers[] = [
+                    'content' => $ansContent,
+                    'is_correct' => $isCorrect,
+                ];
+            }
+        } else {
+            $answers = $question->relationLoaded('answers') ? $question->answers : $question->answers()->get();
+            $normalizedAnswers = $answers->all();
+        }
+
+        $fingerprint = $this->snapshotService->computeFingerprintFromSnapshot($content, $type, $normalizedAnswers);
+
+        $duplicate = Question::where(function ($q) use ($user, $question) {
+                $q->where('user_id', $user->id);
+                if ($question->quiz_id) {
+                    $q->orWhere('quiz_id', $question->quiz_id);
+                }
+            })
+            ->whereNull('origin_question_id')
+            ->where('fingerprint', $fingerprint)
+            ->where('id', '!=', $question->id)
+            ->exists();
+
+        if ($duplicate) {
+            throw ValidationException::withMessages([
+                'content' => 'Câu hỏi với nội dung và tập đáp án này đã tồn tại trong kho cá nhân của bạn.',
+            ]);
+        }
+
+        $question = DB::transaction(function () use ($question, $data, $content, $type, $fingerprint) {
             $question->update([
-                'content' => $data['content'] ?? $data['text'] ?? $question->content,
+                'content' => $content,
                 'image_url' => $data['image_url'] ?? $question->image_url,
-                'type' => $data['type'] ?? $question->type,
+                'type' => $type,
                 'order' => $data['order'] ?? $question->order,
                 'points' => $data['points'] ?? $question->points,
+                'fingerprint' => $fingerprint,
             ]);
 
             if (array_key_exists('answers', $data)) {
@@ -542,7 +666,6 @@ class QuestionController extends Controller
             return $question->fresh('answers');
         });
 
-        $user = auth('api')->user();
         if ($user) {
             $this->notifyAdminsIfAuthorUpdatedContent($question, $user);
         }
@@ -556,8 +679,18 @@ class QuestionController extends Controller
 
     public function destroy(Question $question)
     {
+        $user = auth('api')->user();
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Unauthenticated.'], 401);
+        }
+
         $question->loadMissing('quiz');
-        Gate::forUser(auth('api')->user())->authorize('update', $question->quiz);
+        if (Gate::forUser($user)->denies('delete', $question)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn không có quyền xóa câu hỏi này.',
+            ], 403);
+        }
 
         $question->delete();
 
@@ -666,6 +799,7 @@ class QuestionController extends Controller
             'subject_id' => $question->subject_id,
             'subject_name' => $question->subject?->name,
             'topic_name' => $question->topic_name,
+            'origin_question_id' => $question->origin_question_id,
             'is_public' => (bool) $question->is_public,
             'bank_submission_status' => $question->bank_submission_status ?? 'none',
             'bank_submission_note' => $question->bank_submission_note,
@@ -675,7 +809,10 @@ class QuestionController extends Controller
             'report_reason' => $pendingReport?->reason ?? $pendingReport?->description ?? ($isLockedByAdmin ? ($latestReport?->reason ?? $latestReport?->description) : null),
             'order' => $question->order,
             'points' => $question->points ?? 10,
-            'created_at' => $question->created_at,
+            'author_name' => $question->user?->name ?? $question->quiz?->user?->name ?? 'Vô danh',
+            'created_at' => $question->created_at ? $question->created_at->toIso8601String() : null,
+            'updated_at' => $question->updated_at ? $question->updated_at->toIso8601String() : null,
+            'deleted_at' => $question->deleted_at ? $question->deleted_at->toIso8601String() : null,
             'answers' => $question->answers->map(function (Answer $answer, int $index) use ($includeAnswerKey) {
                 $ans = [
                     'id' => $answer->id,
@@ -708,6 +845,7 @@ class QuestionController extends Controller
 
         $query = Question::query()
             ->with(['answers', 'quiz:id,title,user_id', 'educationLevel', 'grade', 'subject'])
+            ->whereNull('origin_question_id')
             ->where(function ($q) use ($user) {
                 $q->where('user_id', $user->id)
                     ->orWhereHas('quiz', fn($sq) => $sq->where('user_id', $user->id));
@@ -804,7 +942,7 @@ class QuestionController extends Controller
             return response()->json(['success' => false, 'message' => 'Không tìm thấy câu hỏi.'], 404);
         }
 
-        if ($question->user_id !== $user->id && strtolower($user->role ?? '') !== 'admin') {
+        if (Gate::forUser($user)->denies('update', $question)) {
             return response()->json(['success' => false, 'message' => 'Bạn không có quyền sửa câu hỏi này.'], 403);
         }
 
@@ -830,7 +968,26 @@ class QuestionController extends Controller
 
         $isAdmin = strtolower($user->role ?? '') === 'admin';
 
-        DB::transaction(function () use ($question, $validated, $isAdmin) {
+        $type = $question->type ?? 'single_choice';
+        $fingerprint = $this->snapshotService->computeFingerprintFromSnapshot(
+            $validated['content'],
+            $type,
+            $validated['answers']
+        );
+
+        $duplicate = Question::where('user_id', $user->id)
+            ->whereNull('origin_question_id')
+            ->where('fingerprint', $fingerprint)
+            ->where('id', '!=', $question->id)
+            ->exists();
+
+        if ($duplicate) {
+            throw ValidationException::withMessages([
+                'content' => 'Câu hỏi với nội dung và tập đáp án này đã tồn tại trong kho cá nhân của bạn.',
+            ]);
+        }
+
+        DB::transaction(function () use ($question, $validated, $isAdmin, $fingerprint) {
             $updateData = [
                 'content' => trim($validated['content']),
                 'difficulty' => $validated['difficulty'] ?? $question->difficulty ?? 'medium',
@@ -839,6 +996,7 @@ class QuestionController extends Controller
                 'grade_id' => array_key_exists('grade_id', $validated) ? $validated['grade_id'] : $question->grade_id,
                 'subject_id' => array_key_exists('subject_id', $validated) ? $validated['subject_id'] : $question->subject_id,
                 'topic_name' => array_key_exists('topic_name', $validated) ? $validated['topic_name'] : $question->topic_name,
+                'fingerprint' => $fingerprint,
             ];
 
             if ($isAdmin && array_key_exists('is_public', $validated)) {
@@ -904,6 +1062,13 @@ class QuestionController extends Controller
             return response()->json(['success' => false, 'message' => 'Unauthenticated.'], 401);
         }
 
+        if (Gate::forUser($user)->denies('create', Question::class)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Admin không được tạo câu hỏi trực tiếp.',
+            ], 403);
+        }
+
         $validated = $request->validate([
             'content' => ['required', 'string'],
             'type' => ['nullable', Rule::in(['single_choice', 'multi_choice', 'true_false', 'fill_blank'])],
@@ -923,12 +1088,30 @@ class QuestionController extends Controller
         $isAdmin = strtolower($user->role ?? '') === 'admin';
         $isPublic = $isAdmin && isset($validated['is_public']) ? (bool)$validated['is_public'] : false;
         $bankSubmissionStatus = $isPublic ? 'approved' : 'none';
+        $type = $validated['type'] ?? 'single_choice';
 
-        $question = DB::transaction(function () use ($user, $validated, $isPublic, $bankSubmissionStatus) {
+        $fingerprint = $this->snapshotService->computeFingerprintFromSnapshot(
+            $validated['content'],
+            $type,
+            $validated['answers']
+        );
+
+        $exists = Question::where('user_id', $user->id)
+            ->whereNull('origin_question_id')
+            ->where('fingerprint', $fingerprint)
+            ->exists();
+
+        if ($exists) {
+            throw ValidationException::withMessages([
+                'content' => 'Câu hỏi với nội dung và tập đáp án này đã tồn tại trong kho cá nhân của bạn.',
+            ]);
+        }
+
+        $question = DB::transaction(function () use ($user, $validated, $isPublic, $bankSubmissionStatus, $type, $fingerprint) {
             $q = Question::create([
                 'user_id' => $user->id,
                 'content' => trim($validated['content']),
-                'type' => $validated['type'] ?? 'single_choice',
+                'type' => $type,
                 'difficulty' => $validated['difficulty'] ?? 'medium',
                 'points' => $validated['points'] ?? 10,
                 'education_level_id' => $validated['education_level_id'] ?? null,
@@ -937,6 +1120,7 @@ class QuestionController extends Controller
                 'topic_name' => $validated['topic_name'] ?? null,
                 'is_public' => $isPublic,
                 'bank_submission_status' => $bankSubmissionStatus,
+                'fingerprint' => $fingerprint,
             ]);
 
             if (isset($validated['answers'])) {
@@ -1295,7 +1479,7 @@ class QuestionController extends Controller
             return response()->json(['success' => false, 'message' => 'Không tìm thấy câu hỏi.'], 404);
         }
 
-        if ($question->user_id !== $user->id && strtolower($user->role ?? '') !== 'admin') {
+        if (Gate::forUser($user)->denies('delete', $question)) {
             return response()->json(['success' => false, 'message' => 'Bạn không có quyền xóa câu hỏi này.'], 403);
         }
 
@@ -1322,7 +1506,7 @@ class QuestionController extends Controller
             return response()->json(['success' => false, 'message' => 'Không tìm thấy câu hỏi trong Thùng rác.'], 404);
         }
 
-        if ($question->user_id !== $user->id && strtolower($user->role ?? '') !== 'admin') {
+        if (Gate::forUser($user)->denies('restore', $question)) {
             return response()->json(['success' => false, 'message' => 'Bạn không có quyền khôi phục câu hỏi này.'], 403);
         }
 
@@ -1350,7 +1534,7 @@ class QuestionController extends Controller
             return response()->json(['success' => false, 'message' => 'Không tìm thấy câu hỏi trong Thùng rác.'], 404);
         }
 
-        if ($question->user_id !== $user->id && strtolower($user->role ?? '') !== 'admin') {
+        if (strtolower($user->role ?? '') === 'admin' || (int) $question->user_id !== (int) $user->id) {
             return response()->json(['success' => false, 'message' => 'Bạn không có quyền xóa vĩnh viễn câu hỏi này.'], 403);
         }
 
@@ -1365,10 +1549,13 @@ class QuestionController extends Controller
 
     /**
      * Lấy toàn bộ danh sách câu hỏi cho Admin Console (kèm Thống kê KPI & Bộ lọc)
+     * Chỉ trả về các câu hỏi thuộc Question Bank (bản ghi snapshot đã approved)
      */
     public function adminIndex(Request $request)
     {
         $query = Question::query()
+            ->whereNotNull('origin_question_id')
+            ->where('bank_submission_status', 'approved')
             ->with(['answers', 'quiz.user:id,name,email,avatar', 'user:id,name,email,avatar', 'educationLevel', 'grade', 'subject']);
 
         if ($request->filled('search')) {
@@ -1405,10 +1592,11 @@ class QuestionController extends Controller
             }
         }
 
-        // Stats tổng quan toàn hệ thống
-        $totalQuestions = Question::count();
-        $publicQuestions = Question::where('is_public', true)->count();
-        $privateQuestions = Question::where('is_public', false)->count();
+        // Stats tổng quan Ngân hàng câu hỏi
+        $bankBase = Question::whereNotNull('origin_question_id')->where('bank_submission_status', 'approved');
+        $totalQuestions = (clone $bankBase)->count();
+        $publicQuestions = (clone $bankBase)->where('is_public', true)->count();
+        $privateQuestions = (clone $bankBase)->where('is_public', false)->count();
         
         // Thống kê số lượng ticket báo cáo vi phạm liên quan (ReportTicket)
         $reportedCount = \App\Models\ReportTicket::where('status', 'pending')->count();
@@ -1427,7 +1615,7 @@ class QuestionController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Danh sách câu hỏi toàn hệ thống',
+            'message' => 'Danh sách câu hỏi ngân hàng câu hỏi',
             'data' => [
                 'items' => $items,
                 'total' => $paginated->total(),
@@ -1519,21 +1707,84 @@ class QuestionController extends Controller
     }
 
     /**
+     * Admin xóa 1 câu hỏi thuộc Ngân hàng câu hỏi (Soft Delete)
+     */
+    public function adminDelete(Request $request, $id)
+    {
+        $user = auth('api')->user();
+        if (!$user || strtolower($user->role ?? '') !== 'admin') {
+            return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
+        }
+
+        $question = Question::find($id);
+        if (!$question) {
+            return response()->json(['success' => false, 'message' => 'Không tìm thấy câu hỏi.'], 404);
+        }
+
+        if (Gate::forUser($user)->denies('delete', $question)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Admin chỉ được xóa câu hỏi snapshot đã được duyệt vào Ngân hàng câu hỏi.',
+            ], 403);
+        }
+
+        $question->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Đã chuyển câu hỏi ngân hàng vào thùng rác thành công.',
+        ]);
+    }
+
+    /**
      * Admin xóa hàng loạt câu hỏi (Bulk Delete)
      */
     public function adminBulkDelete(Request $request)
     {
+        $user = auth('api')->user();
+        if (!$user || strtolower($user->role ?? '') !== 'admin') {
+            return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
+        }
+
         $request->validate([
             'question_ids' => 'required|array|min:1',
             'question_ids.*' => 'integer|exists:questions,id',
         ]);
 
         $ids = $request->input('question_ids');
-        Question::whereIn('id', $ids)->delete();
+        $questions = Question::whereIn('id', $ids)->get();
+
+        $deletedCount = 0;
+        $unauthorizedCount = 0;
+
+        foreach ($questions as $question) {
+            if (Gate::forUser($user)->allows('delete', $question)) {
+                $question->delete();
+                $deletedCount++;
+            } else {
+                $unauthorizedCount++;
+            }
+        }
+
+        if ($deletedCount === 0 && $unauthorizedCount > 0) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không thể xóa các câu hỏi đã chọn do không thỏa mãn điều kiện là câu hỏi snapshot đã duyệt trong Ngân hàng.',
+            ], 403);
+        }
+
+        $message = "Đã chuyển {$deletedCount} câu hỏi vào thùng rác.";
+        if ($unauthorizedCount > 0) {
+            $message .= " (Bỏ qua {$unauthorizedCount} câu hỏi không hợp lệ hoặc không có quyền xóa)";
+        }
 
         return response()->json([
             'success' => true,
-            'message' => "Đã chuyển " . count($ids) . " câu hỏi vào thùng rác.",
+            'message' => $message,
+            'data' => [
+                'deleted_count' => $deletedCount,
+                'skipped_count' => $unauthorizedCount,
+            ]
         ]);
     }
 
@@ -1615,51 +1866,10 @@ class QuestionController extends Controller
      */
     public function adminUpdate(Request $request, $id)
     {
-        $question = Question::findOrFail($id);
-
-        $request->validate([
-            'content' => 'required|string',
-            'difficulty' => 'nullable|string|in:easy,medium,hard',
-            'points' => 'nullable|integer|min:1|max:100',
-            'subject_id' => 'nullable|integer',
-            'grade_id' => 'nullable|integer',
-            'is_public' => 'nullable|boolean',
-            'answers' => 'required|array|min:2',
-            'answers.*.content' => 'required|string',
-            'answers.*.is_correct' => 'required|boolean',
-        ]);
-
-        DB::transaction(function () use ($question, $request) {
-            $question->update([
-                'content' => $request->input('content'),
-                'difficulty' => $request->input('difficulty', 'medium'),
-                'points' => $request->input('points', 10),
-                'subject_id' => $request->input('subject_id'),
-                'grade_id' => $request->input('grade_id'),
-                'is_public' => $request->has('is_public') ? (bool)$request->input('is_public') : (bool)$question->is_public,
-            ]);
-
-            if ($request->has('answers')) {
-                $question->answers()->delete();
-                $answersData = $request->input('answers');
-                foreach ($answersData as $index => $ans) {
-                    $key = chr(65 + $index);
-                    $question->answers()->create([
-                        'answer_key' => $key,
-                        'content' => $ans['content'],
-                        'is_correct' => (bool)$ans['is_correct'],
-                    ]);
-                }
-            }
-        });
-
-        $question->load(['answers', 'subject', 'grade', 'user']);
-
         return response()->json([
-            'success' => true,
-            'message' => 'Cập nhật câu hỏi thành công',
-            'data' => $this->formatQuestion($question, true),
-        ]);
+            'success' => false,
+            'message' => 'Admin không được sửa trực tiếp nội dung câu hỏi trong Ngân hàng câu hỏi. Nội dung câu hỏi phải do tác giả chỉnh sửa và gửi duyệt lại.',
+        ], 403);
     }
 
     /**
@@ -1668,6 +1878,8 @@ class QuestionController extends Controller
     public function adminTrash(Request $request)
     {
         $query = Question::onlyTrashed()
+            ->whereNotNull('origin_question_id')
+            ->where('bank_submission_status', 'approved')
             ->with(['answers', 'quiz.user:id,name,email,avatar', 'user:id,name,email,avatar', 'educationLevel', 'grade', 'subject']);
 
         if ($request->filled('search')) {
@@ -1679,7 +1891,7 @@ class QuestionController extends Controller
         $perPage = min(max((int) $request->query('per_page', 15), 1), 100);
         $paginator = $query->paginate($perPage)->through(fn(Question $q) => $this->formatQuestion($q, true));
 
-        $trashCount = Question::onlyTrashed()->count();
+        $trashCount = (clone $query)->count();
 
         return response()->json([
             'success' => true,
@@ -1700,7 +1912,16 @@ class QuestionController extends Controller
      */
     public function adminRestore($id)
     {
+        $user = auth('api')->user();
+        if (!$user || strtolower($user->role ?? '') !== 'admin') {
+            return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
+        }
+
         $question = Question::onlyTrashed()->findOrFail($id);
+        if (Gate::forUser($user)->denies('restore', $question)) {
+            return response()->json(['success' => false, 'message' => 'Bạn không có quyền khôi phục câu hỏi này.'], 403);
+        }
+
         $question->restore();
 
         return response()->json([
@@ -1715,7 +1936,16 @@ class QuestionController extends Controller
      */
     public function adminForceDelete($id)
     {
+        $user = auth('api')->user();
+        if (!$user || strtolower($user->role ?? '') !== 'admin') {
+            return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
+        }
+
         $question = Question::onlyTrashed()->findOrFail($id);
+        if (Gate::forUser($user)->denies('forceDelete', $question)) {
+            return response()->json(['success' => false, 'message' => 'Bạn không có quyền xóa vĩnh viễn câu hỏi này.'], 403);
+        }
+
         $question->answers()->delete();
         $question->forceDelete();
 
@@ -1730,25 +1960,11 @@ class QuestionController extends Controller
      */
     public function adminBulkRestore(Request $request)
     {
-        $request->validate([
-            'question_ids' => 'required|array|min:1',
-            'question_ids.*' => 'integer',
-        ]);
+        $user = auth('api')->user();
+        if (!$user || strtolower($user->role ?? '') !== 'admin') {
+            return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
+        }
 
-        $ids = $request->input('question_ids');
-        Question::onlyTrashed()->whereIn('id', $ids)->restore();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Đã khôi phục ' . count($ids) . ' câu hỏi thành công.',
-        ]);
-    }
-
-    /**
-     * Admin xóa vĩnh viễn hàng loạt từ Thùng rác
-     */
-    public function adminBulkForceDelete(Request $request)
-    {
         $request->validate([
             'question_ids' => 'required|array|min:1',
             'question_ids.*' => 'integer',
@@ -1757,17 +1973,54 @@ class QuestionController extends Controller
         $ids = $request->input('question_ids');
         $questions = Question::onlyTrashed()->whereIn('id', $ids)->get();
 
+        $restoredCount = 0;
         foreach ($questions as $q) {
-            $q->answers()->delete();
-            $q->forceDelete();
+            if (Gate::forUser($user)->allows('restore', $q)) {
+                $q->restore();
+                $restoredCount++;
+            }
         }
 
         return response()->json([
             'success' => true,
-            'message' => 'Đã xóa vĩnh viễn ' . count($ids) . ' câu hỏi.',
+            'message' => 'Đã khôi phục ' . $restoredCount . ' câu hỏi thành công.',
+        ]);
+    }
+
+    /**
+     * Admin xóa vĩnh viễn hàng loạt từ Thùng rác
+     */
+    public function adminBulkForceDelete(Request $request)
+    {
+        $user = auth('api')->user();
+        if (!$user || strtolower($user->role ?? '') !== 'admin') {
+            return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
+        }
+
+        $request->validate([
+            'question_ids' => 'required|array|min:1',
+            'question_ids.*' => 'integer',
+        ]);
+
+        $ids = $request->input('question_ids');
+        $questions = Question::onlyTrashed()->whereIn('id', $ids)->get();
+
+        $deletedCount = 0;
+        foreach ($questions as $q) {
+            if (Gate::forUser($user)->allows('forceDelete', $q)) {
+                $q->answers()->delete();
+                $q->forceDelete();
+                $deletedCount++;
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Đã xóa vĩnh viễn ' . $deletedCount . ' câu hỏi.',
         ]);
     }
 }
+
 
 
 

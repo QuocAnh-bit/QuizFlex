@@ -42,6 +42,13 @@ class AIController extends Controller
 
         $user = auth('api')->user();
 
+        if ($user && strtolower($user->role ?? '') === 'admin') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Admin không được tạo Quiz bằng AI.',
+            ], 403);
+        }
+
         if (($user->ai_quota_remaining ?? 0) <= 0) {
             return response()->json([
                 'success' => false,

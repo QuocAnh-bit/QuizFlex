@@ -7,11 +7,6 @@
         <h1 class="mt-1 text-2xl font-black text-slate-900 sm:text-3xl">Quản lý Quiz</h1>
         <p class="mt-1 text-sm text-slate-600">Quản lý tất cả bộ đề trắc nghiệm trong hệ thống, xem phân tích và hiệu suất.</p>
       </div>
-      <div class="flex items-center gap-2.5">
-        <RouterLink to="/admin/quizzes-trash" class="rounded-lg border border-red-200 bg-red-50 px-3.5 py-1.5 text-xs font-bold text-red-700 hover:bg-red-100 transition">
-          Thùng rác
-        </RouterLink>
-      </div>
     </div>
 
     <!-- Search & Filter Card -->
@@ -111,12 +106,6 @@
                   <RouterLink :to="`/admin/quizzes/${quiz.id}`" class="text-[#7C3AED] hover:underline font-bold text-xs">
                     Chi tiết
                   </RouterLink>
-                  <RouterLink :to="`/admin/quizzes/${quiz.id}/edit`" class="text-amber-600 hover:underline font-bold text-xs">
-                    Sửa
-                  </RouterLink>
-                  <button @click="deleteQuiz(quiz.id)" class="text-red-600 hover:underline font-bold text-xs">
-                    Xóa
-                  </button>
                 </div>
               </td>
             </tr>

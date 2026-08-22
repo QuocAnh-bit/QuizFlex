@@ -33,7 +33,7 @@
             ← Quay lại
           </button>
         </div>
-        <div class="flex flex-wrap gap-3 mt-4">
+        <div v-if="isUserWorkspace" class="flex flex-wrap gap-3 mt-4">
           <router-link class="btn-ghost" :to="`${questionBase}/ocr`">Upload OCR</router-link>
           <router-link class="btn-ghost" :to="`${questionBase}/ai`">AI Generator</router-link>
           <router-link class="btn-primary shadow-lg transition hover:scale-105" :to="`${questionBase}/create`">┼ Tạo quiz</router-link>
@@ -153,8 +153,9 @@
           </router-link>
           
           <router-link
+            v-if="isUserWorkspace && !showTrash"
             class="btn-primary text-xs px-3 py-1.5"
-            :to="`${questionBase}/edit/${quiz.id}`"
+            :to="`/dashboard/questions/edit/${quiz.id}`"
           >
             Sửa
           </router-link>

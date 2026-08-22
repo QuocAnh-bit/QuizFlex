@@ -37,9 +37,6 @@
               <span>Từ chối</span>
             </button>
           </template>
-          <RouterLink :to="`/admin/quizzes/${quiz.id}/edit`" class="btn-primary text-xs px-3.5 py-1.5">
-            Sửa Quiz
-          </RouterLink>
         </div>
       </div>
 

@@ -331,8 +331,8 @@ export const adminQuestionsApi = {
   },
 
   async remove(id) {
-    const { data } = await api.delete(`/user/my-questions/${id}`);
-    return data;
+    const { data } = await api.delete(`/admin/questions/${id}`);
+    return unwrap(data);
   }
 };
 

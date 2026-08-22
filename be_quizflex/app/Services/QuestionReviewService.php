@@ -13,6 +13,13 @@ use Illuminate\Validation\ValidationException;
 
 class QuestionReviewService
 {
+    protected QuestionSnapshotService $snapshotService;
+
+    public function __construct(?QuestionSnapshotService $snapshotService = null)
+    {
+        $this->snapshotService = $snapshotService ?? app(QuestionSnapshotService::class);
+    }
+
     /**
      * Tác giả gửi yêu cầu duyệt câu hỏi vào Ngân hàng
      */
@@ -91,7 +98,9 @@ class QuestionReviewService
             ]);
 
             // Cập nhật trạng thái câu hỏi hiện tại (cached state)
+            $fingerprint = $this->snapshotService->computeFingerprint($question);
             $question->update([
+                'fingerprint' => $fingerprint,
                 'bank_submission_status' => 'pending',
                 'bank_submission_at' => now(),
                 'bank_submission_note' => null, // Ghi chú lần trước đã được lưu an toàn trong revision cũ
@@ -118,66 +127,52 @@ class QuestionReviewService
             ]);
         }
 
+        if ($question->bank_submission_status !== 'pending') {
+            throw ValidationException::withMessages([
+                'question' => 'Chỉ có thể phê duyệt câu hỏi đang ở trạng thái chờ duyệt (pending).',
+            ]);
+        }
+
         return DB::transaction(function () use ($question, $admin) {
-            $request = QuestionReviewRequest::where('question_id', $question->id)
-                ->where('status', 'pending')
-                ->latest('id')
-                ->first();
-
-            if (!$request) {
-                // Nếu chưa có request pending (Admin duyệt trực tiếp từ quản lý câu hỏi)
-                $maxRevision = QuestionReviewRequest::where('question_id', $question->id)->max('revision_number') ?? 0;
-                $answers = $question->answers()->orderBy('order')->get();
-                $snapshotAnswers = $answers->map(function ($ans, $index) {
-                    return [
-                        'id' => $ans->id,
-                        'content' => $ans->content,
-                        'text' => $ans->content,
-                        'is_correct' => (bool) $ans->is_correct,
-                        'order' => $ans->order ?? $index,
-                        'key' => chr(65 + ($ans->order ?? $index)),
-                    ];
-                })->values()->toArray();
-
-                $question->loadMissing(['educationLevel', 'grade', 'subject']);
-                $request = QuestionReviewRequest::create([
-                    'question_id' => $question->id,
-                    'user_id' => $question->user_id ?? $admin->id,
-                    'revision_number' => $maxRevision + 1,
-                    'status' => 'pending',
-                    'snapshot_content' => $question->content,
-                    'snapshot_type' => $question->type ?? 'single_choice',
-                    'snapshot_difficulty' => $question->difficulty ?? 'medium',
-                    'snapshot_education_level_id' => $question->education_level_id,
-                    'snapshot_grade_id' => $question->grade_id,
-                    'snapshot_subject_id' => $question->subject_id,
-                    'snapshot_topic_name' => $question->topic_name,
-                    'snapshot_points' => $question->points ?? 10,
-                    'snapshot_image_url' => $question->image_url,
-                    'snapshot_answers' => $snapshotAnswers,
-                    'snapshot_metadata' => [
-                        'education_level_name' => $question->educationLevel?->name,
-                        'grade_name' => $question->grade?->name,
-                        'subject_name' => $question->subject?->name,
-                    ],
+            $lockedQuestion = Question::where('id', $question->id)->lockForUpdate()->first();
+            if (!$lockedQuestion || $lockedQuestion->bank_submission_status !== 'pending') {
+                throw ValidationException::withMessages([
+                    'question' => 'Chỉ có thể phê duyệt câu hỏi đang ở trạng thái chờ duyệt (pending).',
                 ]);
             }
 
+            $request = QuestionReviewRequest::where('question_id', $lockedQuestion->id)
+                ->where('status', 'pending')
+                ->latest('id')
+                ->lockForUpdate()
+                ->first();
+
+            if (!$request) {
+                throw ValidationException::withMessages([
+                    'question' => 'Không tìm thấy yêu cầu xét duyệt đang chờ xử lý cho câu hỏi này.',
+                ]);
+            }
+
+            // 1. Tạo bản ghi Question snapshot độc lập trong Ngân hàng từ dữ liệu bất biến của review request (nếu chưa có trong Bank)
+            $this->snapshotService->createSnapshotFromReviewRequest($request, $admin->id);
+
+            // 2. Cập nhật trạng thái của QuestionReviewRequest
             $request->update([
                 'status' => 'approved',
                 'reviewed_by' => $admin->id,
                 'reviewed_at' => now(),
             ]);
 
-            $question->update([
-                'is_public' => true,
+            // 3. Cập nhật câu hỏi gốc của User: giữ is_public = false để độc lập trong kho cá nhân
+            $lockedQuestion->update([
+                'is_public' => false,
                 'bank_submission_status' => 'approved',
                 'bank_submission_note' => null,
             ]);
 
-            $author = $question->user ?? $question->quiz?->user;
+            $author = $lockedQuestion->user ?? $lockedQuestion->quiz?->user;
             if ($author) {
-                $author->notify(new QuestionModerated($question, 'approved'));
+                $author->notify(new QuestionModerated($lockedQuestion, 'approved'));
             }
 
             return $request->fresh(['question', 'user', 'reviewer']);
@@ -202,6 +197,12 @@ class QuestionReviewService
             ]);
         }
 
+        if ($question->bank_submission_status !== 'pending') {
+            throw ValidationException::withMessages([
+                'question' => 'Chỉ có thể từ chối câu hỏi đang ở trạng thái chờ duyệt (pending).',
+            ]);
+        }
+
         return DB::transaction(function () use ($question, $admin, $trimmedReason) {
             $request = QuestionReviewRequest::where('question_id', $question->id)
                 ->where('status', 'pending')
@@ -209,40 +210,8 @@ class QuestionReviewService
                 ->first();
 
             if (!$request) {
-                $maxRevision = QuestionReviewRequest::where('question_id', $question->id)->max('revision_number') ?? 0;
-                $answers = $question->answers()->orderBy('order')->get();
-                $snapshotAnswers = $answers->map(function ($ans, $index) {
-                    return [
-                        'id' => $ans->id,
-                        'content' => $ans->content,
-                        'text' => $ans->content,
-                        'is_correct' => (bool) $ans->is_correct,
-                        'order' => $ans->order ?? $index,
-                        'key' => chr(65 + ($ans->order ?? $index)),
-                    ];
-                })->values()->toArray();
-
-                $question->loadMissing(['educationLevel', 'grade', 'subject']);
-                $request = QuestionReviewRequest::create([
-                    'question_id' => $question->id,
-                    'user_id' => $question->user_id ?? $admin->id,
-                    'revision_number' => $maxRevision + 1,
-                    'status' => 'pending',
-                    'snapshot_content' => $question->content,
-                    'snapshot_type' => $question->type ?? 'single_choice',
-                    'snapshot_difficulty' => $question->difficulty ?? 'medium',
-                    'snapshot_education_level_id' => $question->education_level_id,
-                    'snapshot_grade_id' => $question->grade_id,
-                    'snapshot_subject_id' => $question->subject_id,
-                    'snapshot_topic_name' => $question->topic_name,
-                    'snapshot_points' => $question->points ?? 10,
-                    'snapshot_image_url' => $question->image_url,
-                    'snapshot_answers' => $snapshotAnswers,
-                    'snapshot_metadata' => [
-                        'education_level_name' => $question->educationLevel?->name,
-                        'grade_name' => $question->grade?->name,
-                        'subject_name' => $question->subject?->name,
-                    ],
+                throw ValidationException::withMessages([
+                    'question' => 'Không tìm thấy yêu cầu xét duyệt đang chờ xử lý cho câu hỏi này.',
                 ]);
             }
 

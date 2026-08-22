@@ -135,8 +135,19 @@ class QuizController extends Controller
 
     public function store(Request $request)
     {
+        $user = auth('api')->user();
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Unauthenticated.'], 401);
+        }
+
+        if (Gate::forUser($user)->denies('create', Quiz::class)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Admin không được tạo Quiz trực tiếp.',
+            ], 403);
+        }
+
         $data = $this->prepareQuizData($request, $this->validateQuizPayload($request));
-        $user = $this->resolveUser($request);
 
         $quiz = DB::transaction(function () use ($data, $user) {
             $quiz = Quiz::create($this->quizAttributes($data, $user->id));
@@ -197,7 +208,16 @@ class QuizController extends Controller
     public function editData(Quiz $quiz)
     {
         $user = auth('api')->user();
-        Gate::forUser($user)->authorize('update', $quiz);
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Unauthenticated.'], 401);
+        }
+
+        if (Gate::forUser($user)->denies('update', $quiz)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn không có quyền chỉnh sửa bài Quiz này.',
+            ], 403);
+        }
 
         $quiz->load(['user:id,name', 'educationLevel', 'grade', 'subject', 'questions.answers'])
             ->loadCount(['questions', 'attempts'])
@@ -212,7 +232,17 @@ class QuizController extends Controller
 
     public function update(Request $request, Quiz $quiz)
     {
-        Gate::forUser(auth('api')->user())->authorize('update', $quiz);
+        $user = auth('api')->user();
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Unauthenticated.'], 401);
+        }
+
+        if (Gate::forUser($user)->denies('update', $quiz)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn không có quyền chỉnh sửa bài Quiz này.',
+            ], 403);
+        }
 
         $data = $this->prepareQuizData($request, $this->validateQuizPayload($request, true), $quiz);
 
@@ -226,24 +256,12 @@ class QuizController extends Controller
             return $quiz->fresh(['user:id,name', 'questions.answers']);
         });
 
-        // NẾU NGƯỜI SỬA KHÔNG PHẢI LÀ CHỦ QUIZ (LÀ ADMIN) -> GỬI THÔNG BÁO 'edited'
-        $currentUserId = auth('api')->id();
-        if ($currentUserId !== null && $currentUserId !== $quiz->user_id) {
-            $owner = User::find($quiz->user_id);
-            if ($owner) {
-                $owner->notify(new QuizModerated($quiz, 'edited'));
-            }
-        } else {
-            // NẾU TÁC GIẢ SỬA QUIZ TỪNG BỊ BÁO CÁO / ẨN -> THÔNG BÁO CHO CÁC ADMIN
-            $currentUser = auth('api')->user();
-            if ($currentUser && strtolower($currentUser->role ?? '') !== 'admin') {
-                $hasReport = \App\Models\ReportTicket::where('quiz_id', $quiz->id)->exists();
-                if ($hasReport || !$quiz->is_public) {
-                    $admins = User::whereIn('role', ['admin', 'ADMIN'])->get();
-                    if ($admins->isNotEmpty()) {
-                        \Illuminate\Support\Facades\Notification::send($admins, new \App\Notifications\ReportAuthorUpdated($quiz, 'quiz', $currentUser));
-                    }
-                }
+        // Chỉ gửi thông báo nếu bài Quiz có ticket vi phạm đang chờ xử lý
+        $hasPendingReport = \App\Models\ReportTicket::where('quiz_id', $quiz->id)->where('status', 'pending')->exists();
+        if ($hasPendingReport) {
+            $admins = User::whereIn('role', ['admin', 'ADMIN'])->get();
+            if ($admins->isNotEmpty()) {
+                \Illuminate\Support\Facades\Notification::send($admins, new \App\Notifications\ReportAuthorUpdated($quiz, 'quiz', $user));
             }
         }
 
@@ -268,7 +286,7 @@ class QuizController extends Controller
         if (Gate::forUser($currentUser)->denies('delete', $quiz)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Bạn không có quyền xóa quiz này. Admin chỉ được xóa quiz đã bị báo cáo vi phạm.'
+                'message' => 'Bạn không có quyền xóa quiz này.'
             ], 403);
         }
 
@@ -450,10 +468,10 @@ class QuizController extends Controller
                 $reviewStatus = $isPublic ? 'approved' : ($data['review_status'] ?? $currentQuiz?->review_status ?? 'draft');
                 $status = $data['status'] ?? $currentQuiz?->status ?? ($isPublic ? 'published' : 'draft');
             } else {
-                // User thường: Luôn ở chế độ draft/private chờ Admin duyệt
+                // User thường: Luôn ở chế độ private trừ khi đã được Admin duyệt
                 $isPublic = false;
-                $reviewStatus = 'draft';
-                $status = 'draft';
+                $reviewStatus = $currentQuiz?->review_status ?? 'draft';
+                $status = $currentQuiz?->status ?? 'draft';
             }
         } else {
             // Quiz tự động (auto): 100% câu hỏi từ Ngân hàng đã duyệt

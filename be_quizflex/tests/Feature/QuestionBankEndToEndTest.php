@@ -49,6 +49,11 @@ class QuestionBankEndToEndTest extends TestCase
                 'role' => 'user',
             ]
         );
+
+        // Dọn dẹp câu hỏi của các test users trước mỗi bài test
+        Question::withTrashed()
+            ->whereIn('user_id', [$this->author->id, $this->admin->id, $this->otherUser->id])
+            ->forceDelete();
     }
 
     protected function createQuestion(array $overrides = [], array $answers = []): Question
@@ -340,7 +345,12 @@ class QuestionBankEndToEndTest extends TestCase
 
         $question->refresh();
         $this->assertEquals('approved', $question->bank_submission_status);
-        $this->assertTrue($question->is_public);
+        $this->assertFalse((bool) $question->is_public);
+
+        $bankSnapshot = Question::where('origin_question_id', $question->id)->where('is_public', true)->first();
+        $this->assertNotNull($bankSnapshot);
+        $this->assertTrue((bool) $bankSnapshot->is_public);
+        $this->assertEquals('approved', $bankSnapshot->bank_submission_status);
 
         // Database giữ toàn bộ 3 revisions
         $allRevs = QuestionReviewRequest::where('question_id', $question->id)->orderBy('revision_number')->get();

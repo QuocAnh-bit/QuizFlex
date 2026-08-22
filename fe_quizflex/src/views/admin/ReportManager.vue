@@ -184,10 +184,10 @@
                 </template>
 
                 <router-link
-                  :to="`/admin/quizzes/${report.quiz_id}/edit`"
-                  class="text-xs font-medium text-amber-600 hover:underline"
+                  :to="`/admin/quizzes/${report.quiz_id}`"
+                  class="text-xs font-medium text-purple-600 hover:underline"
                 >
-                  Sửa
+                  Xem Quiz
                 </router-link>
                 <button
                   type="button"

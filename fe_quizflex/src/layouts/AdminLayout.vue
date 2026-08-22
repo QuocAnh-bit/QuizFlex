@@ -115,10 +115,6 @@
               <ArrowLeft class="h-3.5 w-3.5" />
               Trang người dùng
             </router-link>
-            <router-link class="btn-primary flex items-center gap-1.5 text-xs" to="/admin/questions/create">
-              <Plus class="h-3.5 w-3.5" />
-              Tạo quiz mới
-            </router-link>
           </div>
         </header>
 
@@ -214,9 +210,6 @@ const menu = computed(() => [
       { label: 'Duyệt vào Ngân hàng', to: '/admin/question-bank-requests', icon: CheckSquare },
       { label: 'Duyệt Quiz công khai', to: '/admin/quiz-review-requests', icon: ClipboardCheck },
       { label: 'Kho quiz', to: '/admin/questions', icon: Package },
-      
-      { label: 'AI Generator', to: '/admin/questions/ai', icon: BrainCircuit },
-      { label: 'OCR Upload', to: '/admin/questions/ocr', icon: Camera },
       { label: 'Quản lý Bộ môn', to: '/admin/subjects', icon: BookOpen },
       { label: 'Quản lý báo cáo', to: '/admin/report-tickets', icon: Flag, badge: reportBadge.value },
     ],

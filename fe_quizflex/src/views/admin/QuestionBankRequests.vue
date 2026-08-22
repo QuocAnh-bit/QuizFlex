@@ -183,6 +183,7 @@
           <div class="flex items-start gap-3 flex-1 min-w-0">
             <!-- Select Checkbox -->
             <input
+              v-if="item.bank_submission_status === 'pending'"
               type="checkbox"
               :checked="selectedIds.includes(item.id)"
               class="h-4 w-4 rounded accent-[#7C3AED] mt-1 shrink-0 cursor-pointer"
@@ -310,7 +311,7 @@
             </button>
 
             <button
-              v-if="item.bank_submission_status !== 'approved'"
+              v-if="item.bank_submission_status === 'pending'"
               type="button"
               class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition cursor-pointer"
               title="Phê duyệt câu hỏi này vào Ngân hàng"
@@ -321,7 +322,7 @@
             </button>
 
             <button
-              v-if="item.bank_submission_status !== 'rejected'"
+              v-if="item.bank_submission_status === 'pending'"
               type="button"
               class="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-white px-3 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 transition cursor-pointer"
               title="Từ chối câu hỏi này"
@@ -710,7 +711,7 @@
 
           <div class="flex items-center gap-2">
             <button
-              v-if="detailData?.question?.bank_submission_status !== 'rejected'"
+              v-if="detailData?.question?.bank_submission_status === 'pending'"
               type="button"
               class="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-white px-4 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 transition cursor-pointer shadow-sm"
               @click="openRejectModalFromDetail"
@@ -720,7 +721,7 @@
             </button>
 
             <button
-              v-if="detailData?.question?.bank_submission_status !== 'approved'"
+              v-if="detailData?.question?.bank_submission_status === 'pending'"
               type="button"
               class="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-5 py-2 text-xs font-bold text-white hover:bg-emerald-700 transition cursor-pointer shadow-sm"
               @click="approveFromDetail"

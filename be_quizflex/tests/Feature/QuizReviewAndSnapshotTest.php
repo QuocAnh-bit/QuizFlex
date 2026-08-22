@@ -38,6 +38,11 @@ class QuizReviewAndSnapshotTest extends TestCase
                 'role' => 'admin',
             ]
         );
+
+        // Dọn dẹp câu hỏi của các test users trước mỗi bài test
+        Question::withTrashed()
+            ->whereIn('user_id', [$this->normalUser->id, $this->adminUser->id])
+            ->forceDelete();
     }
 
     /**
@@ -147,6 +152,9 @@ class QuizReviewAndSnapshotTest extends TestCase
             'difficulty' => 'easy',
             'is_public' => false,
         ]);
+        Answer::create(['question_id' => $question->id, 'content' => 'A', 'is_correct' => true, 'order' => 0]);
+        Answer::create(['question_id' => $question->id, 'content' => 'B', 'is_correct' => false, 'order' => 1]);
+
         $quiz->questions()->sync([$question->id => ['order' => 0, 'points' => 10]]);
 
         $response = $this->actingAs($this->normalUser, 'api')->postJson("/api/quizzes/{$quiz->id}/request-review", [
@@ -644,9 +652,10 @@ class QuizReviewAndSnapshotTest extends TestCase
             ['name' => 'Other User', 'password' => bcrypt('password'), 'role' => 'user']
         );
 
+        $uid = uniqid();
         $privateQuestionB = Question::create([
             'user_id' => $otherUser->id,
-            'content' => 'Câu hỏi bí mật của User B',
+            'content' => "Câu hỏi bí mật của User B {$uid}",
             'type' => 'single_choice',
             'is_public' => false,
         ]);
