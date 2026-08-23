@@ -194,20 +194,8 @@ class QuizReviewService
 
                 // Nếu câu hỏi chưa thuộc Ngân hàng công khai
                 if (!$question->is_public) {
-                    $fingerprint = $this->snapshotService->computeFingerprint($question);
-
-                    if (empty($question->fingerprint) || $question->fingerprint !== $fingerprint) {
-                        $question->update(['fingerprint' => $fingerprint]);
-                    }
-
-                    $existingBankQuestion = $this->snapshotService->findExistingBankQuestion($fingerprint);
-
-                    if ($existingBankQuestion) {
-                        $targetQuestionId = $existingBankQuestion->id;
-                    } else {
-                        $snapshot = $this->snapshotService->createSnapshotForBank($question, $admin->id);
-                        $targetQuestionId = $snapshot->id;
-                    }
+                    $snapshot = $this->snapshotService->createSnapshotForBank($question, $admin->id);
+                    $targetQuestionId = $snapshot->id;
 
                     $pivotSyncData[$targetQuestionId] = [
                         'order' => $order,

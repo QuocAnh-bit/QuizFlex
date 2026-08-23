@@ -43,7 +43,7 @@ class QuestionSnapshotService
     }
 
     /**
-     * Tìm kiếm câu hỏi đã tồn tại trong Ngân hàng công khai theo Fingerprint
+     * Tìm kiếm câu hỏi đã tồn tại trong Ngân hàng công khai theo Fingerprint (Dùng để kiểm tra trùng lặp nội dung)
      */
     public function findExistingBankQuestion(string $fingerprint, bool $lockForUpdate = false): ?Question
     {
@@ -62,19 +62,59 @@ class QuestionSnapshotService
     }
 
     /**
-     * Tạo một bản Snapshot mới của câu hỏi cá nhân vào Ngân hàng câu hỏi
+     * Tìm kiếm Bank Snapshot duy nhất của một Question gốc theo origin_question_id
+     */
+    public function findBankSnapshotByOriginId(int $originQuestionId, bool $lockForUpdate = false): ?Question
+    {
+        $query = Question::where('origin_question_id', $originQuestionId);
+
+        if ($lockForUpdate) {
+            $query->lockForUpdate();
+        }
+
+        return $query->first();
+    }
+
+    /**
+     * Tạo hoặc Cập nhật bản Snapshot của câu hỏi cá nhân vào Ngân hàng câu hỏi
+     * QUY TẮC: Một origin_question_id chỉ có duy nhất 1 snapshot đại diện trong ngân hàng.
      */
     public function createSnapshotForBank(Question $originalQuestion, ?int $reviewedById = null): Question
     {
         return DB::transaction(function () use ($originalQuestion) {
             $fingerprint = $this->computeFingerprint($originalQuestion);
+            $answers = $originalQuestion->relationLoaded('answers') ? $originalQuestion->answers : $originalQuestion->answers()->get();
 
-            // Kiểm tra xem đã tồn tại snapshot trong Ngân hàng câu hỏi chưa
-            $existingBankQuestion = $this->findExistingBankQuestion($fingerprint, true);
-            if ($existingBankQuestion) {
-                return $existingBankQuestion->loadMissing('answers');
+            // 1. Tìm Bank Snapshot hiện tại theo origin_question_id (KHÔNG tìm theo fingerprint)
+            $existingSnapshot = $this->findBankSnapshotByOriginId($originalQuestion->id, true);
+
+            if ($existingSnapshot) {
+                // Đã có snapshot trong ngân hàng -> UPDATE snapshot hiện tại (Giữ nguyên snapshot.id và origin_question_id)
+                $existingSnapshot->update([
+                    'user_id' => $originalQuestion->user_id,
+                    'is_public' => true,
+                    'bank_submission_status' => 'approved',
+                    'bank_submission_at' => now(),
+                    'content' => $originalQuestion->content,
+                    'image_url' => $originalQuestion->image_url,
+                    'type' => $originalQuestion->type,
+                    'difficulty' => $originalQuestion->difficulty,
+                    'education_level_id' => $originalQuestion->education_level_id,
+                    'grade_id' => $originalQuestion->grade_id,
+                    'subject_id' => $originalQuestion->subject_id,
+                    'topic_name' => $originalQuestion->topic_name,
+                    'points' => $originalQuestion->points ?? 10,
+                    'order' => $originalQuestion->order ?? 0,
+                    'fingerprint' => $fingerprint,
+                ]);
+
+                // Đồng bộ answers
+                $this->syncSnapshotAnswersFromModels($existingSnapshot, $answers);
+
+                return $existingSnapshot->fresh('answers');
             }
 
+            // 2. Chưa có snapshot -> CREATE snapshot mới (Lần đầu vào ngân hàng)
             $snapshot = Question::create([
                 'user_id' => $originalQuestion->user_id,
                 'origin_question_id' => $originalQuestion->id,
@@ -95,8 +135,6 @@ class QuestionSnapshotService
                 'fingerprint' => $fingerprint,
             ]);
 
-            // Sao chép toàn bộ đáp án sang Question snapshot mới
-            $answers = $originalQuestion->relationLoaded('answers') ? $originalQuestion->answers : $originalQuestion->answers()->get();
             foreach ($answers as $ans) {
                 Answer::create([
                     'question_id' => $snapshot->id,
@@ -111,12 +149,14 @@ class QuestionSnapshotService
     }
 
     /**
-     * Tạo một bản Snapshot mới của câu hỏi vào Ngân hàng dựa trên QuestionReviewRequest
+     * Tạo hoặc Cập nhật bản Snapshot của câu hỏi vào Ngân hàng dựa trên QuestionReviewRequest
+     * QUY TẮC: Một origin_question_id chỉ có duy nhất 1 snapshot đại diện trong ngân hàng.
      */
     public function createSnapshotFromReviewRequest(QuestionReviewRequest $reviewRequest, ?int $reviewedById = null): Question
     {
         return DB::transaction(function () use ($reviewRequest) {
             $originalQuestion = $reviewRequest->question;
+            $originQuestionId = $reviewRequest->question_id;
             $snapshotAnswers = $reviewRequest->snapshot_answers ?? [];
 
             $fingerprint = $this->computeFingerprintFromSnapshot(
@@ -125,16 +165,38 @@ class QuestionSnapshotService
                 $snapshotAnswers
             );
 
-            // Kiểm tra xem đã tồn tại snapshot trong Ngân hàng với fingerprint này chưa (không phụ thuộc origin_question_id)
-            $existingSnapshot = $this->findExistingBankQuestion($fingerprint, true);
+            // 1. Tìm Bank Snapshot hiện tại theo origin_question_id (KHÔNG tìm theo fingerprint)
+            $existingSnapshot = $this->findBankSnapshotByOriginId($originQuestionId, true);
 
             if ($existingSnapshot) {
-                return $existingSnapshot->loadMissing('answers');
+                // TRƯỜNG HỢP 1: ĐÃ CÓ SNAPSHOT -> UPDATE SNAPSHOT HIỆN TẠI (Giữ nguyên snapshot.id và origin_question_id)
+                $existingSnapshot->update([
+                    'user_id' => $reviewRequest->user_id ?? $originalQuestion?->user_id ?? $existingSnapshot->user_id,
+                    'is_public' => true,
+                    'bank_submission_status' => 'approved',
+                    'bank_submission_at' => now(),
+                    'content' => $reviewRequest->snapshot_content,
+                    'image_url' => $reviewRequest->snapshot_image_url,
+                    'type' => $reviewRequest->snapshot_type ?? 'single_choice',
+                    'difficulty' => $reviewRequest->snapshot_difficulty ?? 'medium',
+                    'education_level_id' => $reviewRequest->snapshot_education_level_id,
+                    'grade_id' => $reviewRequest->snapshot_grade_id,
+                    'subject_id' => $reviewRequest->snapshot_subject_id,
+                    'topic_name' => $reviewRequest->snapshot_topic_name,
+                    'points' => $reviewRequest->snapshot_points ?? 10,
+                    'fingerprint' => $fingerprint,
+                ]);
+
+                // Đồng bộ lại toàn bộ đáp án của snapshot
+                $this->syncSnapshotAnswers($existingSnapshot, $snapshotAnswers);
+
+                return $existingSnapshot->fresh('answers');
             }
 
+            // TRƯỜNG HỢP 2: CHƯA CÓ SNAPSHOT -> CREATE SNAPSHOT MỚI (Lần đầu duyệt vào ngân hàng)
             $snapshot = Question::create([
                 'user_id' => $reviewRequest->user_id ?? $originalQuestion?->user_id,
-                'origin_question_id' => $reviewRequest->question_id,
+                'origin_question_id' => $originQuestionId,
                 'quiz_id' => null,
                 'is_public' => true,
                 'bank_submission_status' => 'approved',
@@ -163,6 +225,82 @@ class QuestionSnapshotService
 
             return $snapshot->fresh('answers');
         });
+    }
+
+    /**
+     * Đồng bộ danh sách đáp án của snapshot từ mảng dữ liệu (Array snapshot_answers)
+     */
+    private function syncSnapshotAnswers(Question $snapshot, array $snapshotAnswers): void
+    {
+        $existingAnswers = $snapshot->answers()->orderBy('order')->orderBy('id')->get();
+        $keptIds = [];
+
+        foreach ($snapshotAnswers as $index => $ans) {
+            $content = is_array($ans) ? ($ans['content'] ?? $ans['text'] ?? '') : (string)$ans;
+            $isCorrect = is_array($ans) ? (bool)($ans['is_correct'] ?? false) : false;
+            $order = is_array($ans) ? ($ans['order'] ?? $index) : $index;
+
+            if (isset($existingAnswers[$index])) {
+                $existingAnswer = $existingAnswers[$index];
+                $existingAnswer->update([
+                    'content' => $content,
+                    'is_correct' => $isCorrect,
+                    'order' => $order,
+                ]);
+                $keptIds[] = $existingAnswer->id;
+            } else {
+                $newAnswer = Answer::create([
+                    'question_id' => $snapshot->id,
+                    'content' => $content,
+                    'is_correct' => $isCorrect,
+                    'order' => $order,
+                ]);
+                $keptIds[] = $newAnswer->id;
+            }
+        }
+
+        if (!empty($keptIds)) {
+            $snapshot->answers()->whereNotIn('id', $keptIds)->delete();
+        }
+    }
+
+    /**
+     * Đồng bộ danh sách đáp án của snapshot từ Collection/Models Answer
+     */
+    private function syncSnapshotAnswersFromModels(Question $snapshot, $originalAnswers): void
+    {
+        $existingAnswers = $snapshot->answers()->orderBy('order')->orderBy('id')->get();
+        $keptIds = [];
+
+        $index = 0;
+        foreach ($originalAnswers as $ans) {
+            $content = $ans->content;
+            $isCorrect = (bool) $ans->is_correct;
+            $order = $ans->order ?? $index;
+
+            if (isset($existingAnswers[$index])) {
+                $existingAnswer = $existingAnswers[$index];
+                $existingAnswer->update([
+                    'content' => $content,
+                    'is_correct' => $isCorrect,
+                    'order' => $order,
+                ]);
+                $keptIds[] = $existingAnswer->id;
+            } else {
+                $newAnswer = Answer::create([
+                    'question_id' => $snapshot->id,
+                    'content' => $content,
+                    'is_correct' => $isCorrect,
+                    'order' => $order,
+                ]);
+                $keptIds[] = $newAnswer->id;
+            }
+            $index++;
+        }
+
+        if (!empty($keptIds)) {
+            $snapshot->answers()->whereNotIn('id', $keptIds)->delete();
+        }
     }
 }
 
