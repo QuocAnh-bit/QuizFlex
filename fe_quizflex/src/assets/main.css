@@ -282,3 +282,158 @@ select {
   opacity: 0;
   transform: translateY(12px);
 }
+
+/* Admin visual system: keeps legacy admin screens aligned with the newer room pages. */
+.admin-shell {
+  background:
+    radial-gradient(circle at 100% 0%, rgba(124, 58, 237, 0.08), transparent 26rem),
+    var(--bg);
+}
+
+.admin-workspace {
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+
+.admin-workspace > section {
+  max-width: none !important;
+  margin-inline: 0 !important;
+  padding-block: 0 !important;
+}
+
+.admin-workspace .card {
+  border-color: var(--border);
+  background: var(--surface);
+  border-radius: 2rem;
+  box-shadow: var(--shadow-soft);
+}
+
+.admin-workspace .card-hover:hover {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-elevated);
+}
+
+.admin-workspace .text-slate-900,
+.admin-workspace .text-slate-800,
+.admin-workspace .text-slate-700 {
+  color: var(--text);
+}
+
+.admin-workspace .text-slate-600,
+.admin-workspace .text-slate-500,
+.admin-workspace .text-slate-400 {
+  color: var(--muted);
+}
+
+.admin-workspace .bg-white,
+.admin-workspace .bg-slate-50,
+.admin-workspace .bg-slate-50\/50,
+.admin-workspace .bg-slate-50\/70,
+.admin-workspace .bg-slate-100 {
+  background-color: var(--surface-soft);
+}
+
+.admin-workspace .border-slate-100,
+.admin-workspace .border-slate-200 {
+  border-color: var(--border);
+}
+
+.admin-workspace .divide-slate-100 > :not([hidden]) ~ :not([hidden]) {
+  border-color: var(--border);
+}
+
+.admin-workspace .rounded-xl {
+  border-radius: 1rem;
+}
+
+.admin-workspace .rounded-2xl {
+  border-radius: 1.25rem;
+}
+
+/* Typography follows the compact hierarchy used by Question Moderation. */
+.admin-workspace h1 {
+  font-size: 1.875rem;
+  font-weight: 900;
+  line-height: 1.15;
+  letter-spacing: -0.04em;
+  color: var(--text);
+}
+
+.admin-workspace h2 {
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.4;
+  color: var(--text);
+}
+
+.admin-workspace h3,
+.admin-workspace h4 {
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--text);
+}
+
+.admin-workspace input,
+.admin-workspace select,
+.admin-workspace textarea,
+.admin-workspace button {
+  font-family: inherit;
+}
+
+@media (min-width: 640px) {
+  .admin-workspace h1 {
+    font-size: 2rem;
+  }
+}
+
+.admin-workspace table thead {
+  color: var(--muted);
+}
+
+.admin-workspace table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 0.5rem;
+  text-align: left;
+  font-size: 0.875rem;
+}
+
+.admin-workspace table thead tr {
+  background: transparent;
+}
+
+.admin-workspace table th {
+  padding: 0.5rem 1rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.admin-workspace table tbody tr {
+  background: var(--surface-soft);
+  color: var(--text);
+}
+
+.admin-workspace table tbody td {
+  padding: 0.875rem 1rem;
+  vertical-align: middle;
+}
+
+.admin-workspace table tbody td:first-child {
+  border-radius: 1rem 0 0 1rem;
+}
+
+.admin-workspace table tbody td:last-child {
+  border-radius: 0 1rem 1rem 0;
+}
+
+.admin-workspace table tbody tr {
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+
+.admin-workspace table tbody tr:hover {
+  background-color: var(--surface);
+}

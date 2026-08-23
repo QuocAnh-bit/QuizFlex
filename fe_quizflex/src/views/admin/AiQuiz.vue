@@ -2,10 +2,15 @@
   <section class="max-w-6xl mx-auto py-4 space-y-6">
     <!-- Header -->
     <div class="card p-6 sm:p-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-      <div>
-        <p class="text-xs font-bold uppercase tracking-wider text-[#7C3AED]">Trí tuệ nhân tạo</p>
-        <h1 class="mt-1 text-2xl font-black text-slate-900 sm:text-3xl">Tạo đề thi bằng AI</h1>
-        <p class="mt-1 text-sm text-slate-600">Nhập chủ đề hoặc tài liệu, AI sẽ tự động sinh ngân hàng câu hỏi và tạo quiz hoàn chỉnh.</p>
+      <div class="flex items-start gap-3">
+        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-purple-500/10 text-purple-500">
+          <Sparkles class="h-5 w-5" />
+        </div>
+        <div>
+          <p class="text-xs font-bold uppercase tracking-wider text-[#7C3AED]">Trí tuệ nhân tạo</p>
+          <h1 class="text-3xl font-black tracking-[-0.04em] text-[var(--text)]">Tạo đề thi bằng AI</h1>
+          <p class="mt-1 text-sm font-medium text-[var(--muted)]">Nhập chủ đề hoặc tài liệu, AI sẽ tự động sinh ngân hàng câu hỏi và tạo quiz hoàn chỉnh.</p>
+        </div>
       </div>
       <router-link :to="`${questionBase}/ocr`" class="btn-secondary inline-flex items-center gap-2 text-xs px-3.5 py-1.5">
         <FileText class="h-3.5 w-3.5" />
@@ -179,6 +184,7 @@
 <script setup>
 import { computed, onBeforeUnmount, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { Sparkles } from '@lucide/vue'
 import { aiApi, authApi, currentUserStorage } from '@/services/api'
 
 const route = useRoute()

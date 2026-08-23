@@ -1,6 +1,21 @@
 <template>
   <section class="grid gap-6">
+    <div class="glass-card flex flex-col justify-between rounded-2xl p-4 transition-all duration-200 hover:-translate-y-0.5">
+        <div class="flex items-center gap-3">
+          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-purple-500/10 text-purple-500">
+            <Shield class="h-6 w-6" />
+          </div>
+          <div>
+<h1 class="text-3xl font-black tracking-[-0.04em] text-[var(--text)]">Kiểm duyệt Ngân hàng Câu hỏi
+
+</h1>
+<p class="mt-1 text-sm font-medium text-[var(--muted)]">
+           Kiểm duyệt tất cả câu hỏi trên hệ thống
+          </p></div>
+        </div>
+      </div>
     <!-- 1. SUMMARY CARDS (4 CARDS COMPACT) -->
+     
     <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
       <!-- Card 1: Câu hỏi chờ duyệt -->
       <div class="glass-card flex flex-col justify-between rounded-2xl p-4 transition-all duration-200 hover:-translate-y-0.5">
@@ -441,6 +456,7 @@ import { ref, computed, onMounted, inject } from 'vue'
 import {
   RefreshCw,
   Clock,
+  Shield,
   Check,
   CheckCircle2,
   X,

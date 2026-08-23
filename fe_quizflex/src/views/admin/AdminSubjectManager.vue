@@ -17,7 +17,7 @@
             <BookOpen class="h-6 w-6" />
           </div>
           <div class="min-w-0">
-            <h1 class="text-2xl font-bold tracking-tight text-slate-900 truncate">
+            <h1 class="text-3xl font-black tracking-[-0.04em] text-[var(--text)] truncate">
               Quản lý Bộ môn & Danh mục
             </h1>
             <p class="mt-1 text-sm text-slate-500 leading-relaxed">

@@ -4,7 +4,7 @@
     <div class="card p-6 sm:p-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
       <div>
         <p class="text-xs font-bold uppercase tracking-wider text-red-600">Thùng rác</p>
-        <h1 class="mt-1 text-2xl font-black text-slate-900 sm:text-3xl">Thùng rác Quiz</h1>
+        <h1 class="text-3xl font-black tracking-[-0.04em] text-[var(--text)]">Thùng rác Quiz</h1>
         <p class="mt-1 text-sm text-slate-600">Các bộ đề đã bị xóa tạm thời. Bạn có thể khôi phục lại hoặc xóa vĩnh viễn.</p>
       </div>
       <RouterLink to="/admin/quizzes" class="btn-secondary text-xs px-3.5 py-1.5">

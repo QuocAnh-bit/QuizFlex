@@ -106,7 +106,7 @@
           <div>
             <template v-if="!route.meta?.hideTitle">
               <p class="text-xs font-bold uppercase tracking-wider text-[#7C3AED]">QuizFlex Admin</p>
-              <h1 class="mt-0.5 text-2xl font-black text-slate-900">{{ pageTitle }}</h1>
+              <!-- <h1 class="mt-0.5 text-2xl font-black text-slate-900">{{ pageTitle }}</h1> -->
             </template>
             <template v-else>
               <div class="flex items-center gap-2 text-xs font-bold">
@@ -265,6 +265,7 @@ const menu = computed(() => [
   },
 ])
 
+const pageTitle = computed(() => route.meta.title || 'Dashbxoard')
 
 const isItemActive = (item) => {
   if (item.to === '/admin') return route.path === '/admin'

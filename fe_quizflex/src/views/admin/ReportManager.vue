@@ -8,7 +8,7 @@
             <AlertTriangle class="h-6 w-6" />
           </div>
           <div class="min-w-0">
-            <h1 class="text-xl font-bold tracking-tight text-slate-900 truncate">
+            <h1 class="text-3xl font-black tracking-[-0.04em] text-[var(--text)] truncate">
               Quản lý Báo cáo
             </h1>
             <p class="text-xs text-slate-500 leading-relaxed truncate sm:whitespace-normal mt-0.5">

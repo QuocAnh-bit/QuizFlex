@@ -10,7 +10,7 @@
       <div class="card p-6 sm:p-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
           <p class="text-xs font-bold uppercase tracking-wider text-[#7C3AED]">Chi tiết đề thi</p>
-          <h1 class="mt-1 text-2xl font-black text-slate-900 sm:text-3xl">{{ quiz.title }}</h1>
+          <h1 class="text-3xl font-black tracking-[-0.04em] text-[var(--text)]">{{ quiz.title }}</h1>
           <p class="mt-1 text-sm text-slate-600 max-w-2xl">{{ quiz.description || 'Không có mô tả cho bộ quiz này.' }}</p>
         </div>
         <div class="flex items-center gap-2.5">

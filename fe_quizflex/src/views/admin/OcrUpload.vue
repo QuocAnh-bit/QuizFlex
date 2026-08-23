@@ -7,6 +7,11 @@
       class="relative overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-soft)] backdrop-blur-2xl"
     >
       <div class="relative z-10">
+        <div class="flex items-start gap-3">
+          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-purple-500/10 text-purple-500">
+            <ScanText class="h-5 w-5" />
+          </div>
+          <div>
         <p
           class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]"
         >
@@ -14,7 +19,7 @@
         </p>
 
         <h1
-          class="mt-2 text-4xl font-black tracking-[-0.06em] text-[var(--text)]"
+          class="text-3xl font-black tracking-[-0.04em] text-[var(--text)]"
         >
           Upload Image OCR
         </h1>
@@ -23,6 +28,8 @@
           Upload ảnh, gọi backend OCR và preview nội dung trước khi chuyển thành
           quiz.
         </p>
+          </div>
+        </div>
 
         <label
           :class="[
@@ -1439,6 +1446,7 @@ import {
   CheckCheck,
   CheckCircle2,
   Lightbulb,
+  ScanText,
   Sparkles,
   Target,
   XCircle,

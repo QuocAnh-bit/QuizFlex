@@ -2,10 +2,15 @@
   <section class="max-w-6xl mx-auto py-4 space-y-6">
     <!-- Header -->
     <div class="card p-6 sm:p-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-      <div>
-        <p class="text-xs font-bold uppercase tracking-wider text-[#7C3AED]">Admin Dashboard</p>
-        <h1 class="mt-1 text-2xl font-black text-slate-900 sm:text-3xl">Tổng quan hệ thống</h1>
-        <p class="mt-1 text-sm text-slate-600">Theo dõi người dùng, quiz, phòng học, giao dịch và doanh thu thời gian thực.</p>
+      <div class="flex items-start gap-3">
+        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-purple-500/10 text-purple-500">
+          <LayoutDashboard class="h-5 w-5" />
+        </div>
+        <div>
+          <p class="text-xs font-bold uppercase tracking-wider text-[#7C3AED]">Admin Dashboard</p>
+          <h1 class="text-3xl font-black tracking-[-0.04em] text-[var(--text)]">Tổng quan hệ thống</h1>
+          <p class="mt-1 text-sm font-medium text-[var(--muted)]">Theo dõi người dùng, quiz, phòng học, giao dịch và doanh thu thời gian thực.</p>
+        </div>
       </div>
       <div class="flex items-center gap-2.5">
         <button class="btn-secondary text-xs px-3.5 py-1.5" type="button" :disabled="isLoading" @click="loadDashboard">
@@ -175,6 +180,7 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
+import { LayoutDashboard } from 'lucide-vue-next'
 import { adminDashboardApi } from '@/services/api'
 import VueApexCharts from 'vue3-apexcharts'
 

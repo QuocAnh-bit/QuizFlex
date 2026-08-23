@@ -17,7 +17,7 @@
             <Shield class="h-6 w-6" />
           </div>
           <div>
-            <h1 class="text-2xl font-bold tracking-tight text-slate-900">
+            <h1 class="text-3xl font-black tracking-[-0.04em] text-[var(--text)]">
               Quản lý Ngân hàng Câu hỏi
             </h1>
             <p class="mt-1 max-w-2xl text-sm text-slate-500">

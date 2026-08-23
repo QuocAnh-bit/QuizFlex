@@ -29,7 +29,7 @@
           </button>
 
           <div>
-            <h1 class="text-2xl font-bold tracking-tight text-slate-900">
+            <h1 class="text-3xl font-black tracking-[-0.04em] text-[var(--text)]">
               {{ isEditMode ? `Chỉnh sửa câu hỏi #${questionId}` : 'Tạo câu hỏi mới' }}
             </h1>
             <p class="mt-1 text-sm text-slate-500">

@@ -12,7 +12,7 @@
           Manual editor
         </p>
 
-        <h1 class="mt-2 text-4xl font-black tracking-[-0.06em] text-[var(--text)]">
+        <h1 class="text-3xl font-black tracking-[-0.04em] text-[var(--text)]">
           {{ isEditMode ? "Sửa quiz" : "Tạo quiz thủ công" }}
         </h1>
 

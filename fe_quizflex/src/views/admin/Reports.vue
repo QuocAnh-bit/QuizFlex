@@ -4,7 +4,7 @@
     <div class="card p-6 sm:p-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
       <div>
         <p class="text-xs font-bold uppercase tracking-wider text-[#7C3AED]">Báo cáo & Phân tích</p>
-        <h1 class="mt-1 text-2xl font-black text-slate-900 sm:text-3xl">Hiệu suất đề thi</h1>
+        <h1 class="text-3xl font-black tracking-[-0.04em] text-[var(--text)]">Hiệu suất đề thi</h1>
         <p class="mt-1 text-sm text-slate-600">Tổng hợp lượt làm bài và điểm số trung bình của các bộ quiz trong hệ thống.</p>
       </div>
       <button class="btn-secondary text-xs px-3.5 py-1.5" type="button" @click="exportCsv">

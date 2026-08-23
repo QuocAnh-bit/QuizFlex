@@ -4,7 +4,7 @@
     <div class="card p-6 sm:p-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
       <div>
         <p class="text-xs font-bold uppercase tracking-wider text-[#7C3AED]">Quản trị hệ thống</p>
-        <h1 class="mt-1 text-2xl font-black text-slate-900 sm:text-3xl">Hồ sơ người dùng</h1>
+        <h1 class="text-3xl font-black tracking-[-0.04em] text-[var(--text)]">Hồ sơ người dùng</h1>
         <p class="mt-1 text-sm text-slate-600">Xem thông tin cá nhân, gói dịch vụ, lịch sử quiz và giao dịch.</p>
       </div>
       <button class="btn-secondary text-xs px-3.5 py-1.5" type="button" @click="goBack">

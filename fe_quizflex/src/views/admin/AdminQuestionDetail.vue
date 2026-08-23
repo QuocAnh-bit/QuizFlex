@@ -28,7 +28,7 @@
 
           <div>
             <div class="flex flex-wrap items-center gap-3">
-              <h1 class="text-2xl font-bold tracking-tight text-slate-900">
+              <h1 class="text-3xl font-black tracking-[-0.04em] text-[var(--text)]">
                 Chi tiết câu hỏi #{{ questionId }}
               </h1>
               <span

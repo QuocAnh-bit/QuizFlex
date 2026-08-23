@@ -17,13 +17,20 @@
             Quay lại kho câu hỏi
           </button>
 
-          <h1 class="flex items-center gap-2.5 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-            Tạo câu hỏi mới
-            <span class="inline-block h-2 w-2 rounded-full bg-indigo-500"></span>
-          </h1>
-          <p class="mt-2 text-sm leading-6 text-slate-500">
-            Soạn thảo câu hỏi trắc nghiệm, các lựa chọn đáp án và thiết lập thông tin phân loại cho ngân hàng câu hỏi.
-          </p>
+          <div class="flex items-start gap-3">
+            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-purple-500/10 text-purple-500">
+              <FilePlus2 class="h-5 w-5" />
+            </div>
+            <div>
+              <h1 class="flex items-center gap-2.5 text-3xl font-black tracking-[-0.04em] text-[var(--text)]">
+                Tạo câu hỏi mới
+                <span class="inline-block h-2 w-2 rounded-full bg-indigo-500"></span>
+              </h1>
+              <p class="mt-1 text-sm font-medium leading-6 text-[var(--muted)]">
+                Soạn thảo câu hỏi trắc nghiệm, các lựa chọn đáp án và thiết lập thông tin phân loại cho ngân hàng câu hỏi.
+              </p>
+            </div>
+          </div>
         </div>
 
         <!-- 1. Nội dung câu hỏi -->
@@ -451,6 +458,7 @@ import { useRouter } from 'vue-router'
 import {
   ArrowLeft,
   Check,
+  FilePlus2,
   Globe,
   Lock,
   Plus,

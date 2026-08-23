@@ -10,7 +10,7 @@
       <div class="card p-6 sm:p-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
           <p class="text-xs font-bold uppercase tracking-wider text-[#7C3AED]">Chỉnh sửa đề thi</p>
-          <h1 class="mt-1 text-2xl font-black text-slate-900 sm:text-3xl">Chỉnh sửa Quiz</h1>
+          <h1 class="text-3xl font-black tracking-[-0.04em] text-[var(--text)]">Chỉnh sửa Quiz</h1>
           <p class="mt-1 text-sm text-slate-600">Cập nhật thông tin quiz, danh sách câu hỏi và cấu hình đáp án.</p>
         </div>
         <RouterLink to="/admin/quizzes" class="btn-secondary text-xs px-3.5 py-1.5">

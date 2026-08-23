@@ -1,13 +1,13 @@
 <template>
   <section class="grid gap-6">
     <!-- Header Page -->
-    <!-- <div class="relative overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-soft)] backdrop-blur-2xl">
+    <div class="relative overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-soft)] backdrop-blur-2xl">
       <div class="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[var(--primary)]/15 blur-3xl"></div>
       <div class="relative z-10 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <h1 class="text-3xl font-black tracking-[-0.04em] text-[var(--text)]">Quản lý phòng (Homework & Live)</h1>
+          <h1 class="text-3xl font-black tracking-[-0.04em] text-[var(--text)]">Phòng bài tập</h1>
           <p class="mt-1 text-sm font-medium text-[var(--muted)]">
-            Quản lý tất cả phòng học và phòng live trên hệ thống
+            Quản lý tất cả phòng bài tập trên hệ thống
           </p>
         </div>
         <button
@@ -22,46 +22,11 @@
           <span>Làm mới</span>
         </button>
       </div>
-    </div> -->
+    </div>
 
     <!-- Summary Cards -->
-    <div class="grid grid-cols-2 gap-4 lg:grid-cols-5">
-      <!-- Card 1: Tổng số phòng -->
-      <div
-        class="glass-card flex flex-col justify-between rounded-2xl p-4 transition-all duration-200 hover:-translate-y-0.5"
-      >
-        <div class="flex items-center gap-3">
-          <div
-            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-500"
-          >
-            <svg
-              class="h-5 w-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-              <polyline points="9 22 9 12 15 12 15 22" />
-            </svg>
-          </div>
-          <div>
-            <p class="text-xs font-semibold text-[var(--muted)]">
-              Tổng số phòng
-            </p>
-            <p class="mt-0.5 text-2xl font-black text-[var(--text)]">
-              {{ formatNumber(stats.total_rooms) }}
-            </p>
-          </div>
-        </div>
-        <p class="mt-3 text-[11px] font-medium text-[var(--muted)]">
-          Tất cả phòng
-        </p>
-      </div>
-
-      <!-- Card 2: Phòng Homework -->
+    <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <!-- Card 1: Tổng số phòng bài tập -->
       <div
         class="glass-card flex flex-col justify-between rounded-2xl p-4 transition-all duration-200 hover:-translate-y-0.5"
       >
@@ -86,7 +51,7 @@
           </div>
           <div>
             <p class="text-xs font-semibold text-[var(--muted)]">
-              Phòng bài tập
+              Tổng số phòng bài tập
             </p>
             <p class="mt-0.5 text-2xl font-black text-[var(--text)]">
               {{ formatNumber(stats.homework_total) }}
@@ -94,49 +59,11 @@
           </div>
         </div>
         <p class="mt-3 text-[11px] font-medium text-[var(--muted)]">
-          {{ stats.homework_percent }}% tổng số
+          Tất cả phòng bài tập
         </p>
       </div>
 
-      <!-- Card 3: Phòng Live -->
-      <div
-        class="glass-card flex flex-col justify-between rounded-2xl p-4 transition-all duration-200 hover:-translate-y-0.5"
-      >
-        <div class="flex items-center gap-3">
-          <div
-            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-purple-500/10 text-purple-500"
-          >
-            <svg
-              class="h-5 w-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9" />
-              <path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5" />
-              <circle cx="12" cy="12" r="2" />
-              <path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5" />
-              <path d="M19.1 4.9c3.9 3.9 3.9 10.3 0 14.2" />
-            </svg>
-          </div>
-          <div>
-            <p class="text-xs font-semibold text-[var(--muted)]">
-              Phòng thi đấu
-            </p>
-            <p class="mt-0.5 text-2xl font-black text-[var(--text)]">
-              {{ formatNumber(stats.live_total) }}
-            </p>
-          </div>
-        </div>
-        <p class="mt-3 text-[11px] font-medium text-[var(--muted)]">
-          {{ stats.live_percent }}% tổng số
-        </p>
-      </div>
-
-      <!-- Card 4: Đang hoạt động -->
+      <!-- Card 2: Đang hoạt động -->
       <div
         class="glass-card flex flex-col justify-between rounded-2xl p-4 transition-all duration-200 hover:-translate-y-0.5"
       >
@@ -173,9 +100,44 @@
         </p>
       </div>
 
-      <!-- Card 5: Trong thùng rác -->
+      <!-- Card 3: Bị khóa -->
       <div
-        class="glass-card flex flex-col justify-between rounded-2xl p-4 transition-all duration-200 hover:-translate-y-0.5 col-span-2 lg:col-span-1"
+        class="glass-card flex flex-col justify-between rounded-2xl p-4 transition-all duration-200 hover:-translate-y-0.5"
+      >
+        <div class="flex items-center gap-3">
+          <div
+            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-purple-500/10 text-purple-500"
+          >
+            <svg
+              class="h-5 w-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+          </div>
+          <div>
+            <p class="text-xs font-semibold text-[var(--muted)]">
+              Số phòng bị khóa
+            </p>
+            <p class="mt-0.5 text-2xl font-black text-[var(--text)]">
+              {{ formatNumber(stats.banned_total) }}
+            </p>
+          </div>
+        </div>
+        <p class="mt-3 text-[11px] font-medium text-[var(--muted)]">
+          Đang bị khóa (banned)
+        </p>
+      </div>
+
+      <!-- Card 4: Trong thùng rác -->
+      <div
+        class="glass-card flex flex-col justify-between rounded-2xl p-4 transition-all duration-200 hover:-translate-y-0.5"
       >
         <div class="flex items-center gap-3">
           <div
@@ -244,7 +206,7 @@
                 <path d="M3 9h18" />
                 <path d="M3 15h18" />
               </svg>
-              <span>Tất cả phòng</span>
+              <span>Tất cả phòng bài tập</span>
             </button>
 
             <button
@@ -294,7 +256,6 @@
                 <option value="">Tất cả trạng thái</option>
                 <option value="active">Đang hoạt động</option>
                 <option value="waiting">Chờ bắt đầu</option>
-                <option value="playing">Đang diễn ra</option>
                 <option value="finished">Đã kết thúc</option>
                 <option value="banned">Bị khóa (Banned)</option>
               </select>
@@ -418,16 +379,15 @@
       </div>
 
       <div v-else class="mt-5 overflow-x-auto scrollbar-soft">
-        <!-- ALL ROOMS TABLE -->
+        <!-- ALL ROOMS TABLE (Homework only) -->
         <table
           v-if="viewMode === 'all'"
-          class="w-full min-w-[950px] border-separate border-spacing-y-2 text-left text-sm"
+          class="w-full min-w-[900px] border-separate border-spacing-y-2 text-left text-sm"
         >
           <thead class="text-xs font-bold text-[var(--muted)]">
             <tr>
               <th class="px-4 py-2 w-12">#</th>
               <th class="px-4 py-2">Tên phòng</th>
-              <th class="px-4 py-2">Loại phòng</th>
               <th class="px-4 py-2">Chủ phòng</th>
               <th class="px-4 py-2">Mã phòng</th>
               <th class="px-4 py-2">Trạng thái</th>
@@ -439,7 +399,7 @@
           <tbody>
             <tr
               v-for="(room, index) in listState.items"
-              :key="`${room.room_type || 'r'}-${room.id}`"
+              :key="`hw-${room.id}`"
               class="group rounded-2xl bg-[var(--surface-soft)] text-[var(--text)] transition-all duration-150 hover:bg-[var(--surface)]"
             >
               <!-- # Index -->
@@ -463,45 +423,6 @@
                 >
                   {{ room.description }}
                 </p>
-              </td>
-
-              <!-- Room Type Badge -->
-              <td class="px-4 py-3.5">
-                <span
-                  v-if="room.room_type === 'homework'"
-                  class="inline-flex items-center gap-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 text-xs font-extrabold text-blue-400"
-                >
-                  <svg
-                    class="h-3.5 w-3.5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    stroke-width="2"
-                  >
-                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-                    <path
-                      d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"
-                    />
-                  </svg>
-                  <span>Bài tập</span>
-                </span>
-                <span
-                  v-else
-                  class="inline-flex items-center gap-1.5 rounded-full bg-purple-500/10 border border-purple-500/20 px-2.5 py-1 text-xs font-extrabold text-purple-400"
-                >
-                  <svg
-                    class="h-3.5 w-3.5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    stroke-width="2"
-                  >
-                    <path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9" />
-                    <circle cx="12" cy="12" r="2" />
-                    <path d="M19.1 4.9c3.9 3.9 3.9 10.3 0 14.2" />
-                  </svg>
-                  <span>Thi đấu</span>
-                </span>
               </td>
 
               <!-- Host Info -->
@@ -628,73 +549,71 @@
                     </span>
                   </div>
 
-                  <!-- Lock / Ban: (Hidden for finished Live rooms!) -->
-                  <template v-if="canBanRoom(room)">
-                    <div class="relative group/tooltip">
-                      <button
-                        type="button"
-                        class="flex h-8 w-8 items-center justify-center rounded-xl border transition-all"
-                        :class="
-                          isRoomBanned(room)
-                            ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'
-                            : 'border-amber-500/20 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20'
-                        "
-                        :aria-label="
-                          isRoomBanned(room)
-                            ? 'Mở khóa phòng'
-                            : 'Khóa phòng (Ban)'
-                        "
-                        :disabled="roomActionLoading === getRoomKey(room)"
-                        @click="toggleBanRoom(room)"
+                  <!-- Lock / Ban -->
+                  <div class="relative group/tooltip">
+                    <button
+                      type="button"
+                      class="flex h-8 w-8 items-center justify-center rounded-xl border transition-all"
+                      :class="
+                        isRoomBanned(room)
+                          ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'
+                          : 'border-amber-500/20 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20'
+                      "
+                      :aria-label="
+                        isRoomBanned(room)
+                          ? 'Mở khóa phòng'
+                          : 'Khóa phòng (Ban)'
+                      "
+                      :disabled="roomActionLoading === getRoomKey(room)"
+                      @click="toggleBanRoom(room)"
+                    >
+                      <svg
+                        v-if="isRoomBanned(room)"
+                        class="h-4 w-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        stroke-width="2"
                       >
-                        <svg
-                          v-if="isRoomBanned(room)"
-                          class="h-4 w-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                          stroke-width="2"
-                        >
-                          <rect
-                            x="3"
-                            y="11"
-                            width="18"
-                            height="11"
-                            rx="2"
-                            ry="2"
-                          />
-                          <path d="M7 11V7a5 5 0 0 1 9.9-1" />
-                        </svg>
-                        <svg
-                          v-else
-                          class="h-4 w-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                          stroke-width="2"
-                        >
-                          <rect
-                            x="3"
-                            y="11"
-                            width="18"
-                            height="11"
-                            rx="2"
-                            ry="2"
-                          />
-                          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                        </svg>
-                      </button>
-                      <span
-                        class="pointer-events-none absolute bottom-full left-1/2 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded-lg bg-[var(--surface-strong)] px-2.5 py-1 text-[11px] font-bold text-[var(--text)] shadow-lg border border-[var(--border)] opacity-0 transition-opacity group-hover/tooltip:opacity-100 z-30"
+                        <rect
+                          x="3"
+                          y="11"
+                          width="18"
+                          height="11"
+                          rx="2"
+                          ry="2"
+                        />
+                        <path d="M7 11V7a5 5 0 0 1 9.9-1" />
+                      </svg>
+                      <svg
+                        v-else
+                        class="h-4 w-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        stroke-width="2"
                       >
-                        {{
-                          isRoomBanned(room)
-                            ? "Mở khóa phòng"
-                            : "Khóa phòng (Ban)"
-                        }}
-                      </span>
-                    </div>
-                  </template>
+                        <rect
+                          x="3"
+                          y="11"
+                          width="18"
+                          height="11"
+                          rx="2"
+                          ry="2"
+                        />
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                      </svg>
+                    </button>
+                    <span
+                      class="pointer-events-none absolute bottom-full left-1/2 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded-lg bg-[var(--surface-strong)] px-2.5 py-1 text-[11px] font-bold text-[var(--text)] shadow-lg border border-[var(--border)] opacity-0 transition-opacity group-hover/tooltip:opacity-100 z-30"
+                    >
+                      {{
+                        isRoomBanned(room)
+                          ? "Mở khóa phòng"
+                          : "Khóa phòng (Ban)"
+                      }}
+                    </span>
+                  </div>
 
                   <!-- Trash2: Đưa vào thùng rác -->
                   <div class="relative group/tooltip">
@@ -732,16 +651,15 @@
           </tbody>
         </table>
 
-        <!-- TRASH TABLE -->
+        <!-- TRASH TABLE (Homework only) -->
         <table
           v-else
-          class="w-full min-w-[950px] border-separate border-spacing-y-2 text-left text-sm"
+          class="w-full min-w-[900px] border-separate border-spacing-y-2 text-left text-sm"
         >
           <thead class="text-xs font-bold text-[var(--muted)]">
             <tr>
               <th class="px-4 py-2 w-12">#</th>
               <th class="px-4 py-2">Tên phòng</th>
-              <th class="px-4 py-2">Loại phòng</th>
               <th class="px-4 py-2">Chủ phòng</th>
               <th class="px-4 py-2">Mã phòng</th>
               <th class="px-4 py-2">Đã xóa lúc</th>
@@ -751,7 +669,7 @@
           <tbody>
             <tr
               v-for="(room, index) in listState.items"
-              :key="`trash-${room.room_type || 'r'}-${room.id}`"
+              :key="`trash-hw-${room.id}`"
               class="group rounded-2xl bg-[var(--surface-soft)] text-[var(--text)] transition-all duration-150 hover:bg-[var(--surface)]"
             >
               <td
@@ -762,44 +680,6 @@
 
               <td class="px-4 py-3.5 max-w-xs font-bold text-[var(--text)]">
                 {{ room.name || room.title || "Chưa đặt tên" }}
-              </td>
-
-              <td class="px-4 py-3.5">
-                <span
-                  v-if="room.room_type === 'homework'"
-                  class="inline-flex items-center gap-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 text-xs font-extrabold text-blue-400"
-                >
-                  <svg
-                    class="h-3.5 w-3.5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    stroke-width="2"
-                  >
-                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-                    <path
-                      d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"
-                    />
-                  </svg>
-                  <span>Bài tập</span>
-                </span>
-                <span
-                  v-else
-                  class="inline-flex items-center gap-1.5 rounded-full bg-purple-500/10 border border-purple-500/20 px-2.5 py-1 text-xs font-extrabold text-purple-400"
-                >
-                  <svg
-                    class="h-3.5 w-3.5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    stroke-width="2"
-                  >
-                    <path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9" />
-                    <circle cx="12" cy="12" r="2" />
-                    <path d="M19.1 4.9c3.9 3.9 3.9 10.3 0 14.2" />
-                  </svg>
-                  <span>Thi đấu</span>
-                </span>
               </td>
 
               <td class="px-4 py-3.5">
@@ -878,8 +758,8 @@
           v-if="listState.items.length === 0"
           :text="
             viewMode === 'trash'
-              ? 'Chưa có phòng nào trong thùng rác.'
-              : 'Không có phòng nào phù hợp với bộ lọc.'
+              ? 'Chưa có phòng bài tập nào trong thùng rác.'
+              : 'Không có phòng bài tập nào phù hợp với bộ lọc.'
           "
         />
       </div>
@@ -892,7 +772,7 @@
         <span
           >Hiển thị {{ listState.meta.from || 0 }} đến
           {{ listState.meta.to || 0 }} của
-          {{ formatNumber(listState.meta.total || 0) }} phòng</span
+          {{ formatNumber(listState.meta.total || 0) }} phòng bài tập</span
         >
         <div class="flex items-center gap-2">
           <button
@@ -1029,7 +909,7 @@
             <p
               class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]"
             >
-              {{ detailType === "homework" ? "Phòng bài tập" : "Phòng thi đấu" }}
+              Phòng bài tập
             </p>
             <h2 class="mt-1 text-2xl font-black text-[var(--text)]">
               {{ detailTitle }}
@@ -1077,16 +957,7 @@
             </button>
           </div>
 
-          <HomeworkDetail
-            v-if="detailType === 'homework'"
-            :detail="detailData"
-            :tab="detailTab"
-          />
-          <LiveDetail
-            v-if="detailType === 'live'"
-            :detail="detailData"
-            :tab="detailTab"
-          />
+          <HomeworkDetail :detail="detailData" :tab="detailTab" />
         </div>
       </aside>
     </div>
@@ -1106,14 +977,6 @@ import {
 } from "vue";
 import { adminRoomApi, adminRoomsApi } from "@/services/api";
 
-const props = defineProps({
-  roomType: {
-    type: String,
-    default: "homework",
-    validator: (value) => ["homework", "live", "all"].includes(value),
-  },
-});
-
 const showConfirm = inject("showConfirm");
 const showToast = inject("showToast");
 
@@ -1127,15 +990,12 @@ const confirmAndExecute = (title, message, action) => {
   }
 };
 
-// Summary Statistics state
+// Summary Statistics state (Homework rooms only)
 const stats = reactive({
-  total_rooms: 0,
   homework_total: 0,
-  homework_percent: 0,
-  live_total: 0,
-  live_percent: 0,
   active_total: 0,
   active_percent: 0,
+  banned_total: 0,
   trash_total: 0,
   trash_percent: 0,
 });
@@ -1144,16 +1004,22 @@ const loadStats = async () => {
   try {
     const data = await adminRoomsApi.getStats();
     if (data) {
-      Object.assign(stats, data);
+      Object.assign(stats, {
+        homework_total: data.homework_total,
+        active_total: data.active_total,
+        active_percent: data.active_percent,
+        banned_total: data.banned_total ?? data.homework_banned_total ?? 0,
+        trash_total: data.trash_total,
+        trash_percent: data.trash_percent,
+      });
     }
   } catch (err) {
-    console.error("Lỗi khi tải thống kê phòng:", err);
+    console.error("Lỗi khi tải thống kê phòng bài tập:", err);
   }
 };
 
-// View & Filter States
+// View & Filter States (Homework rooms only)
 const viewMode = ref("all"); // 'all' or 'trash'
-const roomTypeFilter = ref(props.roomType || "homework");
 const statusFilter = ref("");
 const searchQuery = ref("");
 
@@ -1193,46 +1059,23 @@ const loadRooms = async (page = listState.meta.current_page || 1) => {
   try {
     const params = cleanParams(page);
 
-    if (viewMode.value === "trash") {
-      if (roomTypeFilter.value === "homework") {
-        const payload = await adminRoomApi.getHomeworkRoomsTrash(params);
-        setSingleTypeList(payload, "homework");
-      } else if (roomTypeFilter.value === "live") {
-        const payload = await adminRoomApi.getLiveRoomsTrash(params);
-        setSingleTypeList(payload, "live");
-      } else {
-        const [hw, live] = await Promise.all([
-          adminRoomApi.getHomeworkRoomsTrash(params),
-          adminRoomApi.getLiveRoomsTrash(params),
-        ]);
-        setCombinedList(hw, live, page);
-      }
-    } else {
-      if (roomTypeFilter.value === "homework") {
-        const payload = await adminRoomApi.getHomeworkRooms(params);
-        setSingleTypeList(payload, "homework");
-      } else if (roomTypeFilter.value === "live") {
-        const payload = await adminRoomApi.getLiveRooms(params);
-        setSingleTypeList(payload, "live");
-      } else {
-        const [hw, live] = await Promise.all([
-          adminRoomApi.getHomeworkRooms(params),
-          adminRoomApi.getLiveRooms(params),
-        ]);
-        setCombinedList(hw, live, page);
-      }
-    }
+    const payload =
+      viewMode.value === "trash"
+        ? await adminRoomApi.getHomeworkRoomsTrash(params)
+        : await adminRoomApi.getHomeworkRooms(params);
+
+    setHomeworkList(payload);
   } catch (error) {
-    listState.error = error.message || "Không tải được danh sách phòng.";
+    listState.error = error.message || "Không tải được danh sách phòng bài tập.";
   } finally {
     listState.loading = false;
   }
 };
 
-const setSingleTypeList = (payload, type) => {
+const setHomeworkList = (payload) => {
   const items = (payload?.items || []).map((item) => ({
     ...item,
-    room_type: type,
+    room_type: "homework",
   }));
   listState.items = items;
   listState.meta = payload?.meta || {
@@ -1242,34 +1085,6 @@ const setSingleTypeList = (payload, type) => {
     total: items.length,
     from: 1,
     to: items.length,
-  };
-};
-
-const setCombinedList = (hw, live, page) => {
-  const hwItems = (hw?.items || []).map((item) => ({
-    ...item,
-    room_type: "homework",
-  }));
-  const liveItems = (live?.items || []).map((item) => ({
-    ...item,
-    room_type: "live",
-  }));
-  const combined = [...hwItems, ...liveItems].sort(
-    (a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0),
-  );
-
-  const total = Number(hw?.meta?.total || 0) + Number(live?.meta?.total || 0);
-  listState.items = combined;
-  listState.meta = {
-    current_page: page,
-    last_page: Math.max(
-      Number(hw?.meta?.last_page || 1),
-      Number(live?.meta?.last_page || 1),
-    ),
-    per_page: 10,
-    total,
-    from: total > 0 ? (page - 1) * 10 + 1 : 0,
-    to: total > 0 ? Math.min(page * 10, total) : 0,
   };
 };
 
@@ -1295,24 +1110,15 @@ const copyRoomCode = async (code) => {
 };
 
 // Key helper
-const getRoomKey = (room) => `${room.room_type || "room"}:${room.id}`;
+const getRoomKey = (room) => `homework:${room.id}`;
 
 // Room Actions Helpers
-const getStatusLabel = (room) => {
-  const status = String(room.status || "").toLowerCase();
-  if (room.room_type === "homework") {
-    return homeworkStatusLabel(status);
-  }
-  return liveStatusLabel(status);
-};
+const getStatusLabel = (room) => homeworkStatusLabel(String(room.status || "").toLowerCase());
 
 const getStatusPillClass = (room) => {
   const status = String(room.status || "").toLowerCase();
-  if (["active", "open", "playing"].includes(status)) {
+  if (["active", "open", "waiting"].includes(status)) {
     return "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
-  }
-  if (["waiting", "pending"].includes(status)) {
-    return "bg-amber-500/10 text-amber-400 border-amber-500/20";
   }
   if (["finished", "closed"].includes(status)) {
     return "bg-slate-500/10 text-slate-400 border-slate-500/20";
@@ -1323,27 +1129,7 @@ const getStatusPillClass = (room) => {
   return "bg-[var(--chip-active)] text-[var(--primary)] border-[var(--border-strong)]";
 };
 
-const formatMemberCount = (room) => {
-  if (room.room_type === "homework") {
-    return `${formatNumber(room.member_count)} HV`;
-  }
-  return `${formatNumber(room.player_count)} người`;
-};
-
-// Ban Restrictions Check for Finished Live Rooms
-const isLiveFinished = (room) => {
-  if (!room || room.room_type !== "live") return false;
-  const status = String(room.status || "").toLowerCase();
-  return status === "finished" || Boolean(room.finished_at || room.ended_at);
-};
-
-const canBanRoom = (room) => {
-  if (!room) return false;
-  if (room.room_type === "live" && isLiveFinished(room)) {
-    return false; // Finished Live Room NEVER allows Ban
-  }
-  return true;
-};
+const formatMemberCount = (room) => `${formatNumber(room.member_count)} HV`;
 
 const isRoomBanned = (room) =>
   String(room?.status || "").toLowerCase() === "banned";
@@ -1357,28 +1143,15 @@ const toggleBanRoom = (room) => {
 };
 
 const banRoom = async (room) => {
-  if (room.room_type === "live" && isLiveFinished(room)) {
-    if (showToast) showToast("Không thể khóa phòng thi đấu đã kết thúc.", "error");
-    return;
-  }
-
   const title = "Khóa phòng (Ban)";
-  const message =
-    room.room_type === "homework"
-      ? `Khóa phòng bài tập "${room.name || room.id}"? Học sinh và Chủ phòng sẽ không thể thao tác.`
-      : `Khóa phòng thi đấu "${room.title || room.id}"? Trận đấu đang diễn ra sẽ bị kết thúc.`;
+  const message = `Khóa phòng bài tập "${room.name || room.id}"? Học sinh và Chủ phòng sẽ không thể thao tác.`;
 
   confirmAndExecute(title, message, async () => {
     const key = getRoomKey(room);
     roomActionLoading.value = key;
     try {
-      if (room.room_type === "homework") {
-        const updated = await adminRoomApi.banHomeworkRoom(room.id);
-        updateLocalRoom(room.id, room.room_type, updated);
-      } else {
-        const updated = await adminRoomApi.banLiveRoom(room.id);
-        updateLocalRoom(room.id, room.room_type, updated);
-      }
+      const updated = await adminRoomApi.banHomeworkRoom(room.id);
+      updateLocalRoom(room.id, updated);
       if (showToast) showToast("Đã khóa phòng thành công.", "success");
       loadStats();
     } catch (error) {
@@ -1392,19 +1165,14 @@ const banRoom = async (room) => {
 
 const unbanRoom = async (room) => {
   const title = "Mở khóa phòng";
-  const message = `Mở khóa phòng "${room.name || room.title || room.id}"?`;
+  const message = `Mở khóa phòng "${room.name || room.id}"?`;
 
   confirmAndExecute(title, message, async () => {
     const key = getRoomKey(room);
     roomActionLoading.value = key;
     try {
-      if (room.room_type === "homework") {
-        const updated = await adminRoomApi.unbanHomeworkRoom(room.id);
-        updateLocalRoom(room.id, room.room_type, updated);
-      } else {
-        const updated = await adminRoomApi.unbanLiveRoom(room.id);
-        updateLocalRoom(room.id, room.room_type, updated);
-      }
+      const updated = await adminRoomApi.unbanHomeworkRoom(room.id);
+      updateLocalRoom(room.id, updated);
       if (showToast) showToast("Đã mở khóa phòng thành công.", "success");
       loadStats();
     } catch (error) {
@@ -1418,18 +1186,14 @@ const unbanRoom = async (room) => {
 
 const softDeleteRoom = async (room) => {
   const title = "Chuyển vào thùng rác";
-  const message = `Chuyển phòng "${room.name || room.title || room.id}" vào thùng rác?`;
+  const message = `Chuyển phòng "${room.name || room.id}" vào thùng rác?`;
 
   confirmAndExecute(title, message, async () => {
     const key = getRoomKey(room);
     roomActionLoading.value = key;
     try {
-      if (room.room_type === "homework") {
-        await adminRoomApi.softDeleteHomeworkRoom(room.id);
-      } else {
-        await adminRoomApi.softDeleteLiveRoom(room.id);
-      }
-      removeLocalRoom(room.id, room.room_type);
+      await adminRoomApi.softDeleteHomeworkRoom(room.id);
+      removeLocalRoom(room.id);
       if (showToast) showToast("Đã chuyển phòng vào thùng rác.", "success");
       loadStats();
     } catch (error) {
@@ -1443,18 +1207,14 @@ const softDeleteRoom = async (room) => {
 
 const restoreRoom = async (room) => {
   const title = "Khôi phục phòng";
-  const message = `Khôi phục phòng "${room.name || room.title || room.id}"?`;
+  const message = `Khôi phục phòng "${room.name || room.id}"?`;
 
   confirmAndExecute(title, message, async () => {
     const key = getRoomKey(room);
     roomActionLoading.value = key;
     try {
-      if (room.room_type === "homework") {
-        await adminRoomApi.restoreHomeworkRoom(room.id);
-      } else {
-        await adminRoomApi.restoreLiveRoom(room.id);
-      }
-      removeLocalRoom(room.id, room.room_type);
+      await adminRoomApi.restoreHomeworkRoom(room.id);
+      removeLocalRoom(room.id);
       if (showToast) showToast("Đã khôi phục phòng thành công.", "success");
       loadStats();
     } catch (error) {
@@ -1490,12 +1250,8 @@ const confirmForceDelete = async () => {
 
   forceDeleteModal.loading = true;
   try {
-    if (room.room_type === "homework") {
-      await adminRoomsApi.forceDeleteHomework(room.id);
-    } else {
-      await adminRoomsApi.forceDeleteLive(room.id);
-    }
-    removeLocalRoom(room.id, room.room_type);
+    await adminRoomsApi.forceDeleteHomework(room.id);
+    removeLocalRoom(room.id);
     if (showToast) showToast("Đã xóa vĩnh viễn phòng thành công.", "success");
     closeForceDeleteModal();
     loadStats();
@@ -1507,19 +1263,15 @@ const confirmForceDelete = async () => {
   }
 };
 
-const updateLocalRoom = (id, type, updated) => {
-  const index = listState.items.findIndex(
-    (r) => String(r.id) === String(id) && r.room_type === type,
-  );
+const updateLocalRoom = (id, updated) => {
+  const index = listState.items.findIndex((r) => String(r.id) === String(id));
   if (index !== -1) {
     listState.items[index] = { ...listState.items[index], ...updated };
   }
 };
 
-const removeLocalRoom = (id, type) => {
-  listState.items = listState.items.filter(
-    (r) => !(String(r.id) === String(id) && r.room_type === type),
-  );
+const removeLocalRoom = (id) => {
+  listState.items = listState.items.filter((r) => String(r.id) !== String(id));
   listState.meta.total = Math.max(0, listState.meta.total - 1);
 };
 
@@ -1538,32 +1290,20 @@ const calculateDaysRemaining = (deletedAt) => {
   };
 };
 
-// Detail Drawer States & Handlers
+// Detail Drawer States & Handlers (Homework only)
 const detailOpen = ref(false);
-const detailType = ref("homework");
 const detailTab = ref("info");
 const detailData = ref(null);
 const detailLoading = ref(false);
 const detailError = ref("");
 
-const homeworkDetailTabs = [
+const detailTabs = [
   { label: "Thông tin phòng", value: "info" },
   { label: "Thành viên", value: "members" },
   { label: "Bài tập đã giao", value: "assignments" },
   { label: "Lượt nộp bài", value: "submissions" },
 ];
 
-const liveDetailTabs = [
-  { label: "Thông tin phòng thi đấu", value: "info" },
-  { label: "Người chơi", value: "players" },
-  { label: "Leaderboard", value: "leaderboard" },
-  { label: "Câu trả lời", value: "answers" },
-  { label: "Realtime status", value: "realtime" },
-];
-
-const detailTabs = computed(() =>
-  detailType.value === "homework" ? homeworkDetailTabs : liveDetailTabs,
-);
 const detailTitle = computed(() => {
   const room = detailData.value?.room;
   return room?.name || room?.title || "Chi tiết phòng";
@@ -1574,17 +1314,12 @@ const detailCode = computed(() =>
 
 const openDetail = async (room) => {
   detailOpen.value = true;
-  detailType.value = room.room_type || "homework";
   detailTab.value = "info";
   detailData.value = null;
   detailLoading.value = true;
   detailError.value = "";
   try {
-    if (detailType.value === "homework") {
-      detailData.value = await adminRoomApi.getHomeworkRoomDetail(room.id);
-    } else {
-      detailData.value = await adminRoomApi.getLiveRoomDetail(room.id);
-    }
+    detailData.value = await adminRoomApi.getHomeworkRoomDetail(room.id);
   } catch (error) {
     detailError.value = error.message || "Không tải được chi tiết phòng.";
   } finally {
@@ -1625,19 +1360,6 @@ const homeworkStatusLabel = (status) =>
     removed: "Đã xóa",
     archived: "Đã lưu trữ",
     finished: "Đã kết thúc",
-    banned: "Bị khóa",
-  })[String(status || "").toLowerCase()] ||
-  status ||
-  "-";
-
-const liveStatusLabel = (status) =>
-  ({
-    waiting: "Chờ bắt đầu",
-    playing: "Đang diễn ra",
-    active: "Đang diễn ra",
-    finished: "Đã kết thúc",
-    removed: "Đã xóa",
-    cancelled: "Đã hủy",
     banned: "Bị khóa",
   })[String(status || "").toLowerCase()] ||
   status ||
@@ -1871,152 +1593,6 @@ const HomeworkDetail = defineComponent({
             label: "Thời gian nộp",
             format: (row) =>
               formatDateTime(row.submitted_at || row.finished_at),
-          },
-        ],
-      });
-    };
-  },
-});
-
-const LiveDetail = defineComponent({
-  props: {
-    detail: { type: Object, default: null },
-    tab: { type: String, required: true },
-  },
-  setup(props) {
-    return () => {
-      const room = props.detail?.room || {};
-      if (props.tab === "info") {
-        return h(InfoGrid, {
-          rows: [
-            { label: "Tên phòng thi đấu", value: room.title || room.name },
-            { label: "Mã phòng", value: room.code },
-            { label: "Chủ phòng", value: room.host?.name },
-            { label: "Email chủ phòng", value: room.host?.email },
-            { label: "Quiz", value: room.quiz?.title },
-            { label: "Trạng thái", value: liveStatusLabel(room.status) },
-            { label: "Số player", value: formatNumber(room.player_count) },
-            { label: "Thời gian tạo", value: formatDateTime(room.created_at) },
-            {
-              label: "Thời gian bắt đầu",
-              value: formatDateTime(room.started_at),
-            },
-            {
-              label: "Thời gian kết thúc",
-              value: formatDateTime(room.finished_at || room.ended_at),
-            },
-          ],
-        });
-      }
-
-      if (props.tab === "players") {
-        return h(SimpleTable, {
-          rows: props.detail?.players || [],
-          empty: "Chưa có người chơi.",
-          columns: [
-            {
-              label: "Tên người chơi",
-              format: (row) => row.name || row.user?.name || "-",
-            },
-            {
-              label: "Email",
-              format: (row) => row.email || row.user?.email || "-",
-            },
-            { label: "Điểm", format: (row) => formatNumber(row.score) },
-            {
-              label: "Số câu đúng",
-              format: (row) => formatNumber(row.correct_count),
-            },
-            {
-              label: "Câu hiện tại",
-              format: (row) => formatNumber(row.current_question_index),
-            },
-            {
-              label: "Hoàn thành",
-              format: (row) => boolLabel(row.is_finished),
-            },
-            {
-              label: "Trả lời gần nhất",
-              format: (row) => formatDateTime(row.last_answered_at),
-            },
-          ],
-        });
-      }
-
-      if (props.tab === "leaderboard") {
-        return h(SimpleTable, {
-          rows: props.detail?.leaderboard || [],
-          empty: "Chưa có leaderboard.",
-          columns: [
-            { label: "Hạng", format: (row) => `#${row.rank}` },
-            {
-              label: "Tên người chơi",
-              format: (row) => row.name || row.user?.name || "-",
-            },
-            { label: "Điểm", format: (row) => formatNumber(row.score) },
-            {
-              label: "Số câu đúng",
-              format: (row) => formatNumber(row.correct_count),
-            },
-            {
-              label: "Số câu đã trả lời",
-              format: (row) => formatNumber(row.answered_count),
-            },
-            {
-              label: "Thời gian hoàn thành",
-              format: (row) => formatDateTime(row.finished_at),
-            },
-          ],
-        });
-      }
-
-      if (props.tab === "answers") {
-        return h(SimpleTable, {
-          rows: props.detail?.answers || [],
-          empty: "Room chưa có lượt trả lời.",
-          columns: [
-            { label: "Người chơi", format: (row) => row.player?.name || "-" },
-            { label: "Câu hỏi", format: (row) => row.question?.content || "-" },
-            {
-              label: "Câu trả lời",
-              format: (row) => row.answer?.content || "-",
-            },
-            {
-              label: "Đúng / Sai",
-              format: (row) => (row.is_correct ? "Đúng" : "Sai"),
-            },
-            {
-              label: "Thời gian trả lời",
-              format: (row) => formatDateTime(row.answered_at),
-            },
-          ],
-        });
-      }
-
-      const realtime = props.detail?.realtime_status || {};
-      return h(InfoGrid, {
-        rows: [
-          {
-            label: "Trạng thái phòng",
-            value: liveStatusLabel(realtime.room_status),
-          },
-          {
-            label: "Player đã hoàn thành",
-            value: formatNumber(realtime.finished_players),
-          },
-          {
-            label: "Player chưa hoàn thành",
-            value: formatNumber(realtime.unfinished_players),
-          },
-          {
-            label: "Lần cập nhật gần nhất",
-            value: formatDateTime(realtime.last_updated_at),
-          },
-          {
-            label: "Ghi chú",
-            value:
-              realtime.note ||
-              "Không có dấu hiệu bất thường từ dữ liệu hiện tại.",
           },
         ],
       });

@@ -28,7 +28,7 @@
 
           <div>
             <div class="flex flex-wrap items-center gap-3">
-              <h1 class="text-2xl font-bold tracking-tight text-slate-900">
+              <h1 class="text-3xl font-black tracking-[-0.04em] text-[var(--text)]">
                 Thùng rác câu hỏi
               </h1>
               <span class="inline-flex items-center gap-1.5 rounded-md bg-rose-50 px-2.5 py-1 text-xs font-medium text-rose-700">

@@ -4,7 +4,7 @@
     <div class="card p-6 sm:p-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
       <div>
         <p class="text-xs font-bold uppercase tracking-wider text-[#7C3AED]">Cấu hình hệ thống</p>
-        <h1 class="mt-1 text-2xl font-black text-slate-900 sm:text-3xl">Cài đặt hệ thống</h1>
+        <h1 class="text-3xl font-black tracking-[-0.04em] text-[var(--text)]">Cài đặt hệ thống</h1>
         <p class="mt-1 text-sm text-slate-600">Cấu hình định mức tài nguyên AI, OCR và tùy chọn hiển thị mặc định.</p>
       </div>
     </div>
