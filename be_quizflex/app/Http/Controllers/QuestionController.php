@@ -7,6 +7,7 @@ use App\Models\Question;
 use App\Models\QuestionReviewRequest;
 use App\Models\Quiz;
 use App\Models\User;
+use App\Models\ReportTicket;
 use App\Notifications\QuestionModerated;
 use App\Notifications\ReportAuthorUpdated;
 use App\Services\QuestionReviewService;
@@ -773,12 +774,13 @@ class QuestionController extends Controller
             }
         }
 
-        $pendingReport = \App\Models\ReportTicket::where('question_id', $question->id)
+        $reportQuestionIds = array_filter(array_unique([$question->id, $question->origin_question_id]));
+        $pendingReport = ReportTicket::whereIn('question_id', $reportQuestionIds)
             ->where('status', 'pending')
             ->latest()
             ->first();
 
-        $latestReport = $pendingReport ?? \App\Models\ReportTicket::where('question_id', $question->id)->latest()->first();
+        $latestReport = $pendingReport ?? ReportTicket::whereIn('question_id', $reportQuestionIds)->latest()->first();
         $hasPendingReport = $pendingReport !== null;
         $isLockedByAdmin = $hasPendingReport || ($latestReport !== null && $latestReport->status !== 'dismissed');
 
@@ -1680,8 +1682,15 @@ class QuestionController extends Controller
         $question->is_public = !$question->is_public;
         $question->save();
 
+        $targetQuestionIds = array_filter(array_unique([
+            $question->id,
+            $question->origin_question_id,
+        ]));
+        $snapshotIds = Question::where('origin_question_id', $question->id)->pluck('id')->all();
+        $allRelatedIds = array_values(array_unique(array_merge($targetQuestionIds, $snapshotIds)));
+
         if ($question->is_public) {
-            \App\Models\ReportTicket::where('question_id', $question->id)
+            \App\Models\ReportTicket::whereIn('question_id', $allRelatedIds)
                 ->where('status', 'pending')
                 ->update(['status' => 'resolved']);
         }
@@ -1690,7 +1699,7 @@ class QuestionController extends Controller
         $author = $question->user ?? $question->quiz?->user;
         if ($author) {
             $action = $question->is_public ? 'shown' : 'hidden';
-            $latestReport = \App\Models\ReportTicket::where('question_id', $question->id)->latest()->first();
+            $latestReport = \App\Models\ReportTicket::whereIn('question_id', $allRelatedIds)->latest()->first();
             $reason = $latestReport?->reason ?? $latestReport?->description;
             $author->notify(new QuestionModerated($question, $action, $reason));
         }
@@ -1722,8 +1731,12 @@ class QuestionController extends Controller
         $questions = Question::with(['user', 'quiz.user'])->whereIn('id', $ids)->get();
         Question::whereIn('id', $ids)->update(['is_public' => $isPublic]);
 
+        $originIds = Question::whereIn('id', $ids)->whereNotNull('origin_question_id')->pluck('origin_question_id')->all();
+        $snapshotIds = Question::whereIn('origin_question_id', $ids)->pluck('id')->all();
+        $allTargetIds = array_values(array_unique(array_merge($ids, $originIds, $snapshotIds)));
+
         if ($isPublic) {
-            \App\Models\ReportTicket::whereIn('question_id', $ids)
+            \App\Models\ReportTicket::whereIn('question_id', $allTargetIds)
                 ->where('status', 'pending')
                 ->update(['status' => 'resolved']);
         }
@@ -1877,8 +1890,15 @@ class QuestionController extends Controller
         $formatted['using_quizzes'] = $usingQuizzes;
 
         // Associated report tickets if any
+        $targetQuestionIds = array_filter(array_unique([
+            $question->id,
+            $question->origin_question_id,
+        ]));
+        $snapshotIds = Question::where('origin_question_id', $question->id)->pluck('id')->all();
+        $allRelatedIds = array_values(array_unique(array_merge($targetQuestionIds, $snapshotIds)));
+
         $reports = \App\Models\ReportTicket::with('user:id,name,email')
-            ->where('quiz_id', $question->quiz_id)
+            ->whereIn('question_id', $allRelatedIds)
             ->latest()
             ->get()
             ->map(function ($r) {

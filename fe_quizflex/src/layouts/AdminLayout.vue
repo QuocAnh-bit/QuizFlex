@@ -128,7 +128,7 @@
 <script setup>
 import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
-import axios from 'axios'
+import api, { tokenStorage } from '@/services/api'
 import {
   ArrowLeft,
   BookOpen,
@@ -174,10 +174,8 @@ const isGroupOpen = (label) => {
 
 const fetchReportCount = async () => {
   try {
-    const token = localStorage.getItem('token')
-    if (!token) return
-    const res = await axios.get('/api/admin/report-tickets', {
-      headers: { Authorization: `Bearer ${token}` },
+    if (!tokenStorage.get()) return
+    const res = await api.get('/admin/report-tickets', {
       params: { status: 'pending', per_page: 1 },
     })
     const payload = res.data?.data ?? res.data

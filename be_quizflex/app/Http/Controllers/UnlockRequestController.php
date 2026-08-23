@@ -6,8 +6,11 @@ use App\Events\AccountStatusChanged;
 use App\Models\UnlockRequest;
 use App\Models\User;
 use App\Notifications\AccountModerated;
+use App\Notifications\UnlockRequestCreated;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Notification;
 
 class UnlockRequestController extends Controller
 {
@@ -121,6 +124,17 @@ class UnlockRequestController extends Controller
             'status' => 'pending',
         ]);
 
+        $admins = User::whereRaw('LOWER(role) IN (?, ?)', ['admin', 'administrator'])
+            ->orWhere('is_main_admin', true)
+            ->get();
+        if ($admins->isNotEmpty()) {
+            try {
+                Notification::send($admins, new UnlockRequestCreated($unlockRequest, $user));
+            } catch (\Throwable $e) {
+                Log::warning('Không thể gửi thông báo UnlockRequestCreated cho Admin: ' . $e->getMessage());
+            }
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Đã gửi kháng cáo thành công.',
@@ -216,6 +230,7 @@ class UnlockRequestController extends Controller
 
         $user = $unlockRequest->user;
         if ($user) {
+            broadcast(new AccountStatusChanged($user, 'appeal_rejected', $unlockRequest->admin_note));
             $user->notify(new AccountModerated('unlock_rejected', $unlockRequest->admin_note));
         }
 
