@@ -241,9 +241,21 @@
                 :key="question.id"
                 class="rounded-lg border border-slate-100 bg-slate-50 p-3"
               >
-                <span class="text-[11px] font-bold text-[#7C3AED]">
-                  Câu {{ index + 1 }} • {{ question.points }} điểm
-                </span>
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-[11px] font-bold text-[#7C3AED]">
+                    Câu {{ index + 1 }} • {{ question.points }} điểm
+                  </span>
+
+                  <button
+                    v-if="question.id"
+                    type="button"
+                    class="text-[10px] font-bold text-rose-500 hover:text-rose-700 hover:underline cursor-pointer flex items-center gap-1"
+                    title="Báo cáo câu hỏi này bị lỗi hoặc vi phạm"
+                    @click="openQuestionReportModal(question.id)"
+                  >
+                    <span>🚩 Báo lỗi câu này</span>
+                  </button>
+                </div>
 
                 <p
                   class="mt-1 text-xs font-medium leading-snug text-slate-800"
@@ -262,12 +274,19 @@
 
     </Transition>
 
-    <!-- REPORT MODAL -->
+    <!-- QUIZ REPORT MODAL -->
     <ReportModal
       v-if="quiz"
       :is-open="isReportModalOpen"
       :quiz-id="quiz.id"
       @close="isReportModalOpen = false"
+    />
+
+    <!-- QUESTION REPORT MODAL -->
+    <QuestionReportModal
+      :question-id="reportingQuestionId"
+      :is-open="isQuestionReportModalOpen"
+      @close="isQuestionReportModalOpen = false"
     />
 
   </section>
@@ -288,6 +307,7 @@ import AppLoadingState from '@/components/common/AppLoadingState.vue'
 import AppErrorState from '@/components/common/AppErrorState.vue'
 import VisibilityBadge from '@/components/common/VisibilityBadge.vue'
 import ReportModal from '@/components/common/ReportModal.vue'
+import QuestionReportModal from '@/components/question/QuestionReportModal.vue'
 
 import {
   normalizeQuestion,
@@ -301,6 +321,14 @@ const quiz = ref(null)
 const isLoading = ref(false)
 const errorMessage = ref('')
 const isReportModalOpen = ref(false)
+const isQuestionReportModalOpen = ref(false)
+const reportingQuestionId = ref(null)
+
+const openQuestionReportModal = (questionId) => {
+  if (!questionId) return
+  reportingQuestionId.value = questionId
+  isQuestionReportModalOpen.value = true
+}
 
 const questions = computed(() =>
   (quiz.value?.rawQuestions || []).map(normalizeQuestion)

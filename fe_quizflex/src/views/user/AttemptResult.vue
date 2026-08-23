@@ -155,9 +155,21 @@
                   {{ item.is_correct ? 'Đúng' : 'Sai' }}
                 </span>
 
-                <span class="text-xs font-bold text-slate-600">
-                  {{ item.earned_points }}/{{ item.points }} điểm
-                </span>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-bold text-slate-600">
+                    {{ item.earned_points }}/{{ item.points }} điểm
+                  </span>
+
+                  <button
+                    v-if="item.question_id"
+                    type="button"
+                    class="inline-flex items-center gap-1 rounded-md border border-rose-200 bg-rose-50 px-2 py-0.5 text-[11px] font-bold text-rose-600 transition hover:bg-rose-100 cursor-pointer"
+                    title="Báo cáo vi phạm hoặc sai sót ở câu hỏi này"
+                    @click="openReportModal(item.question_id)"
+                  >
+                    <span>🚩 Báo cáo</span>
+                  </button>
+                </div>
               </div>
 
               <h4 class="text-sm font-bold text-slate-900 leading-snug">
@@ -231,6 +243,13 @@
         </article>
       </aside>
     </div>
+
+    <!-- Question Report Modal -->
+    <QuestionReportModal
+      :question-id="reportingQuestionId"
+      :is-open="isReportModalOpen"
+      @close="isReportModalOpen = false"
+    />
   </section>
 </template>
 
@@ -240,6 +259,7 @@ import { useRoute } from 'vue-router'
 
 import AppLoadingState from '@/components/common/AppLoadingState.vue'
 import AppErrorState from '@/components/common/AppErrorState.vue'
+import QuestionReportModal from '@/components/question/QuestionReportModal.vue'
 
 import {
   attemptsApi,
@@ -251,6 +271,15 @@ const route = useRoute()
 const attempt = ref(null)
 const isLoading = ref(false)
 const errorMessage = ref('')
+
+const isReportModalOpen = ref(false)
+const reportingQuestionId = ref(null)
+
+const openReportModal = (questionId) => {
+  if (!questionId) return
+  reportingQuestionId.value = questionId
+  isReportModalOpen.value = true
+}
 
 const formatDateTime = (value) => {
   if (!value) return ''

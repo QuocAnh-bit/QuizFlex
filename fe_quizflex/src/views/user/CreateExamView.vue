@@ -359,7 +359,7 @@
             <div v-if="selectedIds.length > 0" class="grid gap-3">
               <div class="flex items-center justify-between text-xs font-bold text-[var(--muted)]">
                 <span>Đã chọn {{ selectedIds.length }} câu hỏi từ ngân hàng.</span>
-                <button type="button" class="text-[var(--primary)] hover:underline font-bold cursor-pointer" @click="saveDraftAndGoToBank">
+                <button type="button" class="text-[var(--primary)] hover:underline font-bold cursor-pointer" @click="isBankDrawerOpen = true">
                   + Chọn thêm câu hỏi khác
                 </button>
               </div>
@@ -388,7 +388,7 @@
                 Bạn chưa chọn câu hỏi nào từ Ngân hàng câu hỏi.
               </p>
               <div>
-                <button type="button" class="btn-primary inline-flex items-center gap-2 text-xs !py-2 cursor-pointer" @click="saveDraftAndGoToBank">
+                <button type="button" class="btn-primary inline-flex items-center gap-2 text-xs !py-2 cursor-pointer" @click="isBankDrawerOpen = true">
                   <span>📚 Chọn câu hỏi từ Ngân hàng</span>
                 </button>
               </div>
@@ -552,12 +552,21 @@
         </div>
       </article>
     </aside>
+
+    <!-- QUESTION BANK DRAWER -->
+    <QuestionBankDrawer
+      :is-open="isBankDrawerOpen"
+      :initial-selected-ids="selectedIds"
+      @close="isBankDrawerOpen = false"
+      @confirm="onBankDrawerConfirm"
+    />
   </section>
 </template>
 
 <script setup>
 import { computed, inject, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import QuestionBankDrawer from '@/components/question/QuestionBankDrawer.vue'
 import { coverToBackground, questionsBankApi, taxonomyApi } from '@/services/api'
 
 const route = useRoute()
@@ -566,6 +575,12 @@ const showToast = inject('showToast')
 
 const mode = ref(route.query.mode === 'manual' ? 'manual' : 'random')
 const isSubmitting = ref(false)
+const isBankDrawerOpen = ref(false)
+
+const onBankDrawerConfirm = (newIds) => {
+  selectedIds.value = newIds
+  updateFormTitle()
+}
 
 const coverInput = ref(null)
 const formCoverFile = ref(null)

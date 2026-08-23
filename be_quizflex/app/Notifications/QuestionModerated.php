@@ -11,81 +11,64 @@ class QuestionModerated extends Notification
 
     public $question;
     public $action;
-    public $reason;
+    public $note;
 
-    /**
-     * Create a new notification instance.
-     * $action: 'reported', 'hidden', 'shown', 'resolved', 'dismissed', 'edited', 'deleted'
-     */
-    public function __construct($question, string $action, ?string $reason = null)
+    public function __construct($question, $action, $note = null)
     {
         $this->question = $question;
         $this->action = $action;
-        $this->reason = $reason;
+        $this->note = $note;
     }
 
-    /**
-     * Delivery channels.
-     */
     public function via(object $notifiable): array
     {
-        return ['database', 'broadcast'];
+        return ['database'];
     }
 
-    /**
-     * Broadcast type identifier.
-     */
-    public function broadcastType(): string
-    {
-        return 'question_moderated';
-    }
-
-    /**
-     * Array representation for database and broadcast.
-     */
     public function toArray(object $notifiable): array
     {
-        $content = $this->question->content ?? $this->question->text ?? 'Câu hỏi';
-        $snippet = mb_substr($content, 0, 50, 'UTF-8');
-        if (mb_strlen($content, 'UTF-8') > 50) {
-            $snippet .= '...';
-        }
+        $qid = $this->question->id;
+        $noteText = !empty($this->note) ? " Lý do / Chi tiết lỗi: \"{$this->note}\"." : '';
 
-        $title = 'Thông báo kiểm duyệt Câu hỏi';
-        $message = "Admin đã tác động lên câu hỏi '#{$this->question->id}' của bạn.";
-        $reasonText = $this->reason ? $this->reason : 'Nội dung chưa phù hợp quy định';
-
-        if ($this->action === 'reported') {
-            $title = '🚩 Câu hỏi của bạn bị báo cáo vi phạm';
-            $message = "Câu hỏi #{$this->question->id} (\"{$snippet}\") của bạn vừa bị báo cáo vi phạm. Lý do: \"{$reasonText}\". Vui lòng bấm vào đây để kiểm tra và chỉnh sửa.";
-        } elseif ($this->action === 'hidden') {
-            $title = '⚠️ Admin đã gỡ công khai câu hỏi của bạn';
-            $message = "Admin đã gỡ công khai (khóa) câu hỏi #{$this->question->id} (\"{$snippet}\") của bạn do vi phạm. Lý do: \"{$reasonText}\". Vui lòng nhấp vào đây để chỉnh sửa và yêu cầu duyệt lại.";
-        } elseif ($this->action === 'shown') {
-            $title = '🎉 Câu hỏi của bạn đã được công khai trở lại';
-            $message = "Câu hỏi #{$this->question->id} (\"{$snippet}\") của bạn đã được Admin duyệt và mở công khai trở lại trên hệ thống.";
+        if (in_array($this->action, ['approve', 'approved', 'shown'])) {
+            $title = "Admin đã duyệt công khai Câu hỏi #{$qid}";
+            $message = "Câu hỏi #{$qid} của bạn đã được Admin duyệt và hiển thị công khai trên Ngân hàng dùng chung!";
+        } elseif ($this->action === 'reported') {
+            $title = "⚠️ Câu hỏi #{$qid} bị báo cáo vi phạm";
+            $message = "Câu hỏi #{$qid} vừa nhận báo cáo vi phạm từ người dùng.{$noteText} Vui lòng kiểm tra và đính chính lại.";
+        } elseif (in_array($this->action, ['hidden', 'reject', 'rejected', 'unpublish'])) {
+            $title = "Admin đã gỡ công khai Câu hỏi #{$qid}";
+            if (!empty($this->note)) {
+                $message = "Admin đã gỡ công khai Câu hỏi #{$qid} do chưa đính chính đúng yêu cầu. Lý do: \"{$this->note}\". Vui lòng sửa lại nội dung để nộp duyệt lại.";
+            } else {
+                $message = "Admin đã gỡ công khai Câu hỏi #{$qid} về Kho cá nhân. Vui lòng kiểm tra và đính chính lại nội dung để nộp duyệt lại.";
+            }
         } elseif ($this->action === 'resolved') {
-            $title = '✅ Báo cáo câu hỏi đã được xử lý';
-            $message = "Báo cáo vi phạm đối với câu hỏi #{$this->question->id} của bạn đã được Admin xử lý.";
+            $title = "Thông báo: Admin đã xử lý báo cáo Câu hỏi #{$qid}";
+            $message = "Admin đã xử lý xong báo cáo vi phạm liên quan đến Câu hỏi #{$qid} của bạn.{$noteText}";
         } elseif ($this->action === 'dismissed') {
-            $title = 'ℹ️ Báo cáo câu hỏi đã được bỏ qua';
-            $message = "Báo cáo vi phạm đối với câu hỏi #{$this->question->id} của bạn đã được kiểm duyệt và bỏ qua (không có vi phạm).";
-        } elseif ($this->action === 'deleted') {
-            $title = '❌ Câu hỏi của bạn đã bị xóa';
-            $message = "Câu hỏi #{$this->question->id} của bạn đã bị gỡ bỏ vĩnh viễn do vi phạm nghiêm trọng quy định.";
+            $title = "Thông báo: Admin đã bỏ qua báo cáo Câu hỏi #{$qid}";
+            $message = "Admin đã xem xét báo cáo vi phạm đối với Câu hỏi #{$qid} và xác nhận câu hỏi hợp lệ.";
+        } else {
+            $title = "Thông báo từ Admin về Câu hỏi #{$qid}";
+            $message = "Có cập nhật mới từ Admin về Câu hỏi #{$qid} của bạn.{$noteText}";
         }
+
+        $isApprovedAction = in_array($this->action, ['approve', 'approved', 'shown', 'resolved', 'dismissed'], true);
+        $actionLink = $isApprovedAction
+            ? "/dashboard/my-questions?highlight={$qid}"
+            : "/dashboard/my-questions?question_id={$qid}";
 
         return [
             'type' => 'question_moderated',
             'title' => $title,
             'message' => $message,
-            'action' => 'view',
-            'action_link' => "/dashboard/my-questions?question_id={$this->question->id}",
+            'action' => 'edit',
+            'action_link' => $actionLink,
             'metadata' => [
-                'question_id' => $this->question->id,
-                'quiz_id' => $this->question->quiz_id,
+                'question_id' => $qid,
                 'action' => $this->action,
-                'reason' => $this->reason,
+                'note' => $this->note,
             ],
         ];
     }

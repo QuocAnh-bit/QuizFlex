@@ -20,6 +20,11 @@ class ReportTicket extends Model
         'reason',
         'description',
         'status',
+        'question_snapshot',
+    ];
+
+    protected $casts = [
+        'question_snapshot' => 'array',
     ];
 
     /**

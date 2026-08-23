@@ -33,6 +33,35 @@ class ReportTicketController extends Controller
             'description' => 'nullable|string',
         ]);
 
+        $questionSnapshot = null;
+        if ($request->filled('question_id')) {
+            $targetQ = \App\Models\Question::with(['answers', 'educationLevel', 'grade', 'subject'])->find($request->question_id);
+            if ($targetQ) {
+                $questionSnapshot = [
+                    'id' => $targetQ->id,
+                    'content' => $targetQ->content,
+                    'image_url' => $targetQ->image_url,
+                    'type' => $targetQ->type,
+                    'difficulty' => $targetQ->difficulty ?? 'medium',
+                    'education_level_name' => $targetQ->educationLevel?->name,
+                    'grade_name' => $targetQ->grade?->name,
+                    'subject_name' => $targetQ->subject?->name,
+                    'topic_name' => $targetQ->topic_name,
+                    'is_public' => (bool) $targetQ->is_public,
+                    'created_at' => $targetQ->created_at?->toIso8601String(),
+                    'answers' => $targetQ->answers->map(function ($ans, $index) {
+                        return [
+                            'id' => $ans->id,
+                            'key' => chr(65 + ($ans->order ?? $index)),
+                            'content' => $ans->content,
+                            'text' => $ans->content,
+                            'is_correct' => (bool) $ans->is_correct,
+                        ];
+                    })->values()->toArray(),
+                ];
+            }
+        }
+
         $report = ReportTicket::create([
             'user_id' => $user->id,
             'quiz_id' => $request->quiz_id,
@@ -40,6 +69,7 @@ class ReportTicketController extends Controller
             'reason' => $request->reason,
             'description' => $request->description,
             'status' => 'pending',
+            'question_snapshot' => $questionSnapshot,
         ]);
 
         // 1. Gửi thông báo cho Admin
@@ -54,12 +84,13 @@ class ReportTicketController extends Controller
 
         // 2. Gửi thông báo trực tiếp cho Tác giả của Câu hỏi hoặc Bài Quiz bị báo cáo
         $report->load(['question.user', 'question.quiz.user', 'quiz.user']);
+        $reportReason = $report->reason . (!empty($report->description) ? " ({$report->description})" : "");
 
         if ($report->question) {
             $questionAuthor = $report->question->user ?? $report->question->quiz?->user;
             if ($questionAuthor && $questionAuthor->id !== $user->id) {
                 try {
-                    $questionAuthor->notify(new QuestionModerated($report->question, 'reported', $report->reason));
+                    $questionAuthor->notify(new QuestionModerated($report->question, 'reported', $reportReason));
                 } catch (\Throwable $e) {
                     \Illuminate\Support\Facades\Log::warning('Không thể gửi thông báo cho tác giả câu hỏi: ' . $e->getMessage());
                 }
@@ -69,7 +100,7 @@ class ReportTicketController extends Controller
         if ($report->quiz && $report->quiz->user) {
             if ($report->quiz->user->id !== $user->id) {
                 try {
-                    $report->quiz->user->notify(new QuizModerated($report->quiz, 'reported', $report->reason));
+                    $report->quiz->user->notify(new QuizModerated($report->quiz, 'reported', $reportReason));
                 } catch (\Throwable $e) {
                     \Illuminate\Support\Facades\Log::warning('Không thể gửi thông báo cho tác giả quiz: ' . $e->getMessage());
                 }
@@ -90,8 +121,10 @@ class ReportTicketController extends Controller
     {
         $query = ReportTicket::with([
             'user:id,name,email,avatar',
-            'quiz.user:id,name,email',
-            'question.user:id,name,email',
+            'quiz.user:id,name,email,avatar',
+            'question.user:id,name,email,avatar',
+            'question.answers',
+            'question.educationLevel',
             'question.subject',
             'question.grade'
         ])->latest();
@@ -105,7 +138,29 @@ class ReportTicketController extends Controller
             }
         }
 
-        $reports = $query->get();
+        $reports = $query->get()->map(function ($r) {
+            $data = $r->toArray();
+            if ($r->question) {
+                $q = $r->question;
+                $hasUpdated = (bool) ($r->has_author_updated || ($q->updated_at && $q->updated_at > $r->created_at));
+                $data['has_author_updated'] = $hasUpdated;
+                $data['question']['author_name'] = $q->user?->name ?? $q->quiz?->user?->name ?? 'Vô danh';
+                $data['question']['author_email'] = $q->user?->email ?? $q->quiz?->user?->email;
+                $data['question']['author_avatar'] = $q->user?->avatar ?? $q->quiz?->user?->avatar;
+                $data['question']['answers'] = $q->answers->map(function ($ans, $index) {
+                    return [
+                        'id' => $ans->id,
+                        'key' => chr(65 + ($ans->order ?? $index)),
+                        'content' => $ans->content,
+                        'text' => $ans->content,
+                        'is_correct' => (bool) $ans->is_correct,
+                    ];
+                })->values();
+            } else {
+                $data['has_author_updated'] = false;
+            }
+            return $data;
+        });
 
         return response()->json([
             'success' => true,
@@ -123,17 +178,18 @@ class ReportTicketController extends Controller
         $report = ReportTicket::with(['quiz.user', 'question.user', 'question.quiz.user', 'user'])->findOrFail($id);
         
         $report->update(['status' => $request->status]);
+        $reportReason = $report->reason . (!empty($report->description) ? " ({$report->description})" : "");
 
         // Gửi thông báo cho tác giả của Quiz nếu có
         if ($report->quiz && $report->quiz->user) {
-            $report->quiz->user->notify(new QuizModerated($report->quiz, $request->status, $report->reason));
+            $report->quiz->user->notify(new QuizModerated($report->quiz, $request->status, $reportReason));
         }
 
         // Gửi thông báo cho tác giả của Câu hỏi nếu có
         if ($report->question) {
             $questionAuthor = $report->question->user ?? $report->question->quiz?->user;
             if ($questionAuthor) {
-                $questionAuthor->notify(new QuestionModerated($report->question, $request->status, $report->reason));
+                $questionAuthor->notify(new QuestionModerated($report->question, $request->status, $reportReason));
             }
         }
 

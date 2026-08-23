@@ -168,6 +168,29 @@ export const myQuestionsApi = {
 };
 
 export const adminQuestionsApi = {
+  async fetchPending(params = {}) {
+    const { data } = await api.get('/admin/questions/pending', { params });
+    const payload = unwrap(data);
+    const items = Array.isArray(payload?.data) ? payload.data : (Array.isArray(payload?.items) ? payload.items : (Array.isArray(payload) ? payload : []));
+    return {
+      items,
+      total: payload?.total ?? items.length,
+      currentPage: payload?.current_page ?? 1,
+      lastPage: payload?.last_page ?? 1,
+      perPage: payload?.per_page ?? 20
+    };
+  },
+
+  async moderate(id, payload) {
+    const { data } = await api.put(`/admin/questions/${id}/moderate`, payload);
+    return unwrap(data);
+  },
+
+  async bulkModerate(payload) {
+    const { data } = await api.post('/admin/questions/bulk-moderate', payload);
+    return unwrap(data);
+  },
+
   async list(params = {}) {
     const { data } = await api.get('/admin/questions-management', { params });
     const payload = unwrap(data);

@@ -713,177 +713,27 @@
       </article>
     </aside>
 
-    <!-- Import Modal (cleaned) -->
-    <div
-      v-if="isImportModalOpen"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 sm:p-6"
-      @click.self="isImportModalOpen = false"
-    >
-      <div class="relative flex max-h-[88vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
-        <!-- Header -->
-        <div class="flex items-start justify-between border-b border-slate-100 px-6 py-5">
-          <div>
-            <h3 class="text-lg font-semibold text-slate-900">Chọn câu hỏi</h3>
-            <p class="mt-0.5 text-sm text-slate-500">Chọn câu hỏi từ ngân hàng để thêm vào Quiz</p>
-          </div>
-          <button
-            type="button"
-            class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-            @click="isImportModalOpen = false"
-          >
-            <X class="h-4 w-4" />
-          </button>
-        </div>
+    <!-- Fullscreen Question Picker Studio (Option 1) -->
+    <QuestionBankDrawer
+      :is-open="isImportModalOpen"
+      :initial-selected-ids="selectedImportIds"
+      @close="isImportModalOpen = false"
+      @confirm="onQuestionBankConfirm"
+    />
 
-        <!-- Search -->
-        <div class="border-b border-slate-100 px-6 py-4">
-          <div class="relative">
-            <Search class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <input
-              v-model="importFilters.search"
-              type="text"
-              class="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm focus:border-[#7C3AED] focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/20"
-              placeholder="Tìm kiếm câu hỏi..."
-              @keyup.enter="loadImportBank(1)"
-            />
-          </div>
-        </div>
+    <!-- Fullscreen Studio Overlay (1 Tab Duy nhất) -->
+    <CreateQuestionStudioModal
+      :is-open="isStudioOpen"
+      @close="isStudioOpen = false"
+      @created="onQuestionCreatedFromModal"
+    />
 
-        <!-- Filters -->
-        <div class="space-y-2.5 border-b border-slate-100 px-6 py-4">
-          <div class="grid grid-cols-3 gap-2.5">
-            <select v-model="importFilters.education_level_id" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-[#7C3AED] focus:outline-none" @change="onModalTaxonomyChange">
-              <option value="">-- Cấp học --</option>
-              <option v-for="level in taxonomyLevels" :key="level.id" :value="level.id">{{ level.name }}</option>
-            </select>
-            <select v-model="importFilters.grade_id" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-[#7C3AED] focus:outline-none" @change="onModalTaxonomyChange">
-              <option value="">-- Khối lớp --</option>
-              <option v-for="grade in modalAvailableGrades" :key="grade.id" :value="grade.id">{{ grade.name }}</option>
-            </select>
-            <select v-model="importFilters.subject_id" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-[#7C3AED] focus:outline-none" @change="onModalTaxonomyChange">
-              <option value="">-- Môn học --</option>
-              <option v-for="subject in modalAvailableSubjects" :key="subject.id" :value="subject.id">{{ subject.name }}</option>
-            </select>
-          </div>
-          <div class="grid grid-cols-2 gap-2.5">
-            <select v-model="importFilters.topic_name" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-[#7C3AED] focus:outline-none" @change="loadImportBank(1)">
-              <option value="">-- Chủ đề --</option>
-              <option v-for="top in modalTopicsList" :key="top.topic_name" :value="top.topic_name">{{ top.topic_name }} ({{ top.total_questions }})</option>
-            </select>
-            <select v-model="importFilters.difficulty" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-[#7C3AED] focus:outline-none" @change="loadImportBank(1)">
-              <option value="">-- Độ khó --</option>
-              <option value="easy">Dễ</option>
-              <option value="medium">Trung bình</option>
-              <option value="hard">Khó</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- Sub header -->
-        <div class="flex items-center justify-between border-b border-slate-100 px-6 py-3 text-sm text-slate-500">
-          <span>
-            Tổng cộng <strong class="text-slate-900">{{ totalImportBankItems }}</strong> câu hỏi
-            <span v-if="lastImportBankPage > 1" class="ml-1 text-xs">(Trang {{ currentImportBankPage }}/{{ lastImportBankPage }})</span>
-          </span>
-          <button
-            v-if="importBankItems.length > 0"
-            type="button"
-            class="text-sm font-medium text-[#7C3AED] hover:underline"
-            @click="toggleSelectAllImportBank"
-          >
-            {{ isAllImportSelected ? 'Bỏ chọn trang này' : 'Chọn tất cả trang này' }}
-          </button>
-        </div>
-
-        <!-- List -->
-        <div class="flex-1 space-y-2.5 overflow-y-auto p-6 min-h-[220px] max-h-[46vh]">
-          <div v-if="isLoadingImportBank" class="flex flex-col items-center justify-center gap-2 py-16 text-sm text-slate-500">
-            <div class="h-6 w-6 animate-spin rounded-full border-2 border-[#7C3AED] border-t-transparent"></div>
-            Đang tải danh sách câu hỏi...
-          </div>
-          <div v-else-if="importBankItems.length === 0" class="py-16 text-center text-sm text-slate-500">
-            Không tìm thấy câu hỏi phù hợp.
-          </div>
-          <template v-else>
-            <div
-              v-for="item in importBankItems"
-              :key="item.id"
-              class="group flex cursor-pointer items-start gap-4 rounded-xl border p-4 transition"
-              :class="selectedImportIds.includes(item.id)
-                ? 'border-[#7C3AED] bg-[#F5F3FF]'
-                : 'border-slate-200 bg-white hover:border-slate-300'"
-              @click="toggleImportSelect(item.id)"
-            >
-              <div
-                class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition"
-                :class="selectedImportIds.includes(item.id)
-                  ? 'border-[#7C3AED] bg-[#7C3AED] text-white'
-                  : 'border-slate-300 bg-white'"
-              >
-                <Check v-if="selectedImportIds.includes(item.id)" class="h-3.5 w-3.5" />
-              </div>
-              <div class="min-w-0 flex-1">
-                <div class="mb-1 flex items-center gap-2">
-                  <span class="font-mono text-xs font-semibold text-[#7C3AED]">#{{ item.id }}</span>
-                </div>
-                <p class="line-clamp-2 text-sm font-medium text-slate-900">
-                  {{ item.content || item.text }}
-                </p>
-                <p class="mt-1 truncate text-xs text-slate-500">
-                  {{ getQuestionMetaText(item) }}
-                </p>
-              </div>
-            </div>
-
-            <div v-if="lastImportBankPage > 1" class="mt-3 flex items-center justify-between border-t border-slate-100 pt-4 text-sm">
-              <button
-                type="button"
-                class="rounded-lg border border-slate-200 px-3 py-1.5 font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40"
-                :disabled="currentImportBankPage <= 1"
-                @click="loadImportBank(currentImportBankPage - 1)"
-              >
-                ← Trang trước
-              </button>
-              <span class="font-medium text-slate-900">
-                Trang {{ currentImportBankPage }} / {{ lastImportBankPage }}
-              </span>
-              <button
-                type="button"
-                class="rounded-lg border border-slate-200 px-3 py-1.5 font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40"
-                :disabled="currentImportBankPage >= lastImportBankPage"
-                @click="loadImportBank(currentImportBankPage + 1)"
-              >
-                Trang sau →
-              </button>
-            </div>
-          </template>
-        </div>
-
-        <!-- Footer -->
-        <div class="flex items-center justify-between border-t border-slate-100 px-6 py-4">
-          <span class="text-sm text-slate-500">
-            Đã chọn <strong class="text-slate-900">{{ selectedImportIds.length }}</strong> câu
-          </span>
-          <div class="flex items-center gap-3">
-            <button
-              type="button"
-              class="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
-              @click="isImportModalOpen = false"
-            >
-              Hủy
-            </button>
-            <button
-              type="button"
-              class="rounded-lg bg-[#7C3AED] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#6D28D9] disabled:opacity-40"
-              :disabled="selectedImportIds.length === 0"
-              @click="confirmImportQuestions"
-            >
-              Thêm {{ selectedImportIds.length }} câu
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+    <!-- Create Question Modal (Backup) -->
+    <CreateQuestionModal
+      :is-open="isCreateQuestionModalOpen"
+      @close="isCreateQuestionModalOpen = false"
+      @created="onQuestionCreatedFromModal"
+    />
   </section>
 </template>
 <script setup>
@@ -895,6 +745,9 @@ import "mathlive";
 import "mathlive/static.css";
 import VisibilityBadge from "@/components/common/VisibilityBadge.vue";
 import UserAvatar from "@/components/common/UserAvatar.vue";
+import CreateQuestionModal from "@/components/common/CreateQuestionModal.vue";
+import CreateQuestionStudioModal from "@/components/question/CreateQuestionStudioModal.vue";
+import QuestionBankDrawer from "@/components/question/QuestionBankDrawer.vue";
 import {
   buildEditorDraftFromQuiz,
   coverToBackground,
@@ -902,10 +755,18 @@ import {
   difficultyLabel,
   formatApiErrorMessage,
   normalizeQuestion as normalizeApiQuestion,
+  myQuestionsApi,
   questionsBankApi,
   quizzesApi,
   taxonomyApi,
 } from "@/services/api";
+
+const isCreateQuestionModalOpen = ref(false);
+const isStudioOpen = ref(false);
+
+const openCreateQuestionStudioPage = () => {
+  isStudioOpen.value = true;
+};
 
 const route = useRoute();
 const router = useRouter();
@@ -1015,6 +876,7 @@ const selectedSubjectName = computed(() => {
 });
 
 const isImportModalOpen = ref(false);
+const importActiveTab = ref('my_questions'); // Mặc định là Kho cá nhân để xem 100% câu hỏi của tác giả (kể cả câu Riêng tư)
 const isLoadingImportBank = ref(false);
 const importBankItems = ref([]);
 const selectedImportIds = ref([]);
@@ -1023,6 +885,11 @@ const modalTopicsList = ref([]);
 const totalImportBankItems = ref(0);
 const currentImportBankPage = ref(1);
 const lastImportBankPage = ref(1);
+
+const switchImportTab = (tab) => {
+  importActiveTab.value = tab;
+  loadImportBank(1);
+};
 
 const importFilters = reactive({
   search: "",
@@ -1074,6 +941,58 @@ const onModalTaxonomyChange = () => {
   loadImportBank(1);
 };
 
+const onQuestionBankConfirm = async (selectedIds) => {
+  if (!selectedIds || !selectedIds.length) return;
+
+  try {
+    const rawItems = await Promise.all(
+      selectedIds.map(async (id) => {
+        try {
+          return await questionsBankApi.getQuestion(id);
+        } catch {
+          return null;
+        }
+      })
+    );
+
+    const validItems = rawItems.filter(Boolean);
+    if (!validItems.length) return;
+
+    const formattedQuestions = validItems.map((item) => {
+      const normalized = normalizeApiQuestion(item);
+      return {
+        id: normalized.id,
+        question: normalized.question,
+        type: normalized.type || "single_choice",
+        options: Object.fromEntries(
+          (normalized.answers || []).map((answer) => [answer.key, answer.text])
+        ),
+        correct_answer: normalized.correct || normalized.correct_answer || "A",
+        points: normalized.points || 10,
+        images: normalized.images || [],
+      };
+    });
+
+    const isDummyEmptyOnly =
+      questions.value.length === 1 &&
+      !questions.value[0].question.trim() &&
+      !Object.values(questions.value[0].options || {}).some((v) => String(v).trim());
+
+    if (isDummyEmptyOnly) {
+      questions.value = normalizeEditorQuestions(formattedQuestions);
+    } else {
+      questions.value = normalizeEditorQuestions([
+        ...questions.value,
+        ...formattedQuestions,
+      ]);
+    }
+
+    if (showToast) showToast(`Đã thêm ${formattedQuestions.length} câu hỏi vào bài Quiz!`, "success");
+  } catch (err) {
+    console.error("Lỗi chèn câu hỏi từ Ngân hàng:", err);
+  }
+};
+
 const openImportModal = async () => {
   isImportModalOpen.value = true;
   selectedImportIds.value = [];
@@ -1089,7 +1008,7 @@ const loadImportBank = async (page = 1) => {
   isLoadingImportBank.value = true;
   importFilters.page = page;
   try {
-    const res = await questionsBankApi.fetchBank({
+    const params = {
       search: importFilters.search || undefined,
       education_level_id: importFilters.education_level_id || undefined,
       grade_id: importFilters.grade_id || undefined,
@@ -1098,13 +1017,21 @@ const loadImportBank = async (page = 1) => {
       difficulty: importFilters.difficulty || undefined,
       page: importFilters.page,
       per_page: 20,
-    });
+    };
+
+    let res;
+    if (importActiveTab.value === "my_questions") {
+      res = await myQuestionsApi.fetchBank(params);
+    } else {
+      res = await questionsBankApi.fetchBank(params);
+    }
+
     importBankItems.value = res.items || [];
     totalImportBankItems.value = res.total || 0;
     currentImportBankPage.value = res.currentPage || 1;
     lastImportBankPage.value = res.lastPage || 1;
   } catch (err) {
-    console.error("Không tải được ngân hàng câu hỏi:", err);
+    console.error("Không tải được danh sách câu hỏi:", err);
   } finally {
     isLoadingImportBank.value = false;
   }
@@ -1988,10 +1915,58 @@ const syncCreatorProfile = (event) => {
     currentUserStorage.get() ?? { name: "Guest", email: "", avatar: "" };
 };
 
+const onQuestionCreatedFromModal = (createdQuestion) => {
+  if (!createdQuestion) return
+  isCreateQuestionModalOpen.value = false
+  const normalized = normalizeApiQuestion(createdQuestion)
+  const newCard = {
+    id: normalized.id,
+    question: normalized.question,
+    type: normalized.type || "single_choice",
+    options: Object.fromEntries(
+      (normalized.answers || []).map((answer) => [answer.key, answer.text])
+    ),
+    correct_answer: normalized.correct || normalized.correct_answer || "A",
+    points: normalized.points || 10,
+    images: normalized.images || [],
+    editor_mode: "normal",
+    question_blocks: [createBlock("text", normalized.question || "")],
+    option_blocks: {
+      A: [createBlock("text", "")],
+      B: [createBlock("text", "")],
+      C: [createBlock("text", "")],
+      D: [createBlock("text", "")],
+    }
+  }
+  questions.value.push(newCard)
+  if (typeof showToast === 'function') {
+    showToast("Đã nhận câu hỏi mới vào Quiz hiện tại!", "success")
+  }
+}
+
+const onInterTabWindowMessage = (e) => {
+  if (e.data && e.data.type === 'QUIZFLEX_QUESTION_CREATED') {
+    onQuestionCreatedFromModal(e.data.question)
+  }
+}
+
+const onInterTabStorageChange = (e) => {
+  if (e.key === 'quizflex_new_question_signal' && e.newValue) {
+    try {
+      const parsed = JSON.parse(e.newValue)
+      if (parsed?.question) {
+        onQuestionCreatedFromModal(parsed.question)
+      }
+    } catch (err) {}
+  }
+}
+
 onMounted(async () => {
   syncCreatorProfile();
   window.addEventListener("quizflex-user-updated", syncCreatorProfile);
   window.addEventListener("storage", syncCreatorProfile);
+  window.addEventListener("message", onInterTabWindowMessage);
+  window.addEventListener("storage", onInterTabStorageChange);
 
   await fetchFormTaxonomies();
   await fetchTopicsList();
@@ -2004,6 +1979,8 @@ onBeforeUnmount(() => {
   revokeCoverPreview();
   window.removeEventListener("quizflex-user-updated", syncCreatorProfile);
   window.removeEventListener("storage", syncCreatorProfile);
+  window.removeEventListener("message", onInterTabWindowMessage);
+  window.removeEventListener("storage", onInterTabStorageChange);
 });
 </script>
 

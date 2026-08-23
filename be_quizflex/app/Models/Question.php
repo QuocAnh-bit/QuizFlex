@@ -22,6 +22,7 @@ class Question extends Model
         'subject_id',
         'topic_name',
         'is_public',
+        'status',
         'order',
         'points',
         'question',

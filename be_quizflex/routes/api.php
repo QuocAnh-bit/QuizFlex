@@ -136,6 +136,9 @@ Route::middleware('auth:api')->group(function () {
         Route::put('/admin/report-tickets/{id}', [ReportTicketController::class, 'update']);
 
         // Quản lý ngân hàng câu hỏi toàn hệ thống cho admin
+        Route::get('/admin/questions/pending', [QuestionController::class, 'pendingQuestions']);
+        Route::put('/admin/questions/{id}/moderate', [QuestionController::class, 'moderateQuestion']);
+        Route::post('/admin/questions/bulk-moderate', [QuestionController::class, 'bulkModerateQuestions']);
         Route::get('/admin/questions-management', [QuestionController::class, 'adminIndex']);
         Route::get('/admin/questions-trash', [QuestionController::class, 'adminTrash']);
         Route::post('/admin/questions/{id}/restore', [QuestionController::class, 'adminRestore']);

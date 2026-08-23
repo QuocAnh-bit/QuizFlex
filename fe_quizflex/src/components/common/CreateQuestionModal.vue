@@ -1,54 +1,55 @@
 <template>
-  <div v-if="isOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-md" @click.self="close">
-    <div class="w-full max-w-2xl rounded-[2.5rem] border border-[var(--border-strong)] bg-[var(--surface)] p-6 shadow-2xl backdrop-blur-2xl max-h-[90vh] overflow-y-auto">
+  <div v-if="isOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-md" @click.self="close">
+    <div class="w-full max-w-2xl rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-2xl max-h-[90vh] overflow-y-auto text-slate-900">
       <!-- Header -->
-      <div class="flex items-center justify-between border-b border-[var(--border)] pb-4 mb-4">
+      <div class="flex items-center justify-between border-b border-slate-200 pb-4 mb-5">
         <div>
-          <h3 class="text-xl font-black text-[var(--text)] flex items-center gap-2">
-            <span>✨ Tạo câu hỏi mới</span>
+          <h3 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+            <span>Tạo câu hỏi mới</span>
+            <span class="inline-block h-2 w-2 rounded-full bg-[#7C3AED]"></span>
           </h3>
-          <p class="text-xs text-[var(--muted)]">Nhập nội dung, chọn đáp án đúng và đặt phạm vi hiển thị cho câu hỏi</p>
+          <p class="text-xs text-slate-500 mt-1">Nhập nội dung, chọn đáp án đúng và đặt phạm vi hiển thị cho câu hỏi</p>
         </div>
-        <button type="button" class="text-xl font-black text-[var(--muted)] hover:text-rose-500 transition" @click="close">✕</button>
+        <button type="button" class="grid h-8 w-8 place-items-center rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition cursor-pointer" @click="close">✕</button>
       </div>
 
       <!-- Form -->
-      <form @submit.prevent="submitForm" class="grid gap-4">
+      <form @submit.prevent="submitForm" class="grid gap-5">
         <!-- Nội dung câu hỏi -->
-        <label class="grid gap-1.5 text-xs font-black text-[var(--text)]">
+        <label class="grid gap-1.5 text-xs font-semibold text-slate-900">
           Nội dung câu hỏi *
-          <textarea v-model="form.content" required class="field min-h-24 text-sm" placeholder="Nhập câu hỏi... (VD: Tác giả của Truyện Kiều là ai?)"></textarea>
+          <textarea v-model="form.content" required rows="3" class="w-full resize-none rounded-xl border border-slate-200 bg-white p-3.5 text-xs font-medium text-slate-900 outline-none focus:border-[#7C3AED] focus:ring-2 focus:ring-[#7C3AED]/20" placeholder="Nhập câu hỏi... (VD: Tác giả của Truyện Kiều là ai?)"></textarea>
         </label>
 
         <!-- Taxonomy Filters (Cấp học, Lớp, Môn, Chủ đề) -->
         <div class="grid grid-cols-2 gap-3">
-          <label class="grid gap-1.5 text-xs font-black text-[var(--text)]">
+          <label class="grid gap-1.5 text-xs font-semibold text-slate-700">
             Cấp học
-            <select v-model="form.education_level_id" class="field text-xs" @change="onLevelChange">
+            <select v-model="form.education_level_id" class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-medium text-slate-900 outline-none focus:border-[#7C3AED]" @change="onLevelChange">
               <option value="">Tất cả Cấp học</option>
               <option v-for="level in taxonomyLevels" :key="level.id" :value="level.id">{{ level.name }}</option>
             </select>
           </label>
 
-          <label class="grid gap-1.5 text-xs font-black text-[var(--text)]">
+          <label class="grid gap-1.5 text-xs font-semibold text-slate-700">
             Khối lớp
-            <select v-model="form.grade_id" class="field text-xs">
+            <select v-model="form.grade_id" class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-medium text-slate-900 outline-none focus:border-[#7C3AED]">
               <option value="">Tất cả Khối lớp</option>
               <option v-for="grade in availableGrades" :key="grade.id" :value="grade.id">{{ grade.name }}</option>
             </select>
           </label>
 
-          <label class="grid gap-1.5 text-xs font-black text-[var(--text)]">
+          <label class="grid gap-1.5 text-xs font-semibold text-slate-700">
             Bộ môn
-            <select v-model="form.subject_id" class="field text-xs">
+            <select v-model="form.subject_id" class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-medium text-slate-900 outline-none focus:border-[#7C3AED]">
               <option value="">Tất cả Bộ môn</option>
               <option v-for="subject in availableSubjects" :key="subject.id" :value="subject.id">{{ subject.name }}</option>
             </select>
           </label>
 
-          <label class="grid gap-1.5 text-xs font-black text-[var(--text)]">
+          <label class="grid gap-1.5 text-xs font-semibold text-slate-700">
             Mức độ khó
-            <select v-model="form.difficulty" class="field text-xs">
+            <select v-model="form.difficulty" class="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-medium text-slate-900 outline-none focus:border-[#7C3AED]">
               <option value="easy">Dễ (Nhận biết)</option>
               <option value="medium">Vừa (Thông hiểu)</option>
               <option value="hard">Khó (Vận dụng)</option>
@@ -56,51 +57,49 @@
           </label>
         </div>
 
-        <label class="grid gap-1.5 text-xs font-black text-[var(--text)]">
+        <label class="grid gap-1.5 text-xs font-semibold text-slate-700">
           Chủ đề kiến thức
-          <input v-model="form.topic_name" class="field text-xs" placeholder="VD: Văn học, Hàm số, Hình học..." />
+          <input v-model="form.topic_name" class="rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-medium text-slate-900 outline-none focus:border-[#7C3AED]" placeholder="VD: Văn học, Hàm số, Hình học..." />
         </label>
 
         <!-- PHẠM VI HIỂN THỊ CÂU HỎI (PUBLIC / PRIVATE) -->
-        <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-3.5 grid gap-2">
-          <span class="text-xs font-black uppercase tracking-wider text-[var(--primary)]">Phạm vi hiển thị câu hỏi</span>
-          <div class="grid grid-cols-2 gap-2.5 text-xs">
+        <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 grid gap-3">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Phạm vi hiển thị câu hỏi</span>
+          <div class="grid grid-cols-2 gap-3 text-xs">
             <label 
               class="flex items-start gap-2.5 rounded-xl border p-3 cursor-pointer transition duration-150"
-              :class="!form.is_public ? 'border-amber-500 bg-amber-500/10 text-amber-300 font-bold' : 'border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:border-[var(--border-strong)]'"
+              :class="!form.is_public ? 'border-amber-200 bg-amber-50 text-amber-800 font-bold' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'"
             >
               <input type="radio" v-model="form.is_public" :value="false" class="mt-0.5 accent-amber-500" />
               <div class="grid gap-0.5">
-                <span class="font-black text-xs">🔒 Riêng tư (Private)</span>
-                <span class="text-[10px] leading-tight opacity-80 font-normal">Chỉ xuất hiện trong Kho của bạn. Bạn vẫn có thể chèn vào mọi Quiz</span>
+                <span class="font-bold text-xs">🔒 Riêng tư</span>
+                <span class="text-[11px] leading-tight text-slate-500 font-normal">Lưu vào Kho cá nhân để soạn Quiz</span>
               </div>
             </label>
 
             <label 
               class="flex items-start gap-2.5 rounded-xl border p-3 cursor-pointer transition duration-150"
-              :class="form.is_public ? 'border-[var(--primary)] bg-[var(--primary)]/10 text-[var(--primary)] font-bold' : 'border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:border-[var(--border-strong)]'"
+              :class="form.is_public ? 'border-slate-300 bg-slate-100 text-slate-900 font-bold' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'"
             >
-              <input type="radio" v-model="form.is_public" :value="true" class="mt-0.5 accent-[var(--primary)]" />
+              <input type="radio" v-model="form.is_public" :value="true" class="mt-0.5 accent-[#7C3AED]" />
               <div class="grid gap-0.5">
-                <span class="font-black text-xs">🌐 Công khai (Public)</span>
-                <span class="text-[10px] leading-tight opacity-80 font-normal">Hiển thị lên Ngân hàng chung cho cộng đồng chọn tái sử dụng</span>
+                <span class="font-bold text-xs">🌐 Công khai</span>
+                <span class="text-[11px] leading-tight text-slate-500 font-normal">Đóng góp lên Ngân hàng chung</span>
               </div>
             </label>
           </div>
         </div>
 
         <!-- DANH SÁCH ĐÁP ÁN -->
-        <div class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-4 grid gap-3">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-black uppercase text-[var(--primary)]">Danh sách Đáp án (Tick radio chọn đáp án đúng)</span>
-          </div>
+        <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 grid gap-3">
+          <span class="text-xs font-bold uppercase text-slate-500">Danh sách Đáp án (Tick chọn đáp án đúng)</span>
 
-          <div v-for="(ans, idx) in form.answers" :key="idx" class="flex items-center gap-2">
-            <span class="grid h-7 w-7 place-items-center rounded-xl bg-black/40 font-black text-xs shrink-0 text-[var(--text)]">{{ ans.key }}</span>
+          <div v-for="(ans, idx) in form.answers" :key="idx" class="flex items-center gap-2.5">
+            <span class="grid h-8 w-8 place-items-center rounded-xl bg-white border border-slate-200 font-bold text-xs shrink-0 text-slate-700">{{ ans.key }}</span>
             
-            <input v-model="ans.content" required class="field text-xs flex-1" :placeholder="`Nội dung đáp án ${ans.key}`" />
+            <input v-model="ans.content" required class="flex-1 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-medium text-slate-900 outline-none focus:border-[#7C3AED]" :placeholder="`Nội dung đáp án ${ans.key}`" />
 
-            <label class="flex items-center gap-1.5 text-xs font-bold shrink-0 cursor-pointer px-3 py-2 rounded-xl border transition" :class="ans.is_correct ? 'border-emerald-500 bg-emerald-500/20 text-emerald-300' : 'border-[var(--border)] text-[var(--muted)]'">
+            <label class="flex items-center gap-1.5 text-xs font-bold shrink-0 cursor-pointer px-3 py-2 rounded-xl border transition" :class="ans.is_correct ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'">
               <input type="radio" name="new_question_correct_ans" :checked="ans.is_correct" @change="setCorrectAnswer(idx)" class="accent-emerald-500" />
               <span>{{ ans.is_correct ? '✓ Đúng' : 'Sai' }}</span>
             </label>
@@ -108,10 +107,10 @@
         </div>
 
         <!-- Footer Buttons -->
-        <div class="flex justify-end gap-3 mt-2 pt-4 border-t border-[var(--border)]">
-          <button class="btn-ghost text-xs" type="button" @click="close">Hủy</button>
-          <button class="btn-primary text-xs flex items-center gap-1.5" type="submit" :disabled="isSubmitting">
-            <span>{{ isSubmitting ? 'Đang tạo...' : 'Lưu câu hỏi' }}</span>
+        <div class="flex justify-end gap-3 mt-2 pt-4 border-t border-slate-200">
+          <button class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 cursor-pointer" type="button" @click="close">Hủy</button>
+          <button class="rounded-xl bg-[#7C3AED] px-5 py-2 text-xs font-bold text-white shadow-md shadow-[#7C3AED]/20 hover:bg-[#6D28D9] cursor-pointer disabled:opacity-50" type="submit" :disabled="isSubmitting">
+            <span>{{ isSubmitting ? 'Đang tạo...' : '✓ Lưu câu hỏi' }}</span>
           </button>
         </div>
       </form>

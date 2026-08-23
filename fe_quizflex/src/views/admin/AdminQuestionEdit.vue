@@ -21,7 +21,7 @@
         <div class="flex items-start gap-4">
           <button
             type="button"
-            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:bg-[#7C3AED] hover:text-white"
+            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 cursor-pointer"
             title="Quay lại"
             @click="goBack"
           >
@@ -42,7 +42,7 @@
         <div class="flex flex-wrap items-center gap-3">
           <button
             type="button"
-            class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+            class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 cursor-pointer"
             @click="goBack"
           >
             <X class="h-4 w-4" />
@@ -51,7 +51,7 @@
 
           <button
             type="button"
-            class="inline-flex items-center gap-2 rounded-lg bg-[#7C3AED] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#6D28D9] disabled:opacity-60"
+            class="inline-flex items-center gap-2 rounded-lg bg-[#7C3AED] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#6D28D9] disabled:opacity-60 cursor-pointer"
             :disabled="isSubmitting"
             @click="saveQuestion"
           >
@@ -78,7 +78,7 @@
         <!-- Question Content -->
         <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8 space-y-5">
           <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-            <label class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#7C3AED]">
+            <label class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
               <FileText class="h-4 w-4" />
               Nội dung câu hỏi *
             </label>
@@ -126,13 +126,13 @@
         <!-- Answers Editor -->
         <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8 space-y-5">
           <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-            <label class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#7C3AED]">
+            <label class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
               <ListChecks class="h-4 w-4" />
               Phương án đáp án *
             </label>
             <button
               type="button"
-              class="inline-flex items-center gap-1.5 text-sm font-medium text-[#7C3AED] hover:underline"
+              class="inline-flex items-center gap-1.5 text-sm font-medium text-slate-800 hover:underline cursor-pointer"
               @click="addAnswerRow"
             >
               <Plus class="h-4 w-4" />
@@ -144,7 +144,7 @@
             <div
               v-for="(ans, index) in form.answers"
               :key="index"
-              class="flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 transition focus-within:border-[#7C3AED]/40 sm:flex-row sm:items-center"
+              class="flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 transition focus-within:border-slate-300 sm:flex-row sm:items-center"
             >
               <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-xs font-bold text-slate-700">
                 {{ String.fromCharCode(65 + index) }}
@@ -175,7 +175,7 @@
               <button
                 v-if="form.answers.length > 2"
                 type="button"
-                class="self-end rounded-lg p-2 text-rose-500 transition hover:bg-rose-50 sm:self-center"
+                class="self-end rounded-lg p-2 text-rose-500 transition hover:bg-rose-50 sm:self-center cursor-pointer"
                 title="Xóa phương án này"
                 @click="removeAnswerRow(index)"
               >
@@ -190,7 +190,7 @@
       <div class="space-y-6 lg:col-span-4">
         <!-- Classification -->
         <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
-          <h3 class="flex items-center gap-2 border-b border-slate-100 pb-3 text-xs font-semibold uppercase tracking-wider text-[#7C3AED]">
+          <h3 class="flex items-center gap-2 border-b border-slate-100 pb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
             <Settings class="h-4 w-4" />
             Phân loại & Thuộc tính
           </h3>
@@ -253,7 +253,7 @@
 
         <!-- Visibility -->
         <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
-          <h3 class="flex items-center gap-2 border-b border-slate-100 pb-3 text-xs font-semibold uppercase tracking-wider text-[#7C3AED]">
+          <h3 class="flex items-center gap-2 border-b border-slate-100 pb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
             <Globe class="h-4 w-4" />
             Quyền hiển thị
           </h3>

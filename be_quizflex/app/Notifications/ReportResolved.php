@@ -57,7 +57,9 @@ class ReportResolved extends Notification
                 $snippet .= '...';
             }
             $itemTitle = "câu hỏi \"{$snippet}\"";
-            $actionLink = "/dashboard/my-questions?question_id={$this->report->question_id}";
+            $actionLink = $this->action === 'hidden'
+                ? "/dashboard/my-questions?question_id={$this->report->question_id}"
+                : "/dashboard/my-questions?highlight={$this->report->question_id}";
         } elseif ($this->report->quiz_id) {
             $title = $this->report->quiz?->title ?? "Bài Quiz #{$this->report->quiz_id}";
             $itemTitle = "bài Quiz '{$title}'";

@@ -72,10 +72,10 @@
                   <span class="min-w-0 flex-1 truncate">{{ item.label }}</span>
 
                   <span
-                    v-if="(item.label === 'Quản lý báo cáo' && reportCount > 0) || (item.badge !== undefined && item.badge !== null && item.badge !== 0)"
-                    class="ml-auto shrink-0 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-700"
+                    v-if="item.badge !== undefined && item.badge !== null && item.badge > 0"
+                    class="ml-auto shrink-0 rounded-full bg-purple-100 px-2 py-0.5 text-[10px] font-bold text-purple-700"
                   >
-                    {{ item.label === 'Quản lý báo cáo' ? reportCount : item.badge }}
+                    {{ item.badge }}
                   </span>
                 </router-link>
               </div>
@@ -104,8 +104,17 @@
         <!-- DESKTOP HEADER -->
         <header class="mb-6 hidden items-center justify-between gap-4 lg:flex">
           <div>
-            <p class="text-xs font-bold uppercase tracking-wider text-[#7C3AED]">QuizFlex Admin</p>
-            <h1 class="mt-0.5 text-2xl font-black text-slate-900">{{ pageTitle }}</h1>
+            <template v-if="!route.meta?.hideTitle">
+              <p class="text-xs font-bold uppercase tracking-wider text-[#7C3AED]">QuizFlex Admin</p>
+              <h1 class="mt-0.5 text-2xl font-black text-slate-900">{{ pageTitle }}</h1>
+            </template>
+            <template v-else>
+              <div class="flex items-center gap-2 text-xs font-bold">
+                <span class="text-[#7C3AED] uppercase tracking-wider">QuizFlex Admin</span>
+                <span class="text-slate-300">/</span>
+                <span class="text-slate-600 font-semibold">{{ pageTitle }}</span>
+              </div>
+            </template>
           </div>
 
           <div class="flex items-center gap-2.5">
@@ -148,6 +157,7 @@ import {
   Package,
   Plus,
   Settings,
+  Shield,
   Users,
   Video,
 } from '@lucide/vue'
@@ -158,8 +168,10 @@ import NotificationBell from '@/components/common/NotificationBell.vue'
 
 const route = useRoute()
 const reportCount = ref(0)
+const pendingCount = ref(0)
 
 const reportBadge = computed(() => reportCount.value)
+const pendingBadge = computed(() => pendingCount.value)
 
 const openGroups = ref({
   'Quản lý nội dung': true,
@@ -187,18 +199,37 @@ const fetchReportCount = async () => {
   }
 }
 
+const fetchPendingCount = async () => {
+  try {
+    const token = localStorage.getItem('quizflex_access_token')
+    const { data } = await axios.get('/api/admin/questions/pending', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    const payload = data?.data
+    const items = Array.isArray(payload?.data) ? payload.data : (Array.isArray(payload) ? payload : [])
+    pendingCount.value = payload?.total ?? items.length
+  } catch (error) {
+    console.error('Lỗi khi lấy số lượng câu hỏi chờ duyệt:', error)
+  }
+}
+
+const fetchAllCounts = () => {
+  fetchReportCount()
+  fetchPendingCount()
+}
+
 const handleRealtimeNotification = (event) => {
   const notification = event.detail
-  if (notification?.type === 'report_created') {
-    reportCount.value++
-  }
-  if (notification?.type === 'report_resolved' || notification?.type === 'report_action') {
+  if (notification?.type === 'report_created' || notification?.type === 'report_resolved' || notification?.type === 'report_action') {
     fetchReportCount()
+  }
+  if (notification?.type === 'question_submitted' || notification?.type === 'question_moderated') {
+    fetchPendingCount()
   }
 }
 
 const handleNotificationsUpdated = () => {
-  fetchReportCount()
+  fetchAllCounts()
 }
 
 const menu = computed(() => [
@@ -209,11 +240,12 @@ const menu = computed(() => [
       { label: 'Quản lý câu hỏi', to: '/admin/question-bank', icon: HelpCircle },
       { label: 'Tạo câu hỏi mới', to: '/admin/question-bank/create-question', icon: FolderPlus },
       { label: 'Kho quiz', to: '/admin/questions', icon: Package },
+      { label: 'Kiểm duyệt Ngân hàng', to: '/admin/moderation', icon: Shield, badge: pendingBadge.value },
+      { label: 'Quản lý Báo cáo', to: '/admin/report-tickets', icon: Flag, badge: reportBadge.value },
       
       { label: 'AI Generator', to: '/admin/questions/ai', icon: BrainCircuit },
       { label: 'OCR Upload', to: '/admin/questions/ocr', icon: Camera },
       { label: 'Quản lý Bộ môn', to: '/admin/subjects', icon: BookOpen },
-      { label: 'Quản lý báo cáo', to: '/admin/report-tickets', icon: Flag, badge: reportBadge.value },
     ],
   },
   {
@@ -250,7 +282,7 @@ const openCurrentGroup = () => {
 }
 
 onMounted(() => {
-  fetchReportCount()
+  fetchAllCounts()
   openCurrentGroup()
   window.addEventListener('realtime-notification', handleRealtimeNotification)
   window.addEventListener('notifications-updated', handleNotificationsUpdated)

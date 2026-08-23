@@ -493,12 +493,25 @@ const routes = [
     },
   },
   {
+    path: "/admin/moderation",
+    name: "admin-question-moderation",
+    component: () => import("@/views/admin/QuestionModeration.vue"),
+    meta: {
+      layout: "admin",
+      title: "Kiểm duyệt Ngân hàng",
+      hideTitle: true,
+      requiresAuth: true,
+      roles: adminRoles,
+    },
+  },
+  {
     path: "/admin/report-tickets",
     name: "admin-report-tickets",
     component: () => import("@/views/admin/ReportManager.vue"),
     meta: {
       layout: "admin",
-      title: "Quản lý báo cáo",
+      title: "Quản lý Báo cáo",
+      hideTitle: true,
       requiresAuth: true,
       roles: adminRoles,
     },

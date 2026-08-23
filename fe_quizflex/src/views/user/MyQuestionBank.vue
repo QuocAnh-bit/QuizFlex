@@ -96,136 +96,175 @@
     <!-- Loaded Questions List -->
     <template v-else>
       <!-- Focused Question Banner -->
-      <div v-if="focusedQuestionId" class="mb-1">
-        <!-- SUCCESS BANNER (When question was just updated) -->
-        <div v-if="highlightedUpdatedQuestionId === focusedQuestionId" class="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <div class="flex items-center gap-3">
-            <CheckCircle2 :size="20" class="shrink-0 text-emerald-400" />
+      <div v-if="focusedQuestionId" class="mb-3">
+        <!-- 1. BANNER THÀNH CÔNG (KHI TÁC GIẢ VỪA BẤM SỬA VÀ ĐÃ LƯU ĐÍNH CHÍNH THÀNH CÔNG) -->
+        <div
+          v-if="highlightedUpdatedQuestionId === focusedQuestionId || (focusedQuestionItem?.has_author_updated && focusedQuestionItem?.is_public && focusedQuestionItem?.status === 'pending')"
+          class="rounded-xl border border-emerald-200 bg-emerald-50/90 p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs shadow-2xs"
+        >
+          <div class="flex items-center gap-2.5">
+            <CheckCircle2 :size="20" class="shrink-0 text-emerald-600" />
             <div>
-              <h4 class="font-black text-emerald-700 dark:text-emerald-300 text-sm">
-                Đã hoàn tất đính chính câu hỏi #{{ focusedQuestionId }}
+              <h4 class="font-bold text-emerald-950 text-xs sm:text-sm">
+                ✓ Đã hoàn tất đính chính câu hỏi #{{ focusedQuestionId }}
               </h4>
-              <p class="text-xs text-slate-700 dark:text-slate-300 mt-0.5 font-semibold">Nội dung đã được lưu thành công và đã tự động chuyển sang trạng thái <strong>Chờ Admin duyệt lại</strong>.</p>
+              <p class="text-xs text-emerald-800 mt-0.5 font-medium leading-relaxed">
+                Nội dung đã được lưu thành công. Hệ thống đã tự động gửi thông báo tới <strong>Quản trị viên (Admin)</strong> để kiểm duyệt và mở công khai lại.
+              </p>
             </div>
           </div>
           <button
             type="button"
-            class="shrink-0 inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/15 px-3 py-1.5 text-xs font-bold text-emerald-800 dark:text-emerald-200 hover:bg-emerald-500/25 transition"
+            class="shrink-0 inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-white px-3 py-1.5 text-xs font-semibold text-emerald-800 hover:bg-emerald-100/60 transition cursor-pointer shadow-2xs"
             @click="clearQuestionFocus"
           >
             <Eye :size="13" />
-            <span>Xem tất cả câu hỏi trong kho</span>
+            <span>Xem tất cả</span>
           </button>
         </div>
 
-        <!-- WARNING BANNER (When user needs to edit reported question) -->
-        <div v-else class="rounded-xl border border-rose-500/30 bg-rose-500/10 p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <div class="flex items-center gap-3">
-            <AlertTriangle :size="20" class="shrink-0 text-rose-400" />
+        <!-- 2. BANNER CẢNH BÁO KHI ADMIN GỠ CÔNG KHAI -->
+        <div
+          v-else-if="focusedQuestionItem?.is_locked_by_admin || !focusedQuestionItem?.is_public || focusedQuestionItem?.status === 'rejected'"
+          class="rounded-xl border border-rose-200 bg-rose-50/90 p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs shadow-2xs"
+        >
+          <div class="flex items-start gap-2.5">
+            <ShieldAlert :size="20" class="shrink-0 text-rose-600 mt-0.5" />
             <div>
-              <h4 class="font-black text-rose-300 text-sm">
-                Đang tập trung xử lý câu hỏi #{{ focusedQuestionId }}
-                <span v-if="focusedQuestionItem?.is_locked_by_admin" class="text-amber-300 ml-1">(Admin đã khóa: "{{ focusedQuestionItem.report_reason || 'Vi phạm quy định' }}")</span>
+              <h4 class="font-black text-rose-950 text-xs sm:text-sm flex items-center gap-1.5 flex-wrap">
+                🔒 Câu hỏi #{{ focusedQuestionId }} đã bị Admin gỡ công khai
               </h4>
-              <p class="text-xs text-[var(--muted)] mt-0.5">Vui lòng nhấp nút <strong>"Sửa câu hỏi"</strong> ở thẻ bên dưới để đính chính đáp án/nội dung.</p>
+              <p class="text-xs text-rose-900 mt-1 font-medium leading-relaxed">
+                <span class="font-bold text-rose-950">Lý do từ Admin:</span>
+                <span class="font-bold text-rose-700 underline"> "{{ focusedQuestionItem?.report_reason || 'Nội dung chưa đạt chuẩn công khai' }}"</span>.
+                Vui lòng nhấp <strong class="text-rose-950">"Sửa câu hỏi"</strong> bên dưới để chỉnh sửa và gửi duyệt lại.
+              </p>
             </div>
           </div>
           <button
             type="button"
-            class="shrink-0 inline-flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface-soft)] px-3 py-1.5 text-xs font-bold text-[var(--text)] hover:bg-[var(--chip-active)] transition"
+            class="shrink-0 inline-flex items-center gap-1 rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-xs font-semibold text-rose-800 hover:bg-rose-100/60 transition cursor-pointer shadow-2xs"
             @click="clearQuestionFocus"
           >
             <Eye :size="13" />
-            <span>Xem tất cả câu hỏi trong kho</span>
+            <span>Xem tất cả</span>
+          </button>
+        </div>
+
+        <!-- 3. BANNER CẢNH BÁO KHI NHẬN BÁO CÁO VI PHẠM TỪ NGƯỜI DÙNG -->
+        <div
+          v-else-if="focusedQuestionItem?.has_report"
+          class="rounded-xl border border-amber-200 bg-amber-50/90 p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs shadow-2xs"
+        >
+          <div class="flex items-start gap-2.5">
+            <AlertTriangle :size="20" class="shrink-0 text-amber-600 mt-0.5" />
+            <div>
+              <h4 class="font-bold text-amber-950 text-xs sm:text-sm flex items-center gap-1.5 flex-wrap">
+                <span>⚠️ Câu hỏi #{{ focusedQuestionId }} nhận báo cáo vi phạm từ người dùng</span>
+                <span v-if="focusedQuestionItem?.report_reason" class="text-amber-800 font-semibold italic">(Lý do báo cáo: "{{ focusedQuestionItem.report_reason }}")</span>
+              </h4>
+              <p class="text-xs text-amber-800 mt-1 font-medium leading-relaxed">
+                Câu hỏi này vừa nhận phản hồi/báo cáo từ người dùng. Vui lòng nhấp <strong>"Sửa câu hỏi"</strong> ở thẻ bên dưới để kiểm tra và đính chính nội dung kịp thời.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            class="shrink-0 inline-flex items-center gap-1 rounded-lg border border-amber-200 bg-white px-3 py-1.5 text-xs font-semibold text-amber-800 hover:bg-amber-100/60 transition cursor-pointer shadow-2xs"
+            @click="clearQuestionFocus"
+          >
+            <Eye :size="13" />
+            <span>Xem tất cả</span>
           </button>
         </div>
       </div>
 
-      <div class="grid gap-3">
+      <div class="grid gap-3.5">
         <article
           v-for="q in questions"
           :key="q.id"
           :id="`question-card-${q.id}`"
-          class="rounded-xl border p-5 transition-colors duration-200 relative"
+          class="rounded-xl border bg-white p-4 sm:p-5 transition-all relative shadow-2xs"
           :class="[
-            highlightedUpdatedQuestionId === q.id
-              ? 'border-emerald-500 bg-emerald-500/5'
-              : (highlightedQuestionId === q.id
-                  ? 'border-rose-500 bg-rose-500/5'
-                  : 'border-[var(--border)] bg-[var(--surface)] hover:border-[var(--border-strong)]'),
-            q.is_locked_by_admin && highlightedUpdatedQuestionId !== q.id ? 'border-rose-500/40 bg-rose-500/5' : ''
+            highlightedApprovedQuestionId === q.id
+              ? 'border-emerald-400 bg-emerald-50/40 ring-2 ring-emerald-400/20'
+              : (highlightedUpdatedQuestionId === q.id || (q.has_author_updated && q.is_public && q.status === 'pending')
+                  ? 'border-emerald-300 bg-emerald-50/20'
+                  : (q.is_locked_by_admin || q.status === 'rejected'
+                      ? (highlightedQuestionId === q.id ? 'border-rose-400 ring-2 ring-rose-400/20 shadow-sm' : 'border-rose-300')
+                      : (q.has_report
+                          ? (highlightedQuestionId === q.id ? 'border-amber-400 bg-amber-50/20 ring-2 ring-amber-400/20 shadow-sm' : 'border-amber-300/80')
+                          : (highlightedQuestionId === q.id ? 'border-emerald-400 bg-emerald-50/20' : 'border-slate-200 hover:border-slate-300'))))
           ]"
         >
-          <!-- Success Banner if updated -->
-          <div v-if="highlightedUpdatedQuestionId === q.id" class="mb-4 flex items-center justify-between rounded-lg border border-emerald-500/30 bg-emerald-500/15 p-3 text-xs font-bold text-emerald-950 dark:text-emerald-100">
-            <div class="flex items-center gap-2">
-              <CheckCircle2 :size="16" />
-              <span>Đã cập nhật đính chính nội dung câu hỏi thành công! Hệ thống đã tự động chuyển câu hỏi sang trạng thái Chờ duyệt lại.</span>
-            </div>
-            <button type="button" class="text-emerald-900 dark:text-emerald-200 hover:text-black dark:hover:text-white ml-2" @click="clearQuestionFocus">
-              <X :size="14" />
-            </button>
-          </div>
-
           <div class="flex flex-col xl:flex-row xl:items-start justify-between gap-4">
-            <div class="flex-1 min-w-0">
-              <div class="flex flex-wrap items-center gap-1.5 mb-3">
-                <span class="rounded-md border border-[var(--border)] bg-[var(--surface-soft)] px-2 py-0.5 text-[11px] font-bold text-[var(--muted)]">#{{ q.id }}</span>
-                <span
-                  class="inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-[11px] font-bold"
-                  :class="{
-                    'bg-emerald-500/10 text-emerald-400': q.difficulty === 'easy',
-                    'bg-amber-500/10 text-amber-400': q.difficulty === 'medium',
-                    'bg-rose-500/10 text-rose-400': q.difficulty === 'hard'
-                  }"
-                >
-                  <span
-                    class="h-1.5 w-1.5 rounded-full"
-                    :class="{
-                      'bg-emerald-400': q.difficulty === 'easy',
-                      'bg-amber-400': q.difficulty === 'medium',
-                      'bg-rose-400': q.difficulty === 'hard'
-                    }"
-                  ></span>
+            <div class="flex-1 min-w-0 space-y-2.5">
+              <!-- BADGE THÔNG TIN (ƯU TIÊN NHÃN ĐÃ ĐÍNH CHÍNH KHI TÁC GIẢ SỬA XONG) -->
+              <div class="flex flex-wrap items-center gap-1.5">
+                <span class="rounded-md bg-slate-100 text-slate-700 border border-slate-200/60 px-2 py-0.5 text-[11px] font-bold">#{{ q.id }}</span>
+                
+                <span class="rounded-md bg-slate-100 text-slate-700 border border-slate-200/60 px-2 py-0.5 text-[11px] font-medium">
                   {{ difficultyText(q.difficulty) }}
                 </span>
 
-                <span v-if="highlightedUpdatedQuestionId === q.id" class="inline-flex items-center gap-1 rounded-md bg-emerald-600 text-white dark:bg-emerald-800 dark:text-emerald-100 px-2 py-0.5 text-[11px] font-bold">
+                <span v-if="highlightedUpdatedQuestionId === q.id || (q.has_author_updated && q.is_public && q.status === 'pending')" class="inline-flex items-center gap-1 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 text-[11px] font-semibold">
                   <CheckCircle2 :size="12" />
-                  <span>Đã cập nhật &amp; Chờ duyệt lại</span>
+                  <span>Chờ Admin duyệt đính chính</span>
                 </span>
-                <span v-else-if="q.is_locked_by_admin" class="inline-flex items-center gap-1 rounded-md bg-rose-500/10 text-rose-300 border border-rose-500/30 px-2 py-0.5 text-[11px] font-bold" :title="q.report_reason ? `Lý do: ${q.report_reason}` : ''">
-                  <Lock :size="12" />
-                  <span>Đã bị Admin khóa / Gỡ công khai {{ q.report_reason ? `(Lý do: ${q.report_reason})` : '' }}</span>
+                <span v-else-if="q.is_locked_by_admin" class="inline-flex items-center gap-1 rounded-md bg-rose-50 text-rose-700 border border-rose-200 px-2 py-0.5 text-[11px] font-bold">
+                  <ShieldAlert :size="12" />
+                  <span>ĐÃ BỊ ADMIN KHÓA</span>
                 </span>
-                <span v-else-if="q.has_report" class="inline-flex items-center gap-1 rounded-md bg-amber-500/10 text-amber-300 border border-amber-500/30 px-2 py-0.5 text-[11px] font-bold">
-                  <Flag :size="12" />
+                <span v-else-if="q.has_report" class="inline-flex items-center gap-1 rounded-md bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 text-[11px] font-semibold">
+                  <AlertTriangle :size="12" />
                   <span>Có báo cáo vi phạm</span>
                 </span>
-                <span v-else-if="!q.is_public" class="inline-flex items-center gap-1 rounded-md bg-amber-500/5 text-amber-400 border border-amber-500/20 px-2 py-0.5 text-[11px] font-bold">
+                <span v-else-if="q.is_public && q.status === 'pending'" class="inline-flex items-center gap-1 rounded-md bg-slate-100 text-slate-700 border border-slate-200/60 px-2 py-0.5 text-[11px] font-medium">
+                  <Clock :size="12" />
+                  <span>Chờ Admin duyệt</span>
+                </span>
+                <span v-else-if="!q.is_public && q.status === 'rejected'" class="inline-flex items-center gap-1 rounded-md bg-slate-100 text-slate-700 border border-slate-200/60 px-2 py-0.5 text-[11px] font-medium" title="Admin đã từ chối công khai. Bạn có thể sửa câu hỏi và bấm nút Công khai để gửi duyệt lại.">
+                  <XCircle :size="12" />
+                  <span>Riêng tư (Từ chối)</span>
+                </span>
+                <span v-else-if="q.is_public && (q.status === 'approved' || !q.status)" class="inline-flex items-center gap-1 rounded-md bg-slate-100 text-slate-700 border border-slate-200/60 px-2 py-0.5 text-[11px] font-medium">
+                  <Globe :size="12" />
+                  <span>Công khai (Đã duyệt)</span>
+                </span>
+                <span v-else-if="!q.is_public" class="inline-flex items-center gap-1 rounded-md bg-slate-100 text-slate-700 border border-slate-200/60 px-2 py-0.5 text-[11px] font-medium">
                   <Lock :size="12" />
                   <span>Riêng tư</span>
                 </span>
 
-                <span v-if="q.grade_name" class="rounded-md bg-indigo-600/15 text-indigo-400 px-2 py-0.5 text-[11px] font-bold">{{ q.grade_name }}</span>
-                <span v-if="q.subject_name" class="rounded-md bg-emerald-600/15 text-emerald-400 px-2 py-0.5 text-[11px] font-bold">{{ q.subject_name }}</span>
-                <span v-if="q.topic_name" class="rounded-md bg-purple-600/15 text-purple-300 px-2 py-0.5 text-[11px] font-bold">Chủ đề: {{ q.topic_name }}</span>
-                <span v-if="q.quiz_title" class="rounded-md bg-slate-700/25 text-slate-300 px-2 py-0.5 text-[11px] font-bold truncate max-w-[200px]">Quiz: {{ q.quiz_title }}</span>
+                <span v-if="q.grade_name" class="rounded-md bg-slate-100 text-slate-700 border border-slate-200/60 px-2 py-0.5 text-[11px] font-medium">{{ q.grade_name }}</span>
+                <span v-if="q.subject_name" class="rounded-md bg-slate-100 text-slate-700 border border-slate-200/60 px-2 py-0.5 text-[11px] font-medium">{{ q.subject_name }}</span>
+                <span v-if="q.topic_name" class="rounded-md bg-slate-100 text-slate-700 border border-slate-200/60 px-2 py-0.5 text-[11px] font-medium">Chủ đề: {{ q.topic_name }}</span>
+                <span v-if="q.quiz_title" class="rounded-md bg-slate-100 text-slate-700 border border-slate-200/60 px-2 py-0.5 text-[11px] font-medium truncate max-w-[200px]">Quiz: {{ q.quiz_title }}</span>
               </div>
 
-              <h3 class="text-base font-black text-[var(--text)] leading-snug">{{ q.content || q.text }}</h3>
+              <!-- Question Title (TIÊU ĐỀ CÂU HỎI LÀ TÂM ĐIỂM TẬP TRUNG) -->
+              <h3 class="text-base sm:text-lg font-bold text-slate-900 leading-snug break-words">
+                {{ q.content || q.text }}
+              </h3>
 
-              <!-- Answers Grid -->
-              <div v-if="q.answers && q.answers.length > 0" class="mt-4 grid gap-2 md:grid-cols-2">
+              <!-- Answers Grid (BỐ CỤC 2 CỘT A/B/C/D - CHỈ HIGHLIGHT ĐÁP ÁN ĐÚNG NỀN VÀ VIỀN XANH LÁ DỊU) -->
+              <div v-if="q.answers && q.answers.length > 0" class="pt-1.5 grid gap-2 md:grid-cols-2">
                 <div
                   v-for="ans in q.answers"
                   :key="ans.id"
-                  class="flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold"
-                  :class="ans.is_correct ? 'border-emerald-500/30 bg-emerald-500/5 text-emerald-300 font-bold' : 'border-[var(--border)] bg-[var(--surface-soft)] text-[var(--muted)]'"
+                  class="flex items-center gap-2.5 rounded-lg border p-2.5 text-xs transition"
+                  :class="ans.is_correct
+                    ? 'border-emerald-200 bg-emerald-50/60 text-slate-900 font-semibold'
+                    : 'border-slate-200/80 bg-slate-50/40 text-slate-700 font-medium'"
                 >
-                  <span class="grid h-5 w-5 place-items-center rounded-md bg-black/25 font-black text-[10px] shrink-0">{{ ans.key }}</span>
-                  <span class="truncate">{{ ans.text || ans.content }}</span>
-                  <span v-if="ans.is_correct" class="ml-auto inline-flex items-center gap-1 text-emerald-400 text-xs shrink-0">
+                  <span
+                    class="grid h-5 w-5 place-items-center rounded text-[11px] font-bold shrink-0"
+                    :class="ans.is_correct ? 'bg-emerald-600 text-white' : 'bg-slate-200/80 text-slate-700'"
+                  >
+                    {{ ans.key }}
+                  </span>
+                  <span class="truncate min-w-0 flex-1">{{ ans.text || ans.content }}</span>
+                  <span v-if="ans.is_correct" class="ml-auto inline-flex items-center gap-1 text-emerald-700 text-xs font-semibold shrink-0">
                     <Check :size="13" />
                     <span>Đúng</span>
                   </span>
@@ -233,19 +272,33 @@
               </div>
             </div>
 
-            <!-- Action buttons -->
-            <div class="flex items-center gap-2 shrink-0 self-end xl:self-start pt-2 xl:pt-0">
+            <!-- Action buttons (THAO TÁC TIẾT CHẾ MÀU SẮC, RÕ RÀNG) -->
+            <div class="flex flex-wrap items-center gap-2 shrink-0 self-end xl:self-start pt-2 xl:pt-0 border-t xl:border-t-0 border-slate-100">
+              <!-- Toggle Public/Private -->
+              <button
+                type="button"
+                class="inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition cursor-pointer"
+                :class="q.is_public
+                  ? 'border-purple-200/80 bg-purple-50/70 text-[#7C3AED] hover:bg-purple-100'
+                  : 'border-amber-200/80 bg-amber-50/70 text-amber-800 hover:bg-amber-100'"
+                :title="q.is_public ? 'Câu hỏi đang Công khai trên Ngân hàng. Bấm để chuyển về Riêng tư.' : 'Câu hỏi đang Riêng tư. Bấm để Đóng góp lên Ngân hàng câu hỏi dùng chung.'"
+                @click="toggleQuestionVisibility(q)"
+              >
+                <component :is="q.is_public ? Globe : Lock" :size="13" />
+                <span>{{ q.is_public ? 'Công khai' : 'Riêng tư' }}</span>
+              </button>
+
               <router-link
                 :to="`/dashboard/my-questions/${q.id}/edit`"
-                class="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface-soft)] px-3.5 py-2 text-xs font-bold text-[var(--text)] transition hover:border-[var(--border-strong)] hover:bg-[var(--chip-active)]"
+                class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-800 hover:bg-slate-50 transition cursor-pointer shadow-2xs"
               >
-                <Pencil :size="13" />
+                <Pencil :size="13" class="text-slate-500" />
                 <span>Sửa câu hỏi</span>
               </router-link>
 
               <button
                 type="button"
-                class="inline-flex items-center gap-1.5 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3.5 py-2 text-xs font-bold text-rose-300 transition hover:bg-rose-500/15"
+                class="inline-flex items-center gap-1.5 rounded-lg border border-rose-200/60 bg-rose-50/50 px-3 py-1.5 text-xs font-medium text-rose-700 hover:bg-rose-100 transition cursor-pointer"
                 @click="deleteQuestion(q.id)"
               >
                 <Trash2 :size="13" />
@@ -317,6 +370,15 @@
         </div>
 
         <form @submit.prevent="saveEditQuestion" class="grid gap-4">
+          <!-- REPORT REASON BANNER INSIDE EDIT MODAL -->
+          <div v-if="editForm.report_reason" class="rounded-xl border border-rose-500/40 bg-rose-500/10 p-3.5 text-xs font-bold text-rose-700 dark:text-rose-300 flex items-start gap-2.5">
+            <AlertTriangle :size="18" class="shrink-0 text-rose-500 mt-0.5" />
+            <div>
+              <span class="font-black uppercase tracking-wider block text-rose-600 dark:text-rose-400">Lý do báo cáo lỗi cần đính chính:</span>
+              <span class="text-slate-900 dark:text-slate-100 font-semibold mt-0.5 block">"{{ editForm.report_reason }}"</span>
+            </div>
+          </div>
+
           <label class="grid gap-1.5 text-xs font-black text-[var(--text)]">
             Nội dung câu hỏi *
             <textarea v-model="editForm.content" required class="field min-h-24 text-sm" placeholder="Nhập câu hỏi..."></textarea>
@@ -446,6 +508,10 @@ import {
   Eye,
   X,
   Lock,
+  Globe,
+  Clock,
+  XCircle,
+  ShieldAlert,
   Flag,
   Check,
   Pencil,
@@ -457,6 +523,7 @@ const route = useRoute()
 const router = useRouter()
 const highlightedQuestionId = ref(null)
 const highlightedUpdatedQuestionId = ref(null)
+const highlightedApprovedQuestionId = ref(null)
 const hasAutoOpenedModal = ref(false)
 
 const focusedQuestionId = computed(() => {
@@ -505,6 +572,7 @@ const editForm = reactive({
   content: '',
   difficulty: 'medium',
   topic_name: '',
+  report_reason: '',
   answers: [],
 })
 
@@ -630,7 +698,9 @@ const loadQuestions = async () => {
   errorMessage.value = ''
 
   try {
-    const targetQId = route.query.question_id || route.query.id || undefined
+    const targetQId = (route.query.question_id || route.query.id) && !route.query.highlight
+      ? (route.query.question_id || route.query.id)
+      : undefined
 
     const res = await myQuestionsApi.fetchBank({
       search: filters.search || undefined,
@@ -649,6 +719,19 @@ const loadQuestions = async () => {
     pagination.current_page = res.currentPage ?? 1
     pagination.last_page = res.lastPage ?? 1
 
+    const highlightId = route.query.highlight ? Number(route.query.highlight) : null
+    if (pagination.current_page === 1 && highlightId && !questions.value.some(q => q.id === highlightId)) {
+      try {
+        const singleRes = await myQuestionsApi.fetchBank({ question_id: highlightId })
+        const singleItem = singleRes?.items && singleRes.items[0]
+        if (singleItem) {
+          questions.value.unshift(singleItem)
+        }
+      } catch (e) {
+        console.error('Không tải được câu hỏi highlight:', e)
+      }
+    }
+
     handleHighlightFromQuery()
   } catch (err) {
     errorMessage.value = `Không tải được kho câu hỏi: ${err.message}`
@@ -662,6 +745,7 @@ const openEditModal = (q) => {
   editForm.content = q.content || q.text || ''
   editForm.difficulty = q.difficulty || 'medium'
   editForm.topic_name = q.topic_name || ''
+  editForm.report_reason = q.report_reason || ''
   editForm.answers = (q.answers || []).map((ans, idx) => ({
     id: ans.id,
     key: ans.key || chrKey(idx),
@@ -709,12 +793,46 @@ const saveEditQuestion = async () => {
     const updated = await myQuestionsApi.update(editForm.id, payload)
     isEditModalOpen.value = false
     hasAutoOpenedModal.value = true
+    highlightedUpdatedQuestionId.value = editForm.id
+    highlightedQuestionId.value = null
     if (showToast) showToast('Cập nhật đính chính thành công! Đã gửi thông báo cho Admin kiểm duyệt.', 'success')
     loadQuestions()
   } catch (err) {
     if (showToast) showToast(`Cập nhật thất bại: ${err.message}`, 'error')
   } finally {
     isSavingEdit.value = false
+  }
+}
+
+const toggleQuestionVisibility = async (q) => {
+  try {
+    const newIsPublic = !q.is_public
+    const res = await myQuestionsApi.update(q.id, {
+      content: q.content || q.text,
+      difficulty: q.difficulty || 'medium',
+      topic_name: q.topic_name || '',
+      is_public: newIsPublic,
+      answers: (q.answers || []).map((ans) => ({
+        id: ans.id,
+        content: ans.content || ans.text,
+        key: ans.key,
+        is_correct: Boolean(ans.is_correct)
+      }))
+    })
+    const updatedData = res?.data ?? res
+    q.is_public = Boolean(updatedData?.is_public ?? newIsPublic)
+    q.status = updatedData?.status ?? (q.is_public ? 'pending' : 'approved')
+
+    if (showToast) {
+      showToast(
+        q.is_public
+          ? 'Đã đăng ký công khai thành công! Câu hỏi đang ở trạng thái ⏳ Chờ Admin duyệt.'
+          : 'Đã chuyển câu hỏi về trạng thái 🔒 Riêng tư trong Kho cá nhân.',
+        'success'
+      )
+    }
+  } catch (err) {
+    if (showToast) showToast(`Đổi trạng thái thất bại: ${err.message}`, 'error')
   }
 }
 
@@ -782,15 +900,38 @@ const clearQuestionFocus = () => {
   hasAutoOpenedModal.value = false
   highlightedQuestionId.value = null
   highlightedUpdatedQuestionId.value = null
+  highlightedApprovedQuestionId.value = null
   router.push({ path: '/dashboard/my-questions' })
 }
 
 const handleHighlightFromQuery = () => {
   const targetId = route.query.question_id || route.query.id
+  const highlightId = route.query.highlight ? Number(route.query.highlight) : null
   const isUpdated = route.query.updated === '1' || route.query.updated === 'true'
 
-  if (targetId) {
+  if (highlightId) {
+    highlightedApprovedQuestionId.value = highlightId
+    highlightedQuestionId.value = null
+    highlightedUpdatedQuestionId.value = null
+
+    // Chỉ ghim câu hỏi vừa duyệt công khai lên ĐẦU DANH SÁCH ở Trang 1
+    if (pagination.current_page === 1) {
+      const idx = questions.value.findIndex(q => q.id === highlightId)
+      if (idx > 0) {
+        const [matchedItem] = questions.value.splice(idx, 1)
+        questions.value.unshift(matchedItem)
+      }
+
+      setTimeout(() => {
+        const cardEl = document.getElementById(`question-card-${highlightId}`)
+        if (cardEl) {
+          cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
+      }, 250)
+    }
+  } else if (targetId) {
     const qId = Number(targetId)
+    highlightedApprovedQuestionId.value = null
     if (isUpdated) {
       highlightedUpdatedQuestionId.value = qId
       highlightedQuestionId.value = null
@@ -811,12 +952,13 @@ const handleHighlightFromQuery = () => {
   } else {
     highlightedQuestionId.value = null
     highlightedUpdatedQuestionId.value = null
+    highlightedApprovedQuestionId.value = null
     hasAutoOpenedModal.value = false
   }
 }
 
 watch(
-  () => route.query.question_id,
+  () => [route.query.question_id, route.query.highlight],
   () => {
     loadQuestions()
   }
