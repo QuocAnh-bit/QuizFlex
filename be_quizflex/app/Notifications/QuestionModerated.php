@@ -12,16 +12,18 @@ class QuestionModerated extends Notification
     public $question;
     public $action;
     public $reason;
+    public $description;
 
     /**
      * Create a new notification instance.
-     * $action: 'reported', 'hidden', 'shown', 'resolved', 'dismissed', 'edited', 'deleted'
+     * $action: 'reported', 'hidden', 'shown', 'resolved', 'dismissed', 'edited', 'deleted', 'approved', 'rejected'
      */
-    public function __construct($question, string $action, ?string $reason = null)
+    public function __construct($question, string $action, ?string $reason = null, ?string $description = null)
     {
         $this->question = $question;
         $this->action = $action;
         $this->reason = $reason;
+        $this->description = $description;
     }
 
     /**
@@ -57,8 +59,10 @@ class QuestionModerated extends Notification
 
         if ($this->action === 'reported') {
             $title = '🚩 Câu hỏi của bạn bị báo cáo vi phạm';
-            $message = "Câu hỏi #{$this->question->id} (\"{$snippet}\") của bạn vừa bị báo cáo vi phạm. Lý do: \"{$reasonText}\". Vui lòng bấm vào đây để kiểm tra và chỉnh sửa.";
+            $descText = $this->description ? " (Mô tả chi tiết: \"{$this->description}\")" : '';
+            $message = "Câu hỏi #{$this->question->id} (\"{$snippet}\") của bạn vừa nhận báo cáo vi phạm. Lý do: \"{$reasonText}\"{$descText}. Vui lòng bấm vào đây để kiểm tra và chỉnh sửa.";
         } elseif ($this->action === 'hidden') {
+
             $title = '⚠️ Admin đã gỡ công khai câu hỏi của bạn';
             $message = "Admin đã gỡ công khai (khóa) câu hỏi #{$this->question->id} (\"{$snippet}\") của bạn do vi phạm. Lý do: \"{$reasonText}\". Vui lòng nhấp vào đây để chỉnh sửa và yêu cầu duyệt lại.";
         } elseif ($this->action === 'shown') {
@@ -92,7 +96,11 @@ class QuestionModerated extends Notification
                 'quiz_id' => $this->question->quiz_id,
                 'action' => $this->action,
                 'reason' => $this->reason,
+                'report_reason' => $this->reason,
+                'description' => $this->description,
+                'report_description' => $this->description,
             ],
         ];
     }
 }
+

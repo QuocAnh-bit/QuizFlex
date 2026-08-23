@@ -14,12 +14,14 @@ class QuestionReviewRequested extends Notification
     public $question;
     public $author;
     public $revisionNumber;
+    public $isPriority;
 
-    public function __construct(Question $question, User $author, int $revisionNumber = 1)
+    public function __construct(Question $question, User $author, int $revisionNumber = 1, bool $isPriority = false)
     {
         $this->question = $question;
         $this->author = $author;
         $this->revisionNumber = $revisionNumber;
+        $this->isPriority = $isPriority;
     }
 
     public function via(object $notifiable): array
@@ -39,13 +41,18 @@ class QuestionReviewRequested extends Notification
             $snippet .= '...';
         }
 
-        $title = $this->revisionNumber > 1
-            ? '🔄 Yêu cầu duyệt lại câu hỏi vào Ngân hàng'
-            : '🔔 Yêu cầu duyệt câu hỏi vào Ngân hàng';
+        if ($this->isPriority) {
+            $title = '🔴 [ƯU TIÊN] Yêu cầu duyệt câu hỏi đính chính sau báo cáo vi phạm';
+            $message = "Tác giả {$this->author->name} vừa đính chính và gửi duyệt lại câu hỏi #{$this->question->id} (\"{$snippet}\") từng bị báo cáo. Vui lòng ưu tiên xét duyệt!";
+        } else {
+            $title = $this->revisionNumber > 1
+                ? '🔄 Yêu cầu duyệt lại câu hỏi vào Ngân hàng'
+                : '🔔 Yêu cầu duyệt câu hỏi vào Ngân hàng';
 
-        $message = $this->revisionNumber > 1
-            ? "Tác giả {$this->author->name} đã cập nhật và gửi duyệt lại câu hỏi #{$this->question->id} (\"{$snippet}\") (Lần #{$this->revisionNumber})."
-            : "Tác giả {$this->author->name} đã gửi yêu cầu duyệt câu hỏi #{$this->question->id} (\"{$snippet}\") vào Ngân hàng.";
+            $message = $this->revisionNumber > 1
+                ? "Tác giả {$this->author->name} đã cập nhật và gửi duyệt lại câu hỏi #{$this->question->id} (\"{$snippet}\") (Lần #{$this->revisionNumber})."
+                : "Tác giả {$this->author->name} đã gửi yêu cầu duyệt câu hỏi #{$this->question->id} (\"{$snippet}\") vào Ngân hàng.";
+        }
 
         return [
             'type' => 'question_review_requested',
@@ -58,7 +65,10 @@ class QuestionReviewRequested extends Notification
                 'author_id' => $this->author->id,
                 'author_name' => $this->author->name,
                 'revision_number' => $this->revisionNumber,
+                'is_priority' => $this->isPriority,
+                'priority' => $this->isPriority ? 'high' : 'normal',
             ],
         ];
     }
 }
+

@@ -16,6 +16,8 @@ class QuestionReviewRequest extends Model
         'user_id',
         'revision_number',
         'status',
+        'review_priority',
+        'is_priority',
         'request_note',
         'rejection_reason',
         'reviewed_by',
@@ -36,10 +38,12 @@ class QuestionReviewRequest extends Model
     protected $casts = [
         'snapshot_answers' => 'array',
         'snapshot_metadata' => 'array',
+        'is_priority' => 'boolean',
         'reviewed_at' => 'datetime',
         'revision_number' => 'integer',
         'snapshot_points' => 'integer',
     ];
+
 
     public function question()
     {

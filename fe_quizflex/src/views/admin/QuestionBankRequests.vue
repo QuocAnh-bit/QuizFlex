@@ -18,34 +18,63 @@
           </p>
         </div>
 
-        <div class="flex flex-wrap items-center gap-3">
-          <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-center">
-            <span class="text-[10px] font-medium uppercase text-slate-500">Chờ duyệt</span>
-            <p class="text-xl font-bold text-amber-600">{{ stats.pending }}</p>
+        <div class="flex items-center gap-2.5 flex-nowrap shrink-0 overflow-x-auto pb-1 sm:pb-0">
+          <div
+            class="min-w-[85px] sm:min-w-[95px] rounded-xl border border-rose-300 bg-rose-50/90 px-3.5 py-2 text-center cursor-pointer hover:bg-rose-100 transition shadow-2xs shrink-0"
+            title="Nhấp để lọc danh sách câu hỏi cần ưu tiên xử lý"
+            @click="filters.priority = filters.priority === 'high' ? '' : 'high'; loadRequests(true)"
+          >
+            <span class="text-[10px] font-bold uppercase text-rose-700 flex items-center justify-center gap-1">
+              <AlertTriangle class="h-3 w-3 text-rose-600" />
+              Ưu tiên
+            </span>
+            <p class="text-xl font-black text-rose-700 leading-tight mt-0.5">{{ stats.priority || 0 }}</p>
           </div>
-          <div class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-center">
-            <span class="text-[10px] font-medium uppercase text-slate-500">Đã duyệt</span>
-            <p class="text-xl font-bold text-emerald-600">{{ stats.approved }}</p>
+
+          <div
+            class="min-w-[85px] sm:min-w-[95px] rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2 text-center cursor-pointer hover:bg-amber-100/70 transition shadow-2xs shrink-0"
+            title="Bấm để lọc câu hỏi Chờ duyệt"
+            @click="filters.status = 'pending'; filters.priority = ''; loadRequests(true)"
+          >
+            <span class="text-[10px] font-medium uppercase text-slate-500 block">Chờ duyệt</span>
+            <p class="text-xl font-bold text-amber-600 leading-tight mt-0.5">{{ stats.pending }}</p>
           </div>
-          <div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-center">
-            <span class="text-[10px] font-medium uppercase text-slate-500">Bị từ chối</span>
-            <p class="text-xl font-bold text-rose-600">{{ stats.rejected }}</p>
+
+          <div
+            class="min-w-[85px] sm:min-w-[95px] rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-2 text-center cursor-pointer hover:bg-emerald-100/70 transition shadow-2xs shrink-0"
+            title="Bấm để lọc câu hỏi Đã duyệt"
+            @click="filters.status = 'approved'; filters.priority = ''; loadRequests(true)"
+          >
+            <span class="text-[10px] font-medium uppercase text-slate-500 block">Đã duyệt</span>
+            <p class="text-xl font-bold text-emerald-600 leading-tight mt-0.5">{{ stats.approved }}</p>
           </div>
+
+          <div
+            class="min-w-[85px] sm:min-w-[95px] rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2 text-center cursor-pointer hover:bg-rose-100/70 transition shadow-2xs shrink-0"
+            title="Bấm để lọc câu hỏi Bị từ chối"
+            @click="filters.status = 'rejected'; filters.priority = ''; loadRequests(true)"
+          >
+            <span class="text-[10px] font-medium uppercase text-slate-500 block">Bị từ chối</span>
+            <p class="text-xl font-bold text-rose-600 leading-tight mt-0.5">{{ stats.rejected }}</p>
+          </div>
+
           <button
             type="button"
-            class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 cursor-pointer"
+            class="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-3 text-xs font-bold text-slate-700 transition hover:bg-slate-50 hover:border-slate-300 shadow-2xs cursor-pointer shrink-0 whitespace-nowrap"
+            title="Làm mới dữ liệu"
             @click="loadRequests(false)"
           >
-            <RefreshCw class="h-4 w-4" :class="{ 'animate-spin': isLoading }" />
+            <RefreshCw class="h-4 w-4 text-slate-500" :class="{ 'animate-spin': isLoading }" />
             <span>Làm mới</span>
           </button>
         </div>
       </div>
     </div>
 
+
     <!-- Filters Bar -->
     <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">
-      <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
         <!-- Search -->
         <div class="relative sm:col-span-2">
           <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -56,6 +85,18 @@
             class="w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-4 py-2 text-xs font-medium text-slate-900 outline-none focus:border-[#7C3AED] focus:bg-white"
             @keyup.enter="loadRequests(true)"
           />
+        </div>
+
+        <!-- Priority Filter -->
+        <div>
+          <select
+            v-model="filters.priority"
+            class="w-full rounded-xl border border-rose-200 bg-rose-50/50 px-3 py-2 text-xs font-bold text-rose-700 outline-none focus:border-rose-500 focus:bg-white cursor-pointer"
+            @change="loadRequests(true)"
+          >
+            <option value="">Tất cả mức ưu tiên</option>
+            <option value="high">🔴 Ưu tiên</option>
+          </select>
         </div>
 
         <!-- Status Filter -->
@@ -98,6 +139,7 @@
           </select>
         </div>
       </div>
+
 
       <!-- Active Filters Reset -->
       <div v-if="hasActiveFilters" class="flex items-center justify-between border-t border-slate-100 pt-3 text-xs">
@@ -197,6 +239,15 @@
                   #{{ item.id }}
                 </span>
 
+                <!-- Priority Badge -->
+                <span
+                  v-if="item.is_priority || item.review_priority === 'high' || item.has_report"
+                  class="inline-flex items-center gap-1.5 rounded-md bg-rose-100 text-rose-800 border border-rose-300 px-2.5 py-0.5 text-[11px] font-black shadow-2xs"
+                >
+                  <AlertTriangle class="h-3.5 w-3.5 text-rose-600" />
+                  <span>🔴 ƯU TIÊN</span>
+                </span>
+
                 <!-- Status Badge -->
                 <span
                   class="rounded-md px-2 py-0.5 text-[11px] font-bold"
@@ -250,6 +301,25 @@
                 </span>
               </div>
 
+              <!-- Report Info Banner if Reported -->
+              <div
+                v-if="item.report_reason || item.is_priority"
+                class="rounded-xl border border-amber-300 bg-amber-50/95 p-3 text-xs text-amber-950 font-medium flex items-start gap-2.5 shadow-2xs"
+              >
+                <AlertCircle class="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                <div class="space-y-0.5">
+                  <div class="flex items-center gap-2">
+                    <strong class="text-amber-900 font-bold">Báo cáo vi phạm từ người học:</strong>
+                    <span class="rounded bg-amber-200/80 px-1.5 py-0.2 text-[10px] font-bold text-amber-900">
+                      {{ item.report_reason || 'Đính chính theo phản ánh' }}
+                    </span>
+                  </div>
+                  <p v-if="item.report_description" class="text-amber-800 italic leading-relaxed">
+                    "{{ item.report_description }}"
+                  </p>
+                </div>
+              </div>
+
               <!-- Rejection Note if Rejected -->
               <div
                 v-if="item.bank_submission_status === 'rejected' && item.rejection_reason"
@@ -258,6 +328,7 @@
                 <strong>Lý do từ chối:</strong> {{ item.rejection_reason }}
                 <span v-if="item.reviewer_name" class="text-rose-600 ml-1 font-normal">• Người duyệt: {{ item.reviewer_name }}</span>
               </div>
+
 
               <!-- Question Content -->
               <h3 class="text-sm font-bold text-slate-900 leading-snug">
@@ -414,6 +485,33 @@
         </div>
 
         <div v-else class="flex-1 overflow-y-auto p-6 space-y-6">
+          <!-- Report Alert in Diff Modal if question has reports -->
+          <div
+            v-if="detailData?.reports && detailData.reports.length > 0"
+            class="rounded-2xl border border-amber-300 bg-amber-50 p-4 space-y-3 shadow-2xs"
+          >
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2 font-bold text-amber-900 text-xs">
+                <AlertTriangle class="h-4 w-4 text-amber-600 shrink-0" />
+                <span class="uppercase tracking-wider">🔴 YÊU CẦU ƯU TIÊN DUYỆT — CÓ PHẢN HỒI BÁO CÁO VI PHẠM ({{ detailData.reports.length }})</span>
+              </div>
+            </div>
+
+            <div class="space-y-2">
+              <div
+                v-for="rep in detailData.reports"
+                :key="rep.id"
+                class="rounded-xl border border-amber-200 bg-white p-3 text-xs text-amber-950 space-y-1 shadow-2xs"
+              >
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                  <span class="font-bold text-amber-800">Lý do: {{ rep.reason }}</span>
+                  <span class="text-[11px] text-slate-500 font-medium">Người báo cáo: {{ rep.reporter_name }} • {{ formatDate(rep.created_at) }}</span>
+                </div>
+                <p v-if="rep.description" class="text-slate-600 italic leading-relaxed">"{{ rep.description }}"</p>
+              </div>
+            </div>
+          </div>
+
           <!-- Trường hợp: Có Previous Revision (Gửi duyệt từ lần 2 trở đi) -> Layout 2 cột SO SÁNH CŨ vs MỚI -->
           <div v-if="detailData?.previous_revision" class="space-y-4">
             <div class="flex items-center justify-between bg-purple-50/60 border border-purple-200/80 rounded-2xl p-3.5 text-xs text-purple-900">
@@ -424,6 +522,7 @@
                 </span>
               </div>
             </div>
+
 
             <!-- GRID 2 CỘT: CŨ | MỚI -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
@@ -789,7 +888,9 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted, inject } from 'vue'
+import { useRoute } from 'vue-router'
 import {
+
   CheckCircle,
   RefreshCw,
   Search,
@@ -802,12 +903,15 @@ import {
   GitCompare,
   RotateCcw,
   AlertCircle,
+  AlertTriangle,
   MessageSquare,
   History,
 } from 'lucide-vue-next'
 import { adminBankRequestsApi, taxonomyApi } from '@/services/api'
 
+const route = useRoute()
 const showToast = inject('showToast')
+
 
 const requests = ref([])
 const selectedIds = ref([])
@@ -819,12 +923,14 @@ const stats = reactive({
   pending: 0,
   approved: 0,
   rejected: 0,
+  priority: 0,
   total: 0,
 })
 
 const filters = reactive({
   search: '',
   status: 'pending',
+  priority: '',
   subject_id: '',
   difficulty: '',
 })
@@ -850,7 +956,7 @@ const isLoadingDetail = ref(false)
 const detailData = ref(null)
 
 const hasActiveFilters = computed(() => {
-  return Boolean(filters.search || filters.status !== 'pending' || filters.subject_id || filters.difficulty)
+  return Boolean(filters.search || filters.status !== 'pending' || filters.priority || filters.subject_id || filters.difficulty)
 })
 
 const loadRequests = async (resetPage = false) => {
@@ -864,6 +970,7 @@ const loadRequests = async (resetPage = false) => {
       page: pagination.current_page,
       per_page: pagination.per_page,
       status: filters.status,
+      priority: filters.priority || undefined,
       search: filters.search.trim() || undefined,
       subject_id: filters.subject_id || undefined,
       difficulty: filters.difficulty || undefined,
@@ -880,6 +987,7 @@ const loadRequests = async (resetPage = false) => {
       stats.pending = res.stats.pending || 0
       stats.approved = res.stats.approved || 0
       stats.rejected = res.stats.rejected || 0
+      stats.priority = res.stats.priority || 0
       stats.total = res.stats.total || 0
     }
   } catch (e) {
@@ -940,6 +1048,7 @@ const fetchTaxonomy = async () => {
 const resetFilters = () => {
   filters.search = ''
   filters.status = 'pending'
+  filters.priority = ''
   filters.subject_id = ''
   filters.difficulty = ''
   loadRequests(true)
@@ -1083,7 +1192,20 @@ const formatDate = (dateStr) => {
 }
 
 onMounted(async () => {
+  if (route.query.priority) {
+    filters.priority = String(route.query.priority)
+  }
+  if (route.query.status) {
+    filters.status = String(route.query.status)
+  }
+  if (route.query.search) {
+    filters.search = String(route.query.search)
+  }
   await fetchTaxonomy()
   await loadRequests()
+  if (route.query.open_id) {
+    openDetailModal(Number(route.query.open_id))
+  }
 })
+
 </script>

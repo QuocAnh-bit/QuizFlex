@@ -15,7 +15,6 @@ class ReportTicket extends Model
     // Các trường cho phép thêm/sửa hàng loạt (Mass Assignment)
     protected $fillable = [
         'user_id',
-        'quiz_id',
         'question_id',
         'reason',
         'description',
@@ -28,14 +27,6 @@ class ReportTicket extends Model
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
-    }
-
-    /**
-     * Mối quan hệ: Một lượt báo cáo thuộc về một bài Quiz
-     */
-    public function quiz()
-    {
-        return $this->belongsTo(Quiz::class, 'quiz_id')->withTrashed();
     }
 
     /**

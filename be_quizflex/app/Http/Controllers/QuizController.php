@@ -256,20 +256,12 @@ class QuizController extends Controller
             return $quiz->fresh(['user:id,name', 'questions.answers']);
         });
 
-        // Chỉ gửi thông báo nếu bài Quiz có ticket vi phạm đang chờ xử lý
-        $hasPendingReport = \App\Models\ReportTicket::where('quiz_id', $quiz->id)->where('status', 'pending')->exists();
-        if ($hasPendingReport) {
-            $admins = User::whereIn('role', ['admin', 'ADMIN'])->get();
-            if ($admins->isNotEmpty()) {
-                \Illuminate\Support\Facades\Notification::send($admins, new \App\Notifications\ReportAuthorUpdated($quiz, 'quiz', $user));
-            }
-        }
-
         return response()->json([
             'success' => true,
             'message' => 'Cập nhật quiz thành công',
             'data' => $this->formatQuiz($quiz, true),
         ]);
+
     }
 
     public function destroy(Quiz $quiz)
@@ -321,12 +313,6 @@ class QuizController extends Controller
         // Đảo trạng thái public/private
         $quiz->is_public = !$quiz->is_public;
         $quiz->save();
-
-        if ($quiz->is_public) {
-            \App\Models\ReportTicket::where('quiz_id', $quiz->id)
-                ->where('status', 'pending')
-                ->update(['status' => 'resolved']);
-        }
 
         // Gửi thông báo cho người tạo quiz
         $owner = User::find($quiz->user_id);

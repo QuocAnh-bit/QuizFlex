@@ -1259,11 +1259,33 @@ class QuestionController extends Controller
             $query->where('difficulty', $request->query('difficulty'));
         }
 
+        if ($request->query('priority') === 'high' || $request->query('priority') === 'reported') {
+            $query->where(function ($q) {
+                $q->whereHas('reviewRequests', function ($rq) {
+                    $rq->where('review_priority', 'high')->orWhere('is_priority', true);
+                })->orWhereHas('reports');
+            });
+        }
+
         $pendingCount = Question::where('bank_submission_status', 'pending')->count();
         $approvedCount = Question::where('bank_submission_status', 'approved')->count();
         $rejectedCount = Question::where('bank_submission_status', 'rejected')->count();
+        $priorityCount = Question::where('bank_submission_status', 'pending')
+            ->where(function ($q) {
+                $q->whereHas('reviewRequests', fn($rq) => $rq->where('is_priority', true)->orWhere('review_priority', 'high'))
+                  ->orWhereHas('reports');
+            })->count();
 
-        $query->latest('bank_submission_at')->latest('updated_at');
+        // Ưu tiên các câu hỏi có cờ PRIORITY hoặc có Báo cáo vi phạm lên đầu danh sách
+        $query->orderByRaw("(
+            SELECT CASE WHEN is_priority = 1 OR review_priority = 'high' THEN 1 ELSE 0 END 
+            FROM question_review_requests 
+            WHERE question_review_requests.question_id = questions.id 
+            ORDER BY id DESC LIMIT 1
+        ) DESC")
+        ->latest('bank_submission_at')
+        ->latest('updated_at');
+
         $perPage = min(max((int) $request->query('per_page', 15), 1), 100);
         $paginated = $query->paginate($perPage);
 
@@ -1274,6 +1296,15 @@ class QuestionController extends Controller
             $formatted['author_avatar'] = $q->user?->avatar ?? $q->quiz?->user?->avatar;
 
             $latestReq = $q->latestReviewRequest;
+            $hasReportTickets = \App\Models\ReportTicket::where('question_id', $q->id)->exists();
+            $isPriority = ($latestReq && ($latestReq->is_priority || $latestReq->review_priority === 'high')) || $hasReportTickets;
+
+            $formatted['is_priority'] = $isPriority;
+            $formatted['review_priority'] = $isPriority ? 'high' : 'normal';
+            $formatted['reports_count'] = \App\Models\ReportTicket::where('question_id', $q->id)->count();
+            $formatted['report_reason'] = $latestReq?->snapshot_metadata['report_reason'] ?? $formatted['report_reason'] ?? null;
+            $formatted['report_description'] = $latestReq?->snapshot_metadata['report_description'] ?? null;
+
             $formatted['revision_number'] = $latestReq?->revision_number ?? 1;
             $formatted['review_request_id'] = $latestReq?->id;
             $formatted['rejection_reason'] = $latestReq?->rejection_reason ?? $q->bank_submission_note;
@@ -1296,6 +1327,7 @@ class QuestionController extends Controller
                     'pending' => $pendingCount,
                     'approved' => $approvedCount,
                     'rejected' => $rejectedCount,
+                    'priority' => $priorityCount,
                     'total' => $pendingCount + $approvedCount + $rejectedCount,
                 ],
             ]
@@ -1322,9 +1354,13 @@ class QuestionController extends Controller
                 'current_revision' => $diffData['current_revision'],
                 'previous_revision' => $diffData['previous_revision'],
                 'history' => $diffData['history'],
+                'reports' => $diffData['reports'] ?? [],
+                'is_priority' => $diffData['is_priority'] ?? false,
+                'review_priority' => $diffData['review_priority'] ?? 'normal',
             ],
         ]);
     }
+
 
     /**
      * User / Admin: Xem lịch sử các lần gửi duyệt của 1 câu hỏi
@@ -1385,14 +1421,17 @@ class QuestionController extends Controller
         }
 
         $request->validate([
-            'note' => 'required|string|max:1000',
+            'note' => 'required_without:reason|nullable|string|max:1000',
+            'reason' => 'required_without:note|nullable|string|max:1000',
         ], [
-            'note.required' => 'Vui lòng nhập lý do từ chối kiểm duyệt.',
+            'note.required_without' => 'Vui lòng nhập lý do từ chối kiểm duyệt.',
+            'reason.required_without' => 'Vui lòng nhập lý do từ chối kiểm duyệt.',
         ]);
 
         $question = Question::with(['user', 'quiz.user', 'answers', 'educationLevel', 'grade', 'subject'])->findOrFail($id);
-        $note = trim($request->input('note'));
+        $note = trim((string)($request->input('note') ?? $request->input('reason')));
         $reviewRequest = $this->reviewService->rejectQuestion($question, $user, $note);
+
 
         return response()->json([
             'success' => true,

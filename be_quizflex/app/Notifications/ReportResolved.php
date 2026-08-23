@@ -47,22 +47,13 @@ class ReportResolved extends Notification
      */
     public function toArray(object $notifiable): array
     {
-        $itemTitle = 'nội dung';
-        $actionLink = null;
-
-        if ($this->report->question_id) {
-            $content = $this->report->question?->content ?? $this->report->question?->text ?? "Câu hỏi #{$this->report->question_id}";
-            $snippet = mb_substr($content, 0, 40, 'UTF-8');
-            if (mb_strlen($content, 'UTF-8') > 40) {
-                $snippet .= '...';
-            }
-            $itemTitle = "câu hỏi \"{$snippet}\"";
-            $actionLink = "/dashboard/my-questions?question_id={$this->report->question_id}";
-        } elseif ($this->report->quiz_id) {
-            $title = $this->report->quiz?->title ?? "Bài Quiz #{$this->report->quiz_id}";
-            $itemTitle = "bài Quiz '{$title}'";
-            $actionLink = "/quizzes/{$this->report->quiz_id}";
+        $content = $this->report->question?->content ?? $this->report->question?->text ?? "Câu hỏi #{$this->report->question_id}";
+        $snippet = mb_substr($content, 0, 40, 'UTF-8');
+        if (mb_strlen($content, 'UTF-8') > 40) {
+            $snippet .= '...';
         }
+        $itemTitle = "câu hỏi \"{$snippet}\"";
+        $actionLink = "/dashboard/my-questions?question_id={$this->report->question_id}";
 
         if ($this->action === 'hidden') {
             $title = '🔒 Báo cáo của bạn đã được xử lý — Nội dung đã được gỡ công khai';
@@ -88,9 +79,9 @@ class ReportResolved extends Notification
                 'report_id' => $this->report->id,
                 'status' => $this->status,
                 'action' => $this->action,
-                'quiz_id' => $this->report->quiz_id,
                 'question_id' => $this->report->question_id,
             ],
         ];
+
     }
 }

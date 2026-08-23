@@ -78,11 +78,27 @@ class QuestionReviewService
                 'subject_name' => $question->subject?->name,
             ];
 
+            // Tự động nhận diện Question từng bị báo cáo để đánh dấu PRIORITY
+            $hasPendingReports = \App\Models\ReportTicket::where('question_id', $question->id)->where('status', 'pending')->exists();
+            $hasAnyReports = \App\Models\ReportTicket::where('question_id', $question->id)->exists();
+            $isPriority = $hasPendingReports || $hasAnyReports;
+            $reviewPriority = $isPriority ? 'high' : 'normal';
+
+            $latestReport = \App\Models\ReportTicket::where('question_id', $question->id)->latest()->first();
+            if ($latestReport) {
+                $snapshotMetadata['report_reason'] = $latestReport->reason;
+                $snapshotMetadata['report_description'] = $latestReport->description;
+                $snapshotMetadata['reports_count'] = \App\Models\ReportTicket::where('question_id', $question->id)->count();
+                $snapshotMetadata['has_pending_report'] = $hasPendingReports;
+            }
+
             $reviewRequest = QuestionReviewRequest::create([
                 'question_id' => $question->id,
                 'user_id' => $user->id,
                 'revision_number' => $revisionNumber,
                 'status' => 'pending',
+                'review_priority' => $reviewPriority,
+                'is_priority' => $isPriority,
                 'request_note' => $requestNote ? trim($requestNote) : null,
                 'snapshot_content' => $question->content,
                 'snapshot_type' => $question->type ?? 'single_choice',
@@ -106,13 +122,14 @@ class QuestionReviewService
                 'bank_submission_note' => null, // Ghi chú lần trước đã được lưu an toàn trong revision cũ
             ]);
 
-            // Gửi thông báo đến toàn bộ Admin
+            // Gửi thông báo đến toàn bộ Admin (kèm cờ Ưu tiên nếu có)
             $admins = User::whereIn('role', ['admin', 'ADMIN'])->get();
             if ($admins->isNotEmpty()) {
-                Notification::send($admins, new QuestionReviewRequested($question, $user, $revisionNumber));
+                Notification::send($admins, new QuestionReviewRequested($question, $user, $revisionNumber, $isPriority));
             }
 
             return $reviewRequest->fresh(['question', 'user', 'educationLevel', 'grade', 'subject']);
+
         });
     }
 
@@ -170,6 +187,22 @@ class QuestionReviewService
                 'bank_submission_note' => null,
             ]);
 
+            // 4. Tự động chuyển các ReportTicket đang PENDING của câu hỏi này sang 'resolved'
+            $pendingReports = \App\Models\ReportTicket::where('question_id', $lockedQuestion->id)
+                ->where('status', 'pending')
+                ->get();
+
+            foreach ($pendingReports as $rep) {
+                $rep->update(['status' => 'resolved']);
+                if ($rep->user) {
+                    try {
+                        $rep->user->notify(new \App\Notifications\ReportResolved($rep, 'resolved', 'approved'));
+                    } catch (\Throwable $e) {
+                        \Illuminate\Support\Facades\Log::warning('Không thể gửi thông báo ReportResolved: ' . $e->getMessage());
+                    }
+                }
+            }
+
             $author = $lockedQuestion->user ?? $lockedQuestion->quiz?->user;
             if ($author) {
                 $author->notify(new QuestionModerated($lockedQuestion, 'approved'));
@@ -178,6 +211,7 @@ class QuestionReviewService
             return $request->fresh(['question', 'user', 'reviewer']);
         });
     }
+
 
     /**
      * Admin từ chối duyệt câu hỏi vào Ngân hàng kèm lý do
@@ -264,10 +298,29 @@ class QuestionReviewService
             ->orderBy('revision_number', 'desc')
             ->get();
 
+        $reports = \App\Models\ReportTicket::where('question_id', $question->id)
+            ->with('user:id,name,email,avatar')
+            ->latest()
+            ->get()
+            ->map(fn($r) => [
+                'id' => $r->id,
+                'reporter_name' => $r->user?->name ?? 'Người dùng',
+                'reporter_email' => $r->user?->email,
+                'reason' => $r->reason,
+                'description' => $r->description,
+                'status' => $r->status,
+                'created_at' => $r->created_at ? $r->created_at->toIso8601String() : null,
+            ]);
+
+        $isPriority = (bool)($currentRequest->is_priority || $currentRequest->review_priority === 'high' || $reports->isNotEmpty());
+
         return [
             'current_revision' => $this->formatRevision($currentRequest),
             'previous_revision' => $previousRequest ? $this->formatRevision($previousRequest) : null,
             'history' => $history->map(fn($item) => $this->formatRevision($item))->values()->toArray(),
+            'reports' => $reports,
+            'is_priority' => $isPriority,
+            'review_priority' => $isPriority ? 'high' : 'normal',
         ];
     }
 
@@ -276,11 +329,18 @@ class QuestionReviewService
      */
     public function formatRevision(QuestionReviewRequest $rev): array
     {
+        $hasReport = !empty($rev->snapshot_metadata['report_reason']) || $rev->is_priority || $rev->review_priority === 'high';
+
         return [
             'id' => $rev->id,
             'question_id' => $rev->question_id,
             'revision_number' => $rev->revision_number,
             'status' => $rev->status,
+            'review_priority' => $rev->review_priority ?? ($hasReport ? 'high' : 'normal'),
+            'is_priority' => (bool)($rev->is_priority ?? $hasReport),
+            'report_reason' => $rev->snapshot_metadata['report_reason'] ?? null,
+            'report_description' => $rev->snapshot_metadata['report_description'] ?? null,
+            'reports_count' => (int)($rev->snapshot_metadata['reports_count'] ?? 0),
             'request_note' => $rev->request_note,
             'rejection_reason' => $rev->rejection_reason,
             'reviewed_by' => $rev->reviewed_by,
@@ -305,3 +365,4 @@ class QuestionReviewService
         ];
     }
 }
+

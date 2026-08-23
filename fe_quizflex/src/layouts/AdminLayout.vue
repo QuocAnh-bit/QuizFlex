@@ -207,12 +207,12 @@ const menu = computed(() => [
     items: [
       { label: 'Tổng quan', to: '/admin', icon: LayoutDashboard },
       { label: 'Quản lý câu hỏi', to: '/admin/question-bank', icon: HelpCircle },
-      { label: 'Duyệt vào Ngân hàng', to: '/admin/question-bank-requests', icon: CheckSquare },
+      { label: 'Duyệt vào Ngân hàng', to: '/admin/question-bank-requests', icon: CheckSquare, badge: reportBadge.value },
       { label: 'Duyệt Quiz công khai', to: '/admin/quiz-review-requests', icon: ClipboardCheck },
       { label: 'Kho quiz', to: '/admin/questions', icon: Package },
       { label: 'Quản lý Bộ môn', to: '/admin/subjects', icon: BookOpen },
-      { label: 'Quản lý báo cáo', to: '/admin/report-tickets', icon: Flag, badge: reportBadge.value },
     ],
+
   },
   {
     label: 'Phòng học & thi đấu',

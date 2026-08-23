@@ -136,9 +136,8 @@ Route::middleware('auth:api')->group(function () {
 
         Route::get('/admin/report-tickets/count', [ReportTicketController::class, 'countPending']);
 
-        // Quản lý báo cáo vi phạm cho admin
+        // Danh sách báo cáo vi phạm cho admin (Audit/Theo dõi)
         Route::get('/admin/report-tickets', [ReportTicketController::class, 'index']);
-        Route::put('/admin/report-tickets/{id}', [ReportTicketController::class, 'update']);
 
         // Quản lý ngân hàng câu hỏi toàn hệ thống cho admin
         Route::get('/admin/questions-management', [QuestionController::class, 'adminIndex']);

@@ -249,14 +249,8 @@
               Quay lại danh sách
             </router-link>
 
-            <button
-              class="btn-ghost text-xs px-4 py-2.5 text-red-600 hover:text-red-700 hover:bg-red-50 ml-auto"
-              @click="isReportModalOpen = true"
-            >
-              Báo lỗi quiz
-            </button>
-
           </div>
+
 
         </article>
 
@@ -299,11 +293,23 @@
               <div
                 v-for="(question, index) in questions"
                 :key="question.id"
-                class="rounded-lg border border-slate-100 bg-slate-50 p-3"
+                class="rounded-xl border border-slate-100 bg-slate-50/80 p-3 space-y-1 group hover:border-slate-200 transition"
               >
-                <span class="text-[11px] font-bold text-[#7C3AED]">
-                  Câu {{ index + 1 }} • {{ question.points }} điểm
-                </span>
+                <div class="flex items-center justify-between">
+                  <span class="text-[11px] font-bold text-[#7C3AED]">
+                    Câu {{ index + 1 }} • {{ question.points }} điểm
+                  </span>
+                  <button
+                    v-if="!isOwner && quiz?.is_public"
+                    type="button"
+                    class="text-[11px] font-medium text-slate-400 hover:text-rose-600 transition inline-flex items-center gap-1 cursor-pointer"
+                    title="Báo cáo lỗi câu hỏi này"
+                    @click="openQuestionReportModal(question)"
+                  >
+                    <Flag :size="12" />
+                    <span>Báo lỗi</span>
+                  </button>
+                </div>
 
                 <p
                   class="mt-1 text-xs font-medium leading-snug text-slate-800"
@@ -311,6 +317,7 @@
                   {{ question.question }}
                 </p>
               </div>
+
 
             </div>
 
@@ -376,12 +383,14 @@
       </div>
     </div>
 
-    <!-- REPORT MODAL -->
-    <ReportModal
-      v-if="quiz"
-      :is-open="isReportModalOpen"
-      :quiz-id="quiz.id"
-      @close="isReportModalOpen = false"
+    <!-- MODAL BÁO CÁO CÂU HỎI VI PHẠM -->
+    <QuestionReportModal
+      v-if="reportingQuestionId"
+      :is-open="isQuestionReportModalOpen"
+      :question-id="reportingQuestionId"
+      :question-snippet="reportingQuestionSnippet"
+      @close="isQuestionReportModalOpen = false"
+      @reported="handleQuestionReported"
     />
 
   </section>
@@ -399,13 +408,14 @@ import {
   Send,
   Pencil,
   AlertCircle,
+  Flag,
 } from 'lucide-vue-next'
 
 import AppLoadingState from '@/components/common/AppLoadingState.vue'
 import AppErrorState from '@/components/common/AppErrorState.vue'
 import VisibilityBadge from '@/components/common/VisibilityBadge.vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
-import ReportModal from '@/components/common/ReportModal.vue'
+import QuestionReportModal from '@/components/question/QuestionReportModal.vue'
 
 import {
   authApi,
@@ -422,10 +432,25 @@ const showToast = inject('showToast')
 const quiz = ref(null)
 const isLoading = ref(true)
 const errorMessage = ref('')
-const isReportModalOpen = ref(false)
 const isReviewModalOpen = ref(false)
 const reviewRequestNote = ref('')
 const isSubmittingReview = ref(false)
+
+// Question report modal state
+const isQuestionReportModalOpen = ref(false)
+const reportingQuestionId = ref(null)
+const reportingQuestionSnippet = ref('')
+
+const openQuestionReportModal = (question) => {
+  reportingQuestionId.value = question.id
+  reportingQuestionSnippet.value = question.question || question.content || ''
+  isQuestionReportModalOpen.value = true
+}
+
+const handleQuestionReported = () => {
+  // Do nothing or refresh if needed
+}
+
 
 const currentUser = currentUserStorage.get()
 

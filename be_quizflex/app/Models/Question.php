@@ -116,4 +116,10 @@ class Question extends Model
     {
         return $this->hasOne(QuestionReviewRequest::class, 'question_id')->where('status', 'pending');
     }
+
+    public function reports()
+    {
+        return $this->hasMany(ReportTicket::class, 'question_id');
+    }
 }
+

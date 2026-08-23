@@ -65,19 +65,13 @@ class QuizModerated extends Notification
         } elseif ($this->action === 'rejected') {
             $reasonText = $this->reason ? " Lý do: \"{$this->reason}\"." : '';
             $message = "Yêu cầu công khai bài Quiz '{$this->quiz->title}' của bạn đã bị từ chối.{$reasonText} Bạn có thể chỉnh sửa nội dung và gửi lại yêu cầu duyệt.";
-        } elseif ($this->action === 'reported') {
-            $reasonText = $this->reason ? " Lý do báo cáo: \"{$this->reason}\"." : '';
-            $message = "Bài Quiz '{$this->quiz->title}' của bạn vừa nhận báo cáo vi phạm.{$reasonText} Vui lòng kiểm tra và cập nhật.";
-        } elseif ($this->action === 'resolved') {
-            $message = "Báo cáo vi phạm về bài Quiz '{$this->quiz->title}' của bạn đã được Admin xử lý.";
-        } elseif ($this->action === 'dismissed') {
-            $message = "Báo cáo vi phạm về bài Quiz '{$this->quiz->title}' của bạn đã được kiểm duyệt và bỏ qua.";
         }
 
         return [
             'type' => 'quiz_moderated',
             'title' => 'Thông báo kiểm duyệt bài Quiz',
             'message' => $message,
+
             'action' => 'view',
             'action_link' => "/quizzes/{$this->quiz->id}",
             'metadata' => [

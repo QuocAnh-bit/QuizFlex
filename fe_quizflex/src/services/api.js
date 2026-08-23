@@ -1599,24 +1599,29 @@ export const paymentsApi = {
 };
 
 export const reportApi = {
-  // Dành cho Client: Gửi báo cáo (Quiz hoặc Question)
+  // Dành cho Client: Gửi báo cáo Question
+  async createQuestionReport({ question_id, reason, description = '' }) {
+    const { data } = await api.post("/report-tickets", {
+      question_id,
+      reason,
+      description,
+    });
+    return unwrap(data);
+  },
+
+  // Alias create tương thích ngược
   async create(payload) {
     const { data } = await api.post("/report-tickets", payload);
     return unwrap(data);
   },
 
-  // Dành cho Admin: Lấy danh sách
+  // Dành cho Admin: Lấy danh sách audit log các báo cáo
   async listAdmin(params = {}) {
     const { data } = await api.get("/admin/report-tickets", { params });
     return unwrapCollection(data);
   },
-
-  // Dành cho Admin: Cập nhật trạng thái
-  async updateAdminStatus(id, status, action = null) {
-    const { data } = await api.put(`/admin/report-tickets/${id}`, { status, action });
-    return unwrap(data);
-  },
 };
+
 
 export const notificationApi = {
   async list(params) {
