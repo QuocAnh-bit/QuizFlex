@@ -119,7 +119,7 @@
 
           <div class="flex items-center gap-2.5">
             <NotificationBell />
-            <ThemeToggle />
+            
             <router-link to="/" class="btn-ghost flex items-center gap-1.5 text-xs">
               <ArrowLeft class="h-3.5 w-3.5" />
               Trang người dùng
@@ -265,7 +265,6 @@ const menu = computed(() => [
   },
 ])
 
-const pageTitle = computed(() => route.meta.title || 'Dashboard')
 
 const isItemActive = (item) => {
   if (item.to === '/admin') return route.path === '/admin'
