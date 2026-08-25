@@ -64,7 +64,18 @@ class QuestionController extends Controller
 
         if ($request->filled('search')) {
             $keyword = trim((string) $request->query('search'));
-            $query->where('content', 'like', "%{$keyword}%");
+            $cleanKeyword = ltrim($keyword, '#');
+            $numericId = is_numeric($cleanKeyword) ? (int) $cleanKeyword : null;
+
+            $query->where(function ($q) use ($keyword, $numericId) {
+                if ($numericId !== null) {
+                    $q->where('id', $numericId)
+                      ->orWhere('origin_question_id', $numericId)
+                      ->orWhere('content', 'like', "%{$keyword}%");
+                } else {
+                    $q->where('content', 'like', "%{$keyword}%");
+                }
+            });
         }
 
         if ($request->filled('education_level_id')) {
@@ -859,7 +870,17 @@ class QuestionController extends Controller
 
         if ($request->filled('search')) {
             $keyword = trim((string) $request->query('search'));
-            $query->where('content', 'like', "%{$keyword}%");
+            $cleanKeyword = ltrim($keyword, '#');
+            $numericId = is_numeric($cleanKeyword) ? (int) $cleanKeyword : null;
+
+            $query->where(function ($q) use ($keyword, $numericId) {
+                if ($numericId !== null) {
+                    $q->where('id', $numericId)
+                      ->orWhere('content', 'like', "%{$keyword}%");
+                } else {
+                    $q->where('content', 'like', "%{$keyword}%");
+                }
+            });
         }
 
         if ($request->filled('education_level_id')) {
@@ -1049,12 +1070,12 @@ class QuestionController extends Controller
         $allRelatedIds = array_values(array_unique(array_merge($targetQuestionIds, $snapshotIds)));
 
         // Cập nhật các ReportTicket pending / admin_review_required sang author_updated
-        \App\Models\ReportTicket::whereIn('question_id', $allRelatedIds)
-            ->whereIn('status', ['pending', 'admin_review_required'])
-            ->update(['status' => 'author_updated']);
+        ReportTicket::whereIn('question_id', $allRelatedIds)
+            ->whereIn('status', [ReportTicket::STATUS_PENDING, ReportTicket::STATUS_ADMIN_REVIEW_REQUIRED])
+            ->update(['status' => ReportTicket::STATUS_AUTHOR_UPDATED]);
 
-        $hasAuthorUpdatedReport = \App\Models\ReportTicket::whereIn('question_id', $allRelatedIds)
-            ->where('status', 'author_updated')
+        $hasAuthorUpdatedReport = ReportTicket::whereIn('question_id', $allRelatedIds)
+            ->where('status', ReportTicket::STATUS_AUTHOR_UPDATED)
             ->exists();
 
         if ($hasAuthorUpdatedReport) {
@@ -1172,9 +1193,14 @@ class QuestionController extends Controller
         $note = $request->input('note') ?? $request->input('request_note');
         $reviewRequest = $this->reviewService->submitToBank($question, $user, $note);
 
+        $isAutoApproved = $reviewRequest->status === 'approved';
+        $message = $isAutoApproved
+            ? 'Câu hỏi đã được hệ thống tự động kiểm duyệt và phê duyệt thành công!'
+            : 'Đã gửi yêu cầu kiểm duyệt câu hỏi vào Ngân hàng thành công!';
+
         return response()->json([
             'success' => true,
-            'message' => 'Đã gửi yêu cầu kiểm duyệt câu hỏi vào Ngân hàng thành công!',
+            'message' => $message,
             'data' => [
                 'question' => $this->formatQuestion($question->fresh(['answers', 'educationLevel', 'grade', 'subject']), true),
                 'review_request' => $this->reviewService->formatRevision($reviewRequest),
@@ -1254,9 +1280,22 @@ class QuestionController extends Controller
 
         if ($request->filled('search')) {
             $keyword = trim((string) $request->query('search'));
-            $query->where(function ($q) use ($keyword) {
-                $q->where('content', 'like', "%{$keyword}%")
-                  ->orWhereHas('user', fn($uq) => $uq->where('name', 'like', "%{$keyword}%"));
+            $cleanKeyword = ltrim($keyword, '#');
+            $numericId = is_numeric($cleanKeyword) ? (int) $cleanKeyword : null;
+
+            $query->where(function ($q) use ($keyword, $numericId) {
+                if ($numericId !== null) {
+                    $q->where('id', $numericId)
+                      ->orWhere('origin_question_id', $numericId)
+                      ->orWhereHas('reviewRequests', fn($rq) => $rq->where('id', $numericId))
+                      ->orWhere('content', 'like', "%{$keyword}%")
+                      ->orWhereHas('user', fn($uq) => $uq->where('name', 'like', "%{$keyword}%")->orWhere('email', 'like', "%{$keyword}%"))
+                      ->orWhereHas('quiz', fn($qz) => $qz->where('title', 'like', "%{$keyword}%"));
+                } else {
+                    $q->where('content', 'like', "%{$keyword}%")
+                      ->orWhereHas('user', fn($uq) => $uq->where('name', 'like', "%{$keyword}%")->orWhere('email', 'like', "%{$keyword}%"))
+                      ->orWhereHas('quiz', fn($qz) => $qz->where('title', 'like', "%{$keyword}%"));
+                }
             });
         }
 
@@ -1622,10 +1661,21 @@ class QuestionController extends Controller
 
         if ($request->filled('search')) {
             $keyword = trim((string) $request->query('search'));
-            $query->where(function ($q) use ($keyword) {
-                $q->where('content', 'like', "%{$keyword}%")
-                  ->orWhereHas('user', fn($uq) => $uq->where('name', 'like', "%{$keyword}%"))
-                  ->orWhereHas('quiz', fn($qz) => $qz->where('title', 'like', "%{$keyword}%"));
+            $cleanKeyword = ltrim($keyword, '#');
+            $numericId = is_numeric($cleanKeyword) ? (int) $cleanKeyword : null;
+
+            $query->where(function ($q) use ($keyword, $numericId) {
+                if ($numericId !== null) {
+                    $q->where('id', $numericId)
+                      ->orWhere('origin_question_id', $numericId)
+                      ->orWhere('content', 'like', "%{$keyword}%")
+                      ->orWhereHas('user', fn($uq) => $uq->where('name', 'like', "%{$keyword}%")->orWhere('email', 'like', "%{$keyword}%"))
+                      ->orWhereHas('quiz', fn($qz) => $qz->where('title', 'like', "%{$keyword}%"));
+                } else {
+                    $q->where('content', 'like', "%{$keyword}%")
+                      ->orWhereHas('user', fn($uq) => $uq->where('name', 'like', "%{$keyword}%")->orWhere('email', 'like', "%{$keyword}%"))
+                      ->orWhereHas('quiz', fn($qz) => $qz->where('title', 'like', "%{$keyword}%"));
+                }
             });
         }
 
@@ -1977,7 +2027,20 @@ class QuestionController extends Controller
 
         if ($request->filled('search')) {
             $keyword = trim((string) $request->query('search'));
-            $query->where('content', 'like', "%{$keyword}%");
+            $cleanKeyword = ltrim($keyword, '#');
+            $numericId = is_numeric($cleanKeyword) ? (int) $cleanKeyword : null;
+
+            $query->where(function ($q) use ($keyword, $numericId) {
+                if ($numericId !== null) {
+                    $q->where('id', $numericId)
+                      ->orWhere('origin_question_id', $numericId)
+                      ->orWhere('content', 'like', "%{$keyword}%")
+                      ->orWhereHas('user', fn($uq) => $uq->where('name', 'like', "%{$keyword}%")->orWhere('email', 'like', "%{$keyword}%"));
+                } else {
+                    $q->where('content', 'like', "%{$keyword}%")
+                      ->orWhereHas('user', fn($uq) => $uq->where('name', 'like', "%{$keyword}%")->orWhere('email', 'like', "%{$keyword}%"));
+                }
+            });
         }
 
         $query->latest('deleted_at');

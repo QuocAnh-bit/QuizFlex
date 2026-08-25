@@ -4,9 +4,10 @@ namespace App\Notifications;
 
 use App\Models\ReportTicket;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
 
-class ReportResolved extends Notification
+class ReportResolved extends Notification implements ShouldQueue
 {
     use Queueable;
 

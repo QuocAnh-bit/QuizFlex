@@ -29,13 +29,28 @@ class QuizController extends Controller
 
         if ($request->filled('search')) {
             $keyword = trim((string) $request->query('search'));
-            $query->where(function ($q) use ($keyword) {
-                $q->where('title', 'like', "%{$keyword}%")
-                    ->orWhere('description', 'like', "%{$keyword}%")
-                    ->orWhere('category', 'like', "%{$keyword}%")
-                    ->orWhere('tag', 'like', "%{$keyword}%")
-                    ->orWhere('topic_name', 'like', "%{$keyword}%")
-                    ->orWhere('room_code', 'like', "%{$keyword}%");
+            $cleanKeyword = ltrim($keyword, '#');
+            $numericId = is_numeric($cleanKeyword) ? (int) $cleanKeyword : null;
+
+            $query->where(function ($q) use ($keyword, $numericId) {
+                if ($numericId !== null) {
+                    $q->where('id', $numericId)
+                        ->orWhere('title', 'like', "%{$keyword}%")
+                        ->orWhere('description', 'like', "%{$keyword}%")
+                        ->orWhere('category', 'like', "%{$keyword}%")
+                        ->orWhere('tag', 'like', "%{$keyword}%")
+                        ->orWhere('topic_name', 'like', "%{$keyword}%")
+                        ->orWhere('room_code', 'like', "%{$keyword}%")
+                        ->orWhereHas('user', fn($uq) => $uq->where('name', 'like', "%{$keyword}%"));
+                } else {
+                    $q->where('title', 'like', "%{$keyword}%")
+                        ->orWhere('description', 'like', "%{$keyword}%")
+                        ->orWhere('category', 'like', "%{$keyword}%")
+                        ->orWhere('tag', 'like', "%{$keyword}%")
+                        ->orWhere('topic_name', 'like', "%{$keyword}%")
+                        ->orWhere('room_code', 'like', "%{$keyword}%")
+                        ->orWhereHas('user', fn($uq) => $uq->where('name', 'like', "%{$keyword}%"));
+                }
             });
         }
 
@@ -750,10 +765,26 @@ class QuizController extends Controller
         // Tìm kiếm quiz
         if ($request->filled('search')) {
             $keyword = trim((string) $request->search);
+            $cleanKeyword = ltrim($keyword, '#');
+            $numericId = is_numeric($cleanKeyword) ? (int) $cleanKeyword : null;
 
-            $query->where(function ($q) use ($keyword) {
-                $q->where('title', 'like', "%{$keyword}%")
-                    ->orWhere('category', 'like', "%{$keyword}%");
+            $query->where(function ($q) use ($keyword, $numericId) {
+                if ($numericId !== null) {
+                    $q->where('id', $numericId)
+                        ->orWhere('title', 'like', "%{$keyword}%")
+                        ->orWhere('category', 'like', "%{$keyword}%")
+                        ->orWhere('tag', 'like', "%{$keyword}%")
+                        ->orWhere('topic_name', 'like', "%{$keyword}%")
+                        ->orWhere('room_code', 'like', "%{$keyword}%")
+                        ->orWhereHas('user', fn($uq) => $uq->where('name', 'like', "%{$keyword}%")->orWhere('email', 'like', "%{$keyword}%"));
+                } else {
+                    $q->where('title', 'like', "%{$keyword}%")
+                        ->orWhere('category', 'like', "%{$keyword}%")
+                        ->orWhere('tag', 'like', "%{$keyword}%")
+                        ->orWhere('topic_name', 'like', "%{$keyword}%")
+                        ->orWhere('room_code', 'like', "%{$keyword}%")
+                        ->orWhereHas('user', fn($uq) => $uq->where('name', 'like', "%{$keyword}%")->orWhere('email', 'like', "%{$keyword}%"));
+                }
             });
         }
 

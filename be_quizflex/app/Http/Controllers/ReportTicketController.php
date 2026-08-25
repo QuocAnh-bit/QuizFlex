@@ -67,7 +67,7 @@ class ReportTicketController extends Controller
         // Chống duplicate report: Kiểm tra xem User đã có ticket chưa giải quyết cho câu hỏi này chưa
         $existingPending = ReportTicket::where('user_id', $user->id)
             ->whereIn('question_id', array_unique([$targetQuestion->id, $originQuestion->id]))
-            ->whereIn('status', ['pending', 'author_updated', 'admin_review_required'])
+            ->whereIn('status', ReportTicket::ACTIVE_STATUSES)
             ->first();
 
         if ($existingPending) {
@@ -79,14 +79,11 @@ class ReportTicketController extends Controller
 
         // Xác định trạng thái ban đầu: Ưu tiên đưa vào hàng đợi Admin nếu lý do nghiêm trọng hoặc tích lũy nhiều report (>= 3 reports)
         $reasonText = trim($request->reason);
-        $isCriticalReason = (bool) preg_match('/(nhạy cảm|xúc phạm|bản quyền|chính sách|nghiêm trọng|phản động|khiêu dâm)/ui', $reasonText);
-
         $unresolvedCount = ReportTicket::where('question_id', $originQuestion->id)
-            ->whereIn('status', ['pending', 'author_updated', 'admin_review_required'])
+            ->whereIn('status', ReportTicket::ACTIVE_STATUSES)
             ->count();
 
-        // Ngưỡng: nếu đã có >= 2 báo cáo chưa xử lý (thêm report mới này là >= 3) hoặc lý do nghiêm trọng
-        $initialStatus = ($isCriticalReason || $unresolvedCount >= 2) ? 'admin_review_required' : 'pending';
+        $initialStatus = ReportTicket::determineInitialStatus($reasonText, $unresolvedCount);
 
         // Tạo bản ghi ReportTicket gắn trực tiếp với Question gốc
         $report = ReportTicket::create([
@@ -98,10 +95,10 @@ class ReportTicketController extends Controller
         ]);
 
         // Nếu vượt ngưỡng >= 3 reports, đồng bộ tất cả report pending trước đó của câu hỏi sang admin_review_required
-        if ($unresolvedCount >= 2) {
+        if ($unresolvedCount >= (ReportTicket::MULTI_REPORT_THRESHOLD - 1)) {
             ReportTicket::where('question_id', $originQuestion->id)
-                ->where('status', 'pending')
-                ->update(['status' => 'admin_review_required']);
+                ->where('status', ReportTicket::STATUS_PENDING)
+                ->update(['status' => ReportTicket::STATUS_ADMIN_REVIEW_REQUIRED]);
         }
 
         // 1. Gửi thông báo cho Admin (để theo dõi/thống kê hệ thống)
@@ -146,11 +143,22 @@ class ReportTicketController extends Controller
             'question.answers',
             'question.quizzes:id,title,is_public,status',
             'question.quiz:id,title,is_public,status',
-            'question.reports.user:id,name,email,avatar'
+            'question.reports.user:id,name,email,avatar',
+            'question.latestReviewRequest',
+            'question.pendingReviewRequest',
         ])->latest();
 
         if ($request->filled('status') && $request->query('status') !== 'all') {
-            $query->where('status', $request->query('status'));
+            $statusFilter = $request->query('status');
+            if ($statusFilter === 'needs_admin_review' || $statusFilter === 'admin_review_required') {
+                $query->where('status', ReportTicket::STATUS_ADMIN_REVIEW_REQUIRED);
+            } elseif ($statusFilter === 'auto_privatized') {
+                $query->whereNotNull('auto_privatized_at');
+            } elseif ($statusFilter === 'auto_resolved') {
+                $query->where('status', ReportTicket::STATUS_RESOLVED);
+            } else {
+                $query->where('status', $statusFilter);
+            }
         }
 
         if ($request->filled('question_id')) {
@@ -159,31 +167,51 @@ class ReportTicketController extends Controller
 
         if ($request->filled('search')) {
             $search = trim($request->query('search'));
-            $query->where(function ($q) use ($search) {
-                $q->where('reason', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%")
-                  ->orWhere('question_id', $search)
-                  ->orWhereHas('user', function ($uq) use ($search) {
-                      $uq->where('name', 'like', "%{$search}%")
-                         ->orWhere('email', 'like', "%{$search}%");
-                  })
-                  ->orWhereHas('question', function ($qq) use ($search) {
-                      $qq->where('content', 'like', "%{$search}%");
-                  });
+            $cleanKeyword = ltrim($search, '#');
+            $numericId = is_numeric($cleanKeyword) ? (int) $cleanKeyword : null;
+
+            $query->where(function ($q) use ($search, $numericId) {
+                if ($numericId !== null) {
+                    $q->where('id', $numericId)
+                      ->orWhere('question_id', $numericId)
+                      ->orWhere('reason', 'like', "%{$search}%")
+                      ->orWhere('description', 'like', "%{$search}%")
+                      ->orWhereHas('user', function ($uq) use ($search) {
+                          $uq->where('name', 'like', "%{$search}%")
+                             ->orWhere('email', 'like', "%{$search}%");
+                      })
+                      ->orWhereHas('question', function ($qq) use ($search, $numericId) {
+                          $qq->where('content', 'like', "%{$search}%")
+                             ->orWhere('id', $numericId);
+                      });
+                } else {
+                    $q->where('reason', 'like', "%{$search}%")
+                      ->orWhere('description', 'like', "%{$search}%")
+                      ->orWhereHas('user', function ($uq) use ($search) {
+                          $uq->where('name', 'like', "%{$search}%")
+                             ->orWhere('email', 'like', "%{$search}%");
+                      })
+                      ->orWhereHas('question', function ($qq) use ($search) {
+                          $qq->where('content', 'like', "%{$search}%");
+                      });
+                }
             });
         }
 
         $reports = $query->get();
 
-        // Calculate KPI stats
+        // Calculate KPI stats cho Exception Queue
         $stats = [
             'total' => ReportTicket::count(),
-            'pending' => ReportTicket::where('status', 'pending')->count(),
-            'author_updated' => ReportTicket::where('status', 'author_updated')->count(),
-            'admin_review_required' => ReportTicket::where('status', 'admin_review_required')->count(),
-            'resolved' => ReportTicket::where('status', 'resolved')->count(),
-            'dismissed' => ReportTicket::where('status', 'dismissed')->count(),
-            'questions_count' => ReportTicket::whereIn('status', ['pending', 'author_updated', 'admin_review_required'])->distinct('question_id')->count('question_id'),
+            'needs_admin_review' => ReportTicket::where('status', ReportTicket::STATUS_ADMIN_REVIEW_REQUIRED)->count(),
+            'admin_review_required' => ReportTicket::where('status', ReportTicket::STATUS_ADMIN_REVIEW_REQUIRED)->count(),
+            'author_updated' => ReportTicket::where('status', ReportTicket::STATUS_AUTHOR_UPDATED)->count(),
+            'pending' => ReportTicket::where('status', ReportTicket::STATUS_PENDING)->count(),
+            'auto_privatized' => ReportTicket::whereNotNull('auto_privatized_at')->count(),
+            'resolved' => ReportTicket::where('status', ReportTicket::STATUS_RESOLVED)->count(),
+            'dismissed' => ReportTicket::where('status', ReportTicket::STATUS_DISMISSED)->count(),
+            'exception_cases_count' => ReportTicket::where('status', ReportTicket::STATUS_ADMIN_REVIEW_REQUIRED)->distinct('question_id')->count('question_id'),
+            'questions_count' => ReportTicket::whereIn('status', ReportTicket::ACTIVE_STATUSES)->distinct('question_id')->count('question_id'),
         ];
 
         return response()->json([
@@ -243,12 +271,21 @@ class ReportTicketController extends Controller
     public function updateStatus(Request $request, $id)
     {
         $request->validate([
-            'status' => 'required|in:pending,author_updated,admin_review_required,resolved,dismissed',
+            'status' => 'required|in:' . implode(',', ReportTicket::ALL_STATUSES),
             'admin_note' => 'nullable|string|max:1000',
         ]);
 
         $ticket = ReportTicket::findOrFail($id);
-        $ticket->status = $request->status;
+        $targetStatus = $request->status;
+
+        if (!$ticket->canTransitionTo($targetStatus)) {
+            return response()->json([
+                'success' => false,
+                'message' => "Không thể chuyển trạng thái báo cáo từ '{$ticket->status}' sang '{$targetStatus}' do vi phạm quy tắc chuyển trạng thái.",
+            ], 422);
+        }
+
+        $ticket->status = $targetStatus;
         $ticket->save();
 
         return response()->json([
@@ -265,7 +302,7 @@ class ReportTicketController extends Controller
     {
         $request->validate([
             'question_id' => 'required|integer|exists:questions,id',
-            'status' => 'required|in:resolved,dismissed,admin_review_required',
+            'status' => 'required|in:' . implode(',', [ReportTicket::STATUS_RESOLVED, ReportTicket::STATUS_DISMISSED, ReportTicket::STATUS_ADMIN_REVIEW_REQUIRED]),
             'action' => 'nullable|in:keep,hide,delete',
             'admin_note' => 'nullable|string|max:1000',
         ]);
@@ -276,7 +313,7 @@ class ReportTicketController extends Controller
 
         // 1. Cập nhật tất cả các ticket chưa giải quyết của câu hỏi này
         ReportTicket::where('question_id', $questionId)
-            ->whereIn('status', ['pending', 'author_updated', 'admin_review_required'])
+            ->whereIn('status', ReportTicket::ACTIVE_STATUSES)
             ->update(['status' => $status]);
 
         // 2. Thực hiện hành động nếu có
@@ -290,7 +327,7 @@ class ReportTicketController extends Controller
             }
 
             // Thông báo cho tác giả nếu được giải quyết / xử lý
-            if ($status === 'resolved' && $question->user) {
+            if ($status === ReportTicket::STATUS_RESOLVED && $question->user) {
                 try {
                     $question->user->notify(new QuestionModerated(
                         $question,
@@ -305,7 +342,7 @@ class ReportTicketController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => $status === 'resolved' ? 'Đã giải quyết tất cả báo cáo cho câu hỏi này.' : ($status === 'dismissed' ? 'Đã bỏ qua các báo cáo.' : 'Đã cập nhật trạng thái báo cáo.'),
+            'message' => $status === ReportTicket::STATUS_RESOLVED ? 'Đã giải quyết tất cả báo cáo cho câu hỏi này.' : ($status === ReportTicket::STATUS_DISMISSED ? 'Đã bỏ qua các báo cáo.' : 'Đã cập nhật trạng thái báo cáo.'),
         ]);
     }
 
@@ -314,8 +351,8 @@ class ReportTicketController extends Controller
      */
     public function countPending()
     {
-        $questionPending = ReportTicket::whereIn('status', ['pending', 'author_updated', 'admin_review_required'])->count();
-        $uniqueQuestions = ReportTicket::whereIn('status', ['pending', 'author_updated', 'admin_review_required'])->distinct('question_id')->count('question_id');
+        $questionPending = ReportTicket::whereIn('status', ReportTicket::ACTIVE_STATUSES)->count();
+        $uniqueQuestions = ReportTicket::whereIn('status', ReportTicket::ACTIVE_STATUSES)->distinct('question_id')->count('question_id');
 
         return response()->json([
             'success' => true,

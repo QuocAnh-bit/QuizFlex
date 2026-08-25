@@ -106,7 +106,7 @@ class QuestionReviewService
 
             // Tự động nhận diện Question từng bị báo cáo để đánh dấu PRIORITY
             $hasUnresolvedReports = \App\Models\ReportTicket::where('question_id', $question->id)
-                ->whereIn('status', ['pending', 'author_updated', 'admin_review_required'])
+                ->whereIn('status', \App\Models\ReportTicket::ACTIVE_STATUSES)
                 ->exists();
             $hasAnyReports = \App\Models\ReportTicket::where('question_id', $question->id)->exists();
             $isPriority = $hasUnresolvedReports || $hasAnyReports;
@@ -120,10 +120,10 @@ class QuestionReviewService
                 $snapshotMetadata['has_pending_report'] = $hasUnresolvedReports;
             }
 
-            // Chuyển các ReportTicket pending / admin_review_required của câu hỏi này sang author_updated
+            // Chuyển các ReportTicket active (pending / admin_review_required) của câu hỏi này sang author_updated
             \App\Models\ReportTicket::where('question_id', $question->id)
-                ->whereIn('status', ['pending', 'admin_review_required'])
-                ->update(['status' => 'author_updated']);
+                ->whereIn('status', [\App\Models\ReportTicket::STATUS_PENDING, \App\Models\ReportTicket::STATUS_ADMIN_REVIEW_REQUIRED])
+                ->update(['status' => \App\Models\ReportTicket::STATUS_AUTHOR_UPDATED]);
 
             $reviewRequest = QuestionReviewRequest::create([
                 'question_id' => $question->id,
@@ -148,17 +148,27 @@ class QuestionReviewService
 
             // Cập nhật trạng thái câu hỏi hiện tại (cached state)
             $fingerprint = $this->snapshotService->computeFingerprint($question);
-            $question->update([
+            Question::where('id', $question->id)->update([
                 'fingerprint' => $fingerprint,
                 'bank_submission_status' => 'pending',
                 'bank_submission_at' => now(),
                 'bank_submission_note' => null, // Ghi chú lần trước đã được lưu an toàn trong revision cũ
             ]);
+            $question->refresh();
 
-            // Gửi thông báo đến toàn bộ Admin (kèm cờ Ưu tiên nếu có)
-            $admins = User::whereIn('role', ['admin', 'ADMIN'])->get();
-            if ($admins->isNotEmpty()) {
-                Notification::send($admins, new QuestionReviewRequested($question, $user, $revisionNumber, $isPriority));
+            // Tự động kích hoạt Auto Review nếu câu hỏi có Report chưa giải quyết
+            $automationService = app(\App\Services\ReportAutomationService::class);
+            if ($automationService->shouldTriggerAutoReview($question)) {
+                $autoResult = $automationService->processAutoReviewForQuestion($question, $reviewRequest);
+                if ($autoResult['auto_approved'] === true) {
+                    return $reviewRequest->fresh(['question', 'user', 'educationLevel', 'grade', 'subject', 'reviewer']);
+                }
+            } else {
+                // Nếu là câu hỏi bình thường không có report, gửi thông báo cho Admin như thường lệ
+                $admins = User::whereIn('role', ['admin', 'ADMIN'])->get();
+                if ($admins->isNotEmpty()) {
+                    Notification::send($admins, new QuestionReviewRequested($question, $user, $revisionNumber, $isPriority));
+                }
             }
 
             return $reviewRequest->fresh(['question', 'user', 'educationLevel', 'grade', 'subject']);
@@ -167,13 +177,21 @@ class QuestionReviewService
     }
 
     /**
-     * Admin phê duyệt câu hỏi vào Ngân hàng
+     * Phê duyệt câu hỏi vào Ngân hàng (Hỗ trợ Admin duyệt thủ công và System Auto-Approve)
      */
-    public function approveQuestion(Question $question, User $admin): QuestionReviewRequest
+    public function approveQuestion(Question $question, ?User $admin = null, bool $isAutoApproved = false): QuestionReviewRequest
     {
-        if (strtolower($admin->role ?? '') !== 'admin') {
+        if (!$isAutoApproved) {
+            if (!$admin || strtolower($admin->role ?? '') !== 'admin') {
+                throw ValidationException::withMessages([
+                    'auth' => 'Chỉ Admin mới có quyền phê duyệt câu hỏi vào Ngân hàng.',
+                ]);
+            }
+        }
+
+        if ($question->trashed()) {
             throw ValidationException::withMessages([
-                'auth' => 'Chỉ Admin mới có quyền phê duyệt câu hỏi vào Ngân hàng.',
+                'question' => 'Không thể phê duyệt câu hỏi đã bị xóa.',
             ]);
         }
 
@@ -183,7 +201,7 @@ class QuestionReviewService
             ]);
         }
 
-        return DB::transaction(function () use ($question, $admin) {
+        return DB::transaction(function () use ($question, $admin, $isAutoApproved) {
             $lockedQuestion = Question::where('id', $question->id)->lockForUpdate()->first();
             if (!$lockedQuestion || $lockedQuestion->bank_submission_status !== 'pending') {
                 throw ValidationException::withMessages([
@@ -203,14 +221,23 @@ class QuestionReviewService
                 ]);
             }
 
+            $reviewerId = $admin?->id;
+
             // 1. Tạo bản ghi Question snapshot độc lập trong Ngân hàng từ dữ liệu bất biến của review request (nếu chưa có trong Bank)
-            $this->snapshotService->createSnapshotFromReviewRequest($request, $admin->id);
+            $this->snapshotService->createSnapshotFromReviewRequest($request, $reviewerId);
 
             // 2. Cập nhật trạng thái của QuestionReviewRequest
+            $metadata = $request->snapshot_metadata ?? [];
+            if ($isAutoApproved) {
+                $metadata['auto_approved'] = true;
+                $metadata['auto_approved_at'] = now()->toIso8601String();
+            }
+
             $request->update([
                 'status' => 'approved',
-                'reviewed_by' => $admin->id,
+                'reviewed_by' => $reviewerId,
                 'reviewed_at' => now(),
+                'snapshot_metadata' => $metadata,
             ]);
 
             // 3. Cập nhật câu hỏi gốc của User: giữ is_public = false để độc lập trong kho cá nhân
@@ -220,7 +247,7 @@ class QuestionReviewService
                 'bank_submission_note' => null,
             ]);
 
-            // 4. Tự động chuyển các ReportTicket chưa xử lý (pending, author_updated, admin_review_required) của câu hỏi này sang 'resolved'
+            // 4. Tự động chuyển các ReportTicket active (pending, author_updated, admin_review_required) của câu hỏi này sang 'resolved'
             $targetQuestionIds = array_filter(array_unique([
                 $lockedQuestion->id,
                 $lockedQuestion->origin_question_id,
@@ -229,11 +256,11 @@ class QuestionReviewService
             $allRelatedIds = array_values(array_unique(array_merge($targetQuestionIds, $snapshotIds)));
 
             $unresolvedReports = \App\Models\ReportTicket::whereIn('question_id', $allRelatedIds)
-                ->whereIn('status', ['pending', 'author_updated', 'admin_review_required'])
+                ->whereIn('status', \App\Models\ReportTicket::ACTIVE_STATUSES)
                 ->get();
 
             foreach ($unresolvedReports as $rep) {
-                $rep->update(['status' => 'resolved']);
+                $rep->update(['status' => \App\Models\ReportTicket::STATUS_RESOLVED]);
                 if ($rep->user) {
                     try {
                         $rep->user->notify(new \App\Notifications\ReportResolved($rep, 'resolved', 'approved'));

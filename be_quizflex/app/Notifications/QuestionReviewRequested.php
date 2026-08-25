@@ -5,9 +5,10 @@ namespace App\Notifications;
 use App\Models\Question;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
 
-class QuestionReviewRequested extends Notification
+class QuestionReviewRequested extends Notification implements ShouldQueue
 {
     use Queueable;
 

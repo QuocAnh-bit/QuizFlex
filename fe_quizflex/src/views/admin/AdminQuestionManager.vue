@@ -1121,7 +1121,7 @@
 </template>
 
 <script setup>
-import { computed, inject, onMounted, reactive, ref } from 'vue'
+import { computed, inject, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   AlertCircle,
@@ -1708,6 +1708,15 @@ const formatDate = (dateStr) => {
     minute: '2-digit',
   })
 }
+
+let searchDebounceTimer = null
+watch(() => filters.search, (newVal, oldVal) => {
+  if (newVal === oldVal) return
+  clearTimeout(searchDebounceTimer)
+  searchDebounceTimer = setTimeout(() => {
+    applyFilter()
+  }, 400)
+})
 
 onMounted(() => {
   if (route.query.tab) {

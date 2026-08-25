@@ -1284,12 +1284,18 @@ export const homeworkApi = {
     return unwrapCollection(data);
   },
 
-  async startRoomAssignmentAttempt(assignmentId, payload = {}) {
+  async startAssignmentAttempt(firstArg, secondArg) {
+    const assignmentId = secondArg !== undefined && secondArg !== null ? secondArg : firstArg;
+    const payload = typeof secondArg === 'object' && secondArg !== null ? secondArg : {};
     const { data } = await api.post(
       `/room-assignments/${assignmentId}/attempts/start`,
       payload,
     );
     return unwrap(data);
+  },
+
+  async startRoomAssignmentAttempt(assignmentId, payload = {}) {
+    return this.startAssignmentAttempt(assignmentId, payload);
   },
 
   async answerRoomAssignmentAttempt(assignmentId, attemptId, payload) {
@@ -1300,13 +1306,44 @@ export const homeworkApi = {
     return unwrap(data);
   },
 
-  async submitRoomAssignmentAttempt(assignmentId, attemptId, payload) {
+  async submitAssignmentAttempt(firstArg, secondArg, thirdArg) {
+    let assignmentId;
+    let attemptId;
+    let payload;
+
+    if (thirdArg !== undefined) {
+      if (typeof thirdArg === 'object' && thirdArg?.attempt_id) {
+        // Form: submitAssignmentAttempt(roomId, assignmentId, { attempt_id, answers })
+        assignmentId = secondArg;
+        attemptId = thirdArg.attempt_id;
+        payload = { answers: thirdArg.answers || {} };
+      } else {
+        // Form: submitAssignmentAttempt(assignmentId, attemptId, payload)
+        assignmentId = firstArg;
+        attemptId = secondArg;
+        payload = thirdArg;
+      }
+    } else if (secondArg !== undefined && typeof secondArg === 'object' && secondArg?.attempt_id) {
+      // Form: submitAssignmentAttempt(assignmentId, { attempt_id, answers })
+      assignmentId = firstArg;
+      attemptId = secondArg.attempt_id;
+      payload = { answers: secondArg.answers || {} };
+    } else {
+      assignmentId = firstArg;
+      attemptId = secondArg;
+      payload = {};
+    }
+
     const body = payload?.answers ? payload : { answers: payload };
     const { data } = await api.post(
       `/room-assignments/${assignmentId}/attempts/${attemptId}/submit`,
       body,
     );
     return unwrap(data);
+  },
+
+  async submitRoomAssignmentAttempt(assignmentId, attemptId, payload) {
+    return this.submitAssignmentAttempt(assignmentId, attemptId, payload);
   },
 
   async resetRoomAssignmentAttempt(assignmentId, attemptId) {

@@ -6,7 +6,7 @@
         Dashboard
       </router-link>
       <ChevronRight class="h-4 w-4" />
-      <span class="font-medium text-slate-900">Quản lý Báo cáo</span>
+      <span class="font-medium text-slate-900">Quản lý Báo cáo & Hàng đợi Ngoại lệ</span>
     </div>
 
     <!-- Header -->
@@ -14,14 +14,19 @@
       <div class="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
         <div class="flex items-start gap-4">
           <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-rose-600 text-white shadow-sm">
-            <Flag class="h-6 w-6" />
+            <ShieldAlert class="h-6 w-6" />
           </div>
           <div>
-            <h1 class="text-2xl font-black tracking-tight text-slate-900">
-              Giám sát & Xử lý Báo cáo Câu hỏi
-            </h1>
-            <p class="mt-1 max-w-2xl text-sm text-slate-500">
-              Trung tâm giám sát phản ánh sai sót từ người học. Hệ thống tự động thông báo tới tác giả sửa và tự động hoàn tất báo cáo khi Quản trị viên duyệt bản chỉnh sửa của tác giả.
+            <div class="flex items-center gap-2.5">
+              <h1 class="text-2xl font-black tracking-tight text-slate-900">
+                Giám Sát Báo Cáo
+              </h1>
+              <span class="rounded-full bg-rose-100 px-2.5 py-0.5 text-xs font-black text-rose-700 border border-rose-200">
+                Exception Queue
+              </span>
+            </div>
+            <p class="mt-1 max-w-3xl text-sm text-slate-500">
+              Hệ thống tự động hóa xử lý các báo cáo thông thường và tự động gỡ câu hỏi sau 7 ngày. Quản trị viên chỉ cần xử lý các trường hợp ngoại lệ.
             </p>
           </div>
         </div>
@@ -32,7 +37,7 @@
             class="inline-flex items-center gap-1.5 rounded-xl bg-[#7C3AED] px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-[#6D28D9] transition cursor-pointer"
           >
             <HelpCircle class="h-4 w-4" />
-            <span>Mở Ngân hàng Ưu tiên (Thẩm định)</span>
+            <span>Mở Ngân hàng Ưu tiên ↗</span>
           </router-link>
 
           <button
@@ -41,94 +46,75 @@
             @click="fetchReports"
           >
             <RefreshCw class="h-4 w-4 text-slate-500" :class="{ 'animate-spin': isLoading }" />
-            <span>Làm mới</span>
+            
           </button>
         </div>
       </div>
 
       <!-- KPI Stats Cards (Clickable) -->
       <div class="mt-6 grid grid-cols-2 gap-3 xl:grid-cols-5">
-        <!-- 1. Chờ chủ câu hỏi xử lý -->
+        <!-- 1. CẦN ADMIN XỬ LÝ (Exception Queue - Priority #1) -->
         <div
           class="rounded-xl border p-3.5 transition cursor-pointer shadow-xs"
-          :class="selectedStatus === 'pending' ? 'border-amber-500 bg-amber-50/60 ring-2 ring-amber-500/20' : 'border-slate-200 bg-slate-50 hover:bg-slate-100/80'"
-          title="Xem các báo cáo đang chờ chủ câu hỏi sửa"
-          @click="selectedStatus = 'pending'"
-        >
-          <div class="flex items-center gap-2.5">
-            <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-100 text-amber-600">
-              <Clock class="h-4 w-4" />
-            </div>
-            <div>
-              <p class="text-[11px] font-semibold text-slate-500">Chờ chủ xử lý</p>
-              <p class="text-xl font-black text-amber-600">{{ stats.pending || 0 }}</p>
-            </div>
-          </div>
-          <p class="mt-1.5 text-[11px] text-amber-700 font-bold">Chưa sửa</p>
-        </div>
-
-        <!-- 2. Chủ câu hỏi đã cập nhật -->
-        <div
-          class="rounded-xl border p-3.5 transition cursor-pointer shadow-xs"
-          :class="selectedStatus === 'author_updated' ? 'border-blue-500 bg-blue-50/60 ring-2 ring-blue-500/20' : 'border-slate-200 bg-slate-50 hover:bg-slate-100/80'"
-          title="Tác giả đã cập nhật nội dung mới"
-          @click="selectedStatus = 'author_updated'"
-        >
-          <div class="flex items-center gap-2.5">
-            <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-100 text-blue-600">
-              <CheckCircle2 class="h-4 w-4" />
-            </div>
-            <div>
-              <p class="text-[11px] font-semibold text-slate-500">Chủ đã sửa</p>
-              <p class="text-xl font-black text-blue-600">{{ stats.author_updated || 0 }}</p>
-            </div>
-          </div>
-          <p class="mt-1.5 text-[11px] text-blue-700 font-bold">Có revision mới</p>
-        </div>
-
-        <!-- 3. Cần Admin xử lý -->
-        <div
-          class="rounded-xl border p-3.5 transition cursor-pointer shadow-xs"
-          :class="selectedStatus === 'admin_review_required' ? 'border-rose-500 bg-rose-50/60 ring-2 ring-rose-500/20' : 'border-slate-200 bg-slate-50 hover:bg-slate-100/80'"
-          title="Trường hợp ngoại lệ cần Admin can thiệp"
-          @click="selectedStatus = 'admin_review_required'"
+          :class="selectedStatus === 'needs_admin_review' || selectedStatus === 'admin_review_required' ? 'border-rose-500 bg-rose-50/80 ring-2 ring-rose-500/20' : 'border-slate-200 bg-slate-50 hover:bg-slate-100/80'"
+          title="Trường hợp ngoại lệ cần Admin can thiệp xử lý"
+          @click="selectedStatus = 'needs_admin_review'"
         >
           <div class="flex items-center gap-2.5">
             <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-rose-100 text-rose-600">
               <AlertTriangle class="h-4 w-4" />
             </div>
             <div>
-              <p class="text-[11px] font-semibold text-slate-500">Cần Admin</p>
-              <p class="text-xl font-black text-rose-600">{{ stats.admin_review_required || 0 }}</p>
+              <p class="text-[11px] font-semibold text-slate-500">Cần Admin xử lý</p>
+              <p class="text-xl font-black text-rose-600">{{ stats.admin_review_required || stats.needs_admin_review || 0 }}</p>
             </div>
           </div>
-          <p class="mt-1.5 text-[11px] text-rose-700 font-bold">Ngoại lệ</p>
+          <p class="mt-1.5 text-[11px] text-rose-700 font-bold">Ngoại lệ ưu tiên</p>
         </div>
 
-        <!-- 4. Đã giải quyết -->
+        <!-- 2. TỰ ĐỘNG GIẢI QUYẾT (Auto Resolved) -->
         <div
           class="rounded-xl border p-3.5 transition cursor-pointer shadow-xs"
-          :class="selectedStatus === 'resolved' ? 'border-emerald-500 bg-emerald-50/60 ring-2 ring-emerald-500/20' : 'border-slate-200 bg-slate-50 hover:bg-slate-100/80'"
-          title="Xem các báo cáo đã giải quyết"
-          @click="selectedStatus = 'resolved'"
+          :class="selectedStatus === 'auto_resolved' ? 'border-teal-500 bg-teal-50/60 ring-2 ring-teal-500/20' : 'border-slate-200 bg-slate-50 hover:bg-slate-100/80'"
+          title="Các báo cáo đã được hệ thống tự động giải quyết khi tác giả sửa hợp lệ"
+          @click="selectedStatus = 'auto_resolved'"
         >
           <div class="flex items-center gap-2.5">
-            <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600">
-              <CheckCircle class="h-4 w-4" />
+            <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-teal-100 text-teal-600">
+              <CheckCircle2 class="h-4 w-4" />
             </div>
             <div>
-              <p class="text-[11px] font-semibold text-slate-500">Đã giải quyết</p>
-              <p class="text-xl font-black text-emerald-600">{{ stats.resolved || 0 }}</p>
+              <p class="text-[11px] font-semibold text-slate-500">Tự động duyệt</p>
+              <p class="text-xl font-black text-teal-600">{{ stats.resolved || 0 }}</p>
             </div>
           </div>
-          <p class="mt-1.5 text-[11px] text-emerald-700 font-medium">Hoàn tất</p>
+          <p class="mt-1.5 text-[11px] text-teal-700 font-bold">Auto Approved</p>
         </div>
 
-        <!-- 5. Đã bỏ qua -->
+        <!-- 3. TỰ ĐỘNG GỠ (Auto Private 7 ngày) -->
+        <div
+          class="rounded-xl border p-3.5 transition cursor-pointer shadow-xs"
+          :class="selectedStatus === 'auto_privatized' ? 'border-orange-500 bg-orange-50/60 ring-2 ring-orange-500/20' : 'border-slate-200 bg-slate-50 hover:bg-slate-100/80'"
+          title="Các câu hỏi bị hệ thống tự động gỡ công khai sau 7 ngày không sửa"
+          @click="selectedStatus = 'auto_privatized'"
+        >
+          <div class="flex items-center gap-2.5">
+            <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-orange-100 text-orange-600">
+              <Lock class="h-4 w-4" />
+            </div>
+            <div>
+              <p class="text-[11px] font-semibold text-slate-500">Tự động gỡ (Day 7)</p>
+              <p class="text-xl font-black text-orange-600">{{ stats.auto_privatized || 0 }}</p>
+            </div>
+          </div>
+          <p class="mt-1.5 text-[11px] text-orange-700 font-bold">Riêng tư</p>
+        </div>
+
+        <!-- 4. ĐÃ BỎ QUA (Dismissed) -->
         <div
           class="rounded-xl border p-3.5 transition cursor-pointer shadow-xs"
           :class="selectedStatus === 'dismissed' ? 'border-slate-400 bg-slate-100 ring-2 ring-slate-400/20' : 'border-slate-200 bg-slate-50 hover:bg-slate-100/80'"
-          title="Xem các báo cáo đã bỏ qua"
+          title="Báo cáo đã được bác bỏ hoặc không có vi phạm"
           @click="selectedStatus = 'dismissed'"
         >
           <div class="flex items-center gap-2.5">
@@ -140,7 +126,26 @@
               <p class="text-xl font-black text-slate-800">{{ stats.dismissed || 0 }}</p>
             </div>
           </div>
-          <p class="mt-1.5 text-[11px] text-slate-500 font-medium">Không hợp lệ</p>
+          <p class="mt-1.5 text-[11px] text-slate-500 font-medium">Báo cáo sai / Spam</p>
+        </div>
+
+        <!-- 5. TẤT CẢ (Audit Log) -->
+        <div
+          class="rounded-xl border p-3.5 transition cursor-pointer shadow-xs"
+          :class="selectedStatus === 'all' ? 'border-purple-500 bg-purple-50/60 ring-2 ring-purple-500/20' : 'border-slate-200 bg-slate-50 hover:bg-slate-100/80'"
+          title="Xem toàn bộ lịch sử báo cáo"
+          @click="selectedStatus = 'all'"
+        >
+          <div class="flex items-center gap-2.5">
+            <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-purple-100 text-purple-600">
+              <Flag class="h-4 w-4" />
+            </div>
+            <div>
+              <p class="text-[11px] font-semibold text-slate-500">Tổng báo cáo</p>
+              <p class="text-xl font-black text-purple-700">{{ stats.total || 0 }}</p>
+            </div>
+          </div>
+          <p class="mt-1.5 text-[11px] text-purple-700 font-medium">Lịch sử hệ thống</p>
         </div>
       </div>
     </div>
@@ -154,7 +159,7 @@
           :key="tab.key"
           type="button"
           class="rounded-xl px-3.5 py-2 transition cursor-pointer flex items-center gap-2 whitespace-nowrap"
-          :class="selectedStatus === tab.key
+          :class="isTabActive(tab.key)
             ? 'bg-rose-50 text-rose-700 border border-rose-200 shadow-2xs'
             : 'text-slate-600 hover:bg-slate-100'"
           @click="selectedStatus = tab.key"
@@ -163,7 +168,7 @@
           <span
             v-if="tab.count > 0"
             class="rounded-full px-2 py-0.5 text-[10px]"
-            :class="tab.key === 'pending' ? 'bg-amber-500 text-white' : (tab.key === 'author_updated' ? 'bg-blue-600 text-white' : (tab.key === 'admin_review_required' ? 'bg-rose-600 text-white' : 'bg-slate-200 text-slate-700'))"
+            :class="tab.key === 'needs_admin_review' || tab.key === 'admin_review_required' ? 'bg-rose-600 text-white' : (tab.key === 'auto_privatized' ? 'bg-orange-500 text-white' : (tab.key === 'auto_resolved' ? 'bg-teal-600 text-white' : 'bg-slate-200 text-slate-700'))"
           >
             {{ tab.count }}
           </span>
@@ -180,7 +185,7 @@
             :class="viewMode === 'grouped' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'"
             @click="viewMode = 'grouped'"
           >
-            Theo câu hỏi (Nhóm)
+            Theo Case câu hỏi
           </button>
           <button
             type="button"
@@ -188,7 +193,7 @@
             :class="viewMode === 'all' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'"
             @click="viewMode = 'all'"
           >
-            Tất cả ticket (Log)
+            Tất cả Ticket (Log)
           </button>
         </div>
 
@@ -206,31 +211,36 @@
     </div>
 
     <!-- =========================================================================
-         VIEW 1: GROUPED BY QUESTION (PRIMARY MONITORING VIEW)
+         VIEW 1: GROUPED BY QUESTION / CASE (PRIMARY EXCEPTION WORKSPACE)
     ========================================================================== -->
     <div v-if="viewMode === 'grouped'" class="space-y-4">
       <div v-if="isLoading" class="p-12 text-center text-xs text-slate-400 rounded-2xl bg-white border border-slate-200">
         <RefreshCw class="mx-auto mb-2 h-6 w-6 animate-spin text-rose-600" />
-        <span>Đang tổng hợp các nhóm báo cáo vi phạm...</span>
+        <span>Đang tổng hợp danh sách các Case ngoại lệ...</span>
       </div>
 
-      <div v-else-if="filteredGroupedQuestions.length === 0" class="p-12 text-center text-xs text-slate-400 rounded-2xl bg-white border border-slate-200">
-        <Inbox class="mx-auto mb-2 h-8 w-8 opacity-40 text-slate-400" />
-        <p class="font-semibold text-slate-700">Không có câu hỏi nào có báo cáo phù hợp bộ lọc.</p>
+      <div v-else-if="filteredGroupedQuestions.length === 0" class="p-12 text-center text-xs text-slate-400 rounded-2xl bg-white border border-slate-200 space-y-2">
+        <CheckCircle class="mx-auto h-10 w-10 text-emerald-500 opacity-80" />
+        <p class="font-bold text-slate-700 text-sm">
+          {{ selectedStatus === 'needs_admin_review' || selectedStatus === 'admin_review_required' ? 'Tuyệt vời! Không có câu hỏi nào cần Admin can thiệp lúc này.' : 'Không tìm thấy câu hỏi nào phù hợp bộ lọc.' }}
+        </p>
+        <p class="text-slate-500 text-xs">
+          Mọi báo cáo thông thường đã được điều phối tự động tới Tác giả hoặc đã xử lý hoàn tất.
+        </p>
       </div>
 
       <div
         v-for="group in filteredGroupedQuestions"
         :key="group.question_id"
         class="rounded-2xl border bg-white p-5 shadow-sm hover:shadow-md transition space-y-4"
-        :class="group.hasAdminReviewRequired ? 'border-rose-300' : (group.hasAuthorUpdated ? 'border-blue-200 bg-blue-50/20' : (group.hasPending ? 'border-amber-200' : 'border-slate-200'))"
+        :class="group.hasAdminReviewRequired ? 'border-rose-300 ring-1 ring-rose-200' : (group.isAutoPrivatized ? 'border-orange-200 bg-orange-50/10' : (group.hasAuthorUpdated ? 'border-blue-200 bg-blue-50/10' : 'border-slate-200'))"
       >
         <!-- Group Header -->
         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between border-b border-slate-100 pb-3">
-          <div class="space-y-1.5">
+          <div class="space-y-1.5 max-w-4xl">
             <div class="flex flex-wrap items-center gap-2">
               <span class="rounded bg-slate-100 px-2 py-0.5 font-mono text-xs font-bold text-slate-800">
-                Câu hỏi #{{ group.question_id }}
+                Case Câu hỏi #{{ group.question_id }}
               </span>
               <span v-if="group.question?.subject?.name" class="rounded bg-purple-50 px-2 py-0.5 text-xs font-bold text-purple-700">
                 {{ group.question.subject.name }}
@@ -245,24 +255,32 @@
                 {{ group.question?.is_public ? 'Công khai' : 'Riêng tư' }}
               </span>
 
-              <!-- Status Badges -->
+              <!-- Primary Status Badges -->
               <span
-                v-if="group.hasAuthorUpdated"
-                class="rounded-full bg-blue-100 px-2.5 py-0.5 text-[11px] font-black text-blue-800 border border-blue-200"
+                v-if="group.hasAdminReviewRequired"
+                class="rounded-full bg-rose-100 px-2.5 py-0.5 text-[11px] font-black text-rose-800 border border-rose-200 flex items-center gap-1"
               >
-                🔵 CHỦ CÂU HỎI ĐÃ CẬP NHẬT
+                <AlertTriangle class="h-3 w-3" />
+                <span>CẦN ADMIN XỬ LÝ (NGOẠI LỆ)</span>
               </span>
               <span
-                v-else-if="group.hasAdminReviewRequired"
-                class="rounded-full bg-rose-100 px-2.5 py-0.5 text-[11px] font-black text-rose-800 border border-rose-200"
+                v-else-if="group.isAutoPrivatized"
+                class="rounded-full bg-orange-100 px-2.5 py-0.5 text-[11px] font-black text-orange-800 border border-orange-200 flex items-center gap-1"
               >
-                🔴 CẦN ADMIN XỬ LÝ
+                <Lock class="h-3 w-3" />
+                <span>ĐÃ TỰ ĐỘNG GỠ (DAY 7)</span>
+              </span>
+              <span
+                v-else-if="group.hasAuthorUpdated"
+                class="rounded-full bg-blue-100 px-2.5 py-0.5 text-[11px] font-black text-blue-800 border border-blue-200"
+              >
+                🔵 TÁC GIẢ ĐÃ SỬA
               </span>
               <span
                 v-else-if="group.hasPending"
                 class="rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-black text-amber-800 border border-amber-200"
               >
-                🟡 CHỜ CHỦ CÂU HỎI XỬ LÝ
+                🟡 CHỜ TÁC GIẢ SỬA
               </span>
               <span
                 v-else-if="group.tickets.every(t => t.status === 'dismissed')"
@@ -272,70 +290,62 @@
               </span>
               <span
                 v-else
-                class="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-black text-emerald-800 border border-emerald-200"
+                class="rounded-full bg-teal-100 px-2.5 py-0.5 text-[11px] font-black text-teal-800 border border-teal-200"
               >
                 ✓ ĐÃ GIẢI QUYẾT
               </span>
             </div>
 
-            <p class="text-sm font-bold text-slate-900 leading-relaxed">
+            <!-- Question Content -->
+            <p class="text-sm font-bold text-slate-900 leading-relaxed pt-1">
               {{ group.question?.content || 'Nội dung câu hỏi không khả dụng' }}
             </p>
           </div>
 
-          <!-- Group Action Buttons -->
+          <!-- Group Action Buttons (Streamlined) -->
           <div class="flex items-center gap-2 shrink-0">
-            <!-- If author updated, direct CTA to Question Bank Review -->
-            <router-link
-              v-if="group.hasAuthorUpdated"
-              :to="`/admin/question-bank?tab=reported&question_id=${group.question_id}`"
-              class="inline-flex items-center gap-1.5 rounded-xl bg-[#7C3AED] px-3.5 py-2 text-xs font-bold text-white hover:bg-[#6D28D9] transition cursor-pointer shadow-xs"
-              title="Chuyển sang Ngân hàng câu hỏi để xem đối chiếu Diff và Duyệt bản sửa đổi"
-            >
-              <ExternalLink class="h-3.5 w-3.5" />
-              <span>Thẩm định Revision ↗</span>
-            </router-link>
-
-            <!-- Exception Moderation button if admin review required -->
+            <!-- Exception Action Button -->
             <button
-              v-if="group.hasAdminReviewRequired"
+              v-if="group.hasAdminReviewRequired || group.hasPending"
               type="button"
-              class="inline-flex items-center gap-1.5 rounded-xl bg-rose-600 px-3.5 py-2 text-xs font-bold text-white hover:bg-rose-700 transition cursor-pointer shadow-xs"
+              class="inline-flex items-center gap-1.5 rounded-xl bg-rose-600 px-4 py-2 text-xs font-bold text-white hover:bg-rose-700 transition cursor-pointer shadow-xs"
               @click="openModerationModal(group)"
             >
               <Shield class="h-3.5 w-3.5" />
-              <span>Xử lý ngoại lệ ({{ group.tickets.length }})</span>
+              <span>Xử lý Case ({{ group.tickets.length }})</span>
             </button>
 
-            <!-- Standard view detail button -->
+            <!-- Quick View / Detail Button -->
             <button
               type="button"
               class="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition cursor-pointer shadow-xs"
               @click="openModerationModal(group)"
             >
               <Eye class="h-3.5 w-3.5 text-slate-500" />
-              <span>Xem chi tiết ({{ group.tickets.length }})</span>
+              <span>Xem chi tiết</span>
             </button>
           </div>
         </div>
 
-        <!-- Breakdown of Reasons & Reporters -->
-        <div class="flex flex-wrap items-center justify-between gap-3 text-xs">
-          <!-- Reasons Breakdown Tags -->
-          <div class="flex flex-wrap items-center gap-2">
+        <!-- Diagnostic & Reasons Summary -->
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 text-xs bg-slate-50 p-3 rounded-xl border border-slate-100">
+          <!-- Reasons Tags -->
+          <div class="flex flex-wrap items-center gap-1.5">
             <span class="text-slate-500 font-medium">Lý do báo cáo:</span>
             <span
               v-for="(count, reason) in group.reasonsCount"
               :key="reason"
-              class="rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1 font-bold text-rose-800 text-[11px]"
+              class="rounded-md border border-rose-200 bg-rose-50 px-2 py-0.5 font-bold text-rose-800 text-[11px]"
             >
-              {{ count }} {{ reason }}
+              {{ count }}× {{ reason }}
             </span>
           </div>
 
-          <!-- Timeline -->
-          <div class="text-slate-400 text-[11px]">
-            Báo cáo gần nhất: <strong>{{ formatDate(group.latestReportAt) }}</strong> (Tổng {{ group.tickets.length }} lượt phản ánh)
+          <!-- Timeline & Author Info -->
+          <div class="flex flex-wrap items-center justify-start sm:justify-end gap-2 text-slate-500 text-[11px]">
+            <span>Tác giả: <strong>{{ group.question?.user?.name || 'Chưa rõ' }}</strong></span>
+            <span>•</span>
+            <span>Báo cáo gần nhất: <strong>{{ formatDate(group.latestReportAt) }}</strong></span>
           </div>
         </div>
       </div>
@@ -349,11 +359,11 @@
         <table class="w-full text-left text-xs">
           <thead>
             <tr class="border-b border-slate-200 bg-slate-50 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-              <th class="w-32 p-3.5 text-center">Trạng thái</th>
+              <th class="w-36 p-3.5 text-center">Trạng thái</th>
               <th class="p-3.5">Câu hỏi</th>
               <th class="p-3.5">Lý do & Mô tả</th>
               <th class="p-3.5">Người báo cáo</th>
-              <th class="p-3.5">Thời gian</th>
+              <th class="p-3.5">Thời gian & Vòng đời</th>
               <th class="w-36 p-3.5 text-right">Hành động</th>
             </tr>
           </thead>
@@ -402,31 +412,29 @@
                 </div>
               </td>
 
-              <!-- Time -->
-              <td class="p-3.5 align-top text-slate-400 text-[11px] whitespace-nowrap">
-                {{ formatDate(report.created_at) }}
+              <!-- Lifecycle Markers & Time -->
+              <td class="p-3.5 align-top text-slate-500 text-[11px] space-y-1">
+                <div>{{ formatDate(report.created_at) }}</div>
+                <div v-if="report.auto_privatized_at" class="text-orange-600 font-bold text-[10px]">
+                  🔒 Auto-Private: {{ formatDate(report.auto_privatized_at) }}
+                </div>
+                <div v-else-if="report.warning_sent_at" class="text-amber-600 text-[10px]">
+                  ⚠️ Warning: {{ formatDate(report.warning_sent_at) }}
+                </div>
+                <div v-else-if="report.reminder_sent_at" class="text-blue-600 text-[10px]">
+                  ⏰ Reminder: {{ formatDate(report.reminder_sent_at) }}
+                </div>
               </td>
 
               <!-- Actions -->
               <td class="p-3.5 align-top text-right">
-                <div class="flex items-center justify-end gap-1.5">
-                  <router-link
-                    v-if="report.status === 'author_updated'"
-                    :to="`/admin/question-bank?tab=reported&question_id=${report.question_id}`"
-                    class="rounded-lg bg-purple-50 text-[#7C3AED] px-2.5 py-1 text-[11px] font-bold hover:bg-purple-100 transition"
-                    title="Thẩm định Revision tại Ngân hàng"
-                  >
-                    Duyệt ↗
-                  </router-link>
-
-                  <button
-                    type="button"
-                    class="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-bold text-slate-700 hover:bg-slate-50 transition cursor-pointer shadow-2xs"
-                    @click="openModalFromTicket(report)"
-                  >
-                    Chi tiết
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  class="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-bold text-slate-700 hover:bg-slate-50 transition cursor-pointer shadow-2xs"
+                  @click="openModalFromTicket(report)"
+                >
+                  Xử lý Case
+                </button>
               </td>
             </tr>
           </tbody>
@@ -435,7 +443,7 @@
     </div>
 
     <!-- =========================================================================
-         MODERATION & REPORT DETAIL WORKSPACE MODAL (2-COLUMN LAYOUT)
+         CASE RESOLUTION & MODERATION WORKSPACE MODAL
     ========================================================================== -->
     <div
       v-if="isModerationModalOpen"
@@ -446,21 +454,23 @@
         <!-- Modal Header -->
         <div class="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-6 py-4">
           <div class="flex items-center gap-3">
-            <div class="grid h-9 w-9 place-items-center rounded-xl bg-rose-100 text-rose-600">
-              <Flag class="h-5 w-5" />
+            <div
+              class="grid h-9 w-9 place-items-center rounded-xl"
+              :class="activeGroupNeedsAdminAction ? 'bg-rose-100 text-rose-600' : (activeGroupResolutionType === 'auto_privatized' ? 'bg-orange-100 text-orange-600' : 'bg-emerald-100 text-emerald-600')"
+            >
+              <ShieldAlert v-if="activeGroupNeedsAdminAction" class="h-5 w-5" />
+              <Lock v-else-if="activeGroupResolutionType === 'auto_privatized'" class="h-5 w-5" />
+              <CheckCircle2 v-else class="h-5 w-5" />
             </div>
             <div>
-              <div class="flex items-center gap-2">
-                <h2 class="text-base font-black text-slate-900">
-                  Chi tiết Báo cáo & Câu hỏi #{{ activeGroup?.question_id }}
-                </h2>
-                <span class="rounded-full bg-rose-100 px-2.5 py-0.5 text-[11px] font-bold text-rose-800">
-                  {{ activeGroup?.tickets?.length || 0 }} lượt phản ánh
+              <h2 class="text-base font-black text-slate-900 flex items-center gap-2">
+                <span>{{ activeGroupNeedsAdminAction ? 'Xử lý Case Báo cáo Câu hỏi' : 'Chi tiết Case Báo cáo Câu hỏi' }}</span>
+                <span class="rounded-md bg-slate-200 px-2 py-0.5 font-mono text-xs font-bold text-slate-800">
+                  #{{ activeGroup?.question_id }}
                 </span>
-              </div>
-              <p class="text-xs text-slate-500 mt-0.5">
-                Môn học: <strong>{{ activeGroup?.question?.subject?.name || 'Chung' }}</strong> •
-                Khối: <strong>{{ activeGroup?.question?.grade?.name || 'Chung' }}</strong>
+              </h2>
+              <p class="text-xs text-slate-500">
+                {{ activeGroupNeedsAdminAction ? `Áp dụng quyết định quản trị viên cho ${activeGroup?.tickets?.length || 0} lượt báo cáo của câu hỏi này.` : `Case này đã được xử lý hoàn tất. Dưới đây là thông tin chi tiết và lịch sử phản ánh.` }}
               </p>
             </div>
           </div>
@@ -475,26 +485,26 @@
         </div>
 
         <!-- Modal Body (2-Column Grid) -->
-        <div class="flex-1 overflow-y-auto p-6 bg-[#F8FAFC]">
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- LEFT COLUMN: ALL REPORT TICKETS -->
+        <div class="flex-1 overflow-y-auto p-6">
+          <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <!-- LEFT COLUMN: USER REPORTS & LIFECYCLE INFO -->
             <div class="space-y-4">
-              <h3 class="text-xs font-black uppercase tracking-wider text-rose-900 flex items-center gap-2">
-                <AlertTriangle class="h-4 w-4 text-rose-600" />
-                <span>Danh sách phản ánh từ người học ({{ activeGroup?.tickets?.length }}):</span>
+              <h3 class="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-2">
+                <Flag class="h-4 w-4 text-rose-600" />
+                <span>Các phản ánh từ người học ({{ activeGroup?.tickets?.length || 0 }} lượt):</span>
               </h3>
 
-              <div class="space-y-3">
+              <div class="space-y-3 max-h-[420px] overflow-y-auto pr-1">
                 <div
                   v-for="t in activeGroup?.tickets"
                   :key="t.id"
-                  class="rounded-2xl border border-slate-200 bg-white p-4 space-y-2.5 shadow-2xs"
+                  class="rounded-2xl border border-slate-200 bg-white p-4 space-y-2 shadow-xs"
                 >
                   <div class="flex items-center justify-between">
-                    <span class="rounded bg-rose-100 text-rose-800 font-bold px-2 py-0.5 text-[11px]">
+                    <span class="rounded bg-rose-50 px-2 py-0.5 text-xs font-bold text-rose-700 border border-rose-200">
                       {{ t.reason }}
                     </span>
-                    <span class="text-[10px] text-slate-400">{{ formatDate(t.created_at) }}</span>
+                    <span class="text-[11px] text-slate-400">{{ formatDate(t.created_at) }}</span>
                   </div>
 
                   <p v-if="t.description" class="text-xs text-slate-700 italic leading-relaxed bg-slate-50 p-2.5 rounded-xl border border-slate-100">
@@ -502,19 +512,19 @@
                   </p>
 
                   <div class="flex items-center justify-between text-[11px] text-slate-500 pt-1 border-t border-slate-100">
-                    <span>Người báo cáo: <strong>{{ t.user?.name || 'Người dùng' }}</strong> ({{ t.user?.email }})</span>
+                    <span>Người báo: <strong>{{ t.user?.name || 'Người dùng' }}</strong> ({{ t.user?.email }})</span>
                     <StatusBadge :value="t.status" />
                   </div>
                 </div>
               </div>
             </div>
 
-            <!-- RIGHT COLUMN: QUESTION DETAILS & ACTION BANNER -->
+            <!-- RIGHT COLUMN: QUESTION DETAILS & ACTIONS / RESOLUTION SUMMARY -->
             <div class="space-y-4">
               <div class="flex items-center justify-between">
                 <h3 class="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-2">
                   <HelpCircle class="h-4 w-4 text-[#7C3AED]" />
-                  <span>Nội dung câu hỏi hiện tại:</span>
+                  <span>Nội dung câu hỏi:</span>
                 </h3>
 
                 <router-link
@@ -527,87 +537,81 @@
               </div>
 
               <!-- Question Card -->
-              <div class="rounded-2xl border border-slate-200 bg-white p-5 space-y-4 shadow-sm">
+              <div class="rounded-2xl border border-slate-200 bg-white p-4 space-y-3 shadow-xs text-xs">
                 <!-- Content -->
-                <div class="space-y-1">
+                <div>
                   <span class="text-[10px] font-bold uppercase text-slate-400">Đề bài:</span>
-                  <div class="text-sm font-bold text-slate-900 leading-relaxed bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                  <div class="font-bold text-slate-900 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-200 mt-1">
                     {{ activeGroup?.question?.content }}
                   </div>
                 </div>
 
                 <!-- Answers List -->
-                <div class="space-y-2">
+                <div class="space-y-1.5">
                   <span class="text-[10px] font-bold uppercase text-slate-400">Các phương án đáp án:</span>
-                  <div class="space-y-1.5">
-                    <div
-                      v-for="ans in activeGroup?.question?.answers"
-                      :key="ans.id || ans.key"
-                      class="rounded-xl border p-2.5 text-xs font-semibold flex items-center justify-between"
-                      :class="ans.is_correct ? 'border-emerald-300 bg-emerald-50 text-emerald-900 font-bold' : 'border-slate-200 bg-white text-slate-700'"
-                    >
-                      <span>{{ ans.key || ans.answer_key }}. {{ ans.content || ans.text }}</span>
-                      <span v-if="ans.is_correct" class="text-[10px] font-bold text-emerald-600">✓ Đáp án đúng</span>
-                    </div>
+                  <div
+                    v-for="ans in activeGroup?.question?.answers"
+                    :key="ans.id || ans.key"
+                    class="rounded-xl border p-2 text-xs font-semibold flex items-center justify-between"
+                    :class="ans.is_correct ? 'border-emerald-300 bg-emerald-50 text-emerald-900 font-bold' : 'border-slate-200 bg-white text-slate-700'"
+                  >
+                    <span>{{ ans.key || ans.answer_key }}. {{ ans.content || ans.text }}</span>
+                    <span v-if="ans.is_correct" class="text-[10px] font-bold text-emerald-600">✓ Đáp án đúng</span>
                   </div>
                 </div>
 
-                <!-- Related Quizzes -->
-                <div v-if="activeGroup?.question?.quizzes?.length || activeGroup?.question?.quiz" class="space-y-1.5 pt-2 border-t border-slate-100">
-                  <span class="text-[10px] font-bold uppercase text-slate-400">Các bài Quiz đang sử dụng câu hỏi này:</span>
-                  <div class="flex flex-wrap gap-1.5">
-                    <router-link
-                      v-for="qz in (activeGroup?.question?.quizzes || (activeGroup?.question?.quiz ? [activeGroup.question.quiz] : []))"
-                      :key="qz.id"
-                      :to="`/admin/quizzes/${qz.id}`"
-                      target="_blank"
-                      class="inline-flex items-center gap-1 rounded-lg border border-purple-200 bg-purple-50 px-2.5 py-1 text-[11px] font-bold text-[#7C3AED] hover:bg-purple-100 transition"
-                      title="Mở chi tiết bài Quiz"
+                <!-- Author & Question Visibility Info -->
+                <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 text-[11px] text-slate-500">
+                  <span>Tác giả: <strong>{{ activeGroup?.question?.user?.name || 'Chưa rõ' }}</strong></span>
+                  <div class="flex items-center gap-1.5">
+                    <span>Trạng thái câu hỏi:</span>
+                    <span
+                      class="rounded-md px-2 py-0.5 font-bold text-[10px]"
+                      :class="isQuestionDeleted ? 'bg-rose-100 text-rose-700' : (isQuestionPublic ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700')"
                     >
-                      <Package class="h-3.5 w-3.5" />
-                      <span>{{ qz.title }}</span>
-                      <span class="text-[9px] font-normal text-slate-500">({{ qz.is_public ? 'Công khai' : 'Riêng tư' }})</span>
-                    </router-link>
+                      {{ isQuestionDeleted ? 'Đã xóa (Thùng rác)' : (isQuestionPublic ? 'Công khai' : 'Riêng tư') }}
+                    </span>
                   </div>
-                </div>
-
-                <!-- Metadata info -->
-                <div class="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100 text-[11px]">
-                  <span class="text-slate-500">Tác giả: <strong>{{ activeGroup?.question?.user?.name || 'Vô danh' }}</strong></span>
-                  <span>•</span>
-                  <span class="text-slate-500">Trạng thái duyệt: <strong>{{ activeGroup?.question?.bank_submission_status || 'none' }}</strong></span>
                 </div>
               </div>
 
-              <!-- AUTHOR UPDATED CTA BANNER (Primary workflow) -->
+              <!-- LATEST REVISION / AUTO-REVIEW METADATA BADGE (IF AVAILABLE) -->
               <div
-                v-if="activeGroup?.hasAuthorUpdated || activeGroup?.question?.bank_submission_status === 'pending'"
-                class="rounded-2xl border border-blue-200 bg-blue-50/80 p-4 space-y-2.5 shadow-xs"
+                v-if="activeGroup?.question?.latestReviewRequest?.snapshot_metadata?.auto_approved"
+                class="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-3.5 space-y-1 text-xs"
               >
-                <div class="flex items-center gap-2 text-blue-900 font-bold text-xs">
-                  <CheckCircle2 class="h-4 w-4 text-blue-600" />
-                  <span>Chủ câu hỏi đã cập nhật & gửi duyệt Revision mới</span>
+                <div class="flex items-center gap-1.5 text-emerald-900 font-bold">
+                  <CheckCircle2 class="h-4 w-4 text-emerald-600" />
+                  <span>Bản đính chính đã được Tự động duyệt (Revision #{{ activeGroup.question.latestReviewRequest.revision_number }})</span>
                 </div>
-                <p class="text-xs text-blue-800 leading-relaxed">
-                  Tác giả câu hỏi đã tiếp thu phản ánh và chỉnh sửa nội dung. Bạn có thể chuyển sang Ngân hàng câu hỏi để đối chiếu Diff. Khi bạn <strong>Phê duyệt (Approve)</strong> Revision, hệ thống sẽ <strong>tự động giải quyết toàn bộ các báo cáo</strong> liên quan!
+                <p class="text-[11px] text-emerald-800 leading-relaxed">
+                  Tác giả đã cập nhật nội dung đính chính và vượt qua toàn bộ quy tắc kiểm định an toàn tự động lúc {{ formatDate(activeGroup.question.latestReviewRequest.snapshot_metadata.auto_approved_at || activeGroup.question.latestReviewRequest.updated_at) }}.
                 </p>
-                <router-link
-                  :to="`/admin/question-bank?tab=reported&question_id=${activeGroup.question_id}`"
-                  class="inline-flex items-center gap-1.5 rounded-xl bg-[#7C3AED] px-4 py-2 text-xs font-bold text-white hover:bg-[#6D28D9] transition cursor-pointer shadow-xs"
-                >
-                  <ExternalLink class="h-3.5 w-3.5" />
-                  <span>Chuyển sang Thẩm định Revision tại Ngân hàng câu hỏi ↗</span>
-                </router-link>
               </div>
 
-              <!-- EXCEPTION ACTION FORM (For Admin Review Required / Manual Interventions) -->
               <div
-                v-if="activeGroup?.hasPending || activeGroup?.hasAdminReviewRequired"
-                class="rounded-2xl border border-slate-200 bg-white p-4 space-y-3 shadow-xs"
+                v-else-if="activeGroup?.question?.latestReviewRequest?.snapshot_metadata?.auto_review_failed"
+                class="rounded-2xl border border-rose-200 bg-rose-50/60 p-3.5 space-y-1 text-xs"
+              >
+                <div class="flex items-center gap-1.5 text-rose-900 font-bold">
+                  <AlertTriangle class="h-4 w-4 text-rose-600" />
+                  <span>Auto Review không đạt — Cần Admin thẩm định (Revision #{{ activeGroup.question.latestReviewRequest.revision_number }})</span>
+                </div>
+                <p class="text-[11px] text-rose-800 leading-relaxed">
+                  Lý do: {{ activeGroup.question.latestReviewRequest.snapshot_metadata.auto_review_reason || 'Nội dung đính chính vi phạm quy tắc cấu trúc hoặc danh mục nghiêm trọng.' }}
+                </p>
+              </div>
+
+              <!-- =========================================================================
+                   MODE 1: CASE ACTION MODE (CÒN CẦN ADMIN XỬ LÝ)
+              ========================================================================== -->
+              <div
+                v-if="activeGroupNeedsAdminAction"
+                class="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-3 shadow-xs"
               >
                 <h4 class="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
                   <Shield class="h-4 w-4 text-rose-600" />
-                  <span>Xử lý ngoại lệ / Can thiệp thủ công:</span>
+                  <span>Quyết định xử lý Case:</span>
                 </h4>
 
                 <div class="space-y-1">
@@ -615,71 +619,124 @@
                   <textarea
                     v-model="resolutionNote"
                     rows="2"
-                    class="w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-xs outline-none focus:border-rose-500 focus:bg-white resize-none font-medium text-slate-900"
-                    placeholder="Nhập ghi chú hoặc lý do xử lý ngoại lệ..."
+                    class="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs outline-none focus:border-rose-500 resize-none font-medium text-slate-900"
+                    placeholder="Nhập lý do hoặc ghi chú giải quyết case..."
                   ></textarea>
                 </div>
 
-                <div class="flex flex-wrap items-center gap-2 pt-1">
-                  <!-- Action 1: Mark as Admin Review Required -->
-                  <button
-                    v-if="!activeGroup?.hasAdminReviewRequired"
-                    type="button"
-                    class="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-100 transition cursor-pointer shadow-2xs"
-                    :disabled="isSubmittingResolution"
-                    @click="executeGroupResolution('admin_review_required', 'keep')"
-                  >
-                    <AlertTriangle class="h-3.5 w-3.5" />
-                    <span>Đánh dấu Cần can thiệp</span>
-                  </button>
+                <!-- Alert if question is already deleted -->
+                <div v-if="isQuestionDeleted" class="p-2.5 rounded-xl border border-rose-200 bg-rose-50 text-[11px] text-rose-800 font-semibold flex items-center gap-1.5">
+                  <AlertTriangle class="h-3.5 w-3.5 shrink-0 text-rose-600" />
+                  <span>Câu hỏi này hiện đã bị xóa trong Thùng rác. Bạn có thể bỏ qua báo cáo hoặc giải quyết case.</span>
+                </div>
 
-                  <!-- Action 2: Resolve & Hide -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                  <!-- Action 1: Resolve & Keep (Only if not deleted) -->
                   <button
+                    v-if="!isQuestionDeleted"
                     type="button"
-                    class="inline-flex items-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-800 hover:bg-amber-100 transition cursor-pointer shadow-2xs"
-                    :disabled="isSubmittingResolution"
-                    @click="executeGroupResolution('resolved', 'hide')"
-                  >
-                    <Lock class="h-3.5 w-3.5" />
-                    <span>Ẩn khỏi Ngân hàng & Resolve</span>
-                  </button>
-
-                  <!-- Action 3: Force Resolve -->
-                  <button
-                    type="button"
-                    class="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-emerald-700 transition cursor-pointer shadow-2xs"
+                    class="inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white hover:bg-emerald-700 transition cursor-pointer shadow-xs"
                     :disabled="isSubmittingResolution"
                     @click="executeGroupResolution('resolved', 'keep')"
                   >
                     <Check class="h-3.5 w-3.5" />
-                    <span>Giải quyết thủ công</span>
+                    <span>{{ isQuestionPublic ? 'Giải quyết & Giữ câu hỏi' : 'Giải quyết (Giữ riêng tư)' }}</span>
                   </button>
 
-                  <!-- Action 4: Dismiss -->
+                  <!-- Action 2: Resolve & Hide from Bank (ONLY IF QUESTION IS PUBLIC AND NOT DELETED) -->
+                  <button
+                    v-if="isQuestionPublic && !isQuestionDeleted"
+                    type="button"
+                    class="inline-flex items-center justify-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50 px-3.5 py-2 text-xs font-bold text-amber-800 hover:bg-amber-100 transition cursor-pointer shadow-xs"
+                    :disabled="isSubmittingResolution"
+                    @click="executeGroupResolution('resolved', 'hide')"
+                  >
+                    <Lock class="h-3.5 w-3.5" />
+                    <span>Gỡ công khai & Resolve</span>
+                  </button>
+
+                  <!-- Action 3: Dismiss (Spam) -->
                   <button
                     type="button"
-                    class="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-100 transition cursor-pointer shadow-2xs"
+                    class="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 transition cursor-pointer shadow-xs"
                     :disabled="isSubmittingResolution"
                     @click="executeGroupResolution('dismissed', 'keep')"
                   >
                     <X class="h-3.5 w-3.5" />
                     <span>Bỏ qua báo cáo (Spam)</span>
                   </button>
+
+                  <!-- Action 4: Delete Question (Only if not deleted) -->
+                  <button
+                    v-if="!isQuestionDeleted"
+                    type="button"
+                    class="inline-flex items-center justify-center gap-1.5 rounded-xl bg-rose-600 px-3.5 py-2 text-xs font-bold text-white hover:bg-rose-700 transition cursor-pointer shadow-xs"
+                    :disabled="isSubmittingResolution"
+                    @click="executeGroupResolution('resolved', 'delete')"
+                  >
+                    <Trash2 class="h-3.5 w-3.5" />
+                    <span>Xóa câu hỏi vi phạm</span>
+                  </button>
                 </div>
               </div>
 
-              <!-- Already Resolved Banner -->
-              <div
-                v-else-if="!activeGroup?.hasAuthorUpdated"
-                class="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4 space-y-1 shadow-xs"
-              >
-                <div class="flex items-center gap-2 text-emerald-800 font-bold text-xs">
-                  <CheckCircle class="h-4 w-4 text-emerald-600" />
-                  <span>Toàn bộ báo cáo của câu hỏi này đã được xử lý hoàn tất</span>
+              <!-- =========================================================================
+                   MODE 2: CASE READ-ONLY MODE (CASE ĐÃ HOÀN TẤT)
+              ========================================================================== -->
+              <div v-else class="space-y-3">
+                <!-- Read-only Summary 1: Auto Privatized (Day 7) -->
+                <div
+                  v-if="activeGroupResolutionType === 'auto_privatized'"
+                  class="rounded-2xl border border-orange-200 bg-orange-50/60 p-4 space-y-2 text-xs"
+                >
+                  <div class="flex items-center gap-2 text-orange-950 font-black">
+                    <Lock class="h-4 w-4 text-orange-600" />
+                    <span>🔒 CASE ĐÃ TỰ ĐỘNG GỠ CÔNG KHAI (AUTO PRIVATE)</span>
+                  </div>
+                  <p class="text-slate-600 leading-relaxed text-[11px]">
+                    Tác giả không đính chính sau 7 ngày kể từ khi nhận báo cáo vi phạm. Hệ thống đã tự động chuyển câu hỏi về trạng thái Riêng tư và ẩn khỏi Ngân hàng đề thi để đảm bảo chất lượng.
+                  </p>
+                  <div class="text-[11px] text-slate-500 pt-2 border-t border-orange-200/60 flex items-center justify-between">
+                    <span>Trạng thái: <strong class="text-orange-700">Tự động gỡ (Day 7)</strong></span>
+                    <span v-if="activeGroup.tickets[0]?.auto_privatized_at">Thời gian: <strong>{{ formatDate(activeGroup.tickets[0].auto_privatized_at) }}</strong></span>
+                  </div>
                 </div>
-                <p class="text-[11px] text-emerald-700 font-medium">
-                  Không còn ticket nào ở trạng thái chờ xử lý.
-                </p>
+
+                <!-- Read-only Summary 2: Dismissed -->
+                <div
+                  v-else-if="activeGroupResolutionType === 'dismissed'"
+                  class="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-2 text-xs"
+                >
+                  <div class="flex items-center gap-2 text-slate-900 font-black">
+                    <XCircle class="h-4 w-4 text-slate-500" />
+                    <span>⚪ CASE ĐÃ BỎ QUA BÁO CÁO (DISMISSED)</span>
+                  </div>
+                  <p class="text-slate-600 leading-relaxed text-[11px]">
+                    Toàn bộ báo cáo vi phạm của câu hỏi này đã được Quản trị viên xác định là không hợp lệ hoặc spam và được đóng lại.
+                  </p>
+                  <div class="text-[11px] text-slate-500 pt-2 border-t border-slate-200 flex items-center justify-between">
+                    <span>Trạng thái: <strong class="text-slate-700">Đã bỏ qua</strong></span>
+                    <span>Thời gian: <strong>{{ formatDate(activeGroup.tickets[0]?.updated_at) }}</strong></span>
+                  </div>
+                </div>
+
+                <!-- Read-only Summary 3: Auto Resolved / Resolved -->
+                <div
+                  v-else
+                  class="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4 space-y-2 text-xs"
+                >
+                  <div class="flex items-center gap-2 text-emerald-950 font-black">
+                    <CheckCircle2 class="h-4 w-4 text-emerald-600" />
+                    <span>✓ CASE ĐÃ ĐƯỢC GIẢI QUYẾT</span>
+                  </div>
+                  <p class="text-slate-600 leading-relaxed text-[11px]">
+                    {{ activeGroupResolutionType === 'auto_resolved' ? 'Nội dung đính chính của tác giả đã vượt qua kiểm định an toàn tự động (Auto Approve) và toàn bộ báo cáo liên quan đã được giải quyết.' : 'Toàn bộ phản ánh vi phạm đã được Quản trị viên xử lý và khép lại thành công.' }}
+                  </p>
+                  <div class="text-[11px] text-slate-500 pt-2 border-t border-emerald-200/60 flex items-center justify-between">
+                    <span>Trạng thái: <strong class="text-emerald-700">Đã giải quyết</strong></span>
+                    <span>Thời gian: <strong>{{ formatDate(activeGroup.tickets[0]?.updated_at) }}</strong></span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -709,17 +766,15 @@ import {
   CheckCircle,
   CheckCircle2,
   ChevronRight,
-  Clock,
-  ExternalLink,
   Eye,
   Flag,
   HelpCircle,
-  Inbox,
   Lock,
-  Package,
   RefreshCw,
   Search,
   Shield,
+  ShieldAlert,
+  Trash2,
   X,
   XCircle,
 } from 'lucide-vue-next'
@@ -732,16 +787,19 @@ const showToast = inject('showToast')
 const reports = ref([])
 const isLoading = ref(false)
 const searchQuery = ref('')
-const selectedStatus = ref('all')
+const selectedStatus = ref('needs_admin_review')
 const viewMode = ref('grouped')
 
 const stats = reactive({
   total: 0,
-  pending: 0,
-  author_updated: 0,
+  needs_admin_review: 0,
   admin_review_required: 0,
+  author_updated: 0,
+  pending: 0,
+  auto_privatized: 0,
   resolved: 0,
   dismissed: 0,
+  exception_cases_count: 0,
   questions_count: 0,
 })
 
@@ -751,19 +809,63 @@ const activeGroup = ref(null)
 const resolutionNote = ref('')
 const isSubmittingResolution = ref(false)
 
+const activeGroupNeedsAdminAction = computed(() => {
+  if (!activeGroup.value?.tickets?.length) return false
+  return activeGroup.value.tickets.some(t => ['pending', 'author_updated', 'admin_review_required'].includes(t.status))
+})
+
+const isQuestionPublic = computed(() => {
+  return Boolean(activeGroup.value?.question?.is_public)
+})
+
+const isQuestionDeleted = computed(() => {
+  return Boolean(activeGroup.value?.question?.deleted_at)
+})
+
+const activeGroupResolutionType = computed(() => {
+  if (!activeGroup.value) return 'none'
+  if (activeGroup.value.isAutoPrivatized || activeGroup.value.tickets.some(t => Boolean(t.auto_privatized_at))) {
+    return 'auto_privatized'
+  }
+  if (activeGroup.value.tickets.every(t => t.status === 'dismissed')) {
+    return 'dismissed'
+  }
+  const latestReq = activeGroup.value.question?.latestReviewRequest
+  if (latestReq?.snapshot_metadata?.auto_approved) {
+    return 'auto_resolved'
+  }
+  if (activeGroup.value.tickets.every(t => t.status === 'resolved')) {
+    return 'resolved'
+  }
+  return 'other'
+})
+
 const statusTabs = computed(() => [
-  { key: 'all', label: 'Tất cả', count: stats.total },
-  { key: 'admin_review_required', label: 'Cần Admin', count: stats.admin_review_required },
-  { key: 'author_updated', label: 'Đã cập nhật', count: stats.author_updated },
-  { key: 'pending', label: 'Chờ chủ xử lý', count: stats.pending },
-  { key: 'resolved', label: 'Đã giải quyết', count: stats.resolved },
-  { key: 'dismissed', label: 'Đã bỏ qua', count: stats.dismissed },
+  { key: 'needs_admin_review', label: '🔴 Cần Admin xử lý', count: stats.admin_review_required || stats.needs_admin_review || 0 },
+  { key: 'auto_resolved', label: '🟢 Tự động duyệt', count: stats.resolved || 0 },
+  { key: 'auto_privatized', label: '🔒 Tự động gỡ (7 ngày)', count: stats.auto_privatized || 0 },
+  { key: 'dismissed', label: '⚪ Đã bỏ qua', count: stats.dismissed || 0 },
+  { key: 'all', label: '📋 Tất cả', count: stats.total || 0 },
 ])
+
+const isTabActive = (tabKey) => {
+  if (tabKey === 'needs_admin_review' && (selectedStatus.value === 'needs_admin_review' || selectedStatus.value === 'admin_review_required')) {
+    return true
+  }
+  return selectedStatus.value === tabKey
+}
 
 const filteredReports = computed(() => {
   return reports.value.filter((rep) => {
-    const matchStatus = selectedStatus.value === 'all' || rep.status === selectedStatus.value
-    if (!matchStatus) return false
+    if (selectedStatus.value === 'needs_admin_review' || selectedStatus.value === 'admin_review_required') {
+      if (rep.status !== 'admin_review_required') return false
+    } else if (selectedStatus.value === 'auto_privatized') {
+      if (!rep.auto_privatized_at) return false
+    } else if (selectedStatus.value === 'auto_resolved') {
+      if (rep.status !== 'resolved') return false
+    } else if (selectedStatus.value !== 'all' && rep.status !== selectedStatus.value) {
+      return false
+    }
 
     if (!searchQuery.value.trim()) return true
     const q = searchQuery.value.toLowerCase().trim()
@@ -791,6 +893,7 @@ const groupedQuestions = computed(() => {
         hasPending: false,
         hasAuthorUpdated: false,
         hasAdminReviewRequired: false,
+        isAutoPrivatized: false,
         latestReportAt: ticket.created_at,
       })
     }
@@ -798,7 +901,6 @@ const groupedQuestions = computed(() => {
     const entry = map.get(qId)
     entry.tickets.push(ticket)
 
-    // Count reason breakdown
     entry.reasonsCount[ticket.reason] = (entry.reasonsCount[ticket.reason] || 0) + 1
 
     if (ticket.status === 'pending') {
@@ -807,6 +909,10 @@ const groupedQuestions = computed(() => {
       entry.hasAuthorUpdated = true
     } else if (ticket.status === 'admin_review_required') {
       entry.hasAdminReviewRequired = true
+    }
+
+    if (ticket.auto_privatized_at) {
+      entry.isAutoPrivatized = true
     }
 
     if (new Date(ticket.created_at) > new Date(entry.latestReportAt)) {
@@ -830,11 +936,15 @@ const groupedQuestions = computed(() => {
 const filteredGroupedQuestions = computed(() => {
   return groupedQuestions.value.filter((g) => {
     // Status filter
-    if (selectedStatus.value === 'pending' && !g.hasPending) return false
-    if (selectedStatus.value === 'author_updated' && !g.hasAuthorUpdated) return false
-    if (selectedStatus.value === 'admin_review_required' && !g.hasAdminReviewRequired) return false
-    if (selectedStatus.value === 'resolved' && g.tickets.some(t => ['pending', 'author_updated', 'admin_review_required'].includes(t.status))) return false
-    if (selectedStatus.value === 'dismissed' && g.tickets.some(t => t.status !== 'dismissed')) return false
+    if (selectedStatus.value === 'needs_admin_review' || selectedStatus.value === 'admin_review_required') {
+      if (!g.hasAdminReviewRequired) return false
+    } else if (selectedStatus.value === 'auto_privatized') {
+      if (!g.isAutoPrivatized) return false
+    } else if (selectedStatus.value === 'auto_resolved' || selectedStatus.value === 'resolved') {
+      if (g.tickets.some(t => ['pending', 'author_updated', 'admin_review_required'].includes(t.status))) return false
+    } else if (selectedStatus.value === 'dismissed') {
+      if (g.tickets.some(t => t.status !== 'dismissed')) return false
+    }
 
     if (!searchQuery.value.trim()) return true
     const q = searchQuery.value.toLowerCase().trim()
@@ -853,15 +963,17 @@ const fetchReports = async () => {
     reports.value = res.items || []
     if (res.stats) {
       stats.total = res.stats.total || 0
-      stats.pending = res.stats.pending || 0
-      stats.author_updated = res.stats.author_updated || 0
+      stats.needs_admin_review = res.stats.needs_admin_review || res.stats.admin_review_required || 0
       stats.admin_review_required = res.stats.admin_review_required || 0
+      stats.author_updated = res.stats.author_updated || 0
+      stats.pending = res.stats.pending || 0
+      stats.auto_privatized = res.stats.auto_privatized || 0
       stats.resolved = res.stats.resolved || 0
       stats.dismissed = res.stats.dismissed || 0
+      stats.exception_cases_count = res.stats.exception_cases_count || 0
       stats.questions_count = res.stats.questions_count || 0
     }
 
-    // If query param question_id is present, auto-open modal for that question
     if (route.query.question_id) {
       const targetQId = Number(route.query.question_id)
       const targetGroup = groupedQuestions.value.find(g => g.question_id === targetQId)

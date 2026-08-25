@@ -34,6 +34,8 @@ const statusMap = {
   pending: { text: 'Chờ xử lý', className: 'border-amber-200 bg-amber-50 text-amber-700', dotClass: 'bg-amber-500' },
   author_updated: { text: 'Tác giả đã sửa', className: 'border-blue-200 bg-blue-50 text-blue-700', dotClass: 'bg-blue-500' },
   admin_review_required: { text: 'Cần can thiệp', className: 'border-rose-200 bg-rose-50 text-rose-700', dotClass: 'bg-rose-500' },
+  auto_privatized: { text: 'Tự động gỡ', className: 'border-orange-200 bg-orange-50 text-orange-700', dotClass: 'bg-orange-500' },
+  auto_resolved: { text: 'Tự động duyệt', className: 'border-teal-200 bg-teal-50 text-teal-700', dotClass: 'bg-teal-500' },
   rejected: { text: 'Bị từ chối', className: 'border-rose-200 bg-rose-50 text-rose-700', dotClass: 'bg-rose-500' },
   superseded: { text: 'Đã thay thế', className: 'border-slate-200 bg-slate-100 text-slate-600', dotClass: 'bg-slate-400' },
   resolved: { text: 'Đã giải quyết', className: 'border-emerald-200 bg-emerald-50 text-emerald-700', dotClass: 'bg-emerald-500' },

@@ -892,7 +892,7 @@
 </template>
 
 <script setup>
-import { computed, inject, onMounted, reactive, ref } from 'vue'
+import { computed, inject, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   AlertCircle,
@@ -1343,9 +1343,21 @@ const formatDate = (dateStr) => {
   })
 }
 
+let searchDebounceTimer = null
+watch(() => filters.search, (newVal, oldVal) => {
+  if (newVal === oldVal) return
+  clearTimeout(searchDebounceTimer)
+  searchDebounceTimer = setTimeout(() => {
+    applyFilter()
+  }, 400)
+})
+
 onMounted(() => {
   if (route.query.tab) {
     currentTab.value = route.query.tab
+  }
+  if (route.query.search) {
+    filters.search = route.query.search
   }
   if (route.query.review_id) {
     openReviewDetail(Number(route.query.review_id))

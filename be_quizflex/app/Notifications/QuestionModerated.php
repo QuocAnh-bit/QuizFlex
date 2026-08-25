@@ -3,9 +3,10 @@
 namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
 
-class QuestionModerated extends Notification
+class QuestionModerated extends Notification implements ShouldQueue
 {
     use Queueable;
 
@@ -61,8 +62,16 @@ class QuestionModerated extends Notification
             $title = '🚩 Câu hỏi của bạn bị báo cáo vi phạm';
             $descText = $this->description ? " (Mô tả chi tiết: \"{$this->description}\")" : '';
             $message = "Câu hỏi #{$this->question->id} (\"{$snippet}\") của bạn vừa nhận báo cáo vi phạm. Lý do: \"{$reasonText}\"{$descText}. Vui lòng bấm vào đây để kiểm tra và chỉnh sửa.";
+        } elseif ($this->action === 'reminder') {
+            $title = '⏰ Nhắc nhở: Câu hỏi bị báo cáo cần được chỉnh sửa';
+            $message = "Câu hỏi #{$this->question->id} (\"{$snippet}\") của bạn đã nhận báo cáo vi phạm 3 ngày trước và chưa được cập nhật. Vui lòng bấm vào đây để kiểm tra và chỉnh sửa trước thời hạn.";
+        } elseif ($this->action === 'warning') {
+            $title = '⚠️ Cảnh báo: Câu hỏi của bạn sắp bị gỡ công khai tự động';
+            $message = "Câu hỏi #{$this->question->id} (\"{$snippet}\") của bạn đã nhận báo cáo vi phạm 5 ngày trước và chưa được cập nhật. Nếu không chỉnh sửa, hệ thống sẽ tự động gỡ công khai câu hỏi sau 2 ngày nữa.";
+        } elseif ($this->action === 'auto_privatized') {
+            $title = '🔒 Hệ thống đã tự động gỡ công khai câu hỏi của bạn';
+            $message = "Câu hỏi #{$this->question->id} (\"{$snippet}\") của bạn đã bị hệ thống tự động gỡ công khai (chuyển sang Riêng tư) do không được chỉnh sửa sau 7 ngày kể từ khi bị báo cáo. Bạn có thể chỉnh sửa và gửi duyệt lại bất cứ lúc nào.";
         } elseif ($this->action === 'hidden') {
-
             $title = '⚠️ Admin đã gỡ công khai câu hỏi của bạn';
             $message = "Admin đã gỡ công khai (khóa) câu hỏi #{$this->question->id} (\"{$snippet}\") của bạn do vi phạm. Lý do: \"{$reasonText}\". Vui lòng nhấp vào đây để chỉnh sửa và yêu cầu duyệt lại.";
         } elseif ($this->action === 'shown') {
