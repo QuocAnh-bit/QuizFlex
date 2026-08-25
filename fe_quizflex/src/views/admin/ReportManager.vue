@@ -1,348 +1,378 @@
 <template>
-  <section class="space-y-4">
-    <!-- 1. HERO HEADER CARD & KPI STATS -->
-    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs space-y-4">
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div class="flex items-center gap-3.5 min-w-0">
-          <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-rose-50 text-rose-600">
-            <AlertTriangle class="h-6 w-6" />
-          </div>
-          <div class="min-w-0">
-            <h1 class="text-3xl font-black tracking-[-0.04em] text-[var(--text)] truncate">
-              Quản lý Báo cáo
-            </h1>
-            <p class="text-xs text-slate-500 leading-relaxed truncate sm:whitespace-normal mt-0.5">
-              Xử lý các báo cáo vi phạm, sai sót bài Quiz và câu hỏi từ cộng đồng.
-            </p>
-          </div>
-        </div>
+  <section class="grid gap-6">
+    <!-- 1. HERO HEADER CARD (Chuẩn định dạng Admin Phòng bài tập) -->
+    <div class="card p-6 sm:p-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+      <div>
+        <p class="text-xs font-bold uppercase tracking-wider text-[#7C3AED]">Quản lý báo cáo</p>
+        <h1 class="mt-1 text-2xl font-black text-slate-900 sm:text-3xl">Quản lý Báo cáo vi phạm</h1>
+        <p class="mt-1 text-sm text-slate-600 max-w-3xl leading-relaxed">
+          Xử lý các báo cáo vi phạm, sai sót bài Quiz và câu hỏi từ cộng đồng trên toàn hệ thống.
+        </p>
+      </div>
 
+      <div class="flex items-center gap-2 shrink-0">
         <button
           type="button"
-          class="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition cursor-pointer shadow-2xs"
+          class="btn-secondary text-xs px-3.5 py-2 inline-flex items-center gap-1.5 cursor-pointer"
           @click="refreshAllData"
         >
-          <RefreshCw class="h-3.5 w-3.5 text-purple-600" :class="{ 'animate-spin': isLoading }" />
+          <RefreshCw class="h-3.5 w-3.5 text-[#7C3AED]" :class="{ 'animate-spin': isLoading }" />
           <span>Làm mới dữ liệu</span>
         </button>
       </div>
+    </div>
 
-      <!-- 2 KPI STATS GRID -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-100">
-        <div class="rounded-xl border border-slate-100 bg-slate-50/50 p-4 flex items-center gap-3.5">
-          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
+    <!-- 2. SUMMARY CARDS (4 CARDS GRID chuẩn Admin Rooms) -->
+    <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div class="card p-4 flex flex-col justify-between transition-all duration-200 hover:-translate-y-0.5">
+        <div class="flex items-center gap-3">
+          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-600 border border-amber-200">
             <BookOpen class="h-5 w-5" />
           </div>
-          <div class="min-w-0">
-            <p class="text-xs font-medium text-slate-500 truncate">Quiz bị báo cáo</p>
-            <p class="text-2xl font-bold text-slate-900 leading-tight">{{ quizPendingCount }}</p>
+          <div>
+            <p class="text-xs font-semibold text-slate-500">Quiz bị báo cáo</p>
+            <p class="mt-0.5 text-2xl font-black text-slate-900">{{ quizPendingCount }}</p>
           </div>
         </div>
+        <p class="mt-3 text-[11px] font-medium text-slate-500">Chờ Admin xử lý</p>
+      </div>
 
-        <div class="rounded-xl border border-slate-100 bg-slate-50/50 p-4 flex items-center gap-3.5">
-          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-50 text-rose-600">
+      <div class="card p-4 flex flex-col justify-between transition-all duration-200 hover:-translate-y-0.5">
+        <div class="flex items-center gap-3">
+          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-50 text-rose-600 border border-rose-200">
             <FileText class="h-5 w-5" />
           </div>
-          <div class="min-w-0">
-            <p class="text-xs font-medium text-slate-500 truncate">Câu hỏi bị báo cáo</p>
-            <p class="text-2xl font-bold text-slate-900 leading-tight">{{ questionPendingCount }}</p>
+          <div>
+            <p class="text-xs font-semibold text-slate-500">Câu hỏi bị báo cáo</p>
+            <p class="mt-0.5 text-2xl font-black text-slate-900">{{ questionPendingCount }}</p>
           </div>
         </div>
+        <p class="mt-3 text-[11px] font-medium text-slate-500">Chờ Admin xử lý</p>
+      </div>
+
+      <div class="card p-4 flex flex-col justify-between transition-all duration-200 hover:-translate-y-0.5">
+        <div class="flex items-center gap-3">
+          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200">
+            <CheckCircle2 class="h-5 w-5" />
+          </div>
+          <div>
+            <p class="text-xs font-semibold text-slate-500">Đã đính chính</p>
+            <p class="mt-0.5 text-2xl font-black text-slate-900">{{ questionUpdatedCount }}</p>
+          </div>
+        </div>
+        <p class="mt-3 text-[11px] font-medium text-slate-500">Tác giả đã cập nhật</p>
+      </div>
+
+      <div class="card p-4 flex flex-col justify-between transition-all duration-200 hover:-translate-y-0.5">
+        <div class="flex items-center gap-3">
+          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-purple-50 text-[#7C3AED] border border-purple-200">
+            <AlertTriangle class="h-5 w-5" />
+          </div>
+          <div>
+            <p class="text-xs font-semibold text-slate-500">Tổng báo cáo</p>
+            <p class="mt-0.5 text-2xl font-black text-slate-900">{{ totalPendingReports }}</p>
+          </div>
+        </div>
+        <p class="mt-3 text-[11px] font-medium text-slate-500">Tổng số chờ duyệt</p>
       </div>
     </div>
 
-    <!-- 2. PRIMARY TAB NAVIGATION BAR -->
-    <div class="rounded-2xl border border-slate-200 bg-white px-4 shadow-2xs flex items-center gap-6 overflow-x-auto text-sm font-semibold">
-      <button
-        type="button"
-        class="inline-flex items-center gap-2 py-3.5 border-b-2 transition cursor-pointer whitespace-nowrap"
-        :class="reportSubTab === 'quiz'
-          ? 'border-[#7C3AED] text-[#7C3AED] font-bold'
-          : 'border-transparent text-slate-600 hover:text-slate-900'"
-        @click="reportSubTab = 'quiz'"
-      >
-        <BookOpen :size="16" />
-        <span>Báo cáo Bài Quiz</span>
-        <span
-          class="rounded-full px-2 py-0.5 text-[11px] font-bold"
-          :class="reportSubTab === 'quiz' ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-600'"
+    <!-- 3. MAIN CONTENT WORKSPACE CONTAINER -->
+    <div class="card p-5 space-y-5">
+      <!-- TAB NAVIGATION BAR -->
+      <div class="flex items-center gap-2 border-b border-slate-100 pb-4 overflow-x-auto text-xs font-semibold">
+        <button
+          type="button"
+          class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl transition cursor-pointer whitespace-nowrap"
+          :class="reportSubTab === 'quiz'
+            ? 'bg-purple-50 text-[#7C3AED] font-bold border border-purple-200 shadow-2xs'
+            : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent'"
+          @click="reportSubTab = 'quiz'"
         >
-          {{ quizPendingCount }}
-        </span>
-      </button>
+          <BookOpen :size="15" />
+          <span>Báo cáo Bài Quiz</span>
+          <span
+            class="rounded-full px-2.5 py-0.5 text-[10px] font-bold"
+            :class="reportSubTab === 'quiz' ? 'bg-[#7C3AED] text-white' : 'bg-slate-100 text-slate-600'"
+          >
+            {{ quizPendingCount }}
+          </span>
+        </button>
 
-      <button
-        type="button"
-        class="inline-flex items-center gap-2 py-3.5 border-b-2 transition cursor-pointer whitespace-nowrap"
-        :class="reportSubTab === 'question'
-          ? 'border-[#7C3AED] text-[#7C3AED] font-bold'
-          : 'border-transparent text-slate-600 hover:text-slate-900'"
-        @click="reportSubTab = 'question'"
-      >
-        <FileText :size="16" />
-        <span>Báo cáo Câu hỏi</span>
-        <span
-          class="rounded-full px-2 py-0.5 text-[11px] font-bold"
-          :class="reportSubTab === 'question' ? 'bg-rose-100 text-rose-800' : 'bg-slate-100 text-slate-600'"
+        <button
+          type="button"
+          class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl transition cursor-pointer whitespace-nowrap"
+          :class="reportSubTab === 'question'
+            ? 'bg-purple-50 text-[#7C3AED] font-bold border border-purple-200 shadow-2xs'
+            : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 border border-transparent'"
+          @click="reportSubTab = 'question'"
         >
-          {{ questionPendingCount }}
-        </span>
-      </button>
-    </div>
-
-    <!-- ================================================================================== -->
-    <!-- SECTION: QUẢN LÝ BÁO CÁO VI PHẠM (VIOLATION REPORTS) -->
-    <!-- ================================================================================== -->
-    <div v-if="mainSection === 'reports'" class="space-y-4">
-      
-      <!-- SUB-TAB 1: QUIZ REPORTS TABLE -->
-      <div v-if="reportSubTab === 'quiz'" class="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-2xs">
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-xs border-collapse">
-            <thead>
-              <tr class="border-b border-slate-200 bg-slate-50/80 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                <th class="w-28 py-2.5 px-3.5 text-center">Trạng thái</th>
-                <th class="py-2.5 px-3.5 min-w-[240px]">Quiz bị báo cáo</th>
-                <th class="py-2.5 px-3.5 text-center">Lý do</th>
-                <th class="py-2.5 px-3.5">Chi tiết thêm</th>
-                <th class="min-w-[260px] py-2.5 px-3.5 text-center">Thao tác Admin</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100">
-              <tr v-for="report in quizReports" :key="report.id" class="transition hover:bg-slate-50/70">
-                <td class="py-3 px-3.5 text-center">
-                  <span :class="getStatusBadge(report.status)">
-                    {{ getStatusText(report.status) }}
-                  </span>
-                </td>
-
-                <td class="py-3 px-3.5">
-                  <router-link :to="`/admin/quizzes/${report.quiz_id}`" class="font-semibold text-slate-900 hover:text-indigo-600 transition line-clamp-1">
-                    {{ report.quiz?.title || `Quiz #${report.quiz_id}` }}
-                  </router-link>
-                  <div class="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                    <span>Tác giả: <b class="text-slate-700 font-medium">{{ report.quiz?.user?.name || 'Vô danh' }}</b></span>
-                    <span
-                      class="rounded-full px-2 py-0.2 text-[10px] font-medium border"
-                      :class="Boolean(report.quiz?.is_public) ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-600 border-slate-200'"
-                    >
-                      {{ Boolean(report.quiz?.is_public) ? 'Công khai' : 'Riêng tư' }}
-                    </span>
-                  </div>
-                </td>
-
-                <td class="py-3 px-3.5 text-center">
-                  <span class="font-semibold text-rose-700 text-xs">{{ report.reason }}</span>
-                </td>
-
-                <td class="max-w-xs truncate py-3 px-3.5 text-xs text-slate-500" :title="report.description">
-                  {{ report.description || '—' }}
-                </td>
-
-                <td class="py-3 px-3.5 text-center whitespace-nowrap space-x-1.5">
-                  <router-link
-                    :to="`/admin/quizzes/${report.quiz_id}?from=reports`"
-                    class="inline-flex items-center gap-1 rounded-md bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200/60 px-2.5 py-1 text-xs font-semibold transition"
-                  >
-                    <Eye class="h-3.5 w-3.5" />
-                    Xem
-                  </router-link>
-
-                  <button
-                    type="button"
-                    class="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 transition"
-                    @click="toggleQuizVisibility(report)"
-                  >
-                    <component :is="Boolean(report.quiz?.is_public) ? Lock : Unlock" class="h-3.5 w-3.5 text-slate-500" />
-                    {{ Boolean(report.quiz?.is_public) ? 'Gỡ công khai' : 'Công khai lại' }}
-                  </button>
-
-                  <template v-if="report.status === 'pending'">
-                    <button type="button" class="text-xs font-semibold text-emerald-600 hover:underline px-1" @click="updateStatus(report.id, 'resolved')">Duyệt</button>
-                    <button type="button" class="text-xs font-medium text-slate-500 hover:underline px-1" @click="updateStatus(report.id, 'dismissed')">Bỏ qua</button>
-                  </template>
-                  <template v-else>
-                    <button type="button" class="text-xs font-medium text-slate-500 hover:underline px-1" @click="updateStatus(report.id, 'pending')">Đổi lại</button>
-                  </template>
-
-                  <button type="button" class="text-xs font-semibold text-rose-600 hover:underline px-1" @click="deleteQuiz(report.quiz_id, report.id)">Xóa</button>
-                </td>
-              </tr>
-
-              <tr v-if="!isLoading && quizReports.length === 0">
-                <td colspan="5" class="py-12 text-center text-xs text-slate-400">Không có báo cáo vi phạm bài Quiz nào</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+          <FileText :size="15" />
+          <span>Báo cáo Câu hỏi</span>
+          <span
+            class="rounded-full px-2.5 py-0.5 text-[10px] font-bold"
+            :class="reportSubTab === 'question' ? 'bg-[#7C3AED] text-white' : 'bg-slate-100 text-slate-600'"
+          >
+            {{ questionPendingCount }}
+          </span>
+        </button>
       </div>
 
-      <!-- SUB-TAB 2: QUESTION REPORTS TABLE -->
-      <div v-if="reportSubTab === 'question'" class="space-y-3">
-        <div class="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-2xs">
-          <!-- TABLE HEADER VỚI BỘ LỌC ĐÍNH CHÍNH TÍCH HỢP TRỰC TIẾP -->
-          <div class="border-b border-slate-200/80 bg-slate-50/70 p-3 flex flex-col sm:flex-row items-center justify-between gap-3">
-            <div class="inline-flex items-center gap-1 rounded-xl bg-slate-200/60 p-1 text-xs font-semibold">
-              <button
-                type="button"
-                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition cursor-pointer"
-                :class="questionFilterTab === 'updated'
-                  ? 'bg-white text-emerald-700 font-bold border border-slate-200/80 shadow-2xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'"
-                @click="questionFilterTab = 'updated'"
-              >
-                <CheckCircle2 :size="13" class="text-emerald-600" />
-                <span>Đã đính chính</span>
-                <span class="rounded-full px-2 py-0.2 text-[10px] font-bold bg-emerald-100 text-emerald-800">
-                  {{ questionUpdatedCount }}
-                </span>
-              </button>
-
-              <button
-                type="button"
-                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition cursor-pointer"
-                :class="questionFilterTab === 'pending'
-                  ? 'bg-white text-rose-700 font-bold border border-slate-200/80 shadow-2xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'"
-                @click="questionFilterTab = 'pending'"
-              >
-                <AlertTriangle :size="13" class="text-rose-600" />
-                <span>Chưa đính chính</span>
-                <span class="rounded-full px-2 py-0.2 text-[10px] font-bold bg-rose-100 text-rose-800">
-                  {{ questionNotUpdatedCount }}
-                </span>
-              </button>
-
-              <button
-                type="button"
-                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition cursor-pointer"
-                :class="questionFilterTab === 'all'
-                  ? 'bg-white text-indigo-700 font-bold border border-slate-200/80 shadow-2xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'"
-                @click="questionFilterTab = 'all'"
-              >
-                <FileText :size="13" class="text-indigo-600" />
-                <span>Tất cả</span>
-                <span class="rounded-full px-2 py-0.2 text-[10px] font-bold bg-slate-200/70 text-slate-700">
-                  {{ questionReports.length }}
-                </span>
-              </button>
-            </div>
-
-            <div class="text-xs font-medium text-slate-500">
-              Tổng số báo cáo: <b class="text-slate-900 font-bold">{{ questionReports.length }}</b>
-            </div>
-          </div>
+      <!-- SECTION: QUẢN LÝ BÁO CÁO VI PHẠM (VIOLATION REPORTS) -->
+      <div v-if="mainSection === 'reports'" class="space-y-4">
+        
+        <!-- SUB-TAB 1: QUIZ REPORTS TABLE -->
+        <div v-if="reportSubTab === 'quiz'" class="overflow-hidden rounded-xl border border-slate-200/80 bg-white">
           <div class="overflow-x-auto">
             <table class="w-full text-left text-xs border-collapse">
               <thead>
-                <tr class="border-b border-slate-200 bg-slate-50/80 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                  <th class="w-36 py-2.5 px-3.5 text-center">Trạng thái</th>
-                  <th class="min-w-[280px] py-2.5 px-3.5">Câu hỏi bị báo cáo</th>
-                  <th class="w-32 py-2.5 px-3.5 text-center">Tác giả</th>
-                  <th class="py-2.5 px-3.5 min-w-[200px]">Lý do & Mô tả</th>
-                  <th class="min-w-[280px] py-2.5 px-3.5 text-center">Thao tác Admin</th>
+                <tr class="border-b border-slate-100 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                  <th class="w-28 py-3 px-4 text-center">Trạng thái</th>
+                  <th class="py-3 px-4 min-w-[260px]">Quiz bị báo cáo</th>
+                  <th class="py-3 px-4 text-center">Lý do</th>
+                  <th class="py-3 px-4">Chi tiết thêm</th>
+                  <th class="min-w-[260px] py-3 px-4 text-center">Thao tác Admin</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100">
-                <tr v-for="report in filteredQuestionReports" :key="report.id" class="transition hover:bg-slate-50/70">
-                  <td class="py-3 px-3.5 text-center">
-                    <div class="flex flex-col items-center gap-1">
-                      <span :class="getStatusBadge(report.status)">
-                        {{ getStatusText(report.status) }}
-                      </span>
-                      <span
-                        v-if="report.has_author_updated || report.question?.has_author_updated"
-                        class="inline-flex items-center text-[10px] font-medium text-emerald-700 bg-emerald-50 rounded-full px-2 py-0.2 border border-emerald-200"
-                      >
-                        Đã đính chính
-                      </span>
-                      <span
-                        v-else
-                        class="inline-flex items-center text-[10px] font-medium text-slate-500 bg-slate-100 rounded-full px-2 py-0.2 border border-slate-200"
-                      >
-                        Chưa sửa
-                      </span>
-                    </div>
-                  </td>
-
-                  <td class="py-3 px-3.5">
-                    <div class="flex flex-wrap items-center gap-1.5 text-[11px] mb-1">
-                      <span class="font-bold text-indigo-600">#{{ report.question_id }}</span>
-                      <span v-if="report.question?.subject?.name" class="rounded bg-slate-100 px-2 py-0.5 font-medium text-slate-600">
-                        {{ report.question.subject.name }}
-                      </span>
-                      <span v-if="report.question?.grade?.name" class="rounded bg-slate-100 px-2 py-0.5 font-medium text-slate-600">
-                        {{ report.question.grade.name }}
-                      </span>
-                    </div>
-                    <p class="line-clamp-2 text-xs font-semibold text-slate-900 leading-snug" :title="report.question?.content">
-                      {{ report.question?.content || `Câu hỏi #${report.question_id}` }}
-                    </p>
-                  </td>
-
-                  <td class="py-3 px-3.5 text-center">
-                    <span class="text-xs font-medium text-slate-700 truncate block max-w-[130px] mx-auto" :title="report.question?.author_name || report.question?.user?.name">
-                      {{ report.question?.author_name || report.question?.user?.name || 'Vô danh' }}
+                <tr v-for="report in quizReports" :key="report.id" class="transition hover:bg-slate-50/70">
+                  <td class="py-3.5 px-4 text-center">
+                    <span :class="getStatusBadge(report.status)">
+                      {{ getStatusText(report.status) }}
                     </span>
                   </td>
 
-                  <td class="py-3 px-3.5 text-xs">
-                    <p class="font-semibold text-rose-700">{{ report.reason }}</p>
-                    <p v-if="report.description" class="mt-0.5 truncate italic text-slate-500 text-[11px] max-w-xs" :title="report.description">“{{ report.description }}”</p>
+                  <td class="py-3.5 px-4">
+                    <router-link :to="`/admin/quizzes/${report.quiz_id}`" class="font-bold text-slate-900 hover:text-[#7C3AED] transition line-clamp-1">
+                      {{ report.quiz?.title || `Quiz #${report.quiz_id}` }}
+                    </router-link>
+                    <div class="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                      <span>Tác giả: <b class="text-slate-700 font-medium">{{ report.quiz?.user?.name || 'Vô danh' }}</b></span>
+                      <span
+                        class="rounded-full px-2 py-0.2 text-[10px] font-medium border"
+                        :class="Boolean(report.quiz?.is_public) ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-600 border-slate-200'"
+                      >
+                        {{ Boolean(report.quiz?.is_public) ? 'Công khai' : 'Riêng tư' }}
+                      </span>
+                    </div>
                   </td>
 
-                  <td class="py-3 px-3.5 text-center whitespace-nowrap space-x-1.5">
-                    <button
-                      type="button"
-                      class="inline-flex items-center gap-1 rounded-md bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200/60 px-2.5 py-1 text-xs font-semibold transition cursor-pointer"
-                      @click="openQuestionDetailModal(report)"
+                  <td class="py-3.5 px-4 text-center">
+                    <span class="font-semibold text-rose-700 text-xs">{{ report.reason }}</span>
+                  </td>
+
+                  <td class="max-w-xs truncate py-3.5 px-4 text-xs text-slate-500" :title="report.description">
+                    {{ report.description || '—' }}
+                  </td>
+
+                  <td class="py-3.5 px-4 text-center whitespace-nowrap space-x-1.5">
+                    <router-link
+                      :to="`/admin/quizzes/${report.quiz_id}?from=reports`"
+                      class="btn-secondary text-[11px] px-2.5 py-1 inline-flex items-center gap-1"
                     >
-                      <Eye class="h-3.5 w-3.5" />
-                      <span>Xem chi tiết</span>
-                    </button>
+                      <Eye class="h-3.5 w-3.5 text-[#7C3AED]" />
+                      Xem
+                    </router-link>
 
                     <button
                       type="button"
-                      class="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 transition cursor-pointer"
-                      @click="toggleQuestionVisibility(report)"
+                      class="btn-secondary text-[11px] px-2.5 py-1 inline-flex items-center gap-1 cursor-pointer"
+                      @click="toggleQuizVisibility(report)"
                     >
-                      <component :is="Boolean(report.question?.is_public) ? Lock : Unlock" class="h-3.5 w-3.5 text-slate-500" />
-                      <span>{{ Boolean(report.question?.is_public) ? 'Gỡ công khai' : 'Công khai lại' }}</span>
+                      <component :is="Boolean(report.quiz?.is_public) ? Lock : Unlock" class="h-3.5 w-3.5 text-slate-500" />
+                      {{ Boolean(report.quiz?.is_public) ? 'Gỡ công khai' : 'Công khai lại' }}
                     </button>
 
                     <template v-if="report.status === 'pending'">
-                      <button type="button" class="text-xs font-semibold text-emerald-600 hover:underline px-1 cursor-pointer" @click="updateStatus(report.id, 'resolved')">Duyệt</button>
-                      <button type="button" class="text-xs font-medium text-slate-500 hover:underline px-1 cursor-pointer" @click="updateStatus(report.id, 'dismissed')">Bỏ qua</button>
+                      <button type="button" class="text-xs font-bold text-emerald-600 hover:underline px-1 cursor-pointer" @click="updateStatus(report.id, 'resolved')">Duyệt</button>
+                      <button type="button" class="text-xs font-semibold text-slate-500 hover:underline px-1 cursor-pointer" @click="updateStatus(report.id, 'dismissed')">Bỏ qua</button>
                     </template>
                     <template v-else>
-                      <button type="button" class="text-xs font-medium text-slate-500 hover:underline px-1 cursor-pointer" @click="updateStatus(report.id, 'pending')">Đổi lại</button>
+                      <button type="button" class="text-xs font-semibold text-slate-500 hover:underline px-1 cursor-pointer" @click="updateStatus(report.id, 'pending')">Đổi lại</button>
                     </template>
+
+                    <button type="button" class="text-xs font-bold text-rose-600 hover:underline px-1 cursor-pointer" @click="deleteQuiz(report.quiz_id, report.id)">Xóa</button>
                   </td>
                 </tr>
 
-                <tr v-if="!isLoading && filteredQuestionReports.length === 0">
-                  <td colspan="5" class="py-12 text-center text-xs text-slate-400">Không có báo cáo vi phạm câu hỏi nào trong mục này</td>
+                <tr v-if="!isLoading && quizReports.length === 0">
+                  <td colspan="5" class="py-12 text-center text-xs text-slate-400">Không có báo cáo vi phạm bài Quiz nào</td>
                 </tr>
               </tbody>
             </table>
           </div>
         </div>
-      </div>
 
+        <!-- SUB-TAB 2: QUESTION REPORTS TABLE -->
+        <div v-if="reportSubTab === 'question'" class="space-y-4">
+          <div class="overflow-hidden rounded-xl border border-slate-200/80 bg-white">
+            <!-- TABLE HEADER VỚI BỘ LỌC ĐÍNH CHÍNH TÍCH HỢP TRỰC TIẾP -->
+            <div class="border-b border-slate-100 bg-slate-50 p-3.5 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div class="inline-flex items-center gap-1.5 rounded-xl bg-white p-1 text-xs font-semibold border border-slate-200">
+                <button
+                  type="button"
+                  class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition cursor-pointer"
+                  :class="questionFilterTab === 'updated'
+                    ? 'bg-purple-50 text-[#7C3AED] font-bold border border-purple-200'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'"
+                  @click="questionFilterTab = 'updated'"
+                >
+                  <CheckCircle2 :size="13" class="text-emerald-600" />
+                  <span>Đã đính chính</span>
+                  <span class="rounded-full px-2 py-0.2 text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                    {{ questionUpdatedCount }}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition cursor-pointer"
+                  :class="questionFilterTab === 'pending'
+                    ? 'bg-purple-50 text-[#7C3AED] font-bold border border-purple-200'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'"
+                  @click="questionFilterTab = 'pending'"
+                >
+                  <AlertTriangle :size="13" class="text-rose-600" />
+                  <span>Chưa đính chính</span>
+                  <span class="rounded-full px-2 py-0.2 text-[10px] font-bold bg-rose-100 text-rose-800">
+                    {{ questionNotUpdatedCount }}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition cursor-pointer"
+                  :class="questionFilterTab === 'all'
+                    ? 'bg-purple-50 text-[#7C3AED] font-bold border border-purple-200'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'"
+                  @click="questionFilterTab = 'all'"
+                >
+                  <FileText :size="13" class="text-indigo-600" />
+                  <span>Tất cả</span>
+                  <span class="rounded-full px-2 py-0.2 text-[10px] font-bold bg-slate-200/70 text-slate-700">
+                    {{ questionReports.length }}
+                  </span>
+                </button>
+              </div>
+
+              <div class="text-xs font-bold text-slate-500">
+                Tổng số báo cáo: <b class="text-slate-900 font-bold">{{ questionReports.length }}</b>
+              </div>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr class="border-b border-slate-100 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                    <th class="w-32 py-3 px-3 text-center">Trạng thái</th>
+                    <th class="min-w-[380px] py-3 px-4">Câu hỏi bị báo cáo</th>
+                    <th class="w-32 py-3 px-3 text-center">Tác giả</th>
+                    <th class="w-48 py-3 px-3">Lý do &amp; Mô tả</th>
+                    <th class="min-w-[280px] py-3 px-4 text-center">Thao tác Admin</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                  <tr v-for="report in filteredQuestionReports" :key="report.id" class="transition hover:bg-slate-50/70">
+                    <td class="py-3.5 px-3 text-center whitespace-nowrap">
+                      <div class="flex flex-col items-center justify-center gap-1.5 whitespace-nowrap">
+                        <span :class="getStatusBadge(report.status)">
+                          {{ getStatusText(report.status) }}
+                        </span>
+                        <span
+                          v-if="report.has_author_updated || report.question?.has_author_updated"
+                          class="inline-flex items-center whitespace-nowrap text-[10px] font-bold text-emerald-700 bg-emerald-50 rounded-full px-2.5 py-0.5 border border-emerald-200"
+                        >
+                          Đã đính chính
+                        </span>
+                        <span
+                          v-else
+                          class="inline-flex items-center whitespace-nowrap text-[10px] font-bold text-slate-500 bg-slate-100 rounded-full px-2.5 py-0.5 border border-slate-200"
+                        >
+                          Chưa sửa
+                        </span>
+                      </div>
+                    </td>
+
+                    <td class="py-3.5 px-4">
+                      <div class="flex flex-wrap items-center gap-1.5 text-[11px] mb-1">
+                        <span class="font-bold text-[#7C3AED]">#{{ report.question_id }}</span>
+                        <span v-if="report.question?.subject?.name" class="rounded bg-slate-100 px-2 py-0.5 font-medium text-slate-600">
+                          {{ report.question.subject.name }}
+                        </span>
+                        <span v-if="report.question?.grade?.name" class="rounded bg-slate-100 px-2 py-0.5 font-medium text-slate-600">
+                          {{ report.question.grade.name }}
+                        </span>
+                      </div>
+                      <p class="line-clamp-2 text-xs font-bold text-slate-900 leading-snug" :title="report.question?.content">
+                        {{ report.question?.content || `Câu hỏi #${report.question_id}` }}
+                      </p>
+                    </td>
+
+                    <td class="py-3.5 px-3 text-center">
+                      <span class="text-xs font-medium text-slate-700 truncate block max-w-[120px] mx-auto" :title="report.question?.author_name || report.question?.user?.name">
+                        {{ report.question?.author_name || report.question?.user?.name || 'Vô danh' }}
+                      </span>
+                    </td>
+
+                    <td class="py-3.5 px-3 text-xs max-w-[190px]">
+                      <p class="font-semibold text-rose-700 truncate" :title="report.reason">{{ report.reason }}</p>
+                      <p v-if="report.description" class="mt-0.5 truncate italic text-slate-500 text-[11px]" :title="report.description">“{{ report.description }}”</p>
+                    </td>
+
+                    <td class="py-3.5 px-4 text-center whitespace-nowrap">
+                      <div class="flex items-center justify-center gap-1.5">
+                        <button
+                          type="button"
+                          class="btn-secondary text-[11px] px-2.5 py-1 inline-flex items-center gap-1 cursor-pointer"
+                          @click="openQuestionDetailModal(report)"
+                        >
+                          <Eye class="h-3.5 w-3.5 text-[#7C3AED]" />
+                          <span>Xem chi tiết</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          class="btn-secondary text-[11px] px-2.5 py-1 inline-flex items-center gap-1 cursor-pointer"
+                          @click="toggleQuestionVisibility(report)"
+                        >
+                          <component :is="Boolean(report.question?.is_public) ? Lock : Unlock" class="h-3.5 w-3.5 text-slate-500" />
+                          <span>{{ Boolean(report.question?.is_public) ? 'Gỡ công khai' : 'Công khai lại' }}</span>
+                        </button>
+
+                        <template v-if="report.status === 'pending'">
+                          <button type="button" class="btn-success text-[11px] px-2.5 py-1 font-bold inline-flex items-center gap-1 cursor-pointer" @click="updateStatus(report.id, 'resolved')">Duyệt</button>
+                          <button type="button" class="btn-ghost text-[11px] px-2 py-1 font-semibold text-slate-500 hover:text-slate-800 cursor-pointer" @click="updateStatus(report.id, 'dismissed')">Bỏ qua</button>
+                        </template>
+                        <template v-else>
+                          <button type="button" class="btn-ghost text-[11px] px-2 py-1 font-semibold text-slate-500 hover:text-slate-800 cursor-pointer" @click="updateStatus(report.id, 'pending')">Đổi lại</button>
+                        </template>
+                      </div>
+                    </td>
+                  </tr>
+
+                  <tr v-if="!isLoading && filteredQuestionReports.length === 0">
+                    <td colspan="5" class="py-12 text-center text-xs text-slate-400">Không có báo cáo vi phạm câu hỏi nào trong mục này</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div>
     </div>
 
     <!-- MODAL: SO SÁNH 2 BÊN (SIDE-BY-SIDE) CHI TIẾT CÂU HỎI VÀ BÁO CÁO VI PHẠM -->
     <Teleport to="body">
-      <div v-if="isQuestionDetailModalOpen" class="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/75 backdrop-blur-xs p-3 sm:p-5" @click.self="isQuestionDetailModalOpen = false">
-        <div class="w-full max-w-5xl rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-2xl max-h-[92vh] overflow-y-auto space-y-4">
+      <div v-if="isQuestionDetailModalOpen" class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-3 sm:p-5" @click.self="isQuestionDetailModalOpen = false">
+        <div class="w-full max-w-5xl card p-5 sm:p-6 shadow-2xl max-h-[92vh] overflow-y-auto space-y-4 bg-white">
           
           <!-- Modal Header -->
           <div class="flex items-center justify-between border-b border-slate-100 pb-3.5">
             <div class="flex items-center gap-3 flex-wrap">
               <span class="rounded-lg bg-slate-100 text-slate-700 px-2.5 py-1 text-xs font-bold">#{{ selectedQuestionReport?.question_id }}</span>
               <div>
-                <h3 class="text-base font-bold text-slate-900">So sánh & Kiểm duyệt Đính chính</h3>
+                <h3 class="text-base font-bold text-slate-900">So sánh &amp; Kiểm duyệt Đính chính</h3>
                 <p class="text-xs text-slate-500">Đối chiếu phiên bản gốc và bản ghi hiện tại sau khi đính chính</p>
               </div>
               <span
@@ -363,8 +393,8 @@
             </button>
           </div>
 
-          <!-- Banner: Thông tin báo cáo vi phạm (Thiết kế tối giản trung tính) -->
-          <div class="rounded-xl border border-rose-100 bg-rose-50/30 p-3.5 text-xs space-y-1.5">
+          <!-- Banner: Thông tin báo cáo vi phạm -->
+          <div class="rounded-xl border border-rose-100 bg-rose-50/40 p-3.5 text-xs space-y-1.5">
             <div class="flex flex-wrap items-center justify-between gap-2 text-slate-500 border-b border-rose-100/60 pb-1.5">
               <span class="font-bold text-rose-800 uppercase tracking-wide text-[11px]">Thông tin báo cáo vi phạm</span>
               <span class="text-[11px]">Thời gian: {{ formatTime(selectedQuestionReport?.created_at) }}</span>
@@ -376,7 +406,7 @@
             </div>
           </div>
 
-          <!-- SIDE-BY-SIDE COMPARISON GRID (2 CỘT SONG SONG TRUNG TÍNH) -->
+          <!-- SIDE-BY-SIDE COMPARISON GRID (2 CỘT SONG SONG) -->
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
             
             <!-- CỘT BÊN TRÁI: NỘI DUNG LÚC BỊ BÁO CÁO (BAN ĐẦU) -->
@@ -523,7 +553,7 @@
           <div class="flex items-center justify-end border-t border-slate-100 pt-3.5">
             <button
               type="button"
-              class="inline-flex justify-center items-center gap-1 rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition cursor-pointer shadow-sm"
+              class="btn-secondary text-xs px-5 py-2.5 font-bold cursor-pointer"
               @click="isQuestionDetailModalOpen = false"
             >
               Đóng cửa sổ
@@ -853,7 +883,7 @@ const deleteQuiz = (quizId, reportId) => {
 }
 
 const getStatusBadge = (status) => {
-  const base = 'inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-medium border '
+  const base = 'inline-flex items-center justify-center whitespace-nowrap rounded-full px-3 py-1 text-[11px] font-bold border '
   switch (status) {
     case 'pending':
       return base + 'bg-amber-50 text-amber-700 border-amber-200'
