@@ -366,32 +366,6 @@ export const adminQuizzesApi = {
   async remove(id) {
     const { data } = await api.delete(`/admin/quizzes/${id}`);
     return unwrap(data);
-  },
-
-  async trash(params = {}) {
-    const { data } = await api.get('/admin/quizzes/trash', { params });
-    const payload = unwrap(data);
-    const items = Array.isArray(payload?.items)
-      ? payload.items
-      : (Array.isArray(payload?.data) ? payload.data : (Array.isArray(payload) ? payload : []));
-    return {
-      items,
-      total: payload?.total ?? items.length,
-      currentPage: payload?.current_page ?? 1,
-      lastPage: payload?.last_page ?? 1,
-      perPage: payload?.per_page ?? 15,
-      trashCount: payload?.trash_count ?? data?.trash_count ?? 0
-    };
-  },
-
-  async restore(id) {
-    const { data } = await api.post(`/admin/quizzes/${id}/restore`);
-    return unwrap(data);
-  },
-
-  async forceDelete(id) {
-    const { data } = await api.delete(`/admin/quizzes/${id}/force-delete`);
-    return unwrap(data);
   }
 };
 
@@ -1684,6 +1658,11 @@ export const reportApi = {
       stats: payload?.stats ?? data?.stats ?? { total: 0, pending: 0, resolved: 0, dismissed: 0, questions_count: 0 },
       total: items.length
     };
+  },
+
+  async get(id) {
+    const { data } = await api.get(`/admin/report-tickets/${id}`);
+    return unwrap(data);
   },
 
   async updateStatus(id, payload = {}) {

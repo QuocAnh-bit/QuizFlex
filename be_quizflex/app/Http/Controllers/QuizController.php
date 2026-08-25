@@ -839,8 +839,12 @@ class QuizController extends Controller
     {
         $quiz = Quiz::withTrashed()
             ->with([
-                'user:id,name,email',
+                'user:id,name,email,avatar',
+                'educationLevel',
+                'grade',
+                'subject',
                 'questions.answers',
+                'questions.user:id,name,email',
                 'attempts.user:id,name'
             ])
             ->withCount([
@@ -854,12 +858,20 @@ class QuizController extends Controller
             2
         );
 
+        $reviewService = app(\App\Services\QuizReviewService::class);
+        $diffData = $reviewService->getReviewDetailsWithDiff($quiz);
+
         return response()->json([
             'success' => true,
             'data' => [
                 'quiz' => $quiz,
                 'average_score' => $averageScore,
                 'is_ai_generated' => (bool)$quiz->is_ai_generated,
+                'current_revision' => $diffData['current_revision'] ?? null,
+                'previous_revision' => $diffData['previous_revision'] ?? null,
+                'previous_rejection_reason' => $diffData['previous_rejection_reason'] ?? null,
+                'diff' => $diffData['diff'] ?? null,
+                'history' => $diffData['history'] ?? [],
             ]
         ]);
     }

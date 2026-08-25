@@ -51,12 +51,38 @@ class QuestionReviewService
             ->first();
 
         if ($existingPending) {
-            throw ValidationException::withMessages([
-                'question' => 'Câu hỏi này đang có một yêu cầu chờ Admin phê duyệt. Vui lòng không gửi lặp lại.',
-            ]);
+            $currentFingerprint = $this->snapshotService->computeFingerprint($question);
+            $pendingFingerprint = $this->snapshotService->computeFingerprintFromSnapshot(
+                $existingPending->snapshot_content,
+                $existingPending->snapshot_type,
+                $existingPending->snapshot_answers ?? []
+            );
+
+            $hasContentChanged = (
+                $currentFingerprint !== $pendingFingerprint ||
+                ($question->difficulty ?? 'medium') !== ($existingPending->snapshot_difficulty ?? 'medium') ||
+                (int)($question->education_level_id ?? 0) !== (int)($existingPending->snapshot_education_level_id ?? 0) ||
+                (int)($question->grade_id ?? 0) !== (int)($existingPending->snapshot_grade_id ?? 0) ||
+                (int)($question->subject_id ?? 0) !== (int)($existingPending->snapshot_subject_id ?? 0) ||
+                (string)($question->topic_name ?? '') !== (string)($existingPending->snapshot_topic_name ?? '') ||
+                (int)($question->points ?? 10) !== (int)($existingPending->snapshot_points ?? 10) ||
+                (string)($question->image_url ?? '') !== (string)($existingPending->snapshot_image_url ?? '')
+            );
+
+            if (!$hasContentChanged) {
+                throw ValidationException::withMessages([
+                    'question' => 'Câu hỏi này đang có một yêu cầu chờ Admin phê duyệt và nội dung chưa thay đổi. Vui lòng không gửi lặp lại.',
+                ]);
+            }
         }
 
-        return DB::transaction(function () use ($question, $user, $requestNote, $answers) {
+        return DB::transaction(function () use ($question, $user, $requestNote, $answers, $existingPending) {
+            if ($existingPending) {
+                $existingPending->update([
+                    'status' => 'superseded',
+                ]);
+            }
+
             $maxRevision = QuestionReviewRequest::where('question_id', $question->id)->max('revision_number') ?? 0;
             $revisionNumber = $maxRevision + 1;
 
@@ -79,9 +105,11 @@ class QuestionReviewService
             ];
 
             // Tự động nhận diện Question từng bị báo cáo để đánh dấu PRIORITY
-            $hasPendingReports = \App\Models\ReportTicket::where('question_id', $question->id)->where('status', 'pending')->exists();
+            $hasUnresolvedReports = \App\Models\ReportTicket::where('question_id', $question->id)
+                ->whereIn('status', ['pending', 'author_updated', 'admin_review_required'])
+                ->exists();
             $hasAnyReports = \App\Models\ReportTicket::where('question_id', $question->id)->exists();
-            $isPriority = $hasPendingReports || $hasAnyReports;
+            $isPriority = $hasUnresolvedReports || $hasAnyReports;
             $reviewPriority = $isPriority ? 'high' : 'normal';
 
             $latestReport = \App\Models\ReportTicket::where('question_id', $question->id)->latest()->first();
@@ -89,8 +117,13 @@ class QuestionReviewService
                 $snapshotMetadata['report_reason'] = $latestReport->reason;
                 $snapshotMetadata['report_description'] = $latestReport->description;
                 $snapshotMetadata['reports_count'] = \App\Models\ReportTicket::where('question_id', $question->id)->count();
-                $snapshotMetadata['has_pending_report'] = $hasPendingReports;
+                $snapshotMetadata['has_pending_report'] = $hasUnresolvedReports;
             }
+
+            // Chuyển các ReportTicket pending / admin_review_required của câu hỏi này sang author_updated
+            \App\Models\ReportTicket::where('question_id', $question->id)
+                ->whereIn('status', ['pending', 'admin_review_required'])
+                ->update(['status' => 'author_updated']);
 
             $reviewRequest = QuestionReviewRequest::create([
                 'question_id' => $question->id,
@@ -187,12 +220,19 @@ class QuestionReviewService
                 'bank_submission_note' => null,
             ]);
 
-            // 4. Tự động chuyển các ReportTicket đang PENDING của câu hỏi này sang 'resolved'
-            $pendingReports = \App\Models\ReportTicket::where('question_id', $lockedQuestion->id)
-                ->where('status', 'pending')
+            // 4. Tự động chuyển các ReportTicket chưa xử lý (pending, author_updated, admin_review_required) của câu hỏi này sang 'resolved'
+            $targetQuestionIds = array_filter(array_unique([
+                $lockedQuestion->id,
+                $lockedQuestion->origin_question_id,
+            ]));
+            $snapshotIds = Question::where('origin_question_id', $lockedQuestion->id)->pluck('id')->all();
+            $allRelatedIds = array_values(array_unique(array_merge($targetQuestionIds, $snapshotIds)));
+
+            $unresolvedReports = \App\Models\ReportTicket::whereIn('question_id', $allRelatedIds)
+                ->whereIn('status', ['pending', 'author_updated', 'admin_review_required'])
                 ->get();
 
-            foreach ($pendingReports as $rep) {
+            foreach ($unresolvedReports as $rep) {
                 $rep->update(['status' => 'resolved']);
                 if ($rep->user) {
                     try {

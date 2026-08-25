@@ -422,73 +422,82 @@
               <!-- Actions -->
               <td class="p-3.5 align-top text-right whitespace-nowrap">
                 <div class="flex items-center justify-end gap-1.5">
-                  <!-- Review Diff Modal Button -->
-                  <button
-                    v-if="quiz.review_request_id || currentTab === 'pending' || currentTab === 'rejected'"
-                    type="button"
-                    class="inline-flex items-center gap-1 rounded-lg border border-purple-200 bg-purple-50 px-2.5 py-1.5 text-[11px] font-bold text-[#7C3AED] hover:bg-purple-100 transition cursor-pointer shadow-xs"
-                    title="Đối chiếu sai khác các phiên bản"
-                    @click="openReviewDetail(quiz.review_request_id || quiz.id)"
-                  >
-                    <GitCompare class="h-3.5 w-3.5" />
-                    <span>Đối chiếu</span>
-                  </button>
+                  <!-- 1. PENDING ACTIONS: Xem chi tiết + Đối chiếu (KHÔNG có Quick Approve/Reject ngoài bảng) -->
+                  <template v-if="quiz.status === 'pending' || quiz.review_status === 'pending_review'">
+                    <button
+                      type="button"
+                      class="inline-flex items-center gap-1 rounded-lg border border-purple-200 bg-purple-50 px-2.5 py-1.5 text-[11px] font-bold text-[#7C3AED] hover:bg-purple-100 transition cursor-pointer shadow-xs"
+                      title="Đối chiếu sai khác các phiên bản"
+                      @click="openReviewDetail(quiz.review_request_id || quiz.id)"
+                    >
+                      <GitCompare class="h-3.5 w-3.5" />
+                      <span>{{ quiz.revision_number > 1 ? 'So sánh' : 'Đối chiếu' }}</span>
+                    </button>
 
-                  <!-- Detail Page Link -->
-                  <router-link
-                    v-if="quiz.quiz_id || quiz.id"
-                    :to="`/admin/quizzes/${quiz.quiz_id || quiz.id}`"
-                    class="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-slate-700 hover:bg-slate-50 transition cursor-pointer"
-                    title="Chi tiết Quiz"
-                  >
-                    <Eye class="h-3.5 w-3.5" />
-                    <span>Chi tiết</span>
-                  </router-link>
+                    <router-link
+                      :to="`/admin/quizzes/${quiz.quiz_id || quiz.id}`"
+                      class="inline-flex items-center rounded-lg border border-slate-200 bg-white p-1.5 text-slate-600 hover:bg-slate-50 transition cursor-pointer shadow-xs"
+                      title="Xem trang chi tiết"
+                    >
+                      <Eye class="h-3.5 w-3.5" />
+                    </router-link>
+                  </template>
 
-                  <!-- Quick Approve (if pending) -->
-                  <button
-                    v-if="quiz.status === 'pending' || quiz.review_status === 'pending_review'"
-                    type="button"
-                    class="inline-flex items-center rounded-lg bg-emerald-600 p-1.5 text-white hover:bg-emerald-700 transition cursor-pointer shadow-xs"
-                    title="Duyệt bài Quiz"
-                    @click="handleSingleApprove(quiz)"
-                  >
-                    <Check class="h-3.5 w-3.5" />
-                  </button>
+                  <!-- 2. APPROVED / PUBLIC / HIDDEN ACTIONS: Xem chi tiết + Toggle Visibility -->
+                  <template v-else-if="quiz.review_status === 'approved' || (!quiz.review_status && quiz.is_public)">
+                    <router-link
+                      :to="`/admin/quizzes/${quiz.quiz_id || quiz.id}`"
+                      class="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-slate-700 hover:bg-slate-50 transition cursor-pointer shadow-xs"
+                      title="Xem chi tiết Quiz"
+                    >
+                      <Eye class="h-3.5 w-3.5" />
+                      <span>Xem chi tiết</span>
+                    </router-link>
 
-                  <!-- Quick Reject (if pending) -->
-                  <button
-                    v-if="quiz.status === 'pending' || quiz.review_status === 'pending_review'"
-                    type="button"
-                    class="inline-flex items-center rounded-lg border border-rose-200 bg-white p-1.5 text-rose-600 hover:bg-rose-50 transition cursor-pointer shadow-xs"
-                    title="Từ chối bài Quiz"
-                    @click="openSingleRejectModal(quiz)"
-                  >
-                    <X class="h-3.5 w-3.5" />
-                  </button>
+                    <!-- Toggle Visibility -->
+                    <button
+                      type="button"
+                      class="inline-flex items-center rounded-lg border border-slate-200 bg-white p-1.5 text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+                      :title="quiz.is_public ? 'Chuyển sang Ẩn' : 'Duyệt Công khai'"
+                      @click="toggleSingleVisibility(quiz.quiz_id || quiz.id)"
+                    >
+                      <component :is="quiz.is_public ? Lock : Globe" class="h-3.5 w-3.5" />
+                    </button>
+                  </template>
 
-                  <!-- Toggle Visibility -->
-                  <button
-                    v-if="currentTab !== 'trash' && currentTab !== 'pending'"
-                    type="button"
-                    class="inline-flex items-center rounded-lg border border-slate-200 bg-white p-1.5 text-slate-600 hover:bg-slate-100 transition cursor-pointer"
-                    :title="quiz.is_public ? 'Chuyển sang Ẩn' : 'Duyệt Công khai'"
-                    @click="toggleSingleVisibility(quiz.id)"
-                  >
-                    <component :is="quiz.is_public ? Lock : Globe" class="h-3.5 w-3.5" />
-                  </button>
+                  <!-- 3. REJECTED ACTIONS: Xem chi tiết & Lịch sử đối chiếu (KHÔNG có Duyệt/Từ chối) -->
+                  <template v-else-if="quiz.status === 'rejected' || quiz.review_status === 'rejected'">
+                    <router-link
+                      :to="`/admin/quizzes/${quiz.quiz_id || quiz.id}`"
+                      class="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-slate-700 hover:bg-slate-50 transition cursor-pointer shadow-xs"
+                      title="Xem chi tiết & Lý do từ chối"
+                    >
+                      <Eye class="h-3.5 w-3.5" />
+                      <span>Xem chi tiết</span>
+                    </router-link>
 
-                  <!-- Trash Actions -->
-                  <button
-                    v-if="currentTab === 'trash'"
-                    type="button"
-                    class="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-emerald-700 transition cursor-pointer shadow-xs"
-                    title="Khôi phục"
-                    @click="handleSingleRestore(quiz.id)"
-                  >
-                    <RotateCcw class="h-3 w-3" />
-                    <span>Khôi phục</span>
-                  </button>
+                    <button
+                      type="button"
+                      class="inline-flex items-center gap-1 rounded-lg border border-purple-200 bg-purple-50 px-2 py-1.5 text-[11px] font-bold text-[#7C3AED] hover:bg-purple-100 transition cursor-pointer shadow-xs"
+                      title="Xem lịch sử các phiên bản"
+                      @click="openReviewDetail(quiz.review_request_id || quiz.id)"
+                    >
+                      <History class="h-3.5 w-3.5" />
+                      <span>Lịch sử</span>
+                    </button>
+                  </template>
+
+                  <!-- 4. DEFAULT ACTIONS -->
+                  <template v-else>
+                    <router-link
+                      :to="`/admin/quizzes/${quiz.quiz_id || quiz.id}`"
+                      class="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-slate-700 hover:bg-slate-50 transition cursor-pointer shadow-xs"
+                      title="Xem chi tiết Quiz"
+                    >
+                      <Eye class="h-3.5 w-3.5" />
+                      <span>Xem chi tiết</span>
+                    </router-link>
+                  </template>
                 </div>
               </td>
             </tr>
@@ -964,7 +973,6 @@ const tabs = computed(() => [
   { key: 'public', label: 'Công khai', badge: stats.public, badgeClass: 'bg-emerald-100 text-emerald-800' },
   { key: 'hidden', label: 'Đang bị ẩn', badge: stats.private, badgeClass: 'bg-slate-100 text-slate-700' },
   { key: 'rejected', label: 'Từ chối', badge: stats.rejected, badgeClass: 'bg-rose-100 text-rose-800' },
-  { key: 'trash', label: 'Thùng rác', badge: stats.trash, badgeClass: 'bg-slate-100 text-slate-700' },
 ])
 
 const publicPercent = computed(() => {
@@ -1040,19 +1048,8 @@ const loadTabItems = async (page = 1) => {
   pagination.currentPage = page
 
   try {
-    if (currentTab.value === 'trash') {
-      // 1. Load Trash
-      const res = await adminQuizzesApi.trash({
-        page,
-        search: filters.search ? filters.search.trim() : undefined,
-        per_page: pagination.perPage,
-      })
-      items.value = res.items || []
-      pagination.total = res.total || 0
-      pagination.lastPage = res.lastPage || 1
-      stats.trash = res.trashCount || res.total || 0
-    } else if (currentTab.value === 'pending' || currentTab.value === 'rejected') {
-      // 2. Load Review Requests
+    if (currentTab.value === 'pending' || currentTab.value === 'rejected') {
+      // 1. Load Review Requests
       const params = {
         page,
         per_page: pagination.perPage,
@@ -1113,10 +1110,9 @@ const loadTabItems = async (page = 1) => {
 
 const fetchGlobalStats = async () => {
   try {
-    const [quizStats, reqStats, trashStats] = await Promise.allSettled([
+    const [quizStats, reqStats] = await Promise.allSettled([
       adminQuizzesApi.list({ per_page: 1 }),
       quizReviewApi.fetchAdminReviewRequests({ per_page: 1, status: 'all' }),
-      adminQuizzesApi.trash({ per_page: 1 }),
     ])
 
     if (quizStats.status === 'fulfilled' && quizStats.value.stats) {
@@ -1128,10 +1124,6 @@ const fetchGlobalStats = async () => {
     if (reqStats.status === 'fulfilled' && reqStats.value.stats) {
       stats.pending = reqStats.value.stats.pending || 0
       stats.rejected = reqStats.value.stats.rejected || 0
-    }
-
-    if (trashStats.status === 'fulfilled') {
-      stats.trash = trashStats.value.trashCount || trashStats.value.total || 0
     }
   } catch (e) {
     console.error('Không thể cập nhật chỉ số thống kê Quiz:', e)
@@ -1290,30 +1282,6 @@ const toggleSingleVisibility = async (id) => {
   try {
     const res = await adminQuizzesApi.toggleVisibility(id)
     if (showToast) showToast(res.message || 'Cập nhật trạng thái hiển thị thành công.', 'success')
-    loadTabItems(pagination.currentPage)
-  } catch (err) {
-    if (showToast) showToast(`Lỗi: ${err.message}`, 'error')
-  }
-}
-
-const handleSingleRestore = async (id) => {
-  try {
-    const res = await adminQuizzesApi.restore(id)
-    if (showToast) showToast(res.message || 'Khôi phục bài Quiz thành công!', 'success')
-    loadTabItems(pagination.currentPage)
-  } catch (err) {
-    if (showToast) showToast(`Lỗi: ${err.message}`, 'error')
-  }
-}
-
-const handleBulkRestore = async () => {
-  if (!selectedIds.value.length) return
-  try {
-    for (const id of selectedIds.value) {
-      await adminQuizzesApi.restore(id)
-    }
-    if (showToast) showToast('Đã khôi phục các bài Quiz đã chọn.', 'success')
-    selectedIds.value = []
     loadTabItems(pagination.currentPage)
   } catch (err) {
     if (showToast) showToast(`Lỗi: ${err.message}`, 'error')

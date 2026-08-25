@@ -327,14 +327,14 @@
             <div class="flex items-center gap-2 shrink-0 self-end xl:self-start pt-2 xl:pt-0">
               <!-- Nút Gửi duyệt vào Ngân hàng -->
               <button
-                v-if="q.bank_submission_status === 'none' || q.bank_submission_status === 'rejected'"
+                v-if="q.bank_submission_status === 'none' || q.bank_submission_status === 'rejected' || q.bank_submission_status === 'pending'"
                 type="button"
                 class="inline-flex items-center gap-1.5 rounded-xl border border-purple-200 bg-purple-50 px-3.5 py-2 text-xs font-bold text-purple-700 hover:bg-purple-100 transition cursor-pointer active:scale-95"
-                title="Gửi yêu cầu đưa câu hỏi này vào Ngân hàng dùng chung"
+                :title="q.bank_submission_status === 'pending' ? 'Gửi duyệt lại nội dung mới đã chỉnh sửa' : 'Gửi yêu cầu đưa câu hỏi này vào Ngân hàng dùng chung'"
                 @click="submitQuestionToBank(q.id)"
               >
                 <Send :size="13" />
-                <span>Gửi duyệt</span>
+                <span>{{ q.bank_submission_status === 'pending' ? 'Gửi duyệt lại' : 'Gửi duyệt' }}</span>
               </button>
 
               <router-link

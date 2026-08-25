@@ -36,4 +36,29 @@ class ReportTicket extends Model
     {
         return $this->belongsTo(Question::class, 'question_id')->withTrashed();
     }
+
+    public function scopePending($query)
+    {
+        return $query->where('status', 'pending');
+    }
+
+    public function scopeAuthorUpdated($query)
+    {
+        return $query->where('status', 'author_updated');
+    }
+
+    public function scopeAdminReviewRequired($query)
+    {
+        return $query->where('status', 'admin_review_required');
+    }
+
+    public function scopeResolved($query)
+    {
+        return $query->where('status', 'resolved');
+    }
+
+    public function scopeDismissed($query)
+    {
+        return $query->where('status', 'dismissed');
+    }
 }

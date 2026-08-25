@@ -775,14 +775,14 @@ class QuestionController extends Controller
         }
 
         $reportQuestionIds = array_filter(array_unique([$question->id, $question->origin_question_id]));
-        $pendingReport = ReportTicket::whereIn('question_id', $reportQuestionIds)
-            ->where('status', 'pending')
+        $unresolvedReport = ReportTicket::whereIn('question_id', $reportQuestionIds)
+            ->whereIn('status', ['pending', 'author_updated', 'admin_review_required'])
             ->latest()
             ->first();
 
-        $latestReport = $pendingReport ?? ReportTicket::whereIn('question_id', $reportQuestionIds)->latest()->first();
-        $hasPendingReport = $pendingReport !== null;
-        $isLockedByAdmin = $hasPendingReport || ($latestReport !== null && $latestReport->status !== 'dismissed');
+        $latestReport = $unresolvedReport ?? ReportTicket::whereIn('question_id', $reportQuestionIds)->latest()->first();
+        $hasPendingReport = $unresolvedReport !== null;
+        $isLockedByAdmin = $hasPendingReport;
 
         return [
             'id' => $question->id,
@@ -1041,12 +1041,23 @@ class QuestionController extends Controller
             return;
         }
 
-        // Chỉ gửi thông báo ReportAuthorUpdated cho Admin nếu câu hỏi này thực sự đang có Báo cáo vi phạm chờ xử lý
-        $hasPendingReport = \App\Models\ReportTicket::where('question_id', $question->id)
-            ->where('status', 'pending')
+        $targetQuestionIds = array_filter(array_unique([
+            $question->id,
+            $question->origin_question_id,
+        ]));
+        $snapshotIds = Question::where('origin_question_id', $question->id)->pluck('id')->all();
+        $allRelatedIds = array_values(array_unique(array_merge($targetQuestionIds, $snapshotIds)));
+
+        // Cập nhật các ReportTicket pending / admin_review_required sang author_updated
+        \App\Models\ReportTicket::whereIn('question_id', $allRelatedIds)
+            ->whereIn('status', ['pending', 'admin_review_required'])
+            ->update(['status' => 'author_updated']);
+
+        $hasAuthorUpdatedReport = \App\Models\ReportTicket::whereIn('question_id', $allRelatedIds)
+            ->where('status', 'author_updated')
             ->exists();
 
-        if ($hasPendingReport) {
+        if ($hasAuthorUpdatedReport) {
             $admins = User::whereIn('role', ['admin', 'ADMIN'])->get();
             if ($admins->isNotEmpty()) {
                 Notification::send($admins, new ReportAuthorUpdated($question, 'question', $user));
@@ -1461,15 +1472,20 @@ class QuestionController extends Controller
         ]);
 
         $ids = $request->input('ids');
-        $questions = Question::with(['user', 'quiz.user', 'answers', 'educationLevel', 'grade', 'subject'])->whereIn('id', $ids)->get();
+        $questions = Question::with(['user', 'quiz.user', 'answers', 'educationLevel', 'grade', 'subject'])
+            ->whereIn('id', $ids)
+            ->where('bank_submission_status', 'pending')
+            ->get();
 
+        $processedCount = 0;
         foreach ($questions as $question) {
             $this->reviewService->approveQuestion($question, $user);
+            $processedCount++;
         }
 
         return response()->json([
             'success' => true,
-            'message' => "Đã phê duyệt " . count($ids) . " câu hỏi vào Ngân hàng thành công!",
+            'message' => "Đã phê duyệt {$processedCount} câu hỏi vào Ngân hàng thành công!",
         ]);
     }
 
@@ -1493,15 +1509,20 @@ class QuestionController extends Controller
 
         $ids = $request->input('ids');
         $note = trim($request->input('note'));
-        $questions = Question::with(['user', 'quiz.user', 'answers', 'educationLevel', 'grade', 'subject'])->whereIn('id', $ids)->get();
+        $questions = Question::with(['user', 'quiz.user', 'answers', 'educationLevel', 'grade', 'subject'])
+            ->whereIn('id', $ids)
+            ->where('bank_submission_status', 'pending')
+            ->get();
 
+        $processedCount = 0;
         foreach ($questions as $question) {
             $this->reviewService->rejectQuestion($question, $user, $note);
+            $processedCount++;
         }
 
         return response()->json([
             'success' => true,
-            'message' => "Đã từ chối kiểm duyệt " . count($ids) . " câu hỏi.",
+            'message' => "Đã từ chối kiểm duyệt {$processedCount} câu hỏi.",
         ]);
     }
 
@@ -1913,6 +1934,19 @@ class QuestionController extends Controller
             });
 
         $formatted['reports'] = $reports;
+
+        // Review diff & history details (lấy từ câu hỏi gốc hoặc chính câu hỏi)
+        $originQuestion = $question->origin_question_id 
+            ? (Question::find($question->origin_question_id) ?? $question) 
+            : $question;
+
+        $diffData = $this->reviewService->getReviewDetailsWithDiff($originQuestion);
+        $formatted['review_details'] = $diffData;
+        $formatted['current_revision'] = $diffData['current_revision'] ?? null;
+        $formatted['previous_revision'] = $diffData['previous_revision'] ?? null;
+        $formatted['history'] = $diffData['history'] ?? [];
+        $formatted['is_priority'] = (bool)($diffData['is_priority'] ?? false);
+        $formatted['review_priority'] = $diffData['review_priority'] ?? 'normal';
 
         return response()->json([
             'success' => true,

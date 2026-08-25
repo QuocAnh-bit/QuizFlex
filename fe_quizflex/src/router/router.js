@@ -560,7 +560,7 @@ const routes = [
   { path: '/admin/questions/:id', name: 'admin-question-detail', component: () => import('@/views/admin/AdminQuestionDetail.vue'), meta: { layout: 'admin', title: 'Chi tiết câu hỏi', requiresAuth: true, roles: adminRoles } },
   { path: '/admin/questions/:id/edit', redirect: to => `/admin/questions/${to.params.id}` },
   { path: '/admin/quizzes', name: 'admin-quizzes', component: () => import('@/views/admin/quizzes/QuizList.vue'), meta: { layout: 'admin', title: 'Quản lý Quiz', requiresAuth: true, roles: adminRoles } },
-  { path: '/admin/quizzes-trash', name: 'admin-quizzes-trash', component: () => import('@/views/admin/quizzes/QuizzesTrash.vue'), meta: { layout: 'admin', title: 'Thùng rác Quiz', requiresAuth: true, roles: adminRoles } },
+  { path: '/admin/quizzes-trash', redirect: '/admin/quizzes' },
   { path: '/admin/quizzes/:id', name: 'admin-quiz-detail', component: () => import('@/views/admin/quizzes/QuizDetail.vue'), meta: { layout: 'admin', title: 'Chi tiết Quiz', requiresAuth: true, roles: adminRoles } },
   { path: '/admin/quizzes/:id/edit', redirect: to => `/admin/quizzes/${to.params.id}` },
 

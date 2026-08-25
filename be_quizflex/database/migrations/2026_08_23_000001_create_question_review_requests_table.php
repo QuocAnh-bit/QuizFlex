@@ -14,7 +14,7 @@ return new class extends Migration
                 $table->foreignId('question_id')->constrained('questions')->onDelete('cascade');
                 $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
                 $table->unsignedInteger('revision_number')->default(1);
-                $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');
+                $table->enum('status', ['pending', 'approved', 'rejected', 'superseded'])->default('pending');
                 $table->text('request_note')->nullable();
                 $table->text('rejection_reason')->nullable();
                 $table->foreignId('reviewed_by')->nullable()->constrained('users')->nullOnDelete();

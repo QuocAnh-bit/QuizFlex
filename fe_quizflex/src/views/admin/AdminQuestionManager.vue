@@ -458,83 +458,116 @@
               <!-- Actions -->
               <td class="p-3.5 align-top text-right whitespace-nowrap">
                 <div class="flex items-center justify-end gap-1.5">
-                  <!-- Button to open diff review workspace -->
-                  <button
-                    type="button"
-                    class="inline-flex items-center gap-1 rounded-lg border border-purple-200 bg-purple-50 px-2.5 py-1.5 text-[11px] font-bold text-[#7C3AED] hover:bg-purple-100 transition cursor-pointer shadow-xs"
-                    :title="item.revision_number > 1 ? 'So sánh phiên bản Cũ và Mới' : 'Xem thẩm định chi tiết'"
-                    @click="openReviewDetail(item.id)"
-                  >
-                    <GitCompare class="h-3.5 w-3.5" />
-                    <span>{{ item.revision_number > 1 ? 'So sánh' : 'Thẩm định' }}</span>
-                  </button>
+                  <!-- 1. TRASH ACTIONS -->
+                  <template v-if="currentTab === 'trash'">
+                    <!-- Restore from Trash -->
+                    <button
+                      type="button"
+                      class="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1.5 text-[11px] font-bold text-white hover:bg-emerald-700 transition cursor-pointer shadow-xs"
+                      title="Khôi phục câu hỏi"
+                      @click="handleSingleRestore(item.id)"
+                    >
+                      <RotateCcw class="h-3 w-3" />
+                      <span>Khôi phục</span>
+                    </button>
 
-                  <!-- Quick Approve (if pending) -->
-                  <button
-                    v-if="item.bank_submission_status === 'pending'"
-                    type="button"
-                    class="inline-flex items-center rounded-lg bg-emerald-600 p-1.5 text-white hover:bg-emerald-700 transition cursor-pointer shadow-xs"
-                    title="Duyệt câu hỏi này"
-                    @click="handleSingleApprove(item.id)"
-                  >
-                    <Check class="h-3.5 w-3.5" />
-                  </button>
+                    <!-- Force Delete from Trash -->
+                    <button
+                      type="button"
+                      class="inline-flex items-center rounded-lg border border-rose-200 bg-white p-1.5 text-rose-600 hover:bg-rose-50 transition cursor-pointer shadow-xs"
+                      title="Xóa vĩnh viễn"
+                      @click="handleSingleForceDelete(item.id)"
+                    >
+                      <Trash2 class="h-3.5 w-3.5" />
+                    </button>
+                  </template>
 
-                  <!-- Quick Reject (if pending) -->
-                  <button
-                    v-if="item.bank_submission_status === 'pending'"
-                    type="button"
-                    class="inline-flex items-center rounded-lg border border-rose-200 bg-white p-1.5 text-rose-600 hover:bg-rose-50 transition cursor-pointer shadow-xs"
-                    title="Từ chối câu hỏi này"
-                    @click="openSingleRejectModal(item.id)"
-                  >
-                    <X class="h-3.5 w-3.5" />
-                  </button>
+                  <!-- 2. PENDING ACTIONS: Xem chi tiết & đối chiếu thẩm định (KHÔNG duyệt/từ chối ngoài bảng) -->
+                  <template v-else-if="item.bank_submission_status === 'pending'">
+                    <button
+                      type="button"
+                      class="inline-flex items-center gap-1 rounded-lg border border-purple-200 bg-purple-50 px-2.5 py-1.5 text-[11px] font-bold text-[#7C3AED] hover:bg-purple-100 transition cursor-pointer shadow-xs"
+                      :title="item.revision_number > 1 ? 'So sánh phiên bản Cũ và Mới' : 'Xem chi tiết thẩm định'"
+                      @click="openReviewDetail(item.id)"
+                    >
+                      <GitCompare class="h-3.5 w-3.5" />
+                      <span>{{ item.revision_number > 1 ? 'So sánh' : 'Xem chi tiết' }}</span>
+                    </button>
 
-                  <!-- Toggle Visibility (if not trash) -->
-                  <button
-                    v-if="currentTab !== 'trash' && item.bank_submission_status === 'approved'"
-                    type="button"
-                    class="inline-flex items-center rounded-lg border border-slate-200 bg-white p-1.5 text-slate-600 hover:bg-slate-100 transition cursor-pointer"
-                    :title="item.is_public ? 'Chuyển sang Riêng tư' : 'Duyệt Công khai'"
-                    @click="toggleSingleVisibility(item.id)"
-                  >
-                    <component :is="item.is_public ? Lock : Globe" class="h-3.5 w-3.5" />
-                  </button>
+                    <router-link
+                      :to="`/admin/questions/${item.id}`"
+                      class="inline-flex items-center rounded-lg border border-slate-200 bg-white p-1.5 text-slate-600 hover:bg-slate-50 transition cursor-pointer"
+                      title="Xem trang chi tiết"
+                    >
+                      <Eye class="h-3.5 w-3.5" />
+                    </router-link>
+                  </template>
 
-                  <!-- Delete to Trash (if approved bank question) -->
-                  <button
-                    v-if="currentTab !== 'trash' && currentTab !== 'pending'"
-                    type="button"
-                    class="inline-flex items-center rounded-lg border border-slate-200 bg-white p-1.5 text-slate-500 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition cursor-pointer"
-                    title="Chuyển vào thùng rác"
-                    @click="handleSingleDelete(item.id)"
-                  >
-                    <Trash2 class="h-3.5 w-3.5" />
-                  </button>
+                  <!-- 3. APPROVED ACTIONS: Xem chi tiết, Đổi ẩn/hiện, Xóa vào thùng rác -->
+                  <template v-else-if="item.bank_submission_status === 'approved'">
+                    <router-link
+                      :to="`/admin/questions/${item.id}`"
+                      class="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-slate-700 hover:bg-slate-50 transition cursor-pointer shadow-xs"
+                      title="Xem chi tiết câu hỏi"
+                    >
+                      <Eye class="h-3.5 w-3.5" />
+                      <span>Xem chi tiết</span>
+                    </router-link>
 
-                  <!-- Restore from Trash -->
-                  <button
-                    v-if="currentTab === 'trash'"
-                    type="button"
-                    class="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-emerald-700 transition cursor-pointer shadow-xs"
-                    title="Khôi phục"
-                    @click="handleSingleRestore(item.id)"
-                  >
-                    <RotateCcw class="h-3 w-3" />
-                    <span>Khôi phục</span>
-                  </button>
+                    <!-- Toggle Visibility -->
+                    <button
+                      type="button"
+                      class="inline-flex items-center rounded-lg border border-slate-200 bg-white p-1.5 text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+                      :title="item.is_public ? 'Chuyển sang Riêng tư' : 'Duyệt Công khai'"
+                      @click="toggleSingleVisibility(item.id)"
+                    >
+                      <component :is="item.is_public ? Lock : Globe" class="h-3.5 w-3.5" />
+                    </button>
 
-                  <!-- Force Delete from Trash -->
-                  <button
-                    v-if="currentTab === 'trash'"
-                    type="button"
-                    class="inline-flex items-center rounded-lg border border-rose-200 bg-white p-1 text-rose-600 hover:bg-rose-50 transition cursor-pointer"
-                    title="Xóa vĩnh viễn"
-                    @click="handleSingleForceDelete(item.id)"
-                  >
-                    <Trash2 class="h-3.5 w-3.5" />
-                  </button>
+                    <!-- Delete to Trash -->
+                    <button
+                      type="button"
+                      class="inline-flex items-center rounded-lg border border-slate-200 bg-white p-1.5 text-slate-500 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition cursor-pointer"
+                      title="Chuyển vào thùng rác"
+                      @click="handleSingleDelete(item.id)"
+                    >
+                      <Trash2 class="h-3.5 w-3.5" />
+                    </button>
+                  </template>
+
+                  <!-- 4. REJECTED ACTIONS: Xem chi tiết & lý do (KHÔNG có duyệt/từ chối) -->
+                  <template v-else-if="item.bank_submission_status === 'rejected'">
+                    <router-link
+                      :to="`/admin/questions/${item.id}`"
+                      class="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-slate-700 hover:bg-slate-50 transition cursor-pointer shadow-xs"
+                      title="Xem chi tiết & Lý do từ chối"
+                    >
+                      <Eye class="h-3.5 w-3.5" />
+                      <span>Xem chi tiết</span>
+                    </router-link>
+
+                    <button
+                      type="button"
+                      class="inline-flex items-center gap-1 rounded-lg border border-purple-200 bg-purple-50 px-2 py-1.5 text-[11px] font-bold text-[#7C3AED] hover:bg-purple-100 transition cursor-pointer shadow-xs"
+                      title="Xem lịch sử các phiên bản"
+                      @click="openReviewDetail(item.id)"
+                    >
+                      <History class="h-3.5 w-3.5" />
+                      <span>Lịch sử</span>
+                    </button>
+                  </template>
+
+                  <!-- 5. DEFAULT / OTHER -->
+                  <template v-else>
+                    <router-link
+                      :to="`/admin/questions/${item.id}`"
+                      class="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-slate-700 hover:bg-slate-50 transition cursor-pointer shadow-xs"
+                      title="Xem chi tiết"
+                    >
+                      <Eye class="h-3.5 w-3.5" />
+                      <span>Xem chi tiết</span>
+                    </router-link>
+                  </template>
                 </div>
               </td>
             </tr>
@@ -628,35 +661,94 @@
         </div>
 
         <div v-else class="flex-1 overflow-y-auto p-6 space-y-6 bg-[#F8FAFC]">
-          <!-- Report Alert Banner if question has reports -->
+          <!-- SECTION: QUESTION NÀY ĐÃ TỪNG ĐƯỢC BÁO CÁO (REPORT CONTEXT & RESOLUTION BANNER) -->
           <div
             v-if="activeDetail?.reports && activeDetail.reports.length > 0"
-            class="rounded-2xl border border-rose-300 bg-rose-50 p-4 space-y-2.5 shadow-xs"
+            class="rounded-2xl border border-rose-300 bg-rose-50/70 p-5 space-y-4 shadow-sm"
           >
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-2 font-bold text-rose-900 text-xs">
-                <AlertTriangle class="h-4 w-4 text-rose-600 shrink-0" />
-                <span class="uppercase tracking-wider">🔴 YÊU CẦU ƯU TIÊN DUYỆT — CÓ BÁO CÁO VI PHẠM ({{ activeDetail.reports.length }})</span>
+            <!-- Header & Summary -->
+            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-rose-200/80 pb-3">
+              <div class="flex items-center gap-2.5">
+                <div class="grid h-8 w-8 place-items-center rounded-xl bg-rose-600 text-white shadow-2xs">
+                  <AlertTriangle class="h-4 w-4" />
+                </div>
+                <div>
+                  <div class="flex items-center gap-2">
+                    <h3 class="text-xs font-black uppercase tracking-wider text-rose-950">
+                      Question này đã từng được báo cáo
+                    </h3>
+                    <span class="rounded-full bg-rose-200/80 px-2 py-0.5 text-[10px] font-black text-rose-900">
+                      {{ activeDetail.reports.length }} lượt phản ánh
+                    </span>
+                  </div>
+                  <p class="text-[11px] text-rose-800">
+                    Phản ánh gần nhất: <strong>{{ formatDate(activeDetail.reports[0]?.created_at) }}</strong>
+                  </p>
+                </div>
               </div>
+
+              <!-- Quick Link to Report Manager -->
               <router-link
                 :to="`/admin/reports?question_id=${activeDetail?.question?.id || selectedQuestionId}`"
-                class="text-[11px] font-bold text-rose-700 hover:underline inline-flex items-center gap-1"
+                target="_blank"
+                class="text-[11px] font-bold text-rose-700 hover:underline inline-flex items-center gap-1 shrink-0"
               >
-                <span>Xem trong Quản lý Báo cáo →</span>
+                <span>Xem trong Quản lý Báo cáo ↗</span>
               </router-link>
             </div>
 
-            <div class="space-y-1.5">
-              <div
-                v-for="rep in activeDetail.reports"
-                :key="rep.id"
-                class="rounded-xl border border-rose-200 bg-white p-3 text-xs text-rose-950 space-y-1 shadow-2xs"
-              >
-                <div class="flex flex-wrap items-center justify-between gap-2">
-                  <span class="font-bold text-rose-800">Lý do: {{ rep.reason }}</span>
-                  <span class="text-[11px] text-slate-500 font-medium">Người báo cáo: {{ rep.reporter_name }} • {{ formatDate(rep.created_at) }}</span>
+            <!-- Reasons breakdown & Processing Status -->
+            <div class="grid gap-3 sm:grid-cols-2">
+              <!-- Left: Reasons Breakdown -->
+              <div class="rounded-xl border border-rose-200 bg-white p-3 space-y-1.5 shadow-2xs">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Lý do báo cáo chính:</span>
+                <div class="flex flex-wrap gap-1.5">
+                  <span
+                    v-for="grp in getGroupedReasons(activeDetail.reports)"
+                    :key="grp.reason"
+                    class="rounded-lg bg-rose-100 px-2.5 py-1 text-[11px] font-bold text-rose-800 border border-rose-200"
+                  >
+                    {{ grp.count }}x {{ grp.reason }}
+                  </span>
                 </div>
-                <p v-if="rep.description" class="text-slate-600 italic leading-relaxed">"{{ rep.description }}"</p>
+              </div>
+
+              <!-- Right: Automation Note -->
+              <div class="rounded-xl border border-blue-200 bg-blue-50/80 p-3 space-y-1 text-xs shadow-2xs">
+                <div class="flex items-center gap-1.5 font-bold text-blue-950 text-[11px]">
+                  <CheckCircle class="h-3.5 w-3.5 text-blue-600 shrink-0" />
+                  <span>Cơ chế xử lý tự động:</span>
+                </div>
+                <p class="text-[11px] text-blue-800 leading-relaxed">
+                  Khi Admin bấm <strong>Phê duyệt (Approve)</strong> bản sửa đổi này, hệ thống sẽ <strong>tự động chuyển tất cả báo cáo sang Đã giải quyết (Resolved)</strong>.
+                </p>
+              </div>
+            </div>
+
+            <!-- Individual Report Tickets list -->
+            <div class="space-y-2">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-rose-900 block">Chi tiết các phản ánh:</span>
+              <div class="space-y-2 max-h-48 overflow-y-auto pr-1">
+                <div
+                  v-for="rep in activeDetail.reports"
+                  :key="rep.id"
+                  class="rounded-xl border border-rose-200 bg-white p-3 text-xs text-rose-950 space-y-1.5 shadow-2xs"
+                >
+                  <div class="flex flex-wrap items-center justify-between gap-2">
+                    <div class="flex items-center gap-2">
+                      <span class="rounded bg-rose-100 text-rose-800 font-bold px-2 py-0.5 text-[10px]">
+                        {{ rep.reason }}
+                      </span>
+                      <StatusBadge :value="rep.status" />
+                    </div>
+                    <span class="text-[10px] text-slate-500 font-medium">
+                      Người báo: <strong>{{ rep.reporter_name }}</strong> ({{ rep.reporter_email }}) • {{ formatDate(rep.created_at) }}
+                    </span>
+                  </div>
+                  <p v-if="rep.description" class="text-slate-700 italic leading-relaxed bg-slate-50 p-2 rounded-lg text-[11px]">
+                    "{{ rep.description }}"
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -1035,8 +1127,10 @@ import {
   AlertCircle,
   AlertTriangle,
   Check,
+  CheckCircle,
   ChevronRight,
   Clock,
+  Eye,
   FileText,
   GitCompare,
   Globe,
@@ -1052,6 +1146,7 @@ import {
   X,
   XCircle,
 } from 'lucide-vue-next'
+import StatusBadge from '@/components/common/StatusBadge.vue'
 import { adminBankRequestsApi, adminQuestionsApi, taxonomyApi } from '@/services/api'
 
 const route = useRoute()
@@ -1578,6 +1673,7 @@ const getReviewStatusLabel = (status) => {
     case 'pending': return 'Chờ duyệt'
     case 'approved': return 'Đã duyệt'
     case 'rejected': return 'Từ chối'
+    case 'superseded': return 'Đã thay thế'
     default: return status || 'Chưa duyệt'
   }
 }
@@ -1587,8 +1683,19 @@ const getReviewStatusClass = (status) => {
     case 'pending': return 'bg-amber-100 text-amber-800 border border-amber-200'
     case 'approved': return 'bg-emerald-100 text-emerald-800 border border-emerald-200'
     case 'rejected': return 'bg-rose-100 text-rose-800 border border-rose-200'
+    case 'superseded': return 'bg-slate-100 text-slate-600 border border-slate-200'
     default: return 'bg-slate-100 text-slate-700'
   }
+}
+
+const getGroupedReasons = (reps) => {
+  if (!reps || reps.length === 0) return []
+  const counts = {}
+  reps.forEach(r => {
+    const reason = r.reason || 'Khác'
+    counts[reason] = (counts[reason] || 0) + 1
+  })
+  return Object.entries(counts).map(([reason, count]) => ({ reason, count }))
 }
 
 const formatDate = (dateStr) => {

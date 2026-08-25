@@ -138,6 +138,7 @@ Route::middleware('auth:api')->group(function () {
 
         // Danh sách báo cáo vi phạm cho admin (Audit/Theo dõi/Kiểm duyệt)
         Route::get('/admin/report-tickets', [ReportTicketController::class, 'index']);
+        Route::get('/admin/report-tickets/{id}', [ReportTicketController::class, 'show']);
         Route::patch('/admin/report-tickets/{id}/status', [ReportTicketController::class, 'updateStatus']);
         Route::post('/admin/report-tickets/resolve-question', [ReportTicketController::class, 'resolveQuestionReports']);
 
