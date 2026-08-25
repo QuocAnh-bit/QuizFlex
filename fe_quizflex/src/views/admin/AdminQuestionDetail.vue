@@ -229,11 +229,14 @@
           <div class="mb-4 flex items-center justify-between border-b border-rose-100 pb-4">
             <span class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-rose-700">
               <AlertTriangle class="h-4 w-4" />
-              Ticket báo cáo
+              Ticket báo cáo ({{ question.reports.length }})
             </span>
-            <span class="text-xs font-medium text-rose-600">
-              {{ question.reports.length }} lượt
-            </span>
+            <router-link
+              :to="`/admin/reports?question_id=${question.id}`"
+              class="text-xs font-bold text-rose-700 hover:underline inline-flex items-center gap-1"
+            >
+              <span>Xem trong Quản lý Báo cáo →</span>
+            </router-link>
           </div>
 
           <div class="space-y-3">

@@ -443,37 +443,27 @@ const routes = [
     },
   },
   {
-    path: "/admin/report-tickets",
-    name: "admin-report-tickets",
+    path: "/admin/reports",
+    name: "admin-reports",
     component: () => import("@/views/admin/ReportManager.vue"),
     meta: {
       layout: "admin",
-      title: "Quản lý báo cáo",
+      title: "Quản lý Báo cáo",
       requiresAuth: true,
       roles: adminRoles,
     },
+  },
+  {
+    path: "/admin/report-tickets",
+    redirect: (to) => ({ path: "/admin/reports", query: to.query }),
   },
   {
     path: "/admin/question-bank-requests",
-    name: "admin-question-bank-requests",
-    component: () => import("@/views/admin/QuestionBankRequests.vue"),
-    meta: {
-      layout: "admin",
-      title: "Duyệt câu hỏi vào Ngân hàng",
-      requiresAuth: true,
-      roles: adminRoles,
-    },
+    redirect: (to) => ({ path: "/admin/question-bank", query: { ...to.query, tab: "pending" } }),
   },
   {
     path: "/admin/quiz-review-requests",
-    name: "admin-quiz-review-requests",
-    component: () => import("@/views/admin/QuizReviewRequests.vue"),
-    meta: {
-      layout: "admin",
-      title: "Duyệt Quiz công khai",
-      requiresAuth: true,
-      roles: adminRoles,
-    },
+    redirect: (to) => ({ path: "/admin/quizzes", query: { ...to.query, tab: "pending" } }),
   },
   {
     path: "/admin/rooms",
@@ -507,23 +497,12 @@ const routes = [
     }, 
   },
   {
-    path: "/admin/reports",
-    name: "admin-reports",
-    component: () => import("@/views/admin/Reports.vue"),
-    meta: {
-      layout: "admin",
-      title: "Report",
-      requiresAuth: true,
-      roles: adminRoles,
-    },
-  },
-  {
     path: "/admin/payments",
     name: "admin-payments",
     component: () => import("@/views/admin/Payments.vue"),
     meta: {
       layout: "admin",
-      title: "Payment",
+      title: "Quản lý Giao dịch & Doanh thu",
       requiresAuth: true,
       roles: adminRoles,
     },
@@ -534,7 +513,7 @@ const routes = [
     component: () => import("@/views/admin/Users.vue"),
     meta: {
       layout: "admin",
-      title: "User management",
+      title: "Quản lý Người dùng",
       requiresAuth: true,
       roles: adminRoles,
     },
@@ -545,7 +524,7 @@ const routes = [
     component: () => import("@/views/admin/UserDetail.vue"),
     meta: {
       layout: "admin",
-      title: "Chi tiết user",
+      title: "Chi tiết người dùng",
       requiresAuth: true,
       roles: adminRoles,
     },
@@ -567,7 +546,7 @@ const routes = [
     component: () => import("@/views/admin/Settings.vue"),
     meta: {
       layout: "admin",
-      title: "Settings",
+      title: "Cài đặt hệ thống",
       requiresAuth: true,
       roles: adminRoles,
     },
@@ -575,7 +554,8 @@ const routes = [
   
 
   // Admin Quiz & Question Management
-  { path: '/admin/question-bank', name: 'admin-question-bank', component: () => import('@/views/admin/AdminQuestionManager.vue'), meta: { layout: 'admin', title: 'Quản lý Ngân hàng Câu hỏi', requiresAuth: true, roles: adminRoles } },
+  { path: '/admin/questions', redirect: '/admin/question-bank' },
+  { path: '/admin/question-bank', name: 'admin-question-bank', component: () => import('@/views/admin/AdminQuestionManager.vue'), meta: { layout: 'admin', title: 'Ngân hàng câu hỏi', requiresAuth: true, roles: adminRoles } },
   { path: '/admin/questions-trash', name: 'admin-questions-trash', component: () => import('@/views/admin/AdminQuestionsTrash.vue'), meta: { layout: 'admin', title: 'Thùng rác câu hỏi', requiresAuth: true, roles: adminRoles } },
   { path: '/admin/questions/:id', name: 'admin-question-detail', component: () => import('@/views/admin/AdminQuestionDetail.vue'), meta: { layout: 'admin', title: 'Chi tiết câu hỏi', requiresAuth: true, roles: adminRoles } },
   { path: '/admin/questions/:id/edit', redirect: to => `/admin/questions/${to.params.id}` },

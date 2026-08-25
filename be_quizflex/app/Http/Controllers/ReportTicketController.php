@@ -115,7 +115,7 @@ class ReportTicketController extends Controller
     }
 
     /**
-     * Lấy danh sách tất cả các báo cáo câu hỏi (Audit Log)
+     * Lấy danh sách tất cả các báo cáo câu hỏi (Audit Log & Moderation)
      */
     public function index(Request $request)
     {
@@ -123,18 +123,122 @@ class ReportTicketController extends Controller
             'user:id,name,email,avatar',
             'question.user:id,name,email',
             'question.subject',
-            'question.grade'
+            'question.grade',
+            'question.answers',
+            'question.using_quizzes:id,title,is_public'
         ])->latest();
 
-        if ($request->filled('status')) {
+        if ($request->filled('status') && $request->query('status') !== 'all') {
             $query->where('status', $request->query('status'));
+        }
+
+        if ($request->filled('question_id')) {
+            $query->where('question_id', $request->query('question_id'));
+        }
+
+        if ($request->filled('search')) {
+            $search = trim($request->query('search'));
+            $query->where(function ($q) use ($search) {
+                $q->where('reason', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%")
+                  ->orWhere('question_id', $search)
+                  ->orWhereHas('user', function ($uq) use ($search) {
+                      $uq->where('name', 'like', "%{$search}%")
+                         ->orWhere('email', 'like', "%{$search}%");
+                  })
+                  ->orWhereHas('question', function ($qq) use ($search) {
+                      $qq->where('content', 'like', "%{$search}%");
+                  });
+            });
         }
 
         $reports = $query->get();
 
+        // Calculate KPI stats
+        $stats = [
+            'total' => ReportTicket::count(),
+            'pending' => ReportTicket::where('status', 'pending')->count(),
+            'resolved' => ReportTicket::where('status', 'resolved')->count(),
+            'dismissed' => ReportTicket::where('status', 'dismissed')->count(),
+            'questions_count' => ReportTicket::where('status', 'pending')->distinct('question_id')->count('question_id'),
+        ];
+
         return response()->json([
             'success' => true,
-            'data' => $reports
+            'data' => $reports,
+            'stats' => $stats,
+        ]);
+    }
+
+    /**
+     * Cập nhật trạng thái của một báo cáo vi phạm đơn lẻ
+     */
+    public function updateStatus(Request $request, $id)
+    {
+        $request->validate([
+            'status' => 'required|in:pending,resolved,dismissed,investigating',
+            'admin_note' => 'nullable|string|max:1000',
+        ]);
+
+        $ticket = ReportTicket::findOrFail($id);
+        $ticket->status = $request->status;
+        $ticket->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Cập nhật trạng thái báo cáo thành công.',
+            'data' => $ticket
+        ]);
+    }
+
+    /**
+     * Xử lý toàn bộ các báo cáo vi phạm của một Question
+     */
+    public function resolveQuestionReports(Request $request)
+    {
+        $request->validate([
+            'question_id' => 'required|integer|exists:questions,id',
+            'status' => 'required|in:resolved,dismissed',
+            'action' => 'nullable|in:keep,hide,delete',
+            'admin_note' => 'nullable|string|max:1000',
+        ]);
+
+        $questionId = $request->question_id;
+        $status = $request->status;
+        $action = $request->action ?? 'keep';
+
+        // 1. Cập nhật tất cả các ticket pending của câu hỏi này
+        ReportTicket::where('question_id', $questionId)
+            ->where('status', 'pending')
+            ->update(['status' => $status]);
+
+        // 2. Thực hiện hành động nếu có
+        $question = Question::find($questionId);
+        if ($question) {
+            if ($action === 'hide') {
+                $question->is_public = false;
+                $question->save();
+            } elseif ($action === 'delete') {
+                $question->delete();
+            }
+
+            // Thông báo cho tác giả nếu được giải quyết / xử lý
+            if ($status === 'resolved' && $question->user) {
+                try {
+                    $question->user->notify(new QuestionModerated(
+                        $question,
+                        $action === 'delete' ? 'deleted' : ($action === 'hide' ? 'hidden' : 'resolved'),
+                        $request->admin_note ?? 'Báo cáo vi phạm đã được quản trị viên xử lý.'
+                    ));
+                } catch (\Throwable $e) {
+                    Log::warning('Không thể gửi thông báo xử lý report cho tác giả: ' . $e->getMessage());
+                }
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => $status === 'resolved' ? 'Đã giải quyết tất cả báo cáo cho câu hỏi này.' : 'Đã bỏ qua các báo cáo.',
         ]);
     }
 
@@ -144,11 +248,13 @@ class ReportTicketController extends Controller
     public function countPending()
     {
         $questionPending = ReportTicket::where('status', 'pending')->count();
+        $uniqueQuestions = ReportTicket::where('status', 'pending')->distinct('question_id')->count('question_id');
 
         return response()->json([
             'success' => true,
             'count' => $questionPending,
             'question_pending' => $questionPending,
+            'unique_questions_pending' => $uniqueQuestions,
         ]);
     }
 }

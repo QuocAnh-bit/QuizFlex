@@ -336,6 +336,65 @@ export const adminQuestionsApi = {
   }
 };
 
+export const adminQuizzesApi = {
+  async list(params = {}) {
+    const { data } = await api.get('/admin/quizzes', { params });
+    const payload = unwrap(data);
+    const items = Array.isArray(payload?.items) 
+      ? payload.items 
+      : (Array.isArray(payload?.data) ? payload.data : (Array.isArray(payload) ? payload : []));
+    return {
+      items,
+      total: payload?.total ?? items.length,
+      currentPage: payload?.current_page ?? 1,
+      lastPage: payload?.last_page ?? 1,
+      perPage: payload?.per_page ?? 15,
+      stats: payload?.stats ?? { total: 0, public: 0, private: 0, pending: 0, rejected: 0 }
+    };
+  },
+
+  async get(id) {
+    const { data } = await api.get(`/admin/quizzes/${id}`);
+    return unwrap(data);
+  },
+
+  async toggleVisibility(id) {
+    const { data } = await api.patch(`/admin/quizzes/${id}/toggle-visibility`);
+    return unwrap(data);
+  },
+
+  async remove(id) {
+    const { data } = await api.delete(`/admin/quizzes/${id}`);
+    return unwrap(data);
+  },
+
+  async trash(params = {}) {
+    const { data } = await api.get('/admin/quizzes/trash', { params });
+    const payload = unwrap(data);
+    const items = Array.isArray(payload?.items)
+      ? payload.items
+      : (Array.isArray(payload?.data) ? payload.data : (Array.isArray(payload) ? payload : []));
+    return {
+      items,
+      total: payload?.total ?? items.length,
+      currentPage: payload?.current_page ?? 1,
+      lastPage: payload?.last_page ?? 1,
+      perPage: payload?.per_page ?? 15,
+      trashCount: payload?.trash_count ?? data?.trash_count ?? 0
+    };
+  },
+
+  async restore(id) {
+    const { data } = await api.post(`/admin/quizzes/${id}/restore`);
+    return unwrap(data);
+  },
+
+  async forceDelete(id) {
+    const { data } = await api.delete(`/admin/quizzes/${id}/force-delete`);
+    return unwrap(data);
+  }
+};
+
 
 export const normalizeRole = (role) => {
   const value = String(role || "guest")
@@ -1618,8 +1677,29 @@ export const reportApi = {
   // Dành cho Admin: Lấy danh sách audit log các báo cáo
   async listAdmin(params = {}) {
     const { data } = await api.get("/admin/report-tickets", { params });
-    return unwrapCollection(data);
+    const payload = unwrap(data);
+    const items = Array.isArray(payload) ? payload : (Array.isArray(payload?.data) ? payload.data : []);
+    return {
+      items,
+      stats: payload?.stats ?? data?.stats ?? { total: 0, pending: 0, resolved: 0, dismissed: 0, questions_count: 0 },
+      total: items.length
+    };
   },
+
+  async updateStatus(id, payload = {}) {
+    const { data } = await api.patch(`/admin/report-tickets/${id}/status`, payload);
+    return unwrap(data);
+  },
+
+  async resolveQuestionReports(payload = {}) {
+    const { data } = await api.post('/admin/report-tickets/resolve-question', payload);
+    return unwrap(data);
+  },
+
+  async countPending() {
+    const { data } = await api.get('/admin/report-tickets/count');
+    return unwrap(data);
+  }
 };
 
 
