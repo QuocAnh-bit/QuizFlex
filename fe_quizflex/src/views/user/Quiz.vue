@@ -43,15 +43,6 @@
               </span>
             </div>
             <div class="flex items-center gap-3">
-              <button
-                type="button"
-                class="inline-flex items-center gap-1 text-[11px] font-bold text-slate-400 hover:text-rose-600 transition cursor-pointer"
-                title="Báo cáo câu hỏi có sai sót"
-                @click="isReportModalOpen = true"
-              >
-                <Flag :size="13" />
-                <span>Báo lỗi câu này</span>
-              </button>
               <span class="text-xs font-bold text-slate-500">
                 Tiến độ: <b class="text-[#7C3AED]">{{ progressPercent }}%</b>
               </span>
@@ -181,30 +172,19 @@
       </article>
     </aside>
 
-    <!-- Question Report Modal -->
-    <QuestionReportModal
-      v-if="currentQuestion.id"
-      :is-open="isReportModalOpen"
-      :question-id="currentQuestion.id"
-      :question-snippet="currentQuestion.question"
-      @close="isReportModalOpen = false"
-    />
   </section>
 </template>
 
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { Flag } from "lucide-vue-next";
 import { formatSeconds, normalizeQuestion, quizzesApi } from "@/services/api";
 import MathText from "@/components/MathText.vue";
 import audioService from "@/services/audioService";
-import QuestionReportModal from "@/components/question/QuestionReportModal.vue";
 
 const route = useRoute();
 const router = useRouter();
 
-const isReportModalOpen = ref(false);
 const currentIndex = ref(0);
 const selectedAnswers = ref({});
 const quizQuestions = ref([]);

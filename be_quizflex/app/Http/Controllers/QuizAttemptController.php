@@ -508,7 +508,37 @@ public function checkAnswer(Request $request, Quiz $quiz)
         ];
 
         if ($includeSnapshot) {
-            $data['answers_snapshot'] = $attempt->answers_snapshot ?? [];
+            $snapshot = $attempt->answers_snapshot ?? [];
+            $quiz = $attempt->quiz;
+            $questions = $quiz && $quiz->relationLoaded('questions') ? $quiz->questions : collect();
+
+            $enrichedSnapshot = collect($snapshot)->map(function ($item) use ($questions) {
+                $item = (array) $item;
+                $qId = $item['question_id'] ?? null;
+                $question = $qId ? $questions->firstWhere('id', $qId) : null;
+
+                if ($question && empty($item['answers'])) {
+                    $item['answers'] = $question->answers->values()->map(function ($answer, int $index) {
+                        $key = chr(65 + (int) ($answer->order ?? $index));
+                        return [
+                            'id' => $answer->id,
+                            'key' => $key,
+                            'answer_key' => $key,
+                            'content' => $answer->content,
+                            'text' => $answer->content,
+                            'is_correct' => (bool) $answer->is_correct,
+                        ];
+                    })->all();
+                }
+
+                if ($question && empty($item['type'])) {
+                    $item['type'] = $question->type ?? 'single_choice';
+                }
+
+                return $item;
+            })->all();
+
+            $data['answers_snapshot'] = $enrichedSnapshot;
         }
 
         return $data;

@@ -1,399 +1,713 @@
 <template>
   <div
     v-if="isOpen"
-    class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3 sm:p-6 backdrop-blur-md animate-fade-in"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-2 sm:p-4 md:p-6 backdrop-blur-md animate-fade-in"
     @click.self="handleCancel"
   >
     <div
-      class="relative flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] shadow-2xl backdrop-blur-2xl"
+      class="relative flex h-[92vh] max-h-[880px] w-full max-w-[1360px] flex-col overflow-hidden rounded-[1.75rem] border border-slate-200/90 bg-white shadow-2xl"
     >
-      <!-- HEADER -->
-      <div class="border-b border-[var(--border)] p-5 sm:px-6 sm:py-5 bg-[var(--surface-soft)]/50">
-        <div class="flex items-start justify-between gap-4">
-          <div class="min-w-0">
+      <!-- =========================================================
+           1. HEADER ZONE
+      ========================================================= -->
+      <div class="border-b border-slate-200/80 px-6 py-3.5 bg-white flex items-center justify-between gap-4 shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 via-purple-600 to-indigo-700 text-white shadow-md shadow-violet-500/20">
+            <Layers :size="20" class="text-white" />
+          </div>
+
+          <div>
             <div class="flex items-center gap-2">
-              <span class="inline-block h-2.5 w-2.5 rounded-full bg-[var(--primary)] shadow-[0_0_10px_var(--primary)]"></span>
-              <h3 class="text-xl font-black tracking-[-0.03em] text-[var(--text)]">
+              <h3 class="text-base sm:text-lg font-black tracking-tight text-slate-900">
                 Chọn câu hỏi cho bộ đề
               </h3>
+              <span class="inline-block h-2 w-2 rounded-full bg-[#7c3aed]"></span>
             </div>
-            <p class="mt-1 text-xs text-[var(--muted)]">
-              Chọn câu hỏi từ Kho cá nhân của bạn hoặc Ngân hàng câu hỏi công khai để đưa vào đề thi.
+            <p class="text-xs text-slate-500 font-medium hidden sm:block">
+              Tra cứu, lọc và chọn câu hỏi từ Kho cá nhân hoặc Ngân hàng dùng chung chèn trực tiếp vào Bài Quiz.
             </p>
           </div>
-
-          <button
-            type="button"
-            class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--border)] text-[var(--muted)] hover:bg-[var(--chip-active)] hover:text-[var(--text)] transition cursor-pointer"
-            title="Đóng modal"
-            @click="handleCancel"
-          >
-            <X :size="16" />
-          </button>
-        </div>
-
-        <!-- SOURCE TABS -->
-        <div class="mt-4 flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            class="flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition duration-200 cursor-pointer"
-            :class="activeTab === 'my_bank'
-              ? 'bg-[var(--primary)] text-white shadow-md shadow-[var(--primary)]/20'
-              : 'border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:text-[var(--text)]'"
-            @click="switchTab('my_bank')"
-          >
-            <User :size="14" />
-            <span>Kho câu hỏi của tôi</span>
-            <span
-              v-if="myBankSelectedCount > 0"
-              class="ml-1 rounded-full px-1.5 py-0.5 text-[10px] font-black"
-              :class="activeTab === 'my_bank' ? 'bg-white/25 text-white' : 'bg-[var(--primary)]/15 text-[var(--primary)]'"
-            >
-              {{ myBankSelectedCount }}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            class="flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition duration-200 cursor-pointer"
-            :class="activeTab === 'public_bank'
-              ? 'bg-[var(--primary)] text-white shadow-md shadow-[var(--primary)]/20'
-              : 'border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:text-[var(--text)]'"
-            @click="switchTab('public_bank')"
-          >
-            <Globe :size="14" />
-            <span>Ngân hàng câu hỏi</span>
-            <span
-              v-if="publicBankSelectedCount > 0"
-              class="ml-1 rounded-full px-1.5 py-0.5 text-[10px] font-black"
-              :class="activeTab === 'public_bank' ? 'bg-white/25 text-white' : 'bg-[var(--primary)]/15 text-[var(--primary)]'"
-            >
-              {{ publicBankSelectedCount }}
-            </span>
-          </button>
-
-          <!-- Overall Counter Summary Pill -->
-          <div class="ml-auto text-xs font-bold text-[var(--muted)] hidden sm:flex items-center gap-2">
-            <span class="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2.5 py-1 text-[11px]">
-              <span class="inline-flex items-center gap-1 text-emerald-400">
-                <User :size="12" />
-                <span>Kho: {{ myBankSelectedCount }}</span>
-              </span>
-              <span class="text-[var(--border)]">•</span>
-              <span class="inline-flex items-center gap-1 text-sky-400">
-                <Globe :size="12" />
-                <span>Ngân hàng: {{ publicBankSelectedCount }}</span>
-              </span>
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <!-- FILTER BAR -->
-      <div class="border-b border-[var(--border)] p-4 sm:px-6 bg-[var(--surface)] grid gap-3">
-        <!-- Row 1: Taxonomy dropdowns -->
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-          <select
-            v-model="filters.education_level_id"
-            class="field !py-2 text-xs"
-            @change="onLevelChange"
-          >
-            <option value="">Tất cả Cấp học</option>
-            <option v-for="level in taxonomyLevels" :key="level.id" :value="level.id">{{ level.name }}</option>
-          </select>
-
-          <select
-            v-model="filters.grade_id"
-            class="field !py-2 text-xs"
-            @change="onGradeSubjectChange"
-          >
-            <option value="">Tất cả Khối lớp</option>
-            <option v-for="grade in availableGrades" :key="grade.id" :value="grade.id">{{ grade.name }}</option>
-          </select>
-
-          <select
-            v-model="filters.subject_id"
-            class="field !py-2 text-xs"
-            @change="onGradeSubjectChange"
-          >
-            <option value="">Tất cả Bộ môn</option>
-            <option v-for="subject in availableSubjects" :key="subject.id" :value="subject.id">{{ subject.name }}</option>
-          </select>
-
-          <select
-            v-model="filters.difficulty"
-            class="field !py-2 text-xs"
-            @change="applyFilter"
-          >
-            <option value="">Tất cả Độ khó</option>
-            <option value="easy">Dễ (Nhận biết)</option>
-            <option value="medium">Vừa (Thông hiểu)</option>
-            <option value="hard">Khó (Vận dụng)</option>
-          </select>
-        </div>
-
-        <!-- Row 2: Search, Topic & Actions -->
-        <div class="grid sm:grid-cols-[1fr_220px_auto_auto] gap-2.5">
-          <div class="relative">
-            <Search :size="14" class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)]" />
-            <input
-              v-model="filters.search"
-              type="text"
-              class="field w-full !py-2 !pl-8 text-xs font-medium"
-              placeholder="Tìm kiếm nội dung câu hỏi..."
-              @keyup.enter="applyFilter"
-            />
-          </div>
-
-          <select
-            v-model="filters.topic_name"
-            class="field !py-2 text-xs"
-            @change="applyFilter"
-          >
-            <option value="">Tất cả Chủ đề</option>
-            <option v-for="top in topicsList" :key="top.topic_name" :value="top.topic_name">
-              {{ top.topic_name }} ({{ top.total_questions }} câu)
-            </option>
-          </select>
-
-          <button
-            type="button"
-            class="btn-primary inline-flex items-center justify-center gap-1.5 !py-2 !px-3.5 text-xs cursor-pointer shrink-0"
-            @click="applyFilter"
-          >
-            <SearchCheck :size="13" />
-            <span>Lọc</span>
-          </button>
-
-          <button
-            v-if="hasActiveFilters"
-            type="button"
-            class="btn-ghost inline-flex items-center justify-center gap-1 !py-2 text-xs font-bold text-rose-400 hover:bg-rose-500/10 cursor-pointer shrink-0"
-            @click="resetFilters"
-          >
-            <RotateCcw :size="12" />
-            <span>Đặt lại</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- SELECTION & STATS SUB-BAR -->
-      <div class="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border)] px-5 py-2.5 bg-[var(--surface-soft)]/30 text-xs font-bold text-[var(--muted)]">
-        <span>
-          Tìm thấy <strong class="text-[var(--text)]">{{ pagination.total }}</strong> câu hỏi
-          <span v-if="pagination.last_page > 1" class="ml-1 text-[11px] font-normal">
-            (Trang {{ pagination.current_page }}/{{ pagination.last_page }})
-          </span>
-        </span>
-
-        <div class="flex items-center gap-3">
-          <button
-            v-if="questions.length > 0"
-            type="button"
-            class="text-[var(--primary)] hover:underline font-bold cursor-pointer text-xs inline-flex items-center gap-1.5"
-            @click="toggleSelectAllCurrentPage"
-          >
-            <component :is="isCurrentPageAllSelected ? X : Check" :size="13" />
-            <span>{{ isCurrentPageAllSelected ? 'Bỏ chọn trang này' : 'Chọn tất cả trang này' }}</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- QUESTION LIST BODY -->
-      <div class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-3 min-h-[260px] max-h-[48vh]">
-        <!-- Loading State -->
-        <div v-if="isLoading" class="flex flex-col items-center justify-center gap-3 py-16 text-xs font-bold text-[var(--muted)]">
-          <div class="h-7 w-7 animate-spin rounded-full border-2 border-[var(--primary)] border-t-transparent"></div>
-          <span>Đang tải danh sách câu hỏi...</span>
-        </div>
-
-        <!-- Empty State -->
-        <div v-else-if="questions.length === 0" class="flex flex-col items-center justify-center py-16 text-center text-xs text-[var(--muted)]">
-          <Search :size="36" class="text-[var(--muted)] mb-2" />
-          <p class="font-bold text-sm text-[var(--text)]">Không tìm thấy câu hỏi phù hợp</p>
-          <p class="mt-1">Hãy thử điều chỉnh lại bộ lọc hoặc từ khóa tìm kiếm.</p>
-        </div>
-
-        <!-- Questions Cards -->
-        <template v-else>
-          <div
-            v-for="q in questions"
-            :key="q.id"
-            class="group flex items-start gap-3.5 rounded-2xl border p-4 transition-all duration-200 select-none"
-            :class="[
-              isQuestionDisabled(q.id)
-                ? 'opacity-60 cursor-not-allowed border-[var(--border)] bg-[var(--surface-soft)]/50'
-                : 'cursor-pointer',
-              !isQuestionDisabled(q.id) && localSelectedIds.includes(q.id)
-                ? 'border-[var(--primary)] bg-[var(--primary)]/10 shadow-sm'
-                : (!isQuestionDisabled(q.id) ? 'border-[var(--border)] bg-[var(--surface-soft)] hover:border-[var(--border-strong)] hover:bg-[var(--chip-active)]' : '')
-            ]"
-            @click="toggleSelectQuestion(q)"
-          >
-            <!-- Checkbox Box -->
-            <div
-              class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-lg border transition-all duration-150"
-              :class="[
-                isQuestionDisabled(q.id)
-                  ? 'border-slate-300 dark:border-slate-700 bg-slate-200 dark:bg-slate-800 text-slate-400'
-                  : (localSelectedIds.includes(q.id)
-                    ? 'border-[var(--primary)] bg-[var(--primary)] text-white shadow-sm'
-                    : 'border-slate-300 dark:border-slate-600 bg-[var(--surface)] group-hover:border-[var(--primary)]')
-              ]"
-            >
-              <Check v-if="isQuestionDisabled(q.id) || localSelectedIds.includes(q.id)" :size="13" :stroke-width="3" />
-            </div>
-
-            <!-- Question Info -->
-            <div class="min-w-0 flex-1">
-              <div class="mb-1.5 flex flex-wrap items-center gap-2">
-                <span class="font-mono text-xs font-bold text-[var(--primary)]">#{{ q.id }}</span>
-
-                <!-- Already In Quiz Badge -->
-                <span
-                  v-if="isQuestionDisabled(q.id)"
-                  class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-black bg-slate-500/15 text-slate-500 border border-slate-500/20"
-                >
-                  <Check :size="10" />
-                  <span>Đã có trong đề</span>
-                </span>
-
-                <!-- Difficulty Badge -->
-                <span
-                  class="rounded-full px-2 py-0.5 text-[10px] font-black"
-                  :class="getDifficultyClass(q.difficulty)"
-                >
-                  {{ getDifficultyLabel(q.difficulty) }}
-                </span>
-
-                <!-- Source Badge -->
-                <span
-                  class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold"
-                  :class="activeTab === 'my_bank' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-sky-500/10 text-sky-400 border border-sky-500/20'"
-                >
-                  <component :is="activeTab === 'my_bank' ? User : Globe" :size="11" />
-                  <span>{{ activeTab === 'my_bank' ? 'Kho của tôi' : 'Ngân hàng' }}</span>
-                </span>
-
-                <!-- Subject / Grade -->
-                <span v-if="q.subject_name || q.grade_name" class="text-[11px] font-medium text-[var(--muted)] truncate max-w-[200px]">
-                  {{ [q.subject_name, q.grade_name].filter(Boolean).join(' • ') }}
-                </span>
-
-                <span v-if="q.topic_name" class="text-[10px] font-semibold text-[var(--muted)] bg-[var(--surface)] px-1.5 py-0.5 rounded border border-[var(--border)]">
-                  {{ q.topic_name }}
-                </span>
-
-                <!-- Button Xem / Ẩn đáp án -->
-                <button
-                  type="button"
-                  class="ml-auto inline-flex items-center gap-1 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2.5 py-0.5 text-[11px] font-bold text-[var(--text)] hover:bg-[var(--chip-active)] transition cursor-pointer"
-                  title="Xem đáp án của câu hỏi này"
-                  @click.stop="toggleRevealAnswer(q.id)"
-                >
-                  <Loader2 v-if="loadingAnswerId === q.id" :size="11" class="animate-spin text-[var(--primary)]" />
-                  <EyeOff v-else-if="revealedQuestionIds.has(q.id)" :size="11" class="text-emerald-400" />
-                  <Eye v-else :size="11" class="text-[var(--muted)]" />
-                  <span>{{ revealedQuestionIds.has(q.id) ? 'Ẩn đáp án' : 'Xem đáp án' }}</span>
-                </button>
-              </div>
-
-              <!-- Question Content -->
-              <p class="text-xs sm:text-sm font-semibold text-[var(--text)] line-clamp-2 leading-relaxed">
-                {{ q.content || q.text }}
-              </p>
-
-              <!-- Answers Summary Pill (Neutral by default, highlighted only when revealed) -->
-              <div v-if="q.answers && q.answers.length" class="mt-2 flex flex-wrap items-center gap-1.5">
-                <span
-                  v-for="(ans, aIdx) in q.answers"
-                  :key="ans.id || aIdx"
-                  class="inline-flex items-center gap-1 text-[11px] rounded-lg px-2 py-0.5 border transition-colors duration-150"
-                  :class="isAnswerCorrectRevealed(q.id, ans, aIdx)
-                    ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400 font-bold shadow-sm'
-                    : 'border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] font-normal'"
-                >
-                  <span class="font-bold">{{ ans.answer_key || ans.key || String.fromCharCode(65 + aIdx) }}.</span>
-                  <span class="truncate max-w-[140px]">{{ ans.content || ans.text }}</span>
-                  <Check v-if="isAnswerCorrectRevealed(q.id, ans, aIdx)" :size="11" class="text-emerald-400" />
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <!-- PAGINATION CONTROLS -->
-          <div
-            v-if="pagination.last_page > 1"
-            class="flex items-center justify-between border-t border-[var(--border)] pt-4 text-xs font-bold"
-          >
-            <button
-              type="button"
-              class="btn-ghost inline-flex items-center gap-1 border border-[var(--border)] !py-1.5 !px-3 disabled:opacity-40 cursor-pointer"
-              :disabled="pagination.current_page <= 1"
-              @click="changePage(pagination.current_page - 1)"
-            >
-              <ChevronLeft :size="14" />
-              <span>Trang trước</span>
-            </button>
-
-            <span class="text-[var(--text)]">
-              Trang {{ pagination.current_page }} / {{ pagination.last_page }}
-            </span>
-
-            <button
-              type="button"
-              class="btn-ghost inline-flex items-center gap-1 border border-[var(--border)] !py-1.5 !px-3 disabled:opacity-40 cursor-pointer"
-              :disabled="pagination.current_page >= pagination.last_page"
-              @click="changePage(pagination.current_page + 1)"
-            >
-              <span>Trang sau</span>
-              <ChevronRight :size="14" />
-            </button>
-          </div>
-        </template>
-      </div>
-
-      <!-- FOOTER -->
-      <div class="border-t border-[var(--border)] p-4 sm:px-6 flex flex-wrap items-center justify-between gap-4 bg-[var(--surface-soft)]/60">
-        <div class="text-xs">
-          <p class="font-black text-[var(--text)]">
-            Đã chọn <span class="text-[var(--primary)] font-black text-sm">{{ localSelectedIds.length }}</span> câu hỏi
-          </p>
-          <p class="text-[11px] text-[var(--muted)] mt-0.5">
-            (Kho của tôi: <strong>{{ myBankSelectedCount }}</strong>, Ngân hàng: <strong>{{ publicBankSelectedCount }}</strong>)
-          </p>
         </div>
 
         <div class="flex items-center gap-2.5">
+          <!-- + Tạo câu hỏi mới button -->
           <button
             type="button"
-            class="btn-ghost text-xs font-bold text-[var(--muted)] hover:text-[var(--text)] !py-2.5 !px-4 cursor-pointer"
+            class="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 px-3.5 py-2 text-xs font-bold text-slate-700 shadow-xs transition active:scale-[0.98] cursor-pointer"
+            @click="openCreateQuestionModal"
+          >
+            <Plus :size="14" class="text-[#7c3aed]" :stroke-width="2.5" />
+            <span>Tạo câu hỏi mới</span>
+          </button>
+
+          <!-- Close button X -->
+          <button
+            type="button"
+            class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+            title="Đóng modal"
             @click="handleCancel"
           >
-            Hủy
+            <X :size="18" />
           </button>
+        </div>
+      </div>
+
+      <!-- =========================================================
+           2. SPLIT BODY ZONE (SIDEBAR + MAIN CONTENT)
+      ========================================================= -->
+      <div class="flex-1 flex overflow-hidden min-h-0">
+        <!-- -------------------------------------------------------
+             LEFT SIDEBAR (Fixed width, independent scroll)
+        ------------------------------------------------------- -->
+        <aside class="w-72 sm:w-80 shrink-0 border-r border-slate-200 bg-slate-50/50 p-4 sm:p-5 flex flex-col justify-between overflow-y-auto space-y-6">
+          <div class="space-y-6">
+            <!-- NGUỒN CÂU HỎI -->
+            <div class="space-y-2.5">
+              <h4 class="text-[11px] font-bold tracking-wider text-slate-400 uppercase">
+                Nguồn câu hỏi
+              </h4>
+
+              <!-- Option 1: Kho câu hỏi của tôi -->
+              <div
+                class="flex items-center justify-between gap-2.5 rounded-xl border p-3 cursor-pointer transition-all duration-150 select-none"
+                :class="activeTab === 'my_bank'
+                  ? 'border-amber-300 bg-amber-50/80 text-slate-900 shadow-xs'
+                  : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50/80'"
+                @click="switchTab('my_bank')"
+              >
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div
+                    class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
+                    :class="activeTab === 'my_bank' ? 'bg-amber-500 text-white' : 'bg-amber-100 text-amber-600'"
+                  >
+                    <Folder :size="16" />
+                  </div>
+                  <span class="text-xs font-bold truncate">Kho câu hỏi của tôi</span>
+                </div>
+
+                <div class="flex items-center gap-1.5 shrink-0">
+                  <span
+                    v-if="myBankSelectedCount > 0"
+                    class="rounded-full bg-[#7c3aed] px-1.5 py-0.5 text-[10px] font-black text-white"
+                  >
+                    {{ myBankSelectedCount }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Option 2: Ngân hàng cộng đồng -->
+              <div
+                class="flex items-center justify-between gap-2.5 rounded-xl border p-3 cursor-pointer transition-all duration-150 select-none"
+                :class="activeTab === 'public_bank'
+                  ? 'border-sky-300 bg-sky-50/80 text-slate-900 shadow-xs'
+                  : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50/80'"
+                @click="switchTab('public_bank')"
+              >
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div
+                    class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
+                    :class="activeTab === 'public_bank' ? 'bg-sky-500 text-white' : 'bg-sky-100 text-sky-600'"
+                  >
+                    <Globe :size="16" />
+                  </div>
+                  <span class="text-xs font-bold truncate">Ngân hàng câu hỏi</span>
+                </div>
+
+                <div class="flex items-center gap-1.5 shrink-0">
+                  <span
+                    v-if="publicBankSelectedCount > 0"
+                    class="rounded-full bg-[#7c3aed] px-1.5 py-0.5 text-[10px] font-black text-white"
+                  >
+                    {{ publicBankSelectedCount }}
+                  </span>
+                </div>
+              </div>
+            </div>
+      
+            <!-- BỘ LỌC PHÂN LOẠI -->
+            <div class="space-y-3.5 pt-2 border-t border-slate-200/80">
+              <div class="flex items-center justify-between">
+                <h4 class="text-[11px] font-bold tracking-wider text-slate-400 uppercase">
+                  Bộ lọc phân loại
+                </h4>
+                <button
+                  v-if="hasActiveFilters"
+                  type="button"
+                  class="inline-flex items-center gap-1 text-[11px] font-bold text-rose-500 hover:underline cursor-pointer"
+                  @click="resetFilters"
+                >
+                  <RotateCcw :size="11" />
+                  <span>Đặt lại</span>
+                </button>
+              </div>
+
+              <!-- Cấp học -->
+              <div class="space-y-1">
+                <label class="text-xs font-bold text-slate-600 block">Cấp học</label>
+                <select
+                  v-model="filters.education_level_id"
+                  class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-800 outline-none focus:border-[#7c3aed] focus:ring-1 focus:ring-[#7c3aed] cursor-pointer"
+                  @change="onLevelChange"
+                >
+                  <option value="">Tất cả Cấp học</option>
+                  <option v-for="level in taxonomyLevels" :key="level.id" :value="level.id">
+                    {{ level.name }}
+                  </option>
+                </select>
+              </div>
+
+              <!-- Khối lớp -->
+              <div class="space-y-1">
+                <label class="text-xs font-bold text-slate-600 block">Khối lớp</label>
+                <select
+                  v-model="filters.grade_id"
+                  class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-800 outline-none focus:border-[#7c3aed] focus:ring-1 focus:ring-[#7c3aed] cursor-pointer"
+                  @change="onGradeSubjectChange"
+                >
+                  <option value="">Tất cả Khối lớp</option>
+                  <option v-for="grade in availableGrades" :key="grade.id" :value="grade.id">
+                    {{ grade.name }}
+                  </option>
+                </select>
+              </div>
+
+              <!-- Bộ môn -->
+              <div class="space-y-1">
+                <label class="text-xs font-bold text-slate-600 block">Bộ môn</label>
+                <select
+                  v-model="filters.subject_id"
+                  class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-800 outline-none focus:border-[#7c3aed] focus:ring-1 focus:ring-[#7c3aed] cursor-pointer"
+                  @change="onGradeSubjectChange"
+                >
+                  <option value="">Tất cả Bộ môn</option>
+                  <option v-for="subject in availableSubjects" :key="subject.id" :value="subject.id">
+                    {{ subject.name }}
+                  </option>
+                </select>
+              </div>
+
+              <!-- Độ khó -->
+              <div class="space-y-1">
+                <label class="text-xs font-bold text-slate-600 block">Độ khó</label>
+                <select
+                  v-model="filters.difficulty"
+                  class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-800 outline-none focus:border-[#7c3aed] focus:ring-1 focus:ring-[#7c3aed] cursor-pointer"
+                  @change="applyFilter"
+                >
+                  <option value="">Tất cả Độ khó</option>
+                  <option value="easy">Dễ (Nhận biết)</option>
+                  <option value="medium">Vừa (Thông hiểu)</option>
+                  <option value="hard">Khó (Vận dụng)</option>
+                </select>
+              </div>
+
+              <!-- Chủ đề (nếu có topics) -->
+              <div v-if="topicsList.length > 0" class="space-y-1">
+                <label class="text-xs font-bold text-slate-600 block">Chủ đề</label>
+                <select
+                  v-model="filters.topic_name"
+                  class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-800 outline-none focus:border-[#7c3aed] focus:ring-1 focus:ring-[#7c3aed] cursor-pointer"
+                  @change="applyFilter"
+                >
+                  <option value="">Tất cả Chủ đề</option>
+                  <option v-for="top in topicsList" :key="top.topic_name" :value="top.topic_name">
+                    {{ top.topic_name }} ({{ top.total_questions }} câu)
+                  </option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- KHU VỰC THỐNG KÊ CÂU ĐÃ CHỌN (Bottom of Sidebar) -->
+          <div class="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-700">Đã chọn cho bài Quiz:</span>
+              <span class="rounded-full bg-[#7c3aed] px-2.5 py-0.5 text-xs font-black text-white shadow-xs">
+                {{ localSelectedIds.length }} câu
+              </span>
+            </div>
+
+            <div v-if="localSelectedIds.length > 0" class="flex items-center justify-between text-[11px] text-slate-500 font-medium px-0.5">
+              <span>Cá nhân: <strong class="text-slate-800">{{ myBankSelectedCount }}</strong></span>
+              <span>•</span>
+              <span>Dùng chung: <strong class="text-slate-800">{{ publicBankSelectedCount }}</strong></span>
+            </div>
+
+            <button
+              type="button"
+              class="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[#7c3aed] hover:bg-[#6d28d9] px-4 py-3 text-xs font-bold text-white shadow-md shadow-violet-500/20 transition active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
+              :disabled="localSelectedIds.length === 0"
+              @click="handleConfirm"
+            >
+              <Check :size="14" :stroke-width="2.5" />
+              <span>Thêm {{ localSelectedIds.length }} câu vào bài Quiz</span>
+            </button>
+          </div>
+        </aside>
+
+        <!-- -------------------------------------------------------
+             RIGHT MAIN CONTENT AREA (Scrollable)
+        ------------------------------------------------------- -->
+        <main class="flex-1 flex flex-col min-w-0 bg-slate-50/40 overflow-hidden">
+          <!-- TOP SEARCH & INFO BAR -->
+          <div class="p-3.5 sm:px-6 sm:py-3.5 border-b border-slate-200/80 bg-white flex flex-wrap items-center justify-between gap-3 shrink-0">
+            <!-- Search input -->
+            <div class="relative flex-1 min-w-[240px] max-w-xl">
+              <Search :size="15" class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              <input
+                v-model="filters.search"
+                type="text"
+                class="w-full rounded-xl border border-slate-200 bg-slate-50/60 pl-10 pr-4 py-2 text-xs font-medium text-slate-800 placeholder-slate-400 outline-none focus:border-[#7c3aed] focus:bg-white transition"
+                placeholder="Nhập từ khóa tìm kiếm nội dung câu hỏi..."
+                @input="onSearchInput"
+                @keyup.enter="applyFilter"
+              />
+            </div>
+
+            <!-- Stats & Action buttons -->
+            <div class="flex items-center gap-3">
+              <span class="text-xs text-slate-500 font-medium">
+                Tìm thấy: <strong class="text-slate-900 font-bold">{{ pagination.total }}</strong> câu hỏi
+              </span>
+
+              <button
+                type="button"
+                class="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-700 shadow-xs transition active:scale-[0.98] cursor-pointer"
+                title="Làm mới danh sách"
+                @click="loadQuestions"
+              >
+                <RotateCcw :size="12" :class="{ 'animate-spin': isLoading }" />
+                <span>Làm mới</span>
+              </button>
+
+              <button
+                v-if="selectableQuestions.length > 0"
+                type="button"
+                class="text-[#7c3aed] hover:underline font-bold text-xs inline-flex items-center gap-1 cursor-pointer hidden md:inline-flex"
+                @click="toggleSelectAllCurrentPage"
+              >
+                <component :is="isCurrentPageAllSelected ? X : Check" :size="13" />
+                <span>{{ isCurrentPageAllSelected ? 'Bỏ chọn trang' : 'Chọn trang này' }}</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- QUESTION CARDS LIST -->
+          <div class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-3.5">
+            <!-- Loading State -->
+            <div v-if="isLoading" class="flex flex-col items-center justify-center gap-3 py-20 text-xs font-bold text-slate-400">
+              <div class="h-8 w-8 animate-spin rounded-full border-2 border-[#7c3aed] border-t-transparent"></div>
+              <span>Đang tải danh sách câu hỏi...</span>
+            </div>
+
+            <!-- Empty State -->
+            <div v-else-if="questions.length === 0" class="flex flex-col items-center justify-center py-20 text-center text-xs text-slate-500">
+              <Search :size="40" class="text-slate-300 mb-2" />
+              <p class="font-bold text-sm text-slate-800">Không tìm thấy câu hỏi phù hợp</p>
+              <p class="mt-1 text-slate-400">Hãy thử điều chỉnh lại bộ lọc hoặc từ khóa tìm kiếm.</p>
+            </div>
+
+            <!-- Question Cards -->
+            <template v-else>
+              <div
+                v-for="q in questions"
+                :key="q.id"
+                class="rounded-2xl border bg-white p-4 sm:p-5 transition-all duration-150 relative select-none"
+                :class="[
+                  isQuestionDisabled(q.id)
+                    ? 'opacity-65 border-slate-200 bg-slate-50/80 cursor-not-allowed'
+                    : (localSelectedIds.includes(q.id)
+                      ? 'border-violet-400/80 bg-violet-50/25 ring-1 ring-violet-400/30 shadow-sm cursor-pointer'
+                      : 'border-slate-200/90 hover:border-slate-300 hover:shadow-xs cursor-pointer')
+                ]"
+                @click="toggleSelectQuestion(q)"
+              >
+                <!-- CARD HEADER: Checkbox + Badges + Right Action -->
+                <div class="flex items-center justify-between gap-3 mb-2.5">
+                  <div class="flex flex-wrap items-center gap-2 min-w-0">
+                    <!-- Checkbox Box -->
+                    <div
+                      class="flex h-5 w-5 shrink-0 items-center justify-center rounded-lg border transition-all duration-150"
+                      :class="[
+                        isQuestionDisabled(q.id)
+                          ? 'border-slate-300 bg-slate-200 text-slate-400'
+                          : (localSelectedIds.includes(q.id)
+                            ? 'border-[#7c3aed] bg-[#7c3aed] text-white shadow-xs'
+                            : 'border-slate-300 bg-white hover:border-[#7c3aed]')
+                      ]"
+                    >
+                      <Check v-if="isQuestionDisabled(q.id) || localSelectedIds.includes(q.id)" :size="13" :stroke-width="3" />
+                    </div>
+
+                    <!-- Question ID -->
+                    <span class="font-mono text-xs font-bold text-slate-700">#{{ q.id }}</span>
+
+                    <!-- Privacy Badge -->
+                    <span
+                      class="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-bold"
+                      :class="activeTab === 'my_bank'
+                        ? 'bg-amber-100/80 text-amber-800 border border-amber-200'
+                        : 'bg-indigo-100/80 text-indigo-800 border border-indigo-200'"
+                    >
+                      <component :is="activeTab === 'my_bank' ? Lock : Globe" :size="11" />
+                      <span>{{ activeTab === 'my_bank' ? 'Riêng tư' : 'Công khai' }}</span>
+                    </span>
+
+                    <!-- Difficulty Badge -->
+                    <span
+                      class="rounded-md px-2 py-0.5 text-[10px] font-bold border"
+                      :class="getDifficultyClass(q.difficulty)"
+                    >
+                      {{ getDifficultyLabel(q.difficulty) }}
+                    </span>
+
+                    <!-- Subject / Grade -->
+                    <span
+                      v-if="q.subject_name || q.grade_name"
+                      class="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-700 border border-slate-200 truncate max-w-[180px]"
+                    >
+                      {{ [q.subject_name, q.grade_name].filter(Boolean).join(' • ') }}
+                    </span>
+
+                    <!-- Topic -->
+                    <span
+                      v-if="q.topic_name"
+                      class="rounded-md bg-purple-50 text-purple-700 border border-purple-200/80 px-2 py-0.5 text-[10px] font-bold truncate max-w-[160px]"
+                    >
+                      #{{ q.topic_name }}
+                    </span>
+                  </div>
+
+                  <!-- Right Action Button / Status -->
+                  <div class="shrink-0">
+                    <span
+                      v-if="isQuestionDisabled(q.id)"
+                      class="inline-flex items-center gap-1 rounded-lg bg-slate-200/80 text-slate-500 px-2.5 py-1 text-xs font-bold border border-slate-300"
+                    >
+                      <Check :size="12" />
+                      <span>Đã có trong đề</span>
+                    </span>
+
+                    <button
+                      v-else-if="localSelectedIds.includes(q.id)"
+                      type="button"
+                      class="inline-flex items-center gap-1 rounded-lg bg-emerald-100 text-emerald-800 px-2.5 py-1 text-xs font-bold border border-emerald-200 transition hover:bg-rose-100 hover:text-rose-700 hover:border-rose-200 cursor-pointer"
+                      @click.stop="toggleSelectQuestion(q)"
+                    >
+                      <Check :size="13" :stroke-width="2.5" />
+                      <span>Đã chọn</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- CARD QUESTION CONTENT -->
+                <div class="text-sm font-semibold text-slate-900 leading-relaxed my-2">
+                  {{ q.content || q.text }}
+                </div>
+
+                <!-- Optional Image -->
+                <div v-if="q.image_url" class="my-2">
+                  <img :src="q.image_url" alt="Question Image" class="max-h-48 rounded-xl object-contain border border-slate-200" />
+                </div>
+
+                <!-- ANSWERS AREA (COLLAPSIBLE / EXPANDABLE) -->
+                <div v-if="revealedQuestionIds.has(q.id)" class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3 pt-3 border-t border-slate-100 animate-fade-in">
+                  <div
+                    v-for="(ans, aIdx) in getQuestionAnswers(q)"
+                    :key="ans.id || aIdx"
+                    class="flex items-center gap-2.5 rounded-xl border px-3 py-2 text-xs transition"
+                    :class="isAnswerCorrect(q, ans, aIdx)
+                      ? 'border-emerald-500 bg-emerald-50 text-emerald-950 font-bold shadow-xs'
+                      : 'border-slate-200 bg-slate-50/50 text-slate-700'"
+                  >
+                    <span
+                      class="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-xs font-bold transition"
+                      :class="isAnswerCorrect(q, ans, aIdx)
+                        ? 'bg-emerald-600 text-white'
+                        : 'bg-white text-slate-700 border border-slate-200'"
+                    >
+                      {{ ans.answer_key || ans.key || String.fromCharCode(65 + aIdx) }}
+                    </span>
+                    <span class="flex-1 break-words">{{ ans.content || ans.text }}</span>
+                    <Check v-if="isAnswerCorrect(q, ans, aIdx)" :size="14" class="text-emerald-600 shrink-0" :stroke-width="2.5" />
+                  </div>
+                </div>
+
+                <!-- Toggle Reveal Button -->
+                <div class="flex items-center justify-end mt-2 pt-1">
+                  <button
+                    type="button"
+                    class="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-[#7c3aed] transition cursor-pointer py-1 px-2.5 rounded-lg hover:bg-slate-100"
+                    @click.stop="toggleRevealAnswer(q)"
+                  >
+                    <Loader2 v-if="loadingAnswerId === q.id" :size="13" class="animate-spin text-[#7c3aed]" />
+                    <EyeOff v-else-if="revealedQuestionIds.has(q.id)" :size="13" class="text-emerald-600" />
+                    <Eye v-else :size="13" class="text-slate-400" />
+                    <span>{{ revealedQuestionIds.has(q.id) ? 'Ẩn đáp án' : 'Xem đáp án' }}</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- PAGINATION CONTROLS -->
+              <div
+                v-if="pagination.last_page > 1"
+                class="flex items-center justify-between border-t border-slate-200 pt-4 pb-2 text-xs font-bold text-slate-600"
+              >
+                <button
+                  type="button"
+                  class="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 px-3.5 py-2 disabled:opacity-40 disabled:pointer-events-none transition cursor-pointer"
+                  :disabled="pagination.current_page <= 1"
+                  @click="changePage(pagination.current_page - 1)"
+                >
+                  <ChevronLeft :size="14" />
+                  <span>Trang trước</span>
+                </button>
+
+                <span class="text-slate-800 font-bold">
+                  Trang {{ pagination.current_page }} / {{ pagination.last_page }}
+                </span>
+
+                <button
+                  type="button"
+                  class="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 px-3.5 py-2 disabled:opacity-40 disabled:pointer-events-none transition cursor-pointer"
+                  :disabled="pagination.current_page >= pagination.last_page"
+                  @click="changePage(pagination.current_page + 1)"
+                >
+                  <span>Trang sau</span>
+                  <ChevronRight :size="14" />
+                </button>
+              </div>
+            </template>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <!-- =========================================================
+         3. CREATE QUESTION SUB-MODAL (Matching CreateQuestionView)
+    ========================================================= -->
+    <div
+      v-if="isCreateQuestionModalOpen"
+      class="fixed inset-0 z-60 flex items-center justify-center bg-slate-900/60 p-3 sm:p-6 backdrop-blur-md animate-fade-in"
+      @click.self="isCreateQuestionModalOpen = false"
+    >
+      <div
+        class="relative flex h-[90vh] max-h-[820px] w-full max-w-3xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl"
+      >
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4 bg-slate-50/50 shrink-0">
+          <div class="flex items-center gap-2.5">
+            <h3 class="text-lg font-bold text-slate-900">
+              Tạo câu hỏi mới
+            </h3>
+            <span class="inline-block h-2 w-2 rounded-full bg-[#7c3aed]"></span>
+          </div>
 
           <button
             type="button"
-            class="btn-primary !py-2.5 !px-6 text-xs font-black shadow-lg shadow-[var(--primary)]/20 hover:shadow-[var(--primary)]/35 transition duration-200 cursor-pointer"
-            @click="handleConfirm"
+            class="flex h-8 w-8 items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+            @click="isCreateQuestionModalOpen = false"
           >
-            <span>Xác nhận ({{ localSelectedIds.length }} câu)</span>
+            <X :size="18" />
           </button>
         </div>
+
+        <!-- Modal Form Body -->
+        <form class="flex-1 overflow-y-auto p-6 space-y-6" @submit.prevent="submitCreateQuestion">
+          <!-- 1. Nội dung câu hỏi -->
+          <div class="space-y-2">
+            <label class="flex items-center gap-2 text-sm font-bold text-slate-900">
+              <span class="h-3.5 w-1 rounded-full bg-[#7c3aed]"></span>
+              1. Nội dung câu hỏi
+            </label>
+            <textarea
+              v-model="createForm.content"
+              required
+              rows="4"
+              class="w-full resize-none rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs sm:text-sm font-medium text-slate-900 outline-none transition focus:border-[#7c3aed] focus:ring-1 focus:ring-[#7c3aed]"
+              placeholder="Nhập nội dung câu hỏi tại đây..."
+            ></textarea>
+          </div>
+
+          <!-- 2. Phân loại -->
+          <div class="space-y-3 pt-2 border-t border-slate-100">
+            <label class="flex items-center gap-2 text-sm font-bold text-slate-900">
+              <span class="h-3.5 w-1 rounded-full bg-[#7c3aed]"></span>
+              2. Phân loại câu hỏi
+            </label>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div class="space-y-1">
+                <label class="text-xs font-bold text-slate-600 block">Cấp học</label>
+                <select
+                  v-model="createForm.education_level_id"
+                  class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-800 outline-none focus:border-[#7c3aed]"
+                  @change="createForm.grade_id = ''"
+                >
+                  <option value="">Chọn Cấp học</option>
+                  <option v-for="level in taxonomyLevels" :key="level.id" :value="level.id">
+                    {{ level.name }}
+                  </option>
+                </select>
+              </div>
+
+              <div class="space-y-1">
+                <label class="text-xs font-bold text-slate-600 block">Khối lớp</label>
+                <select
+                  v-model="createForm.grade_id"
+                  class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-800 outline-none focus:border-[#7c3aed]"
+                >
+                  <option value="">Chọn Khối lớp</option>
+                  <option v-for="grade in createAvailableGrades" :key="grade.id" :value="grade.id">
+                    {{ grade.name }}
+                  </option>
+                </select>
+              </div>
+
+              <div class="space-y-1">
+                <label class="text-xs font-bold text-slate-600 block">Bộ môn</label>
+                <select
+                  v-model="createForm.subject_id"
+                  class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-800 outline-none focus:border-[#7c3aed]"
+                >
+                  <option value="">Chọn Bộ môn</option>
+                  <option v-for="subject in createAvailableSubjects" :key="subject.id" :value="subject.id">
+                    {{ subject.name }}
+                  </option>
+                </select>
+              </div>
+
+              <div class="space-y-1">
+                <label class="text-xs font-bold text-slate-600 block">Độ khó</label>
+                <select
+                  v-model="createForm.difficulty"
+                  class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-800 outline-none focus:border-[#7c3aed]"
+                >
+                  <option value="easy">Dễ (Nhận biết)</option>
+                  <option value="medium">Vừa (Thông hiểu)</option>
+                  <option value="hard">Khó (Vận dụng)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="space-y-1">
+              <label class="text-xs font-bold text-slate-600 block">Tên chủ đề (tùy chọn)</label>
+              <input
+                v-model="createForm.topic_name"
+                type="text"
+                class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-800 outline-none focus:border-[#7c3aed]"
+                placeholder="VD: Hàm số, Hình học không gian..."
+              />
+            </div>
+          </div>
+
+          <!-- 3. Loại câu hỏi & Đáp án -->
+          <div class="space-y-3 pt-2 border-t border-slate-100">
+            <div class="flex items-center justify-between">
+              <label class="flex items-center gap-2 text-sm font-bold text-slate-900">
+                <span class="h-3.5 w-1 rounded-full bg-[#7c3aed]"></span>
+                3. Các phương án đáp án
+              </label>
+
+              <button
+                v-if="createForm.answers.length < 6"
+                type="button"
+                class="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold text-[#7c3aed] hover:bg-violet-50 transition cursor-pointer"
+                @click="addCreateAnswerChoice"
+              >
+                <Plus :size="13" />
+                <span>Thêm đáp án</span>
+              </button>
+            </div>
+
+            <div class="space-y-2.5">
+              <div
+                v-for="(ans, idx) in createForm.answers"
+                :key="idx"
+                class="flex items-center gap-2.5 rounded-xl border p-2.5 transition"
+                :class="ans.is_correct ? 'border-emerald-300 bg-emerald-50/70' : 'border-slate-200 bg-slate-50/50'"
+              >
+                <span
+                  class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold"
+                  :class="ans.is_correct ? 'bg-emerald-500 text-white' : 'bg-white border border-slate-200 text-slate-700'"
+                >
+                  {{ ans.key }}
+                </span>
+
+                <input
+                  v-model="ans.content"
+                  required
+                  class="flex-1 min-w-0 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-900 outline-none focus:border-[#7c3aed]"
+                  :placeholder="`Nội dung đáp án ${ans.key}...`"
+                />
+
+                <label
+                  class="flex shrink-0 items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-bold cursor-pointer select-none transition"
+                  :class="ans.is_correct
+                    ? 'border-emerald-300 bg-emerald-100 text-emerald-800'
+                    : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'"
+                >
+                  <input
+                    type="radio"
+                    name="create_correct_ans"
+                    :checked="ans.is_correct"
+                    class="accent-emerald-600 cursor-pointer"
+                    @change="setCreateCorrectAnswer(idx)"
+                  />
+                  <span>{{ ans.is_correct ? 'Đáp án đúng' : 'Đánh dấu đúng' }}</span>
+                </label>
+
+                <button
+                  v-if="createForm.answers.length > 2"
+                  type="button"
+                  class="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+                  title="Xóa đáp án này"
+                  @click="removeCreateAnswerChoice(idx)"
+                >
+                  <X :size="14" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4. Banner Lưu trữ -->
+          <div class="rounded-xl border border-amber-200 bg-amber-50/70 p-3.5 flex items-start gap-2.5">
+            <Lock :size="16" class="text-amber-600 shrink-0 mt-0.5" />
+            <div class="text-xs text-slate-600 leading-relaxed">
+              Câu hỏi mới sẽ được lưu vào <strong>Kho câu hỏi cá nhân</strong> của bạn và tự động chọn vào đề thi này.
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-200">
+            <button
+              type="button"
+              class="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-50 transition cursor-pointer"
+              @click="isCreateQuestionModalOpen = false"
+            >
+              Hủy
+            </button>
+
+            <button
+              type="submit"
+              class="rounded-xl bg-[#7c3aed] hover:bg-[#6d28d9] px-6 py-2.5 text-xs font-bold text-white shadow-md shadow-violet-500/20 transition active:scale-[0.98] disabled:opacity-50 cursor-pointer"
+              :disabled="isSubmittingCreate"
+            >
+              {{ isSubmittingCreate ? 'Đang lưu...' : 'Lưu câu hỏi & chọn luôn' }}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, inject, onMounted, reactive, ref, watch } from 'vue'
 import {
   X,
-  User,
   Globe,
   Search,
-  SearchCheck,
   RotateCcw,
   Check,
   ChevronLeft,
@@ -401,7 +715,10 @@ import {
   Eye,
   EyeOff,
   Loader2,
-  CheckCircle2,
+  Plus,
+  Folder,
+  Lock,
+  Layers,
 } from 'lucide-vue-next'
 import { myQuestionsApi, questionsBankApi, taxonomyApi } from '@/services/api'
 
@@ -429,6 +746,7 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['update:modelValue', 'close', 'confirm'])
+const showToast = inject('showToast', null)
 
 /* =========================================================
    STATE
@@ -462,6 +780,28 @@ const pagination = reactive({
   last_page: 1,
   per_page: 12,
   total: 0,
+})
+
+/* =========================================================
+   CREATE QUESTION SUB-MODAL STATE
+========================================================= */
+const isCreateQuestionModalOpen = ref(false)
+const isSubmittingCreate = ref(false)
+const createForm = reactive({
+  content: '',
+  education_level_id: '',
+  grade_id: '',
+  subject_id: '',
+  topic_name: '',
+  difficulty: 'medium',
+  type: 'single_choice',
+  is_public: false,
+  answers: [
+    { key: 'A', content: '', is_correct: true },
+    { key: 'B', content: '', is_correct: false },
+    { key: 'C', content: '', is_correct: false },
+    { key: 'D', content: '', is_correct: false },
+  ],
 })
 
 /* =========================================================
@@ -508,6 +848,22 @@ const availableSubjects = computed(() => {
   return grade && grade.subjects && grade.subjects.length ? grade.subjects : allSubjects.value
 })
 
+const createAvailableGrades = computed(() => {
+  if (!createForm.education_level_id) {
+    return taxonomyLevels.value.flatMap(l => l.grades || [])
+  }
+  const level = taxonomyLevels.value.find(l => l.id === Number(createForm.education_level_id))
+  return level ? level.grades || [] : []
+})
+
+const createAvailableSubjects = computed(() => {
+  if (!createForm.grade_id) {
+    return allSubjects.value
+  }
+  const grade = createAvailableGrades.value.find(g => g.id === Number(createForm.grade_id))
+  return grade && grade.subjects && grade.subjects.length ? grade.subjects : allSubjects.value
+})
+
 const isQuestionDisabled = (questionId) => {
   return Array.isArray(props.disabledIds) && props.disabledIds.includes(questionId)
 }
@@ -527,22 +883,22 @@ const isCurrentPageAllSelected = computed(() => {
 const getDifficultyClass = (diff) => {
   switch (diff) {
     case 'easy':
-      return 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+      return 'bg-emerald-50 text-emerald-700 border-emerald-200'
     case 'hard':
-      return 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+      return 'bg-rose-50 text-rose-700 border-rose-200'
     default:
-      return 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+      return 'bg-amber-50 text-amber-700 border-amber-200'
   }
 }
 
 const getDifficultyLabel = (diff) => {
   switch (diff) {
     case 'easy':
-      return 'Dễ'
+      return 'Dễ (Nhận biết)'
     case 'hard':
-      return 'Khó'
+      return 'Khó (Vận dụng)'
     default:
-      return 'Vừa'
+      return 'Vừa (Thông hiểu)'
   }
 }
 
@@ -581,7 +937,7 @@ const loadQuestions = async () => {
   isLoading.value = true
   try {
     const params = {
-      search: filters.search || undefined,
+      search: filters.search ? filters.search.trim() : undefined,
       education_level_id: filters.education_level_id || undefined,
       grade_id: filters.grade_id || undefined,
       subject_id: filters.subject_id || undefined,
@@ -614,7 +970,7 @@ const loadQuestions = async () => {
       pagination.last_page = 1
     }
 
-    // Cache current tab question items
+    // Cache current question items
     questions.value.forEach(q => {
       if (localSelectedIds.value.includes(q.id) && !selectedQuestionCache.value.has(q.id)) {
         selectedQuestionCache.value.set(q.id, {
@@ -639,14 +995,12 @@ const hydrateSelectedCache = async (ids) => {
   if (missingIds.length === 0) return
 
   try {
-    // Attempt to load from public bank first
     const publicRes = await questionsBankApi.fetchBank({ ids: missingIds, per_page: missingIds.length })
     const publicItems = publicRes?.items || (Array.isArray(publicRes) ? publicRes : [])
     publicItems.forEach(q => {
       selectedQuestionCache.value.set(q.id, { ...q, source: 'public_bank' })
     })
 
-    // For any still missing, attempt to load from user's personal bank
     const stillMissing = ids.filter(id => !selectedQuestionCache.value.has(id))
     if (stillMissing.length > 0) {
       const userRes = await myQuestionsApi.fetchBank({ ids: stillMissing, per_page: stillMissing.length })
@@ -678,6 +1032,14 @@ const onLevelChange = () => {
 const onGradeSubjectChange = () => {
   fetchTopicsList()
   applyFilter()
+}
+
+let searchDebounce = null
+const onSearchInput = () => {
+  clearTimeout(searchDebounce)
+  searchDebounce = setTimeout(() => {
+    applyFilter()
+  }, 400)
 }
 
 const applyFilter = () => {
@@ -740,20 +1102,30 @@ const toggleSelectAllCurrentPage = () => {
 }
 
 /* =========================================================
-   REVEAL ANSWER DETAIL LOGIC
+   REVEAL ANSWER DETAIL LOGIC & CACHING
 ========================================================= */
-const toggleRevealAnswer = async (questionId) => {
-  if (revealedQuestionIds.value.has(questionId)) {
-    revealedQuestionIds.value.delete(questionId)
+const toggleRevealAnswer = async (question) => {
+  const qId = question.id
+  if (revealedQuestionIds.value.has(qId)) {
+    revealedQuestionIds.value.delete(qId)
     return
   }
 
-  if (!revealedAnswersMap.value.has(questionId)) {
-    loadingAnswerId.value = questionId
+  const hasDirectAnswersWithCorrect = Array.isArray(question.answers) &&
+    question.answers.length > 0 &&
+    question.answers.some(a => a.is_correct !== undefined && a.is_correct !== null)
+
+  if (hasDirectAnswersWithCorrect) {
+    revealedQuestionIds.value.add(qId)
+    return
+  }
+
+  if (!revealedAnswersMap.value.has(qId)) {
+    loadingAnswerId.value = qId
     try {
-      const detail = await questionsBankApi.getQuestion(questionId)
+      const detail = await questionsBankApi.getQuestion(qId)
       if (detail) {
-        revealedAnswersMap.value.set(questionId, detail)
+        revealedAnswersMap.value.set(qId, detail)
       }
     } catch (e) {
       console.error('Không thể tải đáp án câu hỏi:', e)
@@ -762,16 +1134,137 @@ const toggleRevealAnswer = async (questionId) => {
     }
   }
 
-  revealedQuestionIds.value.add(questionId)
+  revealedQuestionIds.value.add(qId)
 }
 
-const isAnswerCorrectRevealed = (questionId, ans, aIdx) => {
-  if (!revealedQuestionIds.value.has(questionId)) return false
-  const detail = revealedAnswersMap.value.get(questionId)
-  if (!detail || !detail.answers) return false
+const getQuestionAnswers = (question) => {
+  const cached = revealedAnswersMap.value.get(question.id)
+  if (cached && Array.isArray(cached.answers) && cached.answers.length > 0) {
+    return cached.answers
+  }
+  return question.answers || []
+}
+
+const isAnswerCorrect = (question, ans, aIdx) => {
+  if (ans.is_correct !== undefined && ans.is_correct !== null) {
+    return Boolean(ans.is_correct)
+  }
+
+  const detail = revealedAnswersMap.value.get(question.id)
+  if (!detail || !Array.isArray(detail.answers)) return false
+
   const key = ans.answer_key || ans.key || String.fromCharCode(65 + aIdx)
-  const matchedAns = detail.answers.find(a => (ans.id && a.id === ans.id) || a.key === key || a.answer_key === key)
-  return Boolean(matchedAns?.is_correct)
+  const matched = detail.answers.find(a => (ans.id && a.id === ans.id) || a.key === key || a.answer_key === key)
+  return Boolean(matched?.is_correct)
+}
+
+/* =========================================================
+   CREATE QUESTION SUB-MODAL LOGIC
+========================================================= */
+const openCreateQuestionModal = () => {
+  createForm.content = ''
+  createForm.education_level_id = filters.education_level_id || ''
+  createForm.grade_id = filters.grade_id || ''
+  createForm.subject_id = filters.subject_id || ''
+  createForm.topic_name = filters.topic_name || ''
+  createForm.difficulty = filters.difficulty || 'medium'
+  createForm.type = 'single_choice'
+  createForm.answers = [
+    { key: 'A', content: '', is_correct: true },
+    { key: 'B', content: '', is_correct: false },
+    { key: 'C', content: '', is_correct: false },
+    { key: 'D', content: '', is_correct: false },
+  ]
+  isCreateQuestionModalOpen.value = true
+}
+
+const addCreateAnswerChoice = () => {
+  if (createForm.answers.length >= 6) return
+  const nextKey = String.fromCharCode(65 + createForm.answers.length)
+  createForm.answers.push({ key: nextKey, content: '', is_correct: false })
+}
+
+const removeCreateAnswerChoice = (index) => {
+  if (createForm.answers.length <= 2) return
+  const removedWasCorrect = createForm.answers[index]?.is_correct
+  createForm.answers.splice(index, 1)
+  createForm.answers.forEach((ans, i) => {
+    ans.key = String.fromCharCode(65 + i)
+  })
+  if (removedWasCorrect && createForm.answers.length > 0) {
+    createForm.answers[0].is_correct = true
+  }
+}
+
+const setCreateCorrectAnswer = (index) => {
+  createForm.answers.forEach((ans, i) => {
+    ans.is_correct = (i === index)
+  })
+}
+
+const submitCreateQuestion = async () => {
+  if (!createForm.content.trim()) {
+    if (showToast) showToast('Vui lòng nhập nội dung câu hỏi.', 'error')
+    return
+  }
+  for (let i = 0; i < createForm.answers.length; i++) {
+    if (!createForm.answers[i].content.trim()) {
+      if (showToast) showToast(`Vui lòng nhập nội dung cho Đáp án ${createForm.answers[i].key}.`, 'error')
+      return
+    }
+  }
+  if (!createForm.answers.some(a => a.is_correct)) {
+    if (showToast) showToast('Vui lòng đánh dấu chọn 1 đáp án đúng.', 'error')
+    return
+  }
+
+  isSubmittingCreate.value = true
+  try {
+    const payload = {
+      content: createForm.content.trim(),
+      difficulty: createForm.difficulty,
+      education_level_id: createForm.education_level_id || null,
+      grade_id: createForm.grade_id || null,
+      subject_id: createForm.subject_id || null,
+      topic_name: createForm.topic_name ? createForm.topic_name.trim() : null,
+      is_public: false,
+      answers: createForm.answers.map(a => ({
+        content: a.content.trim(),
+        key: a.key,
+        is_correct: a.is_correct,
+      })),
+    }
+
+    const created = await myQuestionsApi.createQuestion(payload)
+    if (showToast) showToast('Tạo câu hỏi mới thành công!', 'success')
+
+    // Switch to my_bank if not already
+    activeTab.value = 'my_bank'
+    await loadQuestions()
+
+    // Auto-select the newly created question
+    const createdId = created?.id || created?.data?.id
+    if (createdId) {
+      if (!localSelectedIds.value.includes(createdId)) {
+        localSelectedIds.value.push(createdId)
+      }
+      selectedQuestionCache.value.set(createdId, {
+        id: createdId,
+        content: payload.content,
+        difficulty: payload.difficulty,
+        subject_id: payload.subject_id,
+        source: 'my_bank',
+        answers: payload.answers,
+      })
+    }
+
+    isCreateQuestionModalOpen.value = false
+  } catch (err) {
+    const msg = err.response?.data?.message || err.message || 'Tạo câu hỏi thất bại. Vui lòng kiểm tra lại.'
+    if (showToast) showToast(msg, 'error')
+  } finally {
+    isSubmittingCreate.value = false
+  }
 }
 
 /* =========================================================
@@ -854,7 +1347,7 @@ onMounted(async () => {
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: scale(0.98);
+    transform: scale(0.985);
   }
   to {
     opacity: 1;
@@ -863,6 +1356,6 @@ onMounted(async () => {
 }
 
 .animate-fade-in {
-  animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: fadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 </style>
