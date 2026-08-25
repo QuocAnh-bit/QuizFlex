@@ -132,7 +132,7 @@ import { computed, onMounted, ref } from 'vue'
 import {
   ArrowRight,
   ClipboardList,
-} from '@lucide/vue'
+} from 'lucide-vue-next'
 
 import VisibilityBadge from '@/components/common/VisibilityBadge.vue'
 import { attemptsApi, formatSeconds } from '@/services/api'

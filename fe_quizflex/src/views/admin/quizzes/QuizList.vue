@@ -7,11 +7,6 @@
         <h1 class="text-3xl font-black tracking-[-0.04em] text-[var(--text)]">Quản lý Quiz</h1>
         <p class="mt-1 text-sm text-slate-600">Quản lý tất cả bộ đề trắc nghiệm trong hệ thống, xem phân tích và hiệu suất.</p>
       </div>
-      <div class="flex items-center gap-2.5">
-        <RouterLink to="/admin/quizzes-trash" class="rounded-lg border border-red-200 bg-red-50 px-3.5 py-1.5 text-xs font-bold text-red-700 hover:bg-red-100 transition">
-          Thùng rác
-        </RouterLink>
-      </div>
     </div>
 
     <!-- Search & Filter Card -->
@@ -22,42 +17,42 @@
           type="text"
           placeholder="Tìm theo tên quiz..."
           class="field text-xs"
-          @keyup.enter="fetchQuizzes"
+          @keyup.enter="handleSearch"
         />
         <input
           v-model="filters.creator"
           type="text"
           placeholder="Tìm theo người tạo..."
           class="field text-xs"
-          @keyup.enter="fetchQuizzes"
+          @keyup.enter="handleSearch"
         />
         <input
           v-model="filters.category"
           type="text"
           placeholder="Tìm theo danh mục..."
           class="field text-xs"
-          @keyup.enter="fetchQuizzes"
+          @keyup.enter="handleSearch"
         />
       </div>
 
       <div class="grid gap-3 sm:grid-cols-4 items-center">
-        <select v-model="filters.difficulty" class="field text-xs" @change="fetchQuizzes">
+        <select v-model="filters.difficulty" class="field text-xs" @change="handleSearch">
           <option value="">Mọi độ khó</option>
           <option value="easy">Dễ</option>
           <option value="medium">Vừa</option>
           <option value="hard">Khó</option>
         </select>
-        <select v-model="filters.visibility" class="field text-xs" @change="fetchQuizzes">
+        <select v-model="filters.visibility" class="field text-xs" @change="handleSearch">
           <option value="">Mọi hiển thị</option>
           <option value="public">Công khai (Public)</option>
           <option value="private">Riêng tư (Private)</option>
         </select>
-        <select v-model="filters.ai_generated" class="field text-xs" @change="fetchQuizzes">
+        <select v-model="filters.ai_generated" class="field text-xs" @change="handleSearch">
           <option value="">Mọi nguồn tạo</option>
           <option value="1">AI sinh đề</option>
           <option value="0">Thủ công</option>
         </select>
-        <button @click="fetchQuizzes" class="btn-primary text-xs py-2.5">
+        <button @click="handleSearch" class="btn-primary text-xs py-2.5">
           Tìm kiếm
         </button>
       </div>
@@ -111,12 +106,6 @@
                   <RouterLink :to="`/admin/quizzes/${quiz.id}`" class="text-[#7C3AED] hover:underline font-bold text-xs">
                     Chi tiết
                   </RouterLink>
-                  <RouterLink :to="`/admin/quizzes/${quiz.id}/edit`" class="text-amber-600 hover:underline font-bold text-xs">
-                    Sửa
-                  </RouterLink>
-                  <button @click="deleteQuiz(quiz.id)" class="text-red-600 hover:underline font-bold text-xs">
-                    Xóa
-                  </button>
                 </div>
               </td>
             </tr>
@@ -127,19 +116,42 @@
         </table>
       </div>
       <div v-if="loading" class="text-center py-8 text-xs text-slate-400">Đang tải danh sách quiz...</div>
+
+      <!-- Pagination Footer -->
+      <div class="p-4 border-t border-slate-100 bg-slate-50/50">
+        <AppPagination
+          :current-page="pagination.currentPage"
+          :last-page="pagination.lastPage"
+          :total="pagination.total"
+          :per-page="pagination.perPage"
+          :show-per-page-selector="true"
+          :per-page-options="[10, 20, 50]"
+          item-label="bài quiz"
+          @update:current-page="onPageChange"
+          @update:per-page="onPerPageChange"
+        />
+      </div>
     </div>
   </section>
 </template>
 
 <script setup>
-import { ref, onMounted, inject } from 'vue'
-import api from '@/services/api'
+import { ref, reactive, onMounted, inject } from 'vue'
+import api, { quizzesApi } from '@/services/api'
+import AppPagination from '@/components/common/AppPagination.vue'
 
 const showToast = inject('showToast')
 const showConfirm = inject('showConfirm')
 
 const quizzes = ref([])
 const loading = ref(false)
+const pagination = reactive({
+  currentPage: 1,
+  lastPage: 1,
+  total: 0,
+  perPage: 10,
+})
+
 const filters = ref({
   search: '',
   creator: '',
@@ -149,17 +161,52 @@ const filters = ref({
   ai_generated: ''
 })
 
-const fetchQuizzes = async () => {
+const fetchQuizzes = async (page = pagination.currentPage) => {
   try {
     loading.value = true
-    const res = await api.get('/admin/quizzes', { params: filters.value })
-    quizzes.value = res.data.data.data || []
+    pagination.currentPage = page
+
+    const params = {
+      ...filters.value,
+      page,
+      per_page: pagination.perPage,
+      search: filters.value.search ? filters.value.search.trim() : undefined,
+      creator: filters.value.creator ? filters.value.creator.trim() : undefined,
+      category: filters.value.category ? filters.value.category.trim() : undefined,
+      difficulty: filters.value.difficulty || undefined,
+      visibility: filters.value.visibility || undefined,
+      ai_generated: filters.value.ai_generated !== '' ? filters.value.ai_generated : undefined,
+    }
+
+    const res = await quizzesApi.adminList(params)
+    quizzes.value = res.items || []
+    pagination.total = res.total || 0
+    pagination.lastPage = res.lastPage || 1
+    pagination.currentPage = res.currentPage || page
   } catch (error) {
     console.error('Lỗi lấy quiz:', error)
     if (showToast) showToast('Không tải được danh sách quiz', 'error')
+    quizzes.value = []
+    pagination.total = 0
+    pagination.lastPage = 1
   } finally {
     loading.value = false
   }
+}
+
+const onPageChange = (page) => {
+  fetchQuizzes(page)
+}
+
+const onPerPageChange = (perPage) => {
+  pagination.perPage = perPage
+  pagination.currentPage = 1
+  fetchQuizzes(1)
+}
+
+const handleSearch = () => {
+  pagination.currentPage = 1
+  fetchQuizzes(1)
 }
 
 const deleteQuiz = (id) => {
@@ -171,7 +218,7 @@ const deleteQuiz = (id) => {
         try {
           await api.delete(`/admin/quizzes/${id}`)
           if (showToast) showToast('Xóa quiz thành công', 'success')
-          fetchQuizzes()
+          fetchQuizzes(pagination.currentPage)
         } catch (error) {
           console.error(error)
           if (showToast) showToast('Xóa thất bại: ' + (error.response?.data?.message || error.message), 'error')
@@ -182,6 +229,6 @@ const deleteQuiz = (id) => {
 }
 
 onMounted(() => {
-  fetchQuizzes()
+  fetchQuizzes(1)
 })
 </script>

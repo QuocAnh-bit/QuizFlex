@@ -285,9 +285,15 @@ class AuthController extends Controller
 
     public function me()
     {
+        $user = $this->apiGuard()->user();
+
+        if (!$user instanceof User) {
+            abort(401, 'Unauthenticated.');
+        }
+
         return response()->json([
             'success' => true,
-            'data' => $this->formatUser($this->authenticatedUser()),
+            'data' => $this->formatUser($user),
         ]);
     }
 

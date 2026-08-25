@@ -368,12 +368,13 @@
     </div>
 
     <!-- Checkout Modal -->
-    <Transition name="fade">
-      <div
-        v-if="isPaymentModalOpen"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
-        @click.self="closeCheckout"
-      >
+    <Teleport to="body">
+      <Transition name="fade">
+        <div
+          v-if="isPaymentModalOpen"
+          class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto"
+          @click.self="closeCheckout"
+        >
         <div
           class="relative w-full max-w-[480px] rounded-2xl border border-slate-200 bg-white p-6 shadow-xl space-y-4"
         >
@@ -572,14 +573,16 @@
         </div>
       </div>
     </Transition>
+  </Teleport>
 
     <!-- Confirm Trial Modal -->
-    <Transition name="fade">
-      <div
-        v-if="isConfirmTrialModalOpen"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
-        @click.self="closeConfirmTrialModal"
-      >
+    <Teleport to="body">
+      <Transition name="fade">
+        <div
+          v-if="isConfirmTrialModalOpen"
+          class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto"
+          @click.self="closeConfirmTrialModal"
+        >
         <div
           class="relative w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-xl space-y-4"
         >
@@ -684,14 +687,16 @@
         </div>
       </div>
     </Transition>
+  </Teleport>
 
     <!-- Success Trial Modal -->
-    <Transition name="fade">
-      <div
-        v-if="isSuccessTrialModalOpen"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
-        @click.self="closeSuccessTrialModal"
-      >
+    <Teleport to="body">
+      <Transition name="fade">
+        <div
+          v-if="isSuccessTrialModalOpen"
+          class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto"
+          @click.self="closeSuccessTrialModal"
+        >
         <div
           class="relative w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-xl text-center space-y-4"
         >
@@ -754,7 +759,9 @@
           </button>
         </div>
       </div>
-    </Transition>
+    </div>
+  </Transition>
+</Teleport>
   </section>
 </template>
 
@@ -784,7 +791,7 @@ import {
   WalletCards,
   Zap,
   X
-} from '@lucide/vue'
+} from 'lucide-vue-next'
 
 import {
   currentUserStorage,

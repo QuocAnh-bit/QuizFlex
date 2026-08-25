@@ -105,7 +105,14 @@ const subscribeAccountChannel = () => {
     accountChannel = echo.private(`user.${user.id}`)
     
     accountChannel.listen('.account.status.changed', async (data) => {
-      if (data.is_locked) {
+      if (data.status === 'locked') {
+        triggerLockedOverlay()
+      } else if (data.status === 'unlocked' || data.status === 'appeal_approved') {
+        await authApi.me()
+        window.dispatchEvent(new CustomEvent('quizflex-account-unlocked'))
+      } else if (data.status === 'appeal_rejected') {
+        window.dispatchEvent(new CustomEvent('quizflex-appeal-rejected', { detail: data }))
+      } else if (data.is_locked) {
         triggerLockedOverlay()
       } else {
         await authApi.me()
@@ -115,6 +122,9 @@ const subscribeAccountChannel = () => {
 
     accountChannel.notification((notification) => {
       window.dispatchEvent(new CustomEvent('realtime-notification', { detail: notification }))
+      if (notification?.title || notification?.message) {
+        showToast(notification.title ? `${notification.title}: ${notification.message}` : notification.message, 'info')
+      }
     })
   } catch {
     // Reverb không khả dụng, bỏ qua realtime

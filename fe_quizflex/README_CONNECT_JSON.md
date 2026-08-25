@@ -8,7 +8,7 @@
 - `src/views/user/Home.vue`: lay danh sach quiz tu `GET /api/quizzes`.
 - `src/views/user/Quiz.vue`: lay chi tiet quiz tu `GET /api/quizzes/{id}`, nop bai qua `POST /api/quizzes/{id}/attempts`.
 - `src/views/admin/Question.vue`: lay, xoa, loc quiz tu API.
-- `src/views/admin/CreateQuiz.vue`: tao/sua quiz qua `POST /api/quizzes` va `PUT /api/quizzes/{id}`.
+- `src/views/user/CreateExamView.vue`: Quiz Builder tạo quiz từ kho câu hỏi và ngân hàng câu hỏi.
 - `src/views/admin/OcrUpload.vue`: upload anh OCR qua `POST /api/ocr/scan`.
 
 ## Cach chay FE

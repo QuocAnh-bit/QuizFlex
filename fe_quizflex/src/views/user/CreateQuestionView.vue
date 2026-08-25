@@ -206,6 +206,7 @@
                 v-if="form.answers.length > 2"
                 type="button"
                 class="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 cursor-pointer"
+                aria-label="Xóa đáp án"
                 title="Xóa đáp án"
                 @click="removeAnswerChoice(idx)"
               >
@@ -215,7 +216,7 @@
           </div>
         </div>
 
-        <!-- 4. Phạm vi hiển thị -->
+        <!-- 4. Phạm vi hiển thị & Quy trình Ngân hàng câu hỏi -->
         <div class="grid gap-4 border-t border-slate-200 pt-5">
           <h2 class="flex items-center gap-2 text-base font-semibold text-slate-900">
             <span class="h-4 w-1 rounded-full bg-indigo-500"></span>
@@ -236,12 +237,11 @@
                 class="mt-1 h-4 w-4 accent-amber-500 cursor-pointer"
               />
               <div class="grid gap-1">
-                <span class="flex items-center gap-1.5 text-sm font-semibold text-amber-800">
-                  <Lock class="h-4 w-4" />
-                  Riêng tư
+                <span class="text-sm font-bold text-slate-900">
+                  🔒 Riêng tư
                 </span>
-                <span class="text-xs leading-relaxed text-slate-500">
-                  Lưu vào kho cá nhân của bạn để sử dụng khi tạo quiz.
+                <span class="text-xs leading-relaxed text-slate-600">
+                  Chỉ lưu vào kho cá nhân của bạn. Bạn có thể gửi duyệt lên <strong>Ngân hàng câu hỏi</strong> bất kỳ lúc nào sau này.
                 </span>
               </div>
             </label>
@@ -264,7 +264,7 @@
                   Công khai
                 </span>
                 <span class="text-xs leading-relaxed text-slate-500">
-                  Chia sẻ lên ngân hàng câu hỏi dùng chung cho mọi người.
+                  Gửi yêu cầu đóng góp lên <strong>Ngân hàng câu hỏi</strong> dùng chung.
                 </span>
               </div>
             </label>
@@ -303,33 +303,35 @@
       </div>
     </form>
 
-    <!-- Sticky bottom actions (mobile-friendly) -->
-    <div class="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200 bg-white/95 px-4 py-3 shadow-[0_-4px_20px_rgba(15,23,42,0.06)] xl:hidden">
-      <div class="mx-auto flex max-w-[1400px] flex-wrap items-center justify-end gap-2">
-        <button
-          type="button"
-          class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600"
-          @click="goBack"
-        >
-          Hủy
-        </button>
-        <button
-          type="button"
-          class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 disabled:opacity-50"
-          :disabled="isSubmitting"
-          @click="submitForm(true)"
-        >
-          Lưu & tạo câu khác
-        </button>
-        <button
-          type="button"
-          class="rounded-lg bg-[#7C3AED] px-4 py-2 text-xs font-semibold text-white shadow-sm disabled:opacity-50"
-          :disabled="isSubmitting"
-          @click="submitForm(false)"
-        >
-          {{ isSubmitting ? 'Đang lưu...' : 'Lưu câu hỏi' }}
-        </button>
-      </div>
+    <!-- FLOATING SAVING WIDGET (Thanh lưu nổi thông minh cố định góc dưới màn hình giống trang Sửa) -->
+    <div class="fixed bottom-6 right-6 z-[60] flex items-center gap-3 rounded-2xl border border-slate-200 bg-white/95 p-2.5 shadow-2xl backdrop-blur-xl transition duration-200">
+      <button
+        type="button"
+        class="rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-600 transition hover:bg-slate-50 cursor-pointer"
+        @click="goBack"
+      >
+        Hủy
+      </button>
+
+      <button
+        type="button"
+        class="hidden sm:inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50 cursor-pointer shadow-2xs"
+        :disabled="isSubmitting"
+        @click="submitForm(true)"
+      >
+        <Plus :size="13" />
+        <span>Lưu & Tạo tiếp</span>
+      </button>
+
+      <button
+        type="button"
+        class="inline-flex items-center gap-2 rounded-xl bg-[#7C3AED] px-5 py-2 text-xs font-bold text-white shadow-lg shadow-[#7C3AED]/25 transition hover:bg-[#6D28D9] disabled:opacity-50 cursor-pointer active:scale-95"
+        :disabled="isSubmitting"
+        @click="submitForm(false)"
+      >
+        <Save :size="14" />
+        <span>{{ isSubmitting ? 'Đang lưu...' : 'Lưu câu hỏi' }}</span>
+      </button>
     </div>
 
     <!-- LIVE PREVIEW -->
@@ -462,6 +464,7 @@ import {
   Globe,
   Lock,
   Plus,
+  Save,
   X
 } from 'lucide-vue-next'
 import { formatApiErrorMessage, myQuestionsApi, questionsBankApi, taxonomyApi } from '@/services/api'

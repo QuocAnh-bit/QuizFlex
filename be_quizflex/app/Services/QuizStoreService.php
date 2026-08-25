@@ -18,10 +18,14 @@ class QuizStoreService
                 'user_id' => $user->id,
                 'title' => $data['title'],
                 'description' => $data['description'] ?? null,
-                'subject' => $data['subject'] ?? null,
-                'grade' => $data['grade'] ?? null,
+                'subject_id' => $data['subject_id'] ?? null,
+                'grade_id' => $data['grade_id'] ?? null,
+                'education_level_id' => $data['education_level_id'] ?? null,
                 'time_limit_seconds' => ($data['duration'] ?? 45) * 60,
-                'status' => $data['status'] ?? 'draft',
+                'creation_mode' => 'manual',
+                'review_status' => 'draft',
+                'is_public' => false,
+                'status' => 'draft',
             ]);
 
             foreach ($data['questions'] as $questionIndex => $questionData) {

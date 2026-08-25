@@ -53,10 +53,11 @@ class ReportAuthorUpdated extends Notification
             'title' => $title,
             'message' => $message,
             'action' => 'view',
-            'action_link' => '/admin/report-tickets',
+            'action_link' => '/admin/report-tickets?tab=question&question_id=' . $this->item->id,
             'metadata' => [
                 'item_type' => $this->itemType,
                 'item_id' => $this->item->id,
+                'question_id' => $this->item->id,
                 'author_id' => $this->author->id,
             ],
         ];

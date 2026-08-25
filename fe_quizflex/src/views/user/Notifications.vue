@@ -251,7 +251,7 @@ import {
   XCircle,
   ChevronDown,
   Loader2,
-} from '@lucide/vue'
+} from 'lucide-vue-next'
 
 import { notificationApi } from '@/services/api'
 
@@ -382,7 +382,11 @@ const handleNotificationClick = async (item) => {
   }
 
   if (item.action_link) {
-    router.push(item.action_link)
+    let link = item.action_link
+    if (link.startsWith('/admin/reports')) {
+      link = link.replace('/admin/reports', '/admin/report-tickets')
+    }
+    router.push(link)
   }
 }
 
@@ -390,6 +394,8 @@ const getIcon = (type) => {
   const icons = {
     quiz_moderated: FileCheck2,
     question_moderated: FileCheck2,
+    question_review_requested: FileCheck2,
+    quiz_review_requested: FileCheck2,
     report_author_updated: ShieldAlert,
 
     room_join_request: UserPlus,

@@ -124,10 +124,6 @@
               <ArrowLeft class="h-3.5 w-3.5" />
               Trang người dùng
             </router-link>
-            <router-link class="btn-primary flex items-center gap-1.5 text-xs" to="/admin/questions/create">
-              <Plus class="h-3.5 w-3.5" />
-              Tạo quiz mới
-            </router-link>
           </div>
         </header>
 
@@ -141,18 +137,19 @@
 <script setup>
 import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
-import axios from 'axios'
+import api, { tokenStorage } from '@/services/api'
 import {
   ArrowLeft,
   BookOpen,
   BrainCircuit,
   Camera,
+  CheckSquare,
   ChevronDown,
+  ClipboardCheck,
   ClipboardList,
   CreditCard,
   Flag,
   HelpCircle,
-  FolderPlus,
   LayoutDashboard,
   Package,
   Plus,
@@ -160,7 +157,7 @@ import {
   Shield,
   Users,
   Video,
-} from '@lucide/vue'
+} from 'lucide-vue-next'
 
 import BrandLogo from '@/components/common/BrandLogo.vue'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
@@ -189,13 +186,14 @@ const isGroupOpen = (label) => {
 
 const fetchReportCount = async () => {
   try {
-    const token = localStorage.getItem('quizflex_access_token')
-    const { data } = await axios.get('/api/admin/report-tickets/count', {
-      headers: { Authorization: `Bearer ${token}` }
+    if (!tokenStorage.get()) return
+    const res = await api.get('/admin/report-tickets', {
+      params: { status: 'pending', per_page: 1 },
     })
-    reportCount.value = data.count || 0
-  } catch (error) {
-    console.error('Lỗi khi lấy số lượng báo cáo:', error)
+    const payload = res.data?.data ?? res.data
+    reportCount.value = payload?.stats?.pending ?? (payload?.total ?? 0)
+  } catch (err) {
+    console.error('Không thể lấy số lượng báo cáo chờ xử lý:', err)
   }
 }
 
@@ -238,15 +236,15 @@ const menu = computed(() => [
     items: [
       { label: 'Tổng quan', to: '/admin', icon: LayoutDashboard },
       { label: 'Quản lý câu hỏi', to: '/admin/question-bank', icon: HelpCircle },
-      { label: 'Tạo câu hỏi mới', to: '/admin/question-bank/create-question', icon: FolderPlus },
+      { label: 'Duyệt vào Ngân hàng', to: '/admin/question-bank-requests', icon: CheckSquare, badge: pendingBadge.value },
+      { label: 'Duyệt Quiz công khai', to: '/admin/quiz-review-requests', icon: ClipboardCheck },
       { label: 'Kho quiz', to: '/admin/questions', icon: Package },
-      { label: 'Kiểm duyệt Ngân hàng', to: '/admin/moderation', icon: Shield, badge: pendingBadge.value },
       { label: 'Quản lý Báo cáo', to: '/admin/report-tickets', icon: Flag, badge: reportBadge.value },
-      
       { label: 'AI Generator', to: '/admin/questions/ai', icon: BrainCircuit },
       { label: 'OCR Upload', to: '/admin/questions/ocr', icon: Camera },
       { label: 'Quản lý Bộ môn', to: '/admin/subjects', icon: BookOpen },
     ],
+
   },
   {
     label: 'Phòng học & thi đấu',

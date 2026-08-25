@@ -184,7 +184,7 @@
 <script setup>
 import { computed, onBeforeUnmount, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Sparkles } from '@lucide/vue'
+import { Sparkles } from 'lucide-vue-next'
 import { aiApi, authApi, currentUserStorage } from '@/services/api'
 
 const route = useRoute()

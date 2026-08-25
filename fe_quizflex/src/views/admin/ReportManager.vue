@@ -260,6 +260,8 @@
               </div>
             </div>
 
+
+
             <div class="overflow-x-auto">
               <table class="w-full text-left text-xs border-collapse">
                 <thead>
@@ -272,7 +274,19 @@
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
-                  <tr v-for="report in filteredQuestionReports" :key="report.id" class="transition hover:bg-slate-50/70">
+                  <tr
+                    v-for="report in sortedQuestionReports"
+                    :key="report.id"
+                    :id="`report-row-${report.id}`"
+                    class="transition duration-150"
+                    :class="[
+                      String(report.question_id) === String(focusedQuestionId) || String(report.id) === String(focusedQuestionId)
+                        ? 'bg-emerald-50/50 hover:bg-emerald-50/70'
+                        : (report.has_author_updated || report.question?.has_author_updated
+                            ? 'bg-emerald-50/30 hover:bg-emerald-50/60'
+                            : 'hover:bg-slate-50/60')
+                    ]"
+                  >
                     <td class="py-3.5 px-3 text-center whitespace-nowrap">
                       <div class="flex flex-col items-center justify-center gap-1.5 whitespace-nowrap">
                         <span :class="getStatusBadge(report.status)">
@@ -549,14 +563,24 @@
 
           </div>
 
-          <!-- Footer Bar: Chỉ giữ lại nút Đóng cửa sổ duy nhất -->
-          <div class="flex items-center justify-end border-t border-slate-100 pt-3.5">
+          <!-- Footer Bar với nút Phê duyệt đính chính & Mở công khai lại -->
+          <div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3.5">
             <button
               type="button"
-              class="btn-secondary text-xs px-5 py-2.5 font-bold cursor-pointer"
+              class="btn-secondary text-xs px-4 py-2 font-bold cursor-pointer"
               @click="isQuestionDetailModalOpen = false"
             >
               Đóng cửa sổ
+            </button>
+
+            <button
+              v-if="selectedQuestionReport && selectedQuestionReport.status === 'pending'"
+              type="button"
+              class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2 text-xs font-bold text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700 cursor-pointer"
+              @click="approveCorrectionAndReopen(selectedQuestionReport)"
+            >
+              <Check :size="16" :stroke-width="2.5" />
+              <span>Phê duyệt đính chính &amp; Mở công khai lại</span>
             </button>
           </div>
         </div>
@@ -566,7 +590,8 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, inject } from 'vue'
+import { ref, computed, onMounted, inject, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import {
   Shield,
   RefreshCw,
@@ -584,10 +609,12 @@ import {
   SlidersHorizontal,
   MoreVertical
 } from 'lucide-vue-next'
-import api, { reportApi, adminQuestionsApi, quizzesApi } from '@/services/api'
+import { reportApi, adminQuestionsApi, quizzesApi } from '@/services/api'
 
-const showToast = inject('showToast')
+const router = useRouter()
+const route = useRoute()
 const showConfirm = inject('showConfirm')
+const showToast = inject('showToast')
 
 const reports = ref([])
 const pendingQuestions = ref([])
@@ -610,13 +637,13 @@ const filteredPendingQuestions = computed(() => {
 
 // Navigation state
 const mainSection = ref('reports') // 'reports' (Quản lý Báo cáo)
-const reportSubTab = ref('quiz') // 'quiz' | 'question'
+const reportSubTab = ref(route.query?.tab === 'question' ? 'question' : 'quiz')
 
-const quizReports = computed(() => reports.value.filter(r => Boolean(r.quiz_id)))
+const quizReports = computed(() => reports.value.filter(r => Boolean(r.quiz_id) && !r.question_id))
 const questionReports = computed(() => reports.value.filter(r => Boolean(r.question_id)))
 
 // Filter state for Question Reports
-const questionFilterTab = ref('updated') // 'updated' | 'pending' | 'all'
+const questionFilterTab = ref('all') // 'updated' | 'pending' | 'all'
 
 const questionUpdatedReports = computed(() =>
   questionReports.value.filter(r => r.has_author_updated || r.question?.has_author_updated)
@@ -637,6 +664,44 @@ const filteredQuestionReports = computed(() => {
   if (questionFilterTab.value === 'pending') return questionNotUpdatedReports.value
   return questionReports.value
 })
+
+const sortedQuestionReports = computed(() => {
+  const list = [...filteredQuestionReports.value]
+  const targetId = focusedQuestionId.value
+  if (!targetId) return list
+
+  const targetIndex = list.findIndex(
+    r => String(r.question_id) === String(targetId) || String(r.question?.id) === String(targetId) || String(r.id) === String(targetId)
+  )
+
+  if (targetIndex > 0) {
+    const [targetItem] = list.splice(targetIndex, 1)
+    list.unshift(targetItem)
+  }
+
+  return list
+})
+
+const clearFocusedQuery = () => {
+  if (route.query.question_id || route.query.id) {
+    const newQuery = { ...route.query }
+    delete newQuery.question_id
+    delete newQuery.id
+    delete newQuery.tab
+    router.replace({ query: newQuery })
+  }
+}
+
+const openQuestionDetailForFocused = () => {
+  const targetId = focusedQuestionId.value
+  if (!targetId) return
+  const targetReport = questionReports.value.find(
+    r => String(r.question_id) === String(targetId) || String(r.question?.id) === String(targetId) || String(r.id) === String(targetId)
+  )
+  if (targetReport) {
+    openQuestionDetailModal(targetReport)
+  }
+}
 
 const isQuestionDetailModalOpen = ref(false)
 const selectedQuestionReport = ref(null)
@@ -670,18 +735,6 @@ const openQuestionDetailModal = (report) => {
   isQuestionDetailModalOpen.value = true
 }
 
-const handleApproveInModal = async () => {
-  if (!selectedQuestionReport.value) return
-  await toggleQuestionVisibility(selectedQuestionReport.value)
-  isQuestionDetailModalOpen.value = false
-}
-
-const handleDismissInModal = async () => {
-  if (!selectedQuestionReport.value) return
-  await updateStatus(selectedQuestionReport.value.id, 'dismissed')
-  isQuestionDetailModalOpen.value = false
-}
-
 const formatTime = (dateStr) => {
   if (!dateStr) return '—'
   try {
@@ -711,44 +764,84 @@ const fetchPendingQuestions = async () => {
   }
 }
 
+const focusedQuestionId = computed(() => route.query?.question_id || route.query?.id || null)
+
 const fetchReports = async (isBackground = false) => {
   if (!isBackground) isLoading.value = true
   try {
-    reports.value = await reportApi.listAdmin()
+    const data = await reportApi.listAdmin()
+    reports.value = Array.isArray(data) ? data : (data?.data ?? [])
+
+    const targetQId = focusedQuestionId.value
+    if (
+      targetQId ||
+      route.query?.tab === 'question' ||
+      questionUpdatedCount.value > 0 ||
+      questionReports.value.length > 0
+    ) {
+      reportSubTab.value = 'question'
+    }
+
+    if (targetQId) {
+      questionFilterTab.value = 'all'
+    }
   } catch (error) {
     console.error('Lỗi khi lấy danh sách báo cáo:', error)
-    if (!isBackground && showToast) showToast('Không thể tải danh sách báo cáo', 'error')
   } finally {
     if (!isBackground) isLoading.value = false
   }
 }
+
+watch(
+  () => route.query.question_id || route.query.id,
+  (newQId) => {
+    if (newQId) {
+      reportSubTab.value = 'question'
+      questionFilterTab.value = 'all'
+    }
+  }
+)
 
 const refreshAllData = () => {
   fetchPendingQuestions()
   fetchReports(false)
 }
 
-const moderateQuestion = async (id, action) => {
-  const isApprove = action === 'approve'
-  const confirmTitle = isApprove ? 'Phê duyệt câu hỏi' : 'Từ chối câu hỏi'
-  const confirmMsg = isApprove
-    ? `Phê duyệt câu hỏi #${id} lên Ngân hàng câu hỏi dùng chung cho toàn hệ thống?`
-    : `Từ chối đưa câu hỏi #${id} lên Ngân hàng dùng chung? (Câu hỏi sẽ chuyển về phạm vi Riêng tư trong Kho cá nhân tác giả).`
+const toggleQuizVisibility = async (report) => {
+  try {
+    const isPublic = Boolean(report.quiz?.is_public)
+    await quizzesApi.update(report.quiz_id, { is_public: !isPublic })
+    if (report.quiz) report.quiz.is_public = !isPublic
+    if (showToast) showToast('Đã cập nhật trạng thái bài Quiz.', 'success')
+  } catch (err) {
+    if (showToast) showToast(`Thao tác thất bại: ${err.message}`, 'error')
+  }
+}
+
+const toggleQuestionVisibility = async (report) => {
+  try {
+    const qId = report.question_id
+    const res = await adminQuestionsApi.toggleVisibility(qId)
+    if (report.question) {
+      report.question.is_public = res.data?.is_public ?? !report.question.is_public
+    }
+    if (showToast) showToast('Đã cập nhật trạng thái hiển thị câu hỏi.', 'success')
+  } catch (err) {
+    if (showToast) showToast(`Thao tác thất bại: ${err.message}`, 'error')
+  }
+}
+
+const deleteQuiz = async (quizId, reportId) => {
+  const confirmTitle = 'Xóa bài Quiz'
+  const confirmMsg = `Bạn có chắc chắn muốn xóa vĩnh viễn bài Quiz #${quizId}?`
 
   const handleAction = async () => {
     try {
-      await adminQuestionsApi.moderate(id, { action })
-      pendingQuestions.value = pendingQuestions.value.filter(q => q.id !== id)
-      if (showToast) {
-        showToast(
-          isApprove
-            ? `Đã phê duyệt câu hỏi #${id} lên Ngân hàng thành công!`
-            : `Đã từ chối đưa câu hỏi #${id} lên Ngân hàng và chuyển về Kho cá nhân.`,
-          'success'
-        )
-      }
+      await quizzesApi.forceDelete(quizId)
+      reports.value = reports.value.filter(r => r.id !== reportId)
+      if (showToast) showToast('Đã xóa vĩnh viễn bài Quiz.', 'success')
     } catch (err) {
-      if (showToast) showToast(`Thao tác thất bại: ${err.message}`, 'error')
+      if (showToast) showToast(`Xóa thất bại: ${err.message}`, 'error')
     }
   }
 
@@ -762,123 +855,48 @@ const updateStatus = async (id, status) => {
   else if (status === 'dismissed') confirmMsg = 'Bạn muốn bỏ qua và không xử lý báo cáo này?'
   else if (status === 'pending') confirmMsg = 'Đổi lại trạng thái báo cáo về "Chờ xử lý"?'
 
-  const action = async () => {
+  const handleAction = async () => {
     try {
-      await reportApi.updateAdminStatus(id, status)
-      const index = reports.value.findIndex(r => r.id === id)
-      if (index !== -1) reports.value[index].status = status
-      window.dispatchEvent(new CustomEvent('notifications-updated'))
-      if (showToast) showToast('Cập nhật trạng thái báo cáo thành công', 'success')
-    } catch (error) {
-      const errMsg = error.response?.data?.message || error.message || 'Có lỗi xảy ra khi cập nhật!'
-      if (showToast) showToast(`Cập nhật thất bại: ${errMsg}`, 'error')
+      await reportApi.updateStatus(id, status)
+      const report = reports.value.find(r => r.id === id)
+      if (report) report.status = status
+      if (showToast) showToast('Cập nhật trạng thái báo cáo thành công.', 'success')
+    } catch (err) {
+      if (showToast) showToast(`Cập nhật thất bại: ${err.message}`, 'error')
     }
   }
 
-  if (showConfirm) showConfirm('Xác nhận thao tác', confirmMsg, action)
-  else action()
+  if (showConfirm) showConfirm('Cập nhật trạng thái', confirmMsg, handleAction)
+  else if (confirm(confirmMsg)) handleAction()
 }
 
-const toggleQuestionVisibility = async (report) => {
-  const isCurrentlyPublic = Boolean(report.question?.is_public)
-  const actionTitle = isCurrentlyPublic ? 'Gỡ công khai câu hỏi' : 'Công khai lại câu hỏi'
-  const msg = isCurrentlyPublic
-    ? `Gỡ công khai câu hỏi #${report.question_id} và gửi thông báo cho tác giả tự chỉnh sửa trong kho cá nhân?`
-    : `Công khai lại câu hỏi #${report.question_id} trên Ngân hàng câu hỏi chung?`
+const approveCorrectionAndReopen = async (report) => {
+  if (!report) return
+  const confirmTitle = 'Phê duyệt đính chính'
+  const confirmMsg = `Phê duyệt nội dung đính chính và Mở công khai lại cho câu hỏi #${report.question_id}?`
 
-  const action = async () => {
+  const handleAction = async () => {
     try {
-      const res = await adminQuestionsApi.toggleVisibility(report.question_id)
-      const newIsPublic = res?.data?.is_public ?? res?.is_public ?? !isCurrentlyPublic
-
-      if (report.question) {
-        report.question.is_public = Boolean(newIsPublic)
-      } else {
-        report.question = { is_public: Boolean(newIsPublic) }
-      }
-
-      if (report.status === 'pending') {
-        const resolvedAction = isCurrentlyPublic ? 'hidden' : 'approved'
-        await reportApi.updateAdminStatus(report.id, 'resolved', resolvedAction)
-        report.status = 'resolved'
-      }
-
-      window.dispatchEvent(new CustomEvent('notifications-updated'))
-      const toastMsg = isCurrentlyPublic
-        ? `Đã gỡ công khai câu hỏi #${report.question_id} và gửi thông báo cho tác giả.`
-        : `Đã công khai lại câu hỏi #${report.question_id}.`
-      if (showToast) showToast(toastMsg, 'success')
-    } catch (e) {
-      if (showToast) showToast(`Thao tác thất bại: ${e.message}`, 'error')
+      await reportApi.updateStatus(report.id, 'resolved')
+      isQuestionDetailModalOpen.value = false
+      clearFocusedQuery()
+      if (showToast) showToast('Đã phê duyệt đính chính và mở công khai lại câu hỏi thành công!', 'success')
+      await fetchReports(false)
+    } catch (err) {
+      if (showToast) showToast(`Phê duyệt thất bại: ${err.message}`, 'error')
     }
   }
 
-  if (showConfirm) showConfirm(actionTitle, msg, action)
-  else if (confirm(msg)) action()
+  if (showConfirm) showConfirm(confirmTitle, confirmMsg, handleAction)
+  else if (confirm(confirmMsg)) handleAction()
 }
 
-const toggleQuizVisibility = async (report) => {
-  const isCurrentlyPublic = Boolean(report.quiz?.is_public)
-  const actionTitle = isCurrentlyPublic ? 'Gỡ công khai Quiz' : 'Công khai lại Quiz'
-  const msg = isCurrentlyPublic
-    ? `Gỡ công khai bài Quiz '${report.quiz?.title || report.quiz_id}' và gửi thông báo cho tác giả?`
-    : `Công khai lại bài Quiz '${report.quiz?.title || report.quiz_id}'?`
-
-  const action = async () => {
-    try {
-      const res = await quizzesApi.toggleVisibility(report.quiz_id)
-      const newIsPublic = res?.data?.is_public ?? res?.is_public ?? !isCurrentlyPublic
-
-      if (report.quiz) {
-        report.quiz.is_public = Boolean(newIsPublic)
-      } else {
-        report.quiz = { is_public: Boolean(newIsPublic) }
-      }
-
-      if (report.status === 'pending') {
-        const resolvedAction = isCurrentlyPublic ? 'hidden' : 'approved'
-        await reportApi.updateAdminStatus(report.id, 'resolved', resolvedAction)
-        report.status = 'resolved'
-      }
-
-      window.dispatchEvent(new CustomEvent('notifications-updated'))
-      const toastMsg = isCurrentlyPublic
-        ? 'Đã gỡ công khai Quiz và gửi thông báo cho tác giả.'
-        : 'Đã công khai lại bài Quiz.'
-      if (showToast) showToast(toastMsg, 'success')
-    } catch (e) {
-      if (showToast) showToast(`Thao tác thất bại: ${e.message}`, 'error')
-    }
-  }
-
-  if (showConfirm) showConfirm(actionTitle, msg, action)
-  else if (confirm(msg)) action()
-}
-
-const deleteQuiz = (quizId, reportId) => {
-  if (showConfirm) {
-    showConfirm(
-      'Xác nhận xóa Quiz',
-      'Bạn có chắc chắn muốn xóa mềm Quiz vi phạm này không? Khi xóa Quiz, báo cáo này cũng sẽ được đánh dấu là "Đã xử lý".',
-      async () => {
-        try {
-          await api.delete(`/admin/quizzes/${quizId}`)
-          await reportApi.updateAdminStatus(reportId, 'resolved', 'deleted')
-          const index = reports.value.findIndex(r => r.id === reportId)
-          if (index !== -1) reports.value[index].status = 'resolved'
-
-          window.dispatchEvent(new CustomEvent('notifications-updated'))
-          if (showToast) showToast('Đã xóa Quiz vi phạm thành công', 'success')
-        } catch (error) {
-          if (showToast) {
-            showToast(
-              'Xóa Quiz thất bại: ' + (error.response?.data?.message || error.message),
-              'error'
-            )
-          }
-        }
-      }
-    )
+const getStatusText = (status) => {
+  switch (status) {
+    case 'pending': return 'Chờ xử lý'
+    case 'resolved': return 'Đã xử lý'
+    case 'dismissed': return 'Đã bỏ qua'
+    default: return status
   }
 }
 
@@ -895,13 +913,6 @@ const getStatusBadge = (status) => {
       return base + 'bg-slate-100 text-slate-600 border-slate-200'
   }
 }
-
-const getStatusText = (status) =>
-  ({
-    pending: 'Chờ xử lý',
-    resolved: 'Đã xử lý',
-    dismissed: 'Đã bỏ qua'
-  }[status] || status)
 
 onMounted(() => {
   fetchPendingQuestions()

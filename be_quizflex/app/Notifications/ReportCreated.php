@@ -14,41 +14,38 @@ class ReportCreated extends Notification implements ShouldQueue
 
     public $reportId;
     public $reporterName;
-    public $quizId;
+    public $questionId;
 
-   
     public function __construct(ReportTicket $report, User $reporter)
     {
         $this->reportId = $report->id;
         $this->reporterName = $reporter->name;
-        $this->quizId = $report->quiz_id;
+        $this->questionId = $report->question_id;
     }
 
-    
     public function via(object $notifiable): array
     {
         return ['database', 'broadcast'];
     }
 
- 
     public function broadcastType(): string
     {
         return 'report_created';
     }
 
- 
     public function toArray(object $notifiable): array
     {
         return [
             'type' => 'report_created',
-            'title' => 'Có báo cáo mới',
-            'message' => "{$this->reporterName} đã gửi báo cáo cần xử lý.",
+            'title' => '🚩 Có báo cáo vi phạm câu hỏi mới',
+            'message' => "{$this->reporterName} đã gửi báo cáo vi phạm đối với câu hỏi #{$this->questionId} trên Ngân hàng câu hỏi.",
             'action' => 'view',
-            'action_link' => '/admin/report-tickets',
+            'action_link' => "/admin/question-bank-requests?question_id={$this->questionId}",
             'metadata' => [
                 'report_id' => $this->reportId,
-                'quiz_id' => $this->quizId,
+                'question_id' => $this->questionId,
             ],
         ];
     }
 }
+

@@ -17,9 +17,42 @@
           <RouterLink to="/admin/quizzes" class="btn-secondary text-xs px-3.5 py-1.5">
             ← Quay lại
           </RouterLink>
-          <RouterLink :to="`/admin/quizzes/${quiz.id}/edit`" class="btn-primary text-xs px-3.5 py-1.5">
-            Sửa Quiz
-          </RouterLink>
+          <template v-if="quiz.review_status === 'pending_review'">
+            <button
+              type="button"
+              class="btn-primary text-xs px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1"
+              :disabled="isProcessing"
+              @click="handleApproveQuiz"
+            >
+              <Check :size="13" />
+              <span>Duyệt công khai</span>
+            </button>
+            <button
+              type="button"
+              class="btn-secondary text-xs px-3.5 py-1.5 text-rose-700 hover:bg-rose-50 border-rose-200 flex items-center gap-1"
+              :disabled="isProcessing"
+              @click="openRejectModal"
+            >
+              <X :size="13" />
+              <span>Từ chối</span>
+            </button>
+          </template>
+        </div>
+      </div>
+
+      <!-- Review Status Banner -->
+      <div v-if="quiz.review_status === 'pending_review'" class="flex items-start gap-3 rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 text-xs font-bold text-amber-900 shadow-sm">
+        <Clock class="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+        <div class="grid gap-0.5">
+          <span class="text-amber-800">Bài Quiz này đang gửi yêu cầu kiểm duyệt để được Công khai</span>
+          <span class="text-[11px] font-normal text-amber-700">Khi duyệt, toàn bộ câu hỏi từ kho cá nhân sẽ được tự động snapshot vào Ngân hàng câu hỏi.</span>
+        </div>
+      </div>
+
+      <div v-else-if="quiz.review_status === 'rejected'" class="flex items-start gap-3 rounded-2xl border border-rose-500/40 bg-rose-500/10 p-4 text-xs font-bold text-rose-900 shadow-sm">
+        <AlertCircle class="mt-0.5 h-4 w-4 shrink-0 text-rose-500" />
+        <div class="grid gap-0.5">
+          <span class="text-rose-800">Yêu cầu công khai đã bị từ chối: "{{ quiz.rejection_reason || 'Nội dung chưa đạt tiêu chuẩn' }}"</span>
         </div>
       </div>
 
@@ -34,12 +67,14 @@
               <span class="text-slate-900 font-bold block mt-0.5">{{ quiz.user?.name || quiz.author || 'Chưa rõ' }}</span>
             </div>
             <div class="rounded-xl border border-slate-100 bg-slate-50 p-3">
-              <span class="block text-[10px] font-bold uppercase text-slate-400">Danh mục</span>
-              <span class="text-slate-900 font-bold block mt-0.5">{{ quiz.category || 'Chung' }}</span>
+              <span class="block text-[10px] font-bold uppercase text-slate-400">Chế độ tạo</span>
+              <span class="text-purple-700 font-bold uppercase block mt-0.5">{{ quiz.creation_mode || 'manual' }}</span>
             </div>
             <div class="rounded-xl border border-slate-100 bg-slate-50 p-3">
-              <span class="block text-[10px] font-bold uppercase text-slate-400">Độ khó</span>
-              <span class="text-slate-900 font-bold uppercase block mt-0.5">{{ quiz.difficulty }}</span>
+              <span class="block text-[10px] font-bold uppercase text-slate-400">Trạng thái duyệt</span>
+              <span class="font-bold uppercase block mt-0.5" :class="quiz.review_status === 'approved' ? 'text-emerald-700' : (quiz.review_status === 'pending_review' ? 'text-amber-600' : 'text-slate-700')">
+                {{ quiz.review_status || 'draft' }}
+              </span>
             </div>
             <div class="rounded-xl border border-slate-100 bg-slate-50 p-3">
               <span class="block text-[10px] font-bold uppercase text-slate-400">Hiển thị</span>
@@ -147,19 +182,82 @@
         </div>
       </article>
     </template>
+
+    <!-- REJECT REASON MODAL -->
+    <div
+      v-if="isRejectModalOpen"
+      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn"
+    >
+      <div class="card p-6 max-w-md w-full space-y-4 shadow-2xl animate-scaleUp">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+          <h3 class="text-base font-black text-rose-600 flex items-center gap-2">
+            <AlertCircle :size="18" />
+            <span>Từ chối phê duyệt Quiz</span>
+          </h3>
+          <button
+            type="button"
+            class="text-slate-400 hover:text-slate-600 text-sm font-bold"
+            @click="isRejectModalOpen = false"
+          >
+            ✕
+          </button>
+        </div>
+
+        <p class="text-xs leading-relaxed text-slate-600">
+          Vui lòng nhập lý do từ chối cụ thể để tác giả chỉnh sửa lại bài Quiz.
+        </p>
+
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-slate-700 block">Lý do từ chối <span class="text-rose-500">*</span></label>
+          <textarea
+            v-model="rejectionReason"
+            rows="4"
+            class="field text-xs resize-none w-full"
+            placeholder="Ví dụ: Câu số 2 chưa chọn đáp án đúng..."
+            required
+          ></textarea>
+        </div>
+
+        <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+          <button
+            type="button"
+            class="btn-secondary text-xs px-4 py-2"
+            :disabled="isProcessing"
+            @click="isRejectModalOpen = false"
+          >
+            Hủy
+          </button>
+          <button
+            type="button"
+            class="btn-primary text-xs px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white flex items-center gap-1.5"
+            :disabled="isProcessing || !rejectionReason.trim()"
+            @click="handleRejectQuiz"
+          >
+            <span>{{ isProcessing ? 'Đang xử lý...' : 'Xác nhận từ chối' }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
   </section>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, inject } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import api from '@/services/api'
+import { Globe, Lock, Clock, AlertCircle, Check, X } from 'lucide-vue-next'
+import api, { quizReviewApi } from '@/services/api'
 
 const route = useRoute()
 const router = useRouter()
+const showToast = inject('showToast')
+const showConfirm = inject('showConfirm')
+
 const quiz = ref(null)
 const loading = ref(false)
+const isProcessing = ref(false)
 const averageScore = ref(0)
+const isRejectModalOpen = ref(false)
+const rejectionReason = ref('')
 
 const goBack = () => {
   if (route.query.from === 'reports') {
@@ -181,6 +279,55 @@ const fetchQuizDetail = async () => {
     console.error(error)
   } finally {
     loading.value = false
+  }
+}
+
+const handleApproveQuiz = () => {
+  const quizTitle = quiz.value?.title || ''
+  const message = `Bạn có chắc chắn muốn phê duyệt và công khai bài Quiz "${quizTitle}"? Các câu hỏi từ kho cá nhân của người dùng sẽ được tạo bản sao vào Ngân hàng câu hỏi.`
+
+  if (showConfirm) {
+    showConfirm('Xác nhận phê duyệt Quiz', message, async () => {
+      await executeApproveQuiz()
+    })
+  } else {
+    executeApproveQuiz()
+  }
+}
+
+const executeApproveQuiz = async () => {
+  isProcessing.value = true
+  try {
+    const res = await quizReviewApi.adminApprove(quiz.value.id)
+    if (showToast) showToast(res.message || 'Phê duyệt thành công!', 'success')
+    await fetchQuizDetail()
+  } catch (error) {
+    const msg = error.response?.data?.message || error.message || 'Phê duyệt thất bại'
+    if (showToast) showToast(msg, 'error')
+  } finally {
+    isProcessing.value = false
+  }
+}
+
+const openRejectModal = () => {
+  rejectionReason.value = ''
+  isRejectModalOpen.value = true
+}
+
+const handleRejectQuiz = async () => {
+  if (!rejectionReason.value.trim()) return
+
+  isProcessing.value = true
+  try {
+    const res = await quizReviewApi.adminReject(quiz.value.id, rejectionReason.value.trim())
+    if (showToast) showToast(res.message || 'Đã từ chối bài Quiz thành công!', 'success')
+    isRejectModalOpen.value = false
+    await fetchQuizDetail()
+  } catch (error) {
+    const msg = error.response?.data?.message || error.message || 'Từ chối thất bại'
+    if (showToast) showToast(msg, 'error')
+  } finally {
+    isProcessing.value = false
   }
 }
 

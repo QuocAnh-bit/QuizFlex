@@ -21,7 +21,7 @@
               Quản lý Ngân hàng Câu hỏi
             </h1>
             <p class="mt-1 max-w-2xl text-sm text-slate-500">
-              Kiểm duyệt nội dung, điều chỉnh quyền hiển thị (Public/Private), chỉnh sửa đáp án và xử lý báo cáo trên toàn bộ hệ thống.
+              Kiểm duyệt nội dung, điều chỉnh quyền hiển thị (Public/Private), phân loại môn học và xử lý báo cáo trên toàn bộ hệ thống.
             </p>
           </div>
         </div>
@@ -36,11 +36,11 @@
           </router-link>
 
           <router-link
-            to="/admin/question-bank/create-question"
+            to="/admin/question-bank-requests"
             class="inline-flex items-center gap-2 rounded-lg bg-[#7C3AED] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#6D28D9]"
           >
-            <Plus class="h-4 w-4" />
-            Tạo câu hỏi mới
+            <CheckSquare class="h-4 w-4" />
+            Duyệt vào Ngân hàng
           </router-link>
         </div>
       </div>
@@ -293,6 +293,7 @@
             >
               <td class="p-4 text-center" @click.stop>
                 <input
+                  v-if="isDeletable(q)"
                   type="checkbox"
                   class="h-4 w-4 rounded border-slate-300 text-[#7C3AED] focus:ring-[#7C3AED]"
                   :value="q.id"
@@ -384,15 +385,8 @@
                   <Eye class="h-4 w-4" />
                 </router-link>
 
-                <router-link
-                  :to="`/admin/questions/${q.id}/edit`"
-                  class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-amber-600 transition hover:bg-amber-500 hover:text-white"
-                  title="Chỉnh sửa"
-                >
-                  <Pencil class="h-4 w-4" />
-                </router-link>
-
                 <button
+                  v-if="isDeletable(q)"
                   type="button"
                   class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-rose-600 transition hover:bg-rose-500 hover:text-white"
                   title="Xóa vào thùng rác"
@@ -503,7 +497,7 @@ import { useRouter } from 'vue-router'
 import {
   Shield,
   Trash2,
-  Plus,
+  CheckSquare,
   FileText,
   Globe,
   Lock,
@@ -556,15 +550,20 @@ const privatePercent = computed(() => {
   return ((stats.private / stats.total) * 100).toFixed(1)
 })
 
+const isDeletable = (q) => {
+  return q.bank_submission_status === 'approved' && Boolean(q.origin_question_id)
+}
+
 const isAllSelected = computed(() => {
-  return questions.value.length > 0 && questions.value.every(q => selectedIds.value.includes(q.id))
+  const deletable = questions.value.filter(isDeletable)
+  return deletable.length > 0 && deletable.every(q => selectedIds.value.includes(q.id))
 })
 
 const toggleSelectAll = () => {
   if (isAllSelected.value) {
     selectedIds.value = []
   } else {
-    selectedIds.value = questions.value.map(q => q.id)
+    selectedIds.value = questions.value.filter(isDeletable).map(q => q.id)
   }
 }
 

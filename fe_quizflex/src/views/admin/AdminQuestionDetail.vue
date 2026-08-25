@@ -49,17 +49,9 @@
 
         <!-- Actions -->
         <div class="flex flex-wrap items-center gap-2">
-          <router-link
-            :to="`/admin/questions/${questionId}/edit`"
-            class="inline-flex items-center gap-2 rounded-lg bg-[#7C3AED] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#6D28D9]"
-          >
-            <Pencil class="h-4 w-4" />
-            Chỉnh sửa
-          </router-link>
-
           <button
             type="button"
-            class="inline-flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium transition"
+            class="inline-flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium transition cursor-pointer"
             :class="Boolean(question.is_public)
               ? 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100'
               : 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'"
@@ -70,6 +62,7 @@
           </button>
 
           <button
+            v-if="question.bank_submission_status === 'approved' && Boolean(question.origin_question_id) && Boolean(question.is_public)"
             type="button"
             class="inline-flex items-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-medium text-rose-700 transition hover:bg-rose-100"
             @click="deleteQuestion"
@@ -352,17 +345,9 @@
 
         <!-- Quick actions -->
         <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-3">
-          <router-link
-            :to="`/admin/questions/${questionId}/edit`"
-            class="flex w-full items-center justify-center gap-2 rounded-lg bg-[#7C3AED] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#6D28D9]"
-          >
-            <Pencil class="h-4 w-4" />
-            Chỉnh sửa câu hỏi này
-          </router-link>
-
           <button
             type="button"
-            class="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+            class="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50 cursor-pointer"
             @click="goBack"
           >
             <ArrowLeft class="h-4 w-4" />
