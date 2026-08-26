@@ -56,7 +56,26 @@ return [
 
     'mistral' => [
         'api_key' => env('MISTRAL_API_KEY'),
-        'ocr_model' => env('MISTRAL_OCR_MODEL', 'mistral-ocr-latest'),
+
+        'ocr_model' => env(
+            'MISTRAL_OCR_MODEL',
+            'mistral-ocr-latest'
+        ),
+
+        'chat_model' => env(
+            'MISTRAL_CHAT_MODEL',
+            'mistral-small-latest'
+        ),
+
+        'chat_max_tokens' => (int) env(
+            'MISTRAL_CHAT_MAX_TOKENS',
+            3000
+        ),
+
+        'questions_per_chunk' => (int) env(
+            'MISTRAL_QUESTIONS_PER_CHUNK',
+            10
+        ),
     ],
 
     'openrouter' => [

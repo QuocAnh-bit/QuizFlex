@@ -21,6 +21,7 @@ use App\Http\Controllers\UnlockRequestController;
 use App\Services\AI\AIService;
 use App\AI\Prompts\QuizPrompt;
 use App\Http\Controllers\AIController;
+use App\Http\Controllers\CurriculumOptionController;
 use App\Http\Controllers\TaxonomyController;
 use App\Http\Controllers\AdminSubjectController;
 use App\Http\Controllers\ReportTicketController;
@@ -73,6 +74,13 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/ocr/scan', [OcrController::class, 'scan']);
     Route::post('/orc/ai/quiz-suggestions', [OcrController::class, 'suggest']);
     Route::post('/orc/ai/review', [OcrController::class, 'review']);
+    Route::get(
+        '/curriculum/options',
+        [
+            CurriculumOptionController::class,
+            'index',
+        ]
+    );
 
     Route::post('/payments/activate-trial', [PaymentController::class, 'activateTrial']);
     Route::get('/payments/upgrade-costs', [PaymentController::class, 'getUpgradeCosts']);
