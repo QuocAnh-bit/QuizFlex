@@ -460,9 +460,20 @@
             </article>
           </div>
 
+          <!-- Pagination Bar -->
+          <AppPagination
+            v-if="totalQuizzes > 0"
+            :current-page="currentPage"
+            :last-page="lastPage"
+            :total="totalQuizzes"
+            :per-page="perPage"
+            item-label="bộ đề"
+            @update:current-page="onPageChange"
+          />
+
           <!-- Empty State -->
           <div
-            v-else
+            v-else-if="!isLoadingQuizzes"
             class="rounded-2xl border border-slate-200 bg-white p-12 text-center text-slate-500 space-y-2"
           >
             <span class="text-3xl block">
@@ -507,12 +518,14 @@ import {
   onBeforeUnmount,
   onMounted,
   ref,
+  watch,
 } from 'vue'
 
 import LandingQuickActions from '@/components/Home/LandingQuickActions.vue'
 import HomeContinueLearning from '@/components/Home/HomeContinueLearning.vue'
 import HomeNotifications from '@/components/Home/HomeNotifications.vue'
 import HomeWeeklyRanking from '@/components/Home/HomeWeeklyRanking.vue'
+import AppPagination from '@/components/common/AppPagination.vue'
 
 import {
   currentUserStorage,
@@ -529,35 +542,25 @@ const currentUser = ref(
 const searchKeyword = ref('')
 const activeCategory = ref('Tất cả')
 const rawQuizzes = ref([])
+const totalQuizzes = ref(0)
+const currentPage = ref(1)
+const lastPage = ref(1)
+const perPage = ref(6)
+const isLoadingQuizzes = ref(false)
 
-const categoryTabs = computed(() => [
+const categoryTabs = [
   'Tất cả',
-  ...new Set(
-    rawQuizzes.value
-      .map((q) => q.category)
-      .filter(Boolean)
-  ),
-])
+  'Toán học',
+  'Tiếng Anh',
+  'Vật lý',
+  'Hóa học',
+  'Sinh học',
+  'Lịch sử',
+  'Địa lý',
+  'Tin học',
+]
 
-const displayedQuizzes = computed(() => {
-  let list = rawQuizzes.value
-
-  if (activeCategory.value !== 'Tất cả') {
-    list = list.filter((q) => q.category === activeCategory.value)
-  }
-
-  if (searchKeyword.value.trim()) {
-    const keyword = searchKeyword.value.trim().toLowerCase()
-    list = list.filter((q) =>
-      [q.title, q.author, q.category, q.difficulty]
-        .join(' ')
-        .toLowerCase()
-        .includes(keyword)
-    )
-  }
-
-  return list
-})
+const displayedQuizzes = computed(() => rawQuizzes.value)
 
 const totalAttempts = computed(() => {
   return rawQuizzes.value.reduce(
@@ -580,8 +583,8 @@ const totalAttemptsDisplay = computed(() => {
 })
 
 const roomCountDisplay = computed(() => {
-  return rawQuizzes.value.length > 0
-    ? String(Math.max(1, Math.min(rawQuizzes.value.length, 12)))
+  return totalQuizzes.value > 0
+    ? String(Math.max(1, Math.min(totalQuizzes.value, 12)))
     : '0'
 })
 
@@ -590,17 +593,54 @@ const totalLiveMatches = computed(() => {
   return attempts > 0 ? formatNumber(Math.floor(attempts * 0.4)) : '0'
 })
 
-const loadQuizzes = async () => {
+let searchDebounceTimer = null
+
+const loadQuizzes = async (page = 1) => {
+  isLoadingQuizzes.value = true
+  currentPage.value = page
+
   try {
-    const data = await quizzesApi.list({
+    const params = {
       visibility: 'public',
-      per_page: 50,
-    })
-    rawQuizzes.value = data.map(normalizeQuizCard)
+      status: 'published',
+      per_page: perPage.value,
+      page,
+      search: searchKeyword.value.trim() || undefined,
+      category: activeCategory.value !== 'Tất cả' ? activeCategory.value : undefined,
+    }
+
+    const res = await quizzesApi.fetchPaginated(params)
+    rawQuizzes.value = (res.items || []).map(normalizeQuizCard)
+    totalQuizzes.value = res.total || 0
+    lastPage.value = res.lastPage || 1
+    currentPage.value = res.currentPage || page
   } catch {
     rawQuizzes.value = []
+    totalQuizzes.value = 0
+    lastPage.value = 1
+  } finally {
+    isLoadingQuizzes.value = false
   }
 }
+
+const onPageChange = (page) => {
+  loadQuizzes(page)
+  const element = document.getElementById('quiz-topics')
+  if (element) {
+    element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+}
+
+watch(activeCategory, () => {
+  loadQuizzes(1)
+})
+
+watch(searchKeyword, () => {
+  clearTimeout(searchDebounceTimer)
+  searchDebounceTimer = setTimeout(() => {
+    loadQuizzes(1)
+  }, 350)
+})
 
 const syncCurrentUser = (event) => {
   currentUser.value = event?.detail ?? currentUserStorage.get()
@@ -613,12 +653,13 @@ const difficultyClass = (difficulty) => ({
 }[difficulty] || 'bg-purple-50 text-purple-700')
 
 onMounted(() => {
-  loadQuizzes()
+  loadQuizzes(1)
   window.addEventListener('quizflex-user-updated', syncCurrentUser)
   window.addEventListener('storage', syncCurrentUser)
 })
 
 onBeforeUnmount(() => {
+  clearTimeout(searchDebounceTimer)
   window.removeEventListener('quizflex-user-updated', syncCurrentUser)
   window.removeEventListener('storage', syncCurrentUser)
 })

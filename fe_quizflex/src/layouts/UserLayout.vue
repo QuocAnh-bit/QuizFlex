@@ -318,7 +318,7 @@ import {
   X,
   ChevronDown,
   LayoutDashboard,
-} from '@lucide/vue'
+} from 'lucide-vue-next'
 
 import BrandLogo from '@/components/common/BrandLogo.vue'
 import LanguageSwitcher from '@/components/common/LanguageSwitcher.vue'
@@ -437,10 +437,6 @@ const baseNav = computed(() => [
     to: '/quizzes',
   },
   {
-    label: 'Ngân hàng câu hỏi',
-    to: '/question-bank',
-  },
-  {
     label: t('nav.user.leaderboard'),
     to: '/leaderboard',
   },
@@ -494,10 +490,6 @@ const mobileNav = computed(() => {
       to: '/quizzes',
     },
     {
-      label: 'Ngân hàng câu hỏi',
-      to: '/question-bank',
-    },
-    {
       label: t('nav.user.leaderboard'),
       to: '/leaderboard',
     },
@@ -505,6 +497,14 @@ const mobileNav = computed(() => {
 
   if (currentUser.value) {
     items.push(
+      {
+        label: 'Kho câu hỏi của tôi',
+        to: '/dashboard/my-questions',
+      },
+      {
+        label: 'Kho Quiz của tôi',
+        to: '/dashboard/questions',
+      },
       {
         label: t('nav.user.homeworkRoom'),
         to: '/homework-rooms',

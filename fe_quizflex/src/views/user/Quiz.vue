@@ -42,9 +42,11 @@
                 {{ quizMeta.difficulty || "Vừa" }}
               </span>
             </div>
-            <span class="text-xs font-bold text-slate-500">
-              Tiến độ: <b class="text-[#7C3AED]">{{ progressPercent }}%</b>
-            </span>
+            <div class="flex items-center gap-3">
+              <span class="text-xs font-bold text-slate-500">
+                Tiến độ: <b class="text-[#7C3AED]">{{ progressPercent }}%</b>
+              </span>
+            </div>
           </div>
 
           <!-- Progress Bar -->
@@ -60,6 +62,7 @@
             <MathText :text="currentQuestion.question" />
           </h1>
         </div>
+
 
         <!-- Answers List -->
         <div class="grid gap-3 pt-2">
@@ -168,6 +171,7 @@
         </div>
       </article>
     </aside>
+
   </section>
 </template>
 
@@ -191,6 +195,7 @@ const quizMeta = ref({
   timeLimitSeconds: 600,
 });
 const attemptId = ref(null);
+
 const timeLeft = ref(0);
 const isLoading = ref(false);
 const isSubmitting = ref(false);

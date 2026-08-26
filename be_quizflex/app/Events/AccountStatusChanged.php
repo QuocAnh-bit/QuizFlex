@@ -34,7 +34,7 @@ class AccountStatusChanged implements ShouldBroadcastNow
         return [
             'status'    => $this->status,
             'reason'    => $this->reason,
-            'is_locked' => $this->status === 'locked',
+            'is_locked' => (bool) $this->user->is_locked,
         ];
     }
 }

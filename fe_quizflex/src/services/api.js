@@ -127,6 +127,45 @@ export const questionsBankApi = {
   async createQuestion(payload) {
     const { data } = await api.post('/questions', payload);
     return unwrap(data);
+  },
+  async getQuestion(id) {
+    const { data } = await api.get(`/questions/${id}`);
+    return unwrap(data);
+  }
+};
+
+export const quizReviewApi = {
+  async requestReview(quizId, payload = {}) {
+    const { data } = await api.post(`/quizzes/${quizId}/request-review`, payload);
+    return unwrap(data);
+  },
+  async getReviewHistory(quizId) {
+    const { data } = await api.get(`/quizzes/${quizId}/review-history`);
+    return unwrap(data);
+  },
+  async fetchAdminReviewRequests(params = {}) {
+    const { data } = await api.get('/admin/quiz-review-requests', { params });
+    return unwrap(data);
+  },
+  async getAdminReviewRequest(id) {
+    const { data } = await api.get(`/admin/quiz-review-requests/${id}`);
+    return unwrap(data);
+  },
+  async adminApprove(id) {
+    const { data } = await api.post(`/admin/quiz-review-requests/${id}/approve`);
+    return unwrap(data);
+  },
+  async adminReject(id, reason) {
+    const { data } = await api.post(`/admin/quiz-review-requests/${id}/reject`, { reason, note: reason });
+    return unwrap(data);
+  },
+  async adminBulkApprove(ids) {
+    const { data } = await api.post('/admin/quiz-review-requests/bulk-approve', { ids });
+    return unwrap(data);
+  },
+  async adminBulkReject(ids, reason) {
+    const { data } = await api.post('/admin/quiz-review-requests/bulk-reject', { ids, reason, note: reason });
+    return unwrap(data);
   }
 };
 
@@ -164,6 +203,54 @@ export const myQuestionsApi = {
   async forceDelete(id) {
     const { data } = await api.delete(`/user/my-questions/${id}/force`);
     return data;
+  },
+  async submitToBank(id, payload = {}) {
+    const { data } = await api.post(`/user/my-questions/${id}/submit-to-bank`, payload);
+    return unwrap(data);
+  },
+  async bulkSubmitToBank(ids) {
+    const { data } = await api.post('/user/my-questions/bulk-submit-to-bank', { ids });
+    return unwrap(data);
+  },
+  async fetchReviewHistory(id) {
+    const { data } = await api.get(`/user/my-questions/${id}/review-history`);
+    return unwrap(data);
+  }
+};
+
+export const adminBankRequestsApi = {
+  async fetchRequests(params = {}) {
+    const { data } = await api.get('/admin/question-bank-requests', { params });
+    const payload = unwrap(data);
+    const items = Array.isArray(payload?.items) ? payload.items : (Array.isArray(payload) ? payload : []);
+    return {
+      items,
+      total: payload?.total ?? items.length,
+      currentPage: payload?.current_page ?? 1,
+      lastPage: payload?.last_page ?? 1,
+      perPage: payload?.per_page ?? 15,
+      stats: payload?.stats ?? { pending: 0, approved: 0, rejected: 0, total: 0 }
+    };
+  },
+  async fetchRequestDetail(id) {
+    const { data } = await api.get(`/admin/question-bank-requests/${id}`);
+    return unwrap(data);
+  },
+  async approve(id) {
+    const { data } = await api.post(`/admin/question-bank-requests/${id}/approve`);
+    return unwrap(data);
+  },
+  async reject(id, payload = {}) {
+    const { data } = await api.post(`/admin/question-bank-requests/${id}/reject`, payload);
+    return unwrap(data);
+  },
+  async bulkApprove(ids) {
+    const { data } = await api.post('/admin/question-bank-requests/bulk-approve', { ids });
+    return unwrap(data);
+  },
+  async bulkReject(ids, note) {
+    const { data } = await api.post('/admin/question-bank-requests/bulk-reject', { ids, note });
+    return unwrap(data);
   }
 };
 
@@ -243,14 +330,42 @@ export const adminQuestionsApi = {
     return unwrap(data);
   },
 
-  async createQuestion(payload) {
-    const { data } = await api.post('/questions', payload);
+  async remove(id) {
+    const { data } = await api.delete(`/admin/questions/${id}`);
+    return unwrap(data);
+  }
+};
+
+export const adminQuizzesApi = {
+  async list(params = {}) {
+    const { data } = await api.get('/admin/quizzes', { params });
+    const payload = unwrap(data);
+    const items = Array.isArray(payload?.items) 
+      ? payload.items 
+      : (Array.isArray(payload?.data) ? payload.data : (Array.isArray(payload) ? payload : []));
+    return {
+      items,
+      total: payload?.total ?? items.length,
+      currentPage: payload?.current_page ?? 1,
+      lastPage: payload?.last_page ?? 1,
+      perPage: payload?.per_page ?? 15,
+      stats: payload?.stats ?? { total: 0, public: 0, private: 0, pending: 0, rejected: 0 }
+    };
+  },
+
+  async get(id) {
+    const { data } = await api.get(`/admin/quizzes/${id}`);
+    return unwrap(data);
+  },
+
+  async toggleVisibility(id) {
+    const { data } = await api.patch(`/admin/quizzes/${id}/toggle-visibility`);
     return unwrap(data);
   },
 
   async remove(id) {
-    const { data } = await api.delete(`/user/my-questions/${id}`);
-    return data;
+    const { data } = await api.delete(`/admin/quizzes/${id}`);
+    return unwrap(data);
   }
 };
 
@@ -598,6 +713,10 @@ export const authApi = {
 
     this.clearSession();
   },
+
+  getCurrentUser() {
+    return currentUserStorage.get();
+  },
 };
 
 export const usersApi = {
@@ -706,6 +825,32 @@ export const quizzesApi = {
   async list(params = {}) {
     const { data } = await api.get("/quizzes", { params });
     return unwrapCollection(data);
+  },
+
+  async fetchPaginated(params = {}) {
+    const { data } = await api.get("/quizzes", { params });
+    const payload = unwrap(data);
+    const items = Array.isArray(payload) ? payload : (Array.isArray(payload?.data) ? payload.data : (payload?.items ?? []));
+    const total = payload?.total ?? items.length;
+    const currentPage = payload?.current_page ?? payload?.currentPage ?? 1;
+    const lastPage = payload?.last_page ?? payload?.lastPage ?? 1;
+    const perPage = payload?.per_page ?? payload?.perPage ?? 12;
+    const from = payload?.from ?? (total > 0 ? (currentPage - 1) * perPage + 1 : 0);
+    const to = payload?.to ?? Math.min(currentPage * perPage, total);
+    return { items, total, currentPage, lastPage, perPage, from, to };
+  },
+
+  async adminList(params = {}) {
+    const { data } = await api.get("/admin/quizzes", { params });
+    const payload = unwrap(data);
+    const items = Array.isArray(payload) ? payload : (Array.isArray(payload?.data) ? payload.data : (payload?.items ?? []));
+    const total = payload?.total ?? items.length;
+    const currentPage = payload?.current_page ?? payload?.currentPage ?? 1;
+    const lastPage = payload?.last_page ?? payload?.lastPage ?? 1;
+    const perPage = payload?.per_page ?? payload?.perPage ?? 10;
+    const from = payload?.from ?? (total > 0 ? (currentPage - 1) * perPage + 1 : 0);
+    const to = payload?.to ?? Math.min(currentPage * perPage, total);
+    return { items, total, currentPage, lastPage, perPage, from, to };
   },
 
   async get(id) {
@@ -1139,12 +1284,18 @@ export const homeworkApi = {
     return unwrapCollection(data);
   },
 
-  async startRoomAssignmentAttempt(assignmentId, payload = {}) {
+  async startAssignmentAttempt(firstArg, secondArg) {
+    const assignmentId = secondArg !== undefined && secondArg !== null ? secondArg : firstArg;
+    const payload = typeof secondArg === 'object' && secondArg !== null ? secondArg : {};
     const { data } = await api.post(
       `/room-assignments/${assignmentId}/attempts/start`,
       payload,
     );
     return unwrap(data);
+  },
+
+  async startRoomAssignmentAttempt(assignmentId, payload = {}) {
+    return this.startAssignmentAttempt(assignmentId, payload);
   },
 
   async answerRoomAssignmentAttempt(assignmentId, attemptId, payload) {
@@ -1155,13 +1306,44 @@ export const homeworkApi = {
     return unwrap(data);
   },
 
-  async submitRoomAssignmentAttempt(assignmentId, attemptId, payload) {
+  async submitAssignmentAttempt(firstArg, secondArg, thirdArg) {
+    let assignmentId;
+    let attemptId;
+    let payload;
+
+    if (thirdArg !== undefined) {
+      if (typeof thirdArg === 'object' && thirdArg?.attempt_id) {
+        // Form: submitAssignmentAttempt(roomId, assignmentId, { attempt_id, answers })
+        assignmentId = secondArg;
+        attemptId = thirdArg.attempt_id;
+        payload = { answers: thirdArg.answers || {} };
+      } else {
+        // Form: submitAssignmentAttempt(assignmentId, attemptId, payload)
+        assignmentId = firstArg;
+        attemptId = secondArg;
+        payload = thirdArg;
+      }
+    } else if (secondArg !== undefined && typeof secondArg === 'object' && secondArg?.attempt_id) {
+      // Form: submitAssignmentAttempt(assignmentId, { attempt_id, answers })
+      assignmentId = firstArg;
+      attemptId = secondArg.attempt_id;
+      payload = { answers: secondArg.answers || {} };
+    } else {
+      assignmentId = firstArg;
+      attemptId = secondArg;
+      payload = {};
+    }
+
     const body = payload?.answers ? payload : { answers: payload };
     const { data } = await api.post(
       `/room-assignments/${assignmentId}/attempts/${attemptId}/submit`,
       body,
     );
     return unwrap(data);
+  },
+
+  async submitRoomAssignmentAttempt(assignmentId, attemptId, payload) {
+    return this.submitAssignmentAttempt(assignmentId, attemptId, payload);
   },
 
   async resetRoomAssignmentAttempt(assignmentId, attemptId) {
@@ -1487,24 +1669,55 @@ export const paymentsApi = {
 };
 
 export const reportApi = {
-  // Dành cho Client: Gửi báo cáo (Quiz hoặc Question)
+  // Dành cho Client: Gửi báo cáo Question
+  async createQuestionReport({ question_id, reason, description = '' }) {
+    const { data } = await api.post("/report-tickets", {
+      question_id,
+      reason,
+      description,
+    });
+    return unwrap(data);
+  },
+
+  // Alias create tương thích ngược
   async create(payload) {
     const { data } = await api.post("/report-tickets", payload);
     return unwrap(data);
   },
 
-  // Dành cho Admin: Lấy danh sách
+  // Dành cho Admin: Lấy danh sách audit log các báo cáo
   async listAdmin(params = {}) {
     const { data } = await api.get("/admin/report-tickets", { params });
-    return unwrapCollection(data);
+    const payload = unwrap(data);
+    const items = Array.isArray(payload) ? payload : (Array.isArray(payload?.data) ? payload.data : []);
+    return {
+      items,
+      stats: payload?.stats ?? data?.stats ?? { total: 0, pending: 0, resolved: 0, dismissed: 0, questions_count: 0 },
+      total: items.length
+    };
   },
 
-  // Dành cho Admin: Cập nhật trạng thái
-  async updateAdminStatus(id, status, action = null) {
-    const { data } = await api.put(`/admin/report-tickets/${id}`, { status, action });
+  async get(id) {
+    const { data } = await api.get(`/admin/report-tickets/${id}`);
     return unwrap(data);
   },
+
+  async updateStatus(id, payload = {}) {
+    const { data } = await api.patch(`/admin/report-tickets/${id}/status`, payload);
+    return unwrap(data);
+  },
+
+  async resolveQuestionReports(payload = {}) {
+    const { data } = await api.post('/admin/report-tickets/resolve-question', payload);
+    return unwrap(data);
+  },
+
+  async countPending() {
+    const { data } = await api.get('/admin/report-tickets/count');
+    return unwrap(data);
+  }
 };
+
 
 export const notificationApi = {
   async list(params) {

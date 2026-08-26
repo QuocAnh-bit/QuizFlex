@@ -27,12 +27,36 @@
             <span class="flex-1">Về trang người dùng</span>
           </router-link>
 
-          <!-- COLLAPSIBLE NAVIGATION -->
+          <!-- MAIN NAVIGATION -->
           <nav class="space-y-3 text-xs font-semibold">
+            <!-- Tổng quan -->
+            <router-link
+              to="/admin"
+              :class="[
+                'group flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs font-semibold transition',
+                route.path === '/admin'
+                  ? 'bg-purple-50 font-bold text-[#7C3AED] shadow-sm'
+                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+              ]"
+            >
+              <span
+                :class="[
+                  'grid h-7 w-7 shrink-0 place-items-center rounded-md transition',
+                  route.path === '/admin'
+                    ? 'bg-[#7C3AED] text-white shadow-sm'
+                    : 'bg-slate-100 text-slate-500 group-hover:bg-slate-200 group-hover:text-slate-700'
+                ]"
+              >
+                <LayoutDashboard class="h-4 w-4" :stroke-width="2" />
+              </span>
+              <span class="min-w-0 flex-1 truncate">Tổng quan</span>
+            </router-link>
+
+            <!-- GROUPS -->
             <div v-for="group in menu" :key="group.label" class="overflow-hidden">
               <button
                 type="button"
-                class="group flex w-full items-center justify-between rounded-lg px-2 py-2 text-left transition hover:bg-slate-50"
+                class="group flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-left transition hover:bg-slate-50"
                 @click="toggleGroup(group.label)"
               >
                 <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 transition group-hover:text-[#7C3AED]">
@@ -46,7 +70,7 @@
                 />
               </button>
 
-              <div v-show="isGroupOpen(group.label)" class="grid gap-0.5">
+              <div v-show="isGroupOpen(group.label)" class="grid gap-0.5 mt-0.5">
                 <router-link
                   v-for="item in group.items"
                   :key="item.to"
@@ -72,10 +96,10 @@
                   <span class="min-w-0 flex-1 truncate">{{ item.label }}</span>
 
                   <span
-                    v-if="(item.label === 'Quản lý báo cáo' && reportCount > 0) || (item.badge !== undefined && item.badge !== null && item.badge !== 0)"
-                    class="ml-auto shrink-0 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-700"
+                    v-if="item.badge !== undefined && item.badge !== null && item.badge > 0"
+                    class="ml-auto shrink-0 rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-700"
                   >
-                    {{ item.label === 'Quản lý báo cáo' ? reportCount : item.badge }}
+                    {{ item.badge }}
                   </span>
                 </router-link>
               </div>
@@ -115,10 +139,6 @@
               <ArrowLeft class="h-3.5 w-3.5" />
               Trang người dùng
             </router-link>
-            <router-link class="btn-primary flex items-center gap-1.5 text-xs" to="/admin/questions/create">
-              <Plus class="h-3.5 w-3.5" />
-              Tạo quiz mới
-            </router-link>
           </div>
         </header>
 
@@ -132,39 +152,34 @@
 <script setup>
 import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
-import axios from 'axios'
+import api, { tokenStorage } from '@/services/api'
 import {
   ArrowLeft,
   BookOpen,
-  BrainCircuit,
-  Camera,
   ChevronDown,
-  ClipboardList,
   CreditCard,
   Flag,
   HelpCircle,
-  FolderPlus,
   LayoutDashboard,
   Package,
-  Plus,
   Settings,
   Users,
   Video,
-} from '@lucide/vue'
+} from 'lucide-vue-next'
 
 import BrandLogo from '@/components/common/BrandLogo.vue'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
 import NotificationBell from '@/components/common/NotificationBell.vue'
 
 const route = useRoute()
-const reportCount = ref(0)
-
-const reportBadge = computed(() => reportCount.value)
+const pendingQuestionsCount = ref(0)
+const pendingQuizzesCount = ref(0)
+const pendingReportsCount = ref(0)
 
 const openGroups = ref({
   'Quản lý nội dung': true,
   'Phòng học & thi đấu': false,
-  'Phân tích & hệ thống': false,
+  'Hệ thống': false,
 })
 
 const toggleGroup = (label) => {
@@ -175,45 +190,82 @@ const isGroupOpen = (label) => {
   return !!openGroups.value[label]
 }
 
-const fetchReportCount = async () => {
+const fetchPendingCounts = async () => {
   try {
-    const token = localStorage.getItem('quizflex_access_token')
-    const { data } = await axios.get('/api/admin/report-tickets/count', {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-    reportCount.value = data.count || 0
-  } catch (error) {
-    console.error('Lỗi khi lấy số lượng báo cáo:', error)
+    if (!tokenStorage.get()) return
+
+    const [questionRes, quizRes, reportRes] = await Promise.allSettled([
+      api.get('/admin/question-bank-requests', { params: { status: 'pending', per_page: 1 } }),
+      api.get('/admin/quiz-review-requests', { params: { status: 'pending', per_page: 1 } }),
+      api.get('/admin/report-tickets/count'),
+    ])
+
+    if (questionRes.status === 'fulfilled') {
+      const p = questionRes.value.data?.data ?? questionRes.value.data
+      pendingQuestionsCount.value = p?.stats?.pending ?? 0
+    }
+
+    if (quizRes.status === 'fulfilled') {
+      const p = quizRes.value.data?.data ?? quizRes.value.data
+      pendingQuizzesCount.value = p?.stats?.pending ?? 0
+    }
+
+    if (reportRes.status === 'fulfilled') {
+      const p = reportRes.value.data
+      pendingReportsCount.value = p?.count ?? p?.question_pending ?? 0
+    }
+  } catch (err) {
+    console.error('Không thể lấy số lượng hàng chờ kiểm duyệt:', err)
   }
 }
 
 const handleRealtimeNotification = (event) => {
   const notification = event.detail
   if (notification?.type === 'report_created') {
-    reportCount.value++
+    pendingReportsCount.value++
+  }
+  if (notification?.type === 'question_submitted') {
+    pendingQuestionsCount.value++
+  }
+  if (notification?.type === 'quiz_submitted') {
+    pendingQuizzesCount.value++
   }
   if (notification?.type === 'report_resolved' || notification?.type === 'report_action') {
-    fetchReportCount()
+    fetchPendingCounts()
   }
 }
 
 const handleNotificationsUpdated = () => {
-  fetchReportCount()
+  fetchPendingCounts()
 }
 
 const menu = computed(() => [
   {
     label: 'Quản lý nội dung',
     items: [
-      { label: 'Tổng quan', to: '/admin', icon: LayoutDashboard },
-      { label: 'Quản lý câu hỏi', to: '/admin/question-bank', icon: HelpCircle },
-      { label: 'Tạo câu hỏi mới', to: '/admin/question-bank/create-question', icon: FolderPlus },
-      { label: 'Kho quiz', to: '/admin/questions', icon: Package },
-      
-      { label: 'AI Generator', to: '/admin/questions/ai', icon: BrainCircuit },
-      { label: 'OCR Upload', to: '/admin/questions/ocr', icon: Camera },
-      { label: 'Quản lý Bộ môn', to: '/admin/subjects', icon: BookOpen },
-      { label: 'Quản lý báo cáo', to: '/admin/report-tickets', icon: Flag, badge: reportBadge.value },
+      {
+        label: 'Ngân hàng câu hỏi',
+        to: '/admin/question-bank',
+        icon: HelpCircle,
+        badge: pendingQuestionsCount.value,
+      },
+      {
+        label: 'Quiz',
+        to: '/admin/quizzes',
+        icon: Package,
+        badge: pendingQuizzesCount.value,
+      },
+      {
+        label: 'Báo cáo',
+        to: '/admin/reports',
+        icon: Flag,
+        badge: pendingReportsCount.value,
+      },
+      {
+        label: 'Bộ môn',
+        to: '/admin/subjects',
+        icon: BookOpen,
+      },
     ],
   },
   {
@@ -224,11 +276,11 @@ const menu = computed(() => [
     ],
   },
   {
-    label: 'Phân tích & hệ thống',
+    label: 'Hệ thống',
     items: [
-      { label: 'Giao dịch & doanh thu', to: '/admin/payments', icon: CreditCard },
       { label: 'Người dùng', to: '/admin/users', icon: Users },
-      { label: 'Cài đặt hệ thống', to: '/admin/settings', icon: Settings },
+      { label: 'Giao dịch & doanh thu', to: '/admin/payments', icon: CreditCard },
+      { label: 'Cài đặt', to: '/admin/settings', icon: Settings },
     ],
   },
 ])
@@ -237,7 +289,7 @@ const pageTitle = computed(() => route.meta.title || 'Dashboard')
 
 const isItemActive = (item) => {
   if (item.to === '/admin') return route.path === '/admin'
-  return route.path === item.to
+  return route.path.startsWith(item.to)
 }
 
 const openCurrentGroup = () => {
@@ -250,7 +302,7 @@ const openCurrentGroup = () => {
 }
 
 onMounted(() => {
-  fetchReportCount()
+  fetchPendingCounts()
   openCurrentGroup()
   window.addEventListener('realtime-notification', handleRealtimeNotification)
   window.addEventListener('notifications-updated', handleNotificationsUpdated)

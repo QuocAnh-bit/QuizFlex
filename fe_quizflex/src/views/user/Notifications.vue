@@ -251,7 +251,7 @@ import {
   XCircle,
   ChevronDown,
   Loader2,
-} from '@lucide/vue'
+} from 'lucide-vue-next'
 
 import { notificationApi } from '@/services/api'
 
@@ -390,6 +390,8 @@ const getIcon = (type) => {
   const icons = {
     quiz_moderated: FileCheck2,
     question_moderated: FileCheck2,
+    question_review_requested: FileCheck2,
+    quiz_review_requested: FileCheck2,
     report_author_updated: ShieldAlert,
 
     room_join_request: UserPlus,

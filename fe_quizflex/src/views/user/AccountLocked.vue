@@ -19,14 +19,29 @@
     <section class="max-w-2xl mx-auto px-4 py-12">
       <div class="card p-8 sm:p-10 space-y-6">
         <!-- Header -->
-        <div class="flex items-center gap-3.5 border-b border-slate-100 pb-5">
-          <div class="h-12 w-12 rounded-xl bg-red-50 text-red-600 flex items-center justify-center text-2xl shrink-0">
-            🔒
+        <div class="flex items-center justify-between border-b border-slate-100 pb-5">
+          <div class="flex items-center gap-3.5">
+            <div class="h-12 w-12 rounded-xl bg-red-50 text-red-600 flex items-center justify-center text-2xl shrink-0">
+              🔒
+            </div>
+            <div>
+              <span class="text-xs font-bold uppercase tracking-wider text-red-600">Tạm ngưng tài khoản</span>
+              <h1 class="text-xl sm:text-2xl font-black text-slate-900">Tài khoản của bạn đang bị khóa</h1>
+            </div>
           </div>
-          <div>
-            <span class="text-xs font-bold uppercase tracking-wider text-red-600">Tạm ngưng tài khoản</span>
-            <h1 class="text-xl sm:text-2xl font-black text-slate-900">Tài khoản của bạn đang bị khóa</h1>
-          </div>
+          <button
+            type="button"
+            class="text-xs text-slate-400 hover:text-slate-700 underline font-medium"
+            @click="handleLogout"
+          >
+            Đăng xuất
+          </button>
+        </div>
+
+        <!-- User brief info if present -->
+        <div v-if="currentUser?.email" class="text-xs text-slate-500 bg-slate-50 rounded-xl px-4 py-2.5 border border-slate-100 flex items-center justify-between">
+          <span>Tài khoản: <b class="text-slate-800">{{ currentUser.name }}</b> ({{ currentUser.email }})</span>
+          <span class="text-[11px] px-2 py-0.5 rounded bg-red-100 text-red-700 font-bold">Đang bị khóa</span>
         </div>
 
         <!-- Lock details -->
@@ -42,23 +57,23 @@
         </div>
 
         <!-- Appeal Status & Banner -->
-        <div class="rounded-xl border border-purple-100 bg-purple-50/50 p-4 flex items-center justify-between">
+        <div class="rounded-xl border border-purple-100 bg-purple-50/50 p-4 flex items-center justify-between gap-3">
           <p class="text-xs text-slate-700 font-medium">
             Nếu bạn cho rằng đây là nhầm lẫn, hãy gửi đơn kháng cáo để quản trị viên xem xét.
           </p>
           <span
             class="shrink-0 rounded-md px-2.5 py-1 text-xs font-bold"
             :class="{
-              'bg-slate-100 text-slate-600': !latestRequest,
               'bg-amber-100 text-amber-800': latestRequest?.status === 'pending',
               'bg-emerald-100 text-emerald-800': latestRequest?.status === 'approved',
               'bg-red-100 text-red-800': latestRequest?.status === 'rejected',
+              'bg-slate-100 text-slate-600': !latestRequest || !latestRequest.status,
             }"
           >
-            <span v-if="!latestRequest">Chưa gửi đơn</span>
-            <span v-else-if="latestRequest.status === 'pending'">Đang chờ duyệt</span>
-            <span v-else-if="latestRequest.status === 'approved'">Đã được duyệt</span>
-            <span v-else-if="latestRequest.status === 'rejected'">Đã bị từ chối</span>
+            <span v-if="latestRequest?.status === 'pending'">Đang chờ duyệt</span>
+            <span v-else-if="latestRequest?.status === 'approved'">Đã được duyệt</span>
+            <span v-else-if="latestRequest?.status === 'rejected'">Đã bị từ chối</span>
+            <span v-else>Chưa gửi đơn</span>
           </span>
         </div>
 
@@ -66,10 +81,17 @@
         <div v-if="latestRequest?.status === 'rejected'" class="rounded-xl border border-red-200 bg-red-50 p-4 space-y-1.5 text-xs">
           <p class="font-bold text-red-700">Kháng cáo của bạn đã bị từ chối.</p>
           <p class="text-slate-600">Ghi chú từ quản trị viên: <b>{{ latestRequest.admin_note || 'Không có ghi chú thêm.' }}</b></p>
+          <p class="text-[11px] text-slate-500 italic mt-1">Bạn có thể gửi lại đơn kháng cáo mới bên dưới kèm giải trình chi tiết hơn.</p>
         </div>
 
-        <!-- Appeal Form -->
-        <div v-if="!latestRequest || latestRequest?.status === 'rejected' || (latestRequest?.status === 'approved' && currentUser?.is_locked)" class="space-y-3 pt-2">
+        <!-- Pending Status Message (shown ONLY when pending) -->
+        <div v-if="latestRequest?.status === 'pending'" class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs space-y-1">
+          <p class="font-bold text-amber-800">Đơn kháng cáo của bạn đang được xử lý.</p>
+          <p class="text-slate-600">Quản trị viên sẽ phản hồi sớm nhất có thể. Ngày gửi: {{ latestRequest.created_at || 'Gần đây' }}</p>
+        </div>
+
+        <!-- Appeal Form (shown when NOT pending) -->
+        <div v-else class="space-y-3 pt-2">
           <label class="text-xs font-bold text-slate-700 block" for="appeal-message">
             Nội dung giải trình / Kháng cáo
           </label>
@@ -91,19 +113,20 @@
           <p v-if="successMessage" class="text-xs font-bold text-emerald-600">{{ successMessage }}</p>
         </div>
 
-        <!-- Pending Status Message -->
-        <div v-else-if="latestRequest?.status === 'pending'" class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs space-y-1">
-          <p class="font-bold text-amber-800">Đơn kháng cáo của bạn đang được xử lý.</p>
-          <p class="text-slate-600">Quản trị viên sẽ phản hồi sớm nhất có thể. Ngày gửi: {{ latestRequest.created_at || 'Gần đây' }}</p>
-        </div>
-
         <!-- Contact Support -->
         <div class="pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
-          <span>Cần hỗ trợ gấp?</span>
           <div class="flex items-center gap-4">
+            <span>Cần hỗ trợ gấp?</span>
             <a href="mailto:support@quizflex.com" class="text-[#7C3AED] hover:underline font-semibold">📧 support@quizflex.com</a>
             <a href="tel:0972554428" class="text-[#7C3AED] hover:underline font-semibold">☎ 0972 554 428</a>
           </div>
+          <button
+            type="button"
+            class="btn-secondary text-xs px-3 py-1.5 text-slate-600 hover:text-red-600"
+            @click="handleLogout"
+          >
+            Đăng nhập tài khoản khác
+          </button>
         </div>
       </div>
     </section>
@@ -129,6 +152,15 @@ const countdown = ref(5)
 const lockedReason = computed(() => currentUser.value?.locked_reason || route.query.reason || '')
 const lockedAt = computed(() => currentUser.value?.locked_at || route.query.locked_at || '')
 
+const normalizeUnlockRequest = (res) => {
+  if (!res) return null
+  const target = res.data !== undefined ? res.data : res
+  if (target && typeof target === 'object' && ('status' in target || 'id' in target)) {
+    return target
+  }
+  return null
+}
+
 const loadData = async () => {
   try {
     const user = await authApi.lockedInfo()
@@ -144,7 +176,7 @@ const loadData = async () => {
 
   try {
     const data = await unlockRequestsApi.latest()
-    latestRequest.value = data?.data || data || null
+    latestRequest.value = normalizeUnlockRequest(data)
   } catch {
     latestRequest.value = null
   }
@@ -153,7 +185,7 @@ const loadData = async () => {
 const reloadUnlockRequest = async () => {
   try {
     const data = await unlockRequestsApi.latest()
-    latestRequest.value = data?.data || data || null
+    latestRequest.value = normalizeUnlockRequest(data)
   } catch {
     latestRequest.value = null
   }
@@ -190,6 +222,17 @@ const submitAppeal = async () => {
   }
 }
 
+const handleLogout = async () => {
+  try {
+    await authApi.logout()
+  } catch {
+    // ignore
+  } finally {
+    authApi.clearSession()
+    router.push('/login')
+  }
+}
+
 let pollInterval = null
 
 const handleUnlocked = () => {
@@ -203,6 +246,19 @@ const handleUnlocked = () => {
       goHome()
     }
   }, 1000)
+}
+
+const handleAppealRejected = (event) => {
+  const data = event?.detail
+  if (latestRequest.value) {
+    latestRequest.value = {
+      ...latestRequest.value,
+      status: 'rejected',
+      admin_note: data?.reason || latestRequest.value.admin_note || null,
+    }
+  } else {
+    reloadUnlockRequest()
+  }
 }
 
 const goHome = async () => {
@@ -222,17 +278,20 @@ watch(
 onMounted(() => {
   loadData()
   window.addEventListener('quizflex-account-unlocked', handleUnlocked)
+  window.addEventListener('quizflex-appeal-rejected', handleAppealRejected)
 
   pollInterval = setInterval(async () => {
     if (isApproved.value) return
     try {
       const data = await unlockRequestsApi.latest()
-      const req = data?.data || data || null
+      const req = normalizeUnlockRequest(data)
       if (req?.status === 'approved') {
         const user = await authApi.lockedInfo()
         if (!user?.is_locked) {
           handleUnlocked()
         }
+      } else if (req?.status === 'rejected') {
+        latestRequest.value = req
       }
     } catch {
       // ignore
@@ -242,6 +301,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('quizflex-account-unlocked', handleUnlocked)
+  window.removeEventListener('quizflex-appeal-rejected', handleAppealRejected)
   if (pollInterval) clearInterval(pollInterval)
 })
 </script>

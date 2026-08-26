@@ -405,7 +405,7 @@ import {
   Zap,
   Medal,
   ChevronDown,
-} from "@lucide/vue";
+} from "lucide-vue-next";
 
 import {
   gamificationApi,

@@ -2,23 +2,23 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Question;
 use App\Models\ReportTicket;
 use App\Models\User;
-use App\Notifications\QuizModerated;
 use App\Notifications\QuestionModerated;
 use App\Notifications\ReportCreated;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 
 class ReportTicketController extends Controller
 {
     /**
-     * Người dùng gửi báo cáo vi phạm bài Quiz hoặc Câu hỏi
+     * Người dùng gửi báo cáo vi phạm Câu hỏi (Question Snapshot hoặc Public Question)
      */
     public function store(Request $request)
     {
-        $user = auth('api')->user() ?? $request->user();
+        $user = $request->user('api') ?? auth('api')->setRequest($request)->user() ?? auth('api')->user() ?? $request->user();
         if (!$user) {
             return response()->json([
                 'success' => false,
@@ -26,141 +26,339 @@ class ReportTicketController extends Controller
             ], 401);
         }
 
+
+        // Loại bỏ hoàn toàn quiz_id, chỉ nhận question_id
         $request->validate([
-            'quiz_id' => 'required_without:question_id|nullable|exists:quizzes,id',
-            'question_id' => 'required_without:quiz_id|nullable|exists:questions,id',
+            'question_id' => 'required|integer|exists:questions,id',
             'reason' => 'required|string|max:255',
-            'description' => 'nullable|string',
+            'description' => 'nullable|string|max:2000',
+        ], [
+            'question_id.required' => 'Vui lòng cung cấp ID câu hỏi cần báo cáo.',
+            'question_id.exists' => 'Câu hỏi không tồn tại trên hệ thống.',
+            'reason.required' => 'Vui lòng chọn lý do báo cáo vi phạm.',
         ]);
 
+        $targetQuestion = Question::with(['user', 'quiz.user', 'quizzes'])->find($request->question_id);
+        if (!$targetQuestion) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không tìm thấy câu hỏi được báo cáo.',
+            ], 404);
+        }
+
+        // Kiểm tra câu hỏi có hợp lệ để báo cáo không (phải là Public Question / Snapshot Ngân hàng / thuộc Quiz công khai)
+        $isPublicQuestion = (bool) $targetQuestion->is_public;
+        $isBankSnapshot = !empty($targetQuestion->origin_question_id);
+        $isAttachedToPublicQuiz = ($targetQuestion->quiz && $targetQuestion->quiz->is_public && $targetQuestion->quiz->status === 'published')
+            || $targetQuestion->quizzes()->where('is_public', true)->where('status', 'published')->exists();
+
+        if (!$isPublicQuestion && !$isBankSnapshot && !$isAttachedToPublicQuiz) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Chỉ có thể báo cáo câu hỏi công khai hoặc trong bài thi công khai.',
+            ], 422);
+        }
+
+        // Phân giải Snapshot về Question gốc và Owner
+        $originQuestion = $targetQuestion->origin_question_id
+            ? (Question::with(['user', 'quiz.user'])->find($targetQuestion->origin_question_id) ?? $targetQuestion)
+            : $targetQuestion;
+
+        // Chống duplicate report: Kiểm tra xem User đã có ticket chưa giải quyết cho câu hỏi này chưa
+        $existingPending = ReportTicket::where('user_id', $user->id)
+            ->whereIn('question_id', array_unique([$targetQuestion->id, $originQuestion->id]))
+            ->whereIn('status', ReportTicket::ACTIVE_STATUSES)
+            ->first();
+
+        if ($existingPending) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn đã báo cáo câu hỏi này và báo cáo đang được xử lý.',
+            ], 409);
+        }
+
+        // Xác định trạng thái ban đầu: Ưu tiên đưa vào hàng đợi Admin nếu lý do nghiêm trọng hoặc tích lũy nhiều report (>= 3 reports)
+        $reasonText = trim($request->reason);
+        $unresolvedCount = ReportTicket::where('question_id', $originQuestion->id)
+            ->whereIn('status', ReportTicket::ACTIVE_STATUSES)
+            ->count();
+
+        $initialStatus = ReportTicket::determineInitialStatus($reasonText, $unresolvedCount);
+
+        // Tạo bản ghi ReportTicket gắn trực tiếp với Question gốc
         $report = ReportTicket::create([
             'user_id' => $user->id,
-            'quiz_id' => $request->quiz_id,
-            'question_id' => $request->question_id,
-            'reason' => $request->reason,
-            'description' => $request->description,
-            'status' => 'pending',
+            'question_id' => $originQuestion->id,
+            'reason' => $reasonText,
+            'description' => $request->filled('description') ? trim($request->description) : null,
+            'status' => $initialStatus,
         ]);
 
-        // 1. Gửi thông báo cho Admin
+        // Nếu vượt ngưỡng >= 3 reports, đồng bộ tất cả report pending trước đó của câu hỏi sang admin_review_required
+        if ($unresolvedCount >= (ReportTicket::MULTI_REPORT_THRESHOLD - 1)) {
+            ReportTicket::where('question_id', $originQuestion->id)
+                ->where('status', ReportTicket::STATUS_PENDING)
+                ->update(['status' => ReportTicket::STATUS_ADMIN_REVIEW_REQUIRED]);
+        }
+
+        // 1. Gửi thông báo cho Admin (để theo dõi/thống kê hệ thống)
         $admins = User::whereIn('role', ['admin', 'ADMIN'])->get();
         if ($admins->isNotEmpty()) {
             try {
                 Notification::send($admins, new ReportCreated($report, $user));
             } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::warning('Không thể gửi thông báo cho Admin: ' . $e->getMessage());
+                Log::warning('Không thể gửi thông báo ReportCreated cho Admin: ' . $e->getMessage());
             }
         }
 
-        // 2. Gửi thông báo trực tiếp cho Tác giả của Câu hỏi hoặc Bài Quiz bị báo cáo
-        $report->load(['question.user', 'question.quiz.user', 'quiz.user']);
-
-        if ($report->question) {
-            $questionAuthor = $report->question->user ?? $report->question->quiz?->user;
-            if ($questionAuthor && $questionAuthor->id !== $user->id) {
-                try {
-                    $questionAuthor->notify(new QuestionModerated($report->question, 'reported', $report->reason));
-                } catch (\Throwable $e) {
-                    \Illuminate\Support\Facades\Log::warning('Không thể gửi thông báo cho tác giả câu hỏi: ' . $e->getMessage());
-                }
+        // 2. Gửi thông báo trực tiếp cho đúng Owner của Question gốc
+        $questionOwner = $originQuestion->user ?? $originQuestion->quiz?->user;
+        if ($questionOwner && $questionOwner->id !== $user->id) {
+            try {
+                $questionOwner->notify(new QuestionModerated($originQuestion, 'reported', $report->reason, $report->description));
+            } catch (\Throwable $e) {
+                Log::warning('Không thể gửi thông báo QuestionModerated cho tác giả: ' . $e->getMessage());
             }
         }
 
-        if ($report->quiz && $report->quiz->user) {
-            if ($report->quiz->user->id !== $user->id) {
-                try {
-                    $report->quiz->user->notify(new QuizModerated($report->quiz, 'reported', $report->reason));
-                } catch (\Throwable $e) {
-                    \Illuminate\Support\Facades\Log::warning('Không thể gửi thông báo cho tác giả quiz: ' . $e->getMessage());
-                }
-            }
-        }
 
         return response()->json([
             'success' => true,
-            'message' => 'Báo cáo đã được gửi thành công và đang chờ quản trị viên xử lý.',
-            'data' => $report
+            'message' => 'Báo cáo câu hỏi đã được gửi thành công.',
+            'data' => $report,
         ], 201);
     }
 
     /**
-     * Lấy danh sách tất cả các báo cáo cho Admin Console (Quiz + Question)
+     * Lấy danh sách tất cả các báo cáo câu hỏi (Audit Log & Moderation)
      */
     public function index(Request $request)
     {
         $query = ReportTicket::with([
             'user:id,name,email,avatar',
-            'quiz.user:id,name,email',
-            'question.user:id,name,email',
+            'question.user:id,name,email,avatar',
             'question.subject',
-            'question.grade'
+            'question.grade',
+            'question.educationLevel',
+            'question.answers',
+            'question.quizzes:id,title,is_public,status',
+            'question.quiz:id,title,is_public,status',
+            'question.reports.user:id,name,email,avatar',
+            'question.latestReviewRequest',
+            'question.pendingReviewRequest',
         ])->latest();
 
-        if ($request->filled('type')) {
-            $type = $request->query('type');
-            if ($type === 'quiz') {
-                $query->whereNotNull('quiz_id');
-            } elseif ($type === 'question') {
-                $query->whereNotNull('question_id');
+        if ($request->filled('status') && $request->query('status') !== 'all') {
+            $statusFilter = $request->query('status');
+            if ($statusFilter === 'needs_admin_review' || $statusFilter === 'admin_review_required') {
+                $query->where('status', ReportTicket::STATUS_ADMIN_REVIEW_REQUIRED);
+            } elseif ($statusFilter === 'auto_privatized') {
+                $query->whereNotNull('auto_privatized_at');
+            } elseif ($statusFilter === 'auto_resolved') {
+                $query->where('status', ReportTicket::STATUS_RESOLVED);
+            } else {
+                $query->where('status', $statusFilter);
             }
+        }
+
+        if ($request->filled('question_id')) {
+            $query->where('question_id', $request->query('question_id'));
+        }
+
+        if ($request->filled('search')) {
+            $search = trim($request->query('search'));
+            $cleanKeyword = ltrim($search, '#');
+            $numericId = is_numeric($cleanKeyword) ? (int) $cleanKeyword : null;
+
+            $query->where(function ($q) use ($search, $numericId) {
+                if ($numericId !== null) {
+                    $q->where('id', $numericId)
+                      ->orWhere('question_id', $numericId)
+                      ->orWhere('reason', 'like', "%{$search}%")
+                      ->orWhere('description', 'like', "%{$search}%")
+                      ->orWhereHas('user', function ($uq) use ($search) {
+                          $uq->where('name', 'like', "%{$search}%")
+                             ->orWhere('email', 'like', "%{$search}%");
+                      })
+                      ->orWhereHas('question', function ($qq) use ($search, $numericId) {
+                          $qq->where('content', 'like', "%{$search}%")
+                             ->orWhere('id', $numericId);
+                      });
+                } else {
+                    $q->where('reason', 'like', "%{$search}%")
+                      ->orWhere('description', 'like', "%{$search}%")
+                      ->orWhereHas('user', function ($uq) use ($search) {
+                          $uq->where('name', 'like', "%{$search}%")
+                             ->orWhere('email', 'like', "%{$search}%");
+                      })
+                      ->orWhereHas('question', function ($qq) use ($search) {
+                          $qq->where('content', 'like', "%{$search}%");
+                      });
+                }
+            });
         }
 
         $reports = $query->get();
 
+        // Calculate KPI stats cho Exception Queue
+        $stats = [
+            'total' => ReportTicket::count(),
+            'needs_admin_review' => ReportTicket::where('status', ReportTicket::STATUS_ADMIN_REVIEW_REQUIRED)->count(),
+            'admin_review_required' => ReportTicket::where('status', ReportTicket::STATUS_ADMIN_REVIEW_REQUIRED)->count(),
+            'author_updated' => ReportTicket::where('status', ReportTicket::STATUS_AUTHOR_UPDATED)->count(),
+            'pending' => ReportTicket::where('status', ReportTicket::STATUS_PENDING)->count(),
+            'auto_privatized' => ReportTicket::whereNotNull('auto_privatized_at')->count(),
+            'resolved' => ReportTicket::where('status', ReportTicket::STATUS_RESOLVED)->count(),
+            'dismissed' => ReportTicket::where('status', ReportTicket::STATUS_DISMISSED)->count(),
+            'exception_cases_count' => ReportTicket::where('status', ReportTicket::STATUS_ADMIN_REVIEW_REQUIRED)->distinct('question_id')->count('question_id'),
+            'questions_count' => ReportTicket::whereIn('status', ReportTicket::ACTIVE_STATUSES)->distinct('question_id')->count('question_id'),
+        ];
+
         return response()->json([
             'success' => true,
-            'data' => $reports
+            'data' => $reports,
+            'stats' => $stats,
         ]);
     }
 
     /**
-     * Admin cập nhật trạng thái báo cáo (resolved: Đã giải quyết / dismissed: Bác bỏ)
+     * Lấy chi tiết một lượt báo cáo hoặc toàn bộ báo cáo của 1 câu hỏi
      */
-    public function update(Request $request, $id)
+    public function show($id)
     {
-        $request->validate(['status' => 'required|in:pending,resolved,dismissed']);
+        $ticket = ReportTicket::with([
+            'user:id,name,email,avatar',
+            'question.user:id,name,email,avatar',
+            'question.subject',
+            'question.grade',
+            'question.educationLevel',
+            'question.answers',
+            'question.quizzes:id,title,is_public,status',
+            'question.quiz:id,title,is_public,status',
+            'question.reports.user:id,name,email,avatar',
+        ])->find($id);
 
-        $report = ReportTicket::with(['quiz.user', 'question.user', 'question.quiz.user', 'user'])->findOrFail($id);
-        
-        $report->update(['status' => $request->status]);
+        if (!$ticket) {
+            $ticket = ReportTicket::where('question_id', $id)->with([
+                'user:id,name,email,avatar',
+                'question.user:id,name,email,avatar',
+                'question.subject',
+                'question.grade',
+                'question.educationLevel',
+                'question.answers',
+                'question.quizzes:id,title,is_public,status',
+                'question.quiz:id,title,is_public,status',
+                'question.reports.user:id,name,email,avatar',
+            ])->first();
 
-        // Gửi thông báo cho tác giả của Quiz nếu có
-        if ($report->quiz && $report->quiz->user) {
-            $report->quiz->user->notify(new QuizModerated($report->quiz, $request->status, $report->reason));
-        }
-
-        // Gửi thông báo cho tác giả của Câu hỏi nếu có
-        if ($report->question) {
-            $questionAuthor = $report->question->user ?? $report->question->quiz?->user;
-            if ($questionAuthor) {
-                $questionAuthor->notify(new QuestionModerated($report->question, $request->status, $report->reason));
+            if (!$ticket) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Không tìm thấy thông tin báo cáo.',
+                ], 404);
             }
         }
 
-        $action = $request->input('action');
-        
-        // Gửi thông báo cảm ơn & phản hồi kết quả cho NGƯỜI ĐÃ BÁO CÁO (Reporter)
-        if ($report->user && in_array($request->status, ['resolved', 'dismissed'])) {
-            $report->user->notify(new \App\Notifications\ReportResolved($report, $request->status, $action));
+        return response()->json([
+            'success' => true,
+            'data' => $ticket,
+        ]);
+    }
+
+    /**
+     * Cập nhật trạng thái của một báo cáo vi phạm đơn lẻ
+     */
+    public function updateStatus(Request $request, $id)
+    {
+        $request->validate([
+            'status' => 'required|in:' . implode(',', ReportTicket::ALL_STATUSES),
+            'admin_note' => 'nullable|string|max:1000',
+        ]);
+
+        $ticket = ReportTicket::findOrFail($id);
+        $targetStatus = $request->status;
+
+        if (!$ticket->canTransitionTo($targetStatus)) {
+            return response()->json([
+                'success' => false,
+                'message' => "Không thể chuyển trạng thái báo cáo từ '{$ticket->status}' sang '{$targetStatus}' do vi phạm quy tắc chuyển trạng thái.",
+            ], 422);
         }
+
+        $ticket->status = $targetStatus;
+        $ticket->save();
 
         return response()->json([
             'success' => true,
             'message' => 'Cập nhật trạng thái báo cáo thành công.',
+            'data' => $ticket
         ]);
     }
 
-    public function countPending()
+    /**
+     * Xử lý toàn bộ các báo cáo vi phạm của một Question
+     */
+    public function resolveQuestionReports(Request $request)
     {
-        $quizPending = ReportTicket::whereNotNull('quiz_id')->where('status', 'pending')->count();
-        $questionPending = ReportTicket::whereNotNull('question_id')->where('status', 'pending')->count();
-        $totalPending = ReportTicket::where('status', 'pending')->count();
+        $request->validate([
+            'question_id' => 'required|integer|exists:questions,id',
+            'status' => 'required|in:' . implode(',', [ReportTicket::STATUS_RESOLVED, ReportTicket::STATUS_DISMISSED, ReportTicket::STATUS_ADMIN_REVIEW_REQUIRED]),
+            'action' => 'nullable|in:keep,hide,delete',
+            'admin_note' => 'nullable|string|max:1000',
+        ]);
+
+        $questionId = $request->question_id;
+        $status = $request->status;
+        $action = $request->action ?? 'keep';
+
+        // 1. Cập nhật tất cả các ticket chưa giải quyết của câu hỏi này
+        ReportTicket::where('question_id', $questionId)
+            ->whereIn('status', ReportTicket::ACTIVE_STATUSES)
+            ->update(['status' => $status]);
+
+        // 2. Thực hiện hành động nếu có
+        $question = Question::find($questionId);
+        if ($question) {
+            if ($action === 'hide') {
+                $question->is_public = false;
+                $question->save();
+            } elseif ($action === 'delete') {
+                $question->delete();
+            }
+
+            // Thông báo cho tác giả nếu được giải quyết / xử lý
+            if ($status === ReportTicket::STATUS_RESOLVED && $question->user) {
+                try {
+                    $question->user->notify(new QuestionModerated(
+                        $question,
+                        $action === 'delete' ? 'deleted' : ($action === 'hide' ? 'hidden' : 'resolved'),
+                        $request->admin_note ?? 'Báo cáo vi phạm đã được quản trị viên xử lý.'
+                    ));
+                } catch (\Throwable $e) {
+                    Log::warning('Không thể gửi thông báo xử lý report cho tác giả: ' . $e->getMessage());
+                }
+            }
+        }
 
         return response()->json([
             'success' => true,
-            'count' => $totalPending,
-            'quiz_pending' => $quizPending,
+            'message' => $status === ReportTicket::STATUS_RESOLVED ? 'Đã giải quyết tất cả báo cáo cho câu hỏi này.' : ($status === ReportTicket::STATUS_DISMISSED ? 'Đã bỏ qua các báo cáo.' : 'Đã cập nhật trạng thái báo cáo.'),
+        ]);
+    }
+
+    /**
+     * Thống kê số lượng báo cáo câu hỏi chờ xử lý
+     */
+    public function countPending()
+    {
+        $questionPending = ReportTicket::whereIn('status', ReportTicket::ACTIVE_STATUSES)->count();
+        $uniqueQuestions = ReportTicket::whereIn('status', ReportTicket::ACTIVE_STATUSES)->distinct('question_id')->count('question_id');
+
+        return response()->json([
+            'success' => true,
+            'count' => $questionPending,
             'question_pending' => $questionPending,
+            'unique_questions_pending' => $uniqueQuestions,
         ]);
     }
 }

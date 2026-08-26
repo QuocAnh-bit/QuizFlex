@@ -158,11 +158,19 @@ class OcrController extends Controller
 
     public function importQuiz(Request $request, QuizStoreService $quizStoreService)
     {
+        $user = auth('api')->user();
+        if ($user && strtolower($user->role ?? '') === 'admin') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Admin không được tạo/import Quiz qua OCR.',
+            ], 403);
+        }
+
         $normalizedData = $quizStoreService->normalizeOcrPayload($request->all());
 
         $quiz = $quizStoreService->createQuizWithQuestions(
             $normalizedData,
-            auth('api')->user()
+            $user
         );
 
         return response()->json([

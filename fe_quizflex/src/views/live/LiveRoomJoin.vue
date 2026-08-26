@@ -129,7 +129,7 @@ import {
   Plus,
   Timer,
   Zap,
-} from '@lucide/vue'
+} from 'lucide-vue-next'
 import { liveRoomApi } from '@/services/api'
 
 const router = useRouter()

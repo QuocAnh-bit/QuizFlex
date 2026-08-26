@@ -3,25 +3,28 @@
 namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
 
-class QuestionModerated extends Notification
+class QuestionModerated extends Notification implements ShouldQueue
 {
     use Queueable;
 
     public $question;
     public $action;
     public $reason;
+    public $description;
 
     /**
      * Create a new notification instance.
-     * $action: 'reported', 'hidden', 'shown', 'resolved', 'dismissed', 'edited', 'deleted'
+     * $action: 'reported', 'hidden', 'shown', 'resolved', 'dismissed', 'edited', 'deleted', 'approved', 'rejected'
      */
-    public function __construct($question, string $action, ?string $reason = null)
+    public function __construct($question, string $action, ?string $reason = null, ?string $description = null)
     {
         $this->question = $question;
         $this->action = $action;
         $this->reason = $reason;
+        $this->description = $description;
     }
 
     /**
@@ -57,7 +60,17 @@ class QuestionModerated extends Notification
 
         if ($this->action === 'reported') {
             $title = '🚩 Câu hỏi của bạn bị báo cáo vi phạm';
-            $message = "Câu hỏi #{$this->question->id} (\"{$snippet}\") của bạn vừa bị báo cáo vi phạm. Lý do: \"{$reasonText}\". Vui lòng bấm vào đây để kiểm tra và chỉnh sửa.";
+            $descText = $this->description ? " (Mô tả chi tiết: \"{$this->description}\")" : '';
+            $message = "Câu hỏi #{$this->question->id} (\"{$snippet}\") của bạn vừa nhận báo cáo vi phạm. Lý do: \"{$reasonText}\"{$descText}. Vui lòng bấm vào đây để kiểm tra và chỉnh sửa.";
+        } elseif ($this->action === 'reminder') {
+            $title = '⏰ Nhắc nhở: Câu hỏi bị báo cáo cần được chỉnh sửa';
+            $message = "Câu hỏi #{$this->question->id} (\"{$snippet}\") của bạn đã nhận báo cáo vi phạm 3 ngày trước và chưa được cập nhật. Vui lòng bấm vào đây để kiểm tra và chỉnh sửa trước thời hạn.";
+        } elseif ($this->action === 'warning') {
+            $title = '⚠️ Cảnh báo: Câu hỏi của bạn sắp bị gỡ công khai tự động';
+            $message = "Câu hỏi #{$this->question->id} (\"{$snippet}\") của bạn đã nhận báo cáo vi phạm 5 ngày trước và chưa được cập nhật. Nếu không chỉnh sửa, hệ thống sẽ tự động gỡ công khai câu hỏi sau 2 ngày nữa.";
+        } elseif ($this->action === 'auto_privatized') {
+            $title = '🔒 Hệ thống đã tự động gỡ công khai câu hỏi của bạn';
+            $message = "Câu hỏi #{$this->question->id} (\"{$snippet}\") của bạn đã bị hệ thống tự động gỡ công khai (chuyển sang Riêng tư) do không được chỉnh sửa sau 7 ngày kể từ khi bị báo cáo. Bạn có thể chỉnh sửa và gửi duyệt lại bất cứ lúc nào.";
         } elseif ($this->action === 'hidden') {
             $title = '⚠️ Admin đã gỡ công khai câu hỏi của bạn';
             $message = "Admin đã gỡ công khai (khóa) câu hỏi #{$this->question->id} (\"{$snippet}\") của bạn do vi phạm. Lý do: \"{$reasonText}\". Vui lòng nhấp vào đây để chỉnh sửa và yêu cầu duyệt lại.";
@@ -70,6 +83,12 @@ class QuestionModerated extends Notification
         } elseif ($this->action === 'dismissed') {
             $title = 'ℹ️ Báo cáo câu hỏi đã được bỏ qua';
             $message = "Báo cáo vi phạm đối với câu hỏi #{$this->question->id} của bạn đã được kiểm duyệt và bỏ qua (không có vi phạm).";
+        } elseif ($this->action === 'approved') {
+            $title = '🎉 Câu hỏi của bạn đã được duyệt vào Ngân hàng câu hỏi';
+            $message = "Câu hỏi #{$this->question->id} (\"{$snippet}\") của bạn đã được Admin phê duyệt và đưa vào Ngân hàng câu hỏi dùng chung.";
+        } elseif ($this->action === 'rejected') {
+            $title = '❌ Yêu cầu duyệt câu hỏi vào Ngân hàng bị từ chối';
+            $message = "Yêu cầu đưa câu hỏi #{$this->question->id} (\"{$snippet}\") vào Ngân hàng đã bị từ chối. Lý do: \"{$reasonText}\".";
         } elseif ($this->action === 'deleted') {
             $title = '❌ Câu hỏi của bạn đã bị xóa';
             $message = "Câu hỏi #{$this->question->id} của bạn đã bị gỡ bỏ vĩnh viễn do vi phạm nghiêm trọng quy định.";
@@ -86,7 +105,11 @@ class QuestionModerated extends Notification
                 'quiz_id' => $this->question->quiz_id,
                 'action' => $this->action,
                 'reason' => $this->reason,
+                'report_reason' => $this->reason,
+                'description' => $this->description,
+                'report_description' => $this->description,
             ],
         ];
     }
 }
+
