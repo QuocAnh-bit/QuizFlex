@@ -1,6 +1,6 @@
 <mxfile host="app.diagrams.net" agent="Antigravity AI">
   <diagram id="activity_diagram_admin_question_bank_red_yellow" name="Activity Diagram - Quản lý Ngân hàng câu hỏi (Admin)">
-    <mxGraphModel dx="896" dy="489" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="880" math="0" shadow="0">
+    <mxGraphModel dx="848" dy="471" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="880" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -50,7 +50,7 @@
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="col1_yes" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=30;fillColor=#ffffcc;strokeColor=#ff0000;strokeWidth=1.5;fontColor=#000000;fontSize=11;fontFamily=Helvetica;" value="&lt;font style=&quot;font-size: 12px;&quot;&gt;Hiển thị danh sách câu hỏi&lt;br&gt;&amp;amp; Phân trang dữ liệu Admin&lt;/font&gt;" vertex="1">
-          <mxGeometry height="55" width="149" x="215" y="575" as="geometry" />
+          <mxGeometry height="55" width="154" x="215" y="575" as="geometry" />
         </mxCell>
         <mxCell id="e_col1_yes" edge="1" parent="1" source="col1_dec" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#ff0000;strokeWidth=1.5;endArrow=open;endSize=6;labelBackgroundColor=#ffffff;fontColor=#000000;fontStyle=1;exitX=1.0;exitY=0.5;entryX=0.5;entryY=0.0;" target="col1_yes" value="yes">
           <mxGeometry relative="1" as="geometry" />
@@ -103,61 +103,61 @@
         <mxCell id="e_col2_yes2" edge="1" parent="1" source="col2_yes" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#ff0000;strokeWidth=1.5;endArrow=open;endSize=6;" target="col2_yes2">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="col3_head" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=30;fillColor=#ffffcc;strokeColor=#ff0000;strokeWidth=1.5;fontColor=#000000;fontSize=12;fontFamily=Helvetica;fontStyle=1;" value="&lt;font style=&quot;font-size: 13px;&quot;&gt;Chỉnh sửa &amp;amp; Cập nhật&lt;br&gt;nội dung câu hỏi hệ thống&lt;/font&gt;" vertex="1">
+        <mxCell id="col3_head" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=30;fillColor=#ffffcc;strokeColor=#ff0000;strokeWidth=1.5;fontColor=#000000;fontSize=12;fontFamily=Helvetica;fontStyle=1;" value="&lt;font style=&quot;font-size: 13px;&quot;&gt;Gỡ công khai / Ẩn câu hỏi&lt;br&gt;vi phạm khỏi Ngân hàng chung&lt;/font&gt;" vertex="1">
           <mxGeometry height="50" width="240" x="747" y="240" as="geometry" />
         </mxCell>
         <mxCell id="e_fork_col3" edge="1" parent="1" source="fork_top" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#ff0000;strokeWidth=1.5;endArrow=open;endSize=6;exitX=0.6285;exitY=1.0;entryX=0.5;entryY=0.0;" target="col3_head">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="col3_act1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=30;fillColor=#ffffcc;strokeColor=#ff0000;strokeWidth=1.5;fontColor=#000000;fontSize=12;fontFamily=Helvetica;" value="&lt;font style=&quot;font-size: 13px;&quot;&gt;Quản trị viên chọn câu hỏi hệ thống&lt;br&gt;&amp;amp; Chỉnh sửa nội dung, đáp án, độ khó&lt;/font&gt;" vertex="1">
-          <mxGeometry height="50" width="240" x="747" y="315" as="geometry" />
+        <mxCell id="col3_act1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=30;fillColor=#ffffcc;strokeColor=#ff0000;strokeWidth=1.5;fontColor=#000000;fontSize=12;fontFamily=Helvetica;" value="&lt;font style=&quot;font-size: 13px;&quot;&gt;Quản trị viên chọn câu hỏi có báo cáo&lt;br&gt;&amp;amp; Bấm nút &#39;Gỡ công khai&#39; (is_public=false)&lt;/font&gt;" vertex="1">
+          <mxGeometry height="50" width="255" x="739.5" y="315" as="geometry" />
         </mxCell>
-        <mxCell id="e_col3_1" edge="1" parent="1" source="col3_head" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#ff0000;strokeWidth=1.5;endArrow=open;endSize=6;" target="col3_act1">
+        <mxCell id="e_col3_1" edge="1" parent="1" source="col3_head" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#ff0000;strokeWidth=1.5;endArrow=open;endSize=6;endFill=0;" target="col3_act1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="col3_act2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=30;fillColor=#ffffcc;strokeColor=#ff0000;strokeWidth=1.5;fontColor=#000000;fontSize=12;fontFamily=Helvetica;" value="&lt;font style=&quot;font-size: 13px;&quot;&gt;Hệ thống kiểm tra quyền Admin&lt;br&gt;&amp;amp; Kiểm tra định dạng dữ liệu mới&lt;/font&gt;" vertex="1">
-          <mxGeometry height="50" width="240" x="747" y="390" as="geometry" />
+        <mxCell id="col3_act2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=30;fillColor=#ffffcc;strokeColor=#ff0000;strokeWidth=1.5;fontColor=#000000;fontSize=12;fontFamily=Helvetica;" value="&lt;font style=&quot;font-size: 13px;&quot;&gt;Hệ thống ẩn câu hỏi khỏi Ngân hàng chung&lt;br&gt;(Bảo lưu trong Quiz cá nhân của tác giả)&lt;/font&gt;" vertex="1">
+          <mxGeometry height="50" width="247.5" x="743" y="390" as="geometry" />
         </mxCell>
         <mxCell id="e_col3_2" edge="1" parent="1" source="col3_act1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#ff0000;strokeWidth=1.5;endArrow=open;endSize=6;" target="col3_act2">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="col3_dec" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffffcc;strokeColor=#ff0000;strokeWidth=1.5;fontColor=#000000;fontSize=11;fontFamily=Helvetica;" value="&lt;font style=&quot;font-size: 12px;&quot;&gt;Thao tác&lt;br&gt;hợp lệ?&lt;/font&gt;" vertex="1">
+        <mxCell id="col3_dec" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffffcc;strokeColor=#ff0000;strokeWidth=1.5;fontColor=#000000;fontSize=11;fontFamily=Helvetica;" value="&lt;font style=&quot;font-size: 12px;&quot;&gt;Xác nhận&lt;br&gt;gỡ công khai?&lt;/font&gt;" vertex="1">
           <mxGeometry height="70" width="140" x="797" y="470" as="geometry" />
         </mxCell>
         <mxCell id="e_col3_3" edge="1" parent="1" source="col3_act2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#ff0000;strokeWidth=1.5;endArrow=open;endSize=6;" target="col3_dec">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="col3_no" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=30;fillColor=#ffffcc;strokeColor=#ff0000;strokeWidth=1.5;fontColor=#000000;fontSize=11;fontFamily=Helvetica;" value="&lt;font style=&quot;font-size: 12px;&quot;&gt;Thông báo không có quyền chỉnh sửa hoặc dữ liệu không hợp lệ&lt;/font&gt;" vertex="1">
+        <mxCell id="col3_no" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=30;fillColor=#ffffcc;strokeColor=#ff0000;strokeWidth=1.5;fontColor=#000000;fontSize=11;fontFamily=Helvetica;" value="&lt;font style=&quot;font-size: 12px;&quot;&gt;Hủy thao tác &amp;amp; Giữ nguyên trạng thái công khai&lt;/font&gt;" vertex="1">
           <mxGeometry height="55" width="144" x="722" y="575" as="geometry" />
         </mxCell>
         <mxCell id="e_col3_no" edge="1" parent="1" source="col3_dec" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#ff0000;strokeWidth=1.5;endArrow=open;endSize=6;labelBackgroundColor=#ffffff;fontColor=#000000;fontStyle=1;exitX=0.0;exitY=0.5;entryX=0.5;entryY=0.0;" target="col3_no" value="no">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="col3_yes" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=30;fillColor=#ffffcc;strokeColor=#ff0000;strokeWidth=1.5;fontColor=#000000;fontSize=11;fontFamily=Helvetica;" value="&lt;font style=&quot;font-size: 12px;&quot;&gt;Lưu thông tin cập nhật câu hỏi &amp;amp; Cập nhật CSDL Ngân hàng&lt;/font&gt;" vertex="1">
-          <mxGeometry height="55" width="134" x="882" y="575" as="geometry" />
+        <mxCell id="col3_yes" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=30;fillColor=#ffffcc;strokeColor=#ff0000;strokeWidth=1.5;fontColor=#000000;fontSize=11;fontFamily=Helvetica;" value="&lt;font style=&quot;font-size: 12px;&quot;&gt;Cập nhật is_public=false &amp;amp; Rút khỏi Ngân hàng chung&lt;/font&gt;" vertex="1">
+          <mxGeometry height="55" width="140" x="882" y="575" as="geometry" />
         </mxCell>
         <mxCell id="e_col3_yes" edge="1" parent="1" source="col3_dec" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#ff0000;strokeWidth=1.5;endArrow=open;endSize=6;labelBackgroundColor=#ffffff;fontColor=#000000;fontStyle=1;exitX=1.0;exitY=0.5;entryX=0.5;entryY=0.0;" target="col3_yes" value="yes">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="col3_yes2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=30;fillColor=#ffffcc;strokeColor=#ff0000;strokeWidth=1.5;fontColor=#000000;fontSize=11;fontFamily=Helvetica;" value="&lt;font style=&quot;font-size: 12px;&quot;&gt;Thông báo cập nhật thành công &amp;amp; Làm mới hiển thị câu hỏi&lt;/font&gt;" vertex="1">
+        <mxCell id="col3_yes2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=30;fillColor=#ffffcc;strokeColor=#ff0000;strokeWidth=1.5;fontColor=#000000;fontSize=11;fontFamily=Helvetica;" value="&lt;font style=&quot;font-size: 12px;&quot;&gt;Thông báo gỡ công khai thành công &amp;amp; Cập nhật danh sách&lt;/font&gt;" vertex="1">
           <mxGeometry height="50" width="140" x="869.5" y="663" as="geometry" />
         </mxCell>
         <mxCell id="e_col3_yes2" edge="1" parent="1" source="col3_yes" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#ff0000;strokeWidth=1.5;endArrow=open;endSize=6;" target="col3_yes2">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="col4_head" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=30;fillColor=#ffffcc;strokeColor=#ff0000;strokeWidth=1.5;fontColor=#000000;fontSize=12;fontFamily=Helvetica;fontStyle=1;" value="&lt;font style=&quot;font-size: 13px;&quot;&gt;Quản lý Thùng rác &amp;amp; Trạng thái&lt;br&gt;(Xóa tạm / Khôi phục / Xóa hẳn / Ẩn hiện)&lt;/font&gt;" vertex="1">
+        <mxCell id="col4_head" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=30;fillColor=#ffffcc;strokeColor=#ff0000;strokeWidth=1.5;fontColor=#000000;fontSize=12;fontFamily=Helvetica;fontStyle=1;" value="&lt;font style=&quot;font-size: 13px;&quot;&gt;Quản lý Thùng rác hệ thống&lt;br&gt;(Khôi phục / Xóa vĩnh viễn)&lt;/font&gt;" vertex="1">
           <mxGeometry height="50" width="240" x="1080" y="240" as="geometry" />
         </mxCell>
         <mxCell id="e_fork_col4" edge="1" parent="1" source="fork_top" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#ff0000;strokeWidth=1.5;endArrow=open;endSize=6;exitX=0.8846;exitY=1.0;entryX=0.5;entryY=0.0;" target="col4_head">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="col4_act1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=30;fillColor=#ffffcc;strokeColor=#ff0000;strokeWidth=1.5;fontColor=#000000;fontSize=12;fontFamily=Helvetica;" value="&lt;font style=&quot;font-size: 13px;&quot;&gt;Quản trị viên chọn Chuyển Thùng rác,&lt;br&gt;Khôi phục, Xóa vĩnh viễn hoặc Tắt hiển thị&lt;/font&gt;" vertex="1">
+        <mxCell id="col4_act1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=30;fillColor=#ffffcc;strokeColor=#ff0000;strokeWidth=1.5;fontColor=#000000;fontSize=12;fontFamily=Helvetica;" value="&lt;font style=&quot;font-size: 13px;&quot;&gt;Quản trị viên mở Giao diện Thùng rác&lt;br&gt;&amp;amp; Chọn câu hỏi bị xóa tạm&lt;/font&gt;" vertex="1">
           <mxGeometry height="50" width="240" x="1080" y="315" as="geometry" />
         </mxCell>
         <mxCell id="e_col4_1" edge="1" parent="1" source="col4_head" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#ff0000;strokeWidth=1.5;endArrow=open;endSize=6;" target="col4_act1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="col4_act2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=30;fillColor=#ffffcc;strokeColor=#ff0000;strokeWidth=1.5;fontColor=#000000;fontSize=12;fontFamily=Helvetica;" value="&lt;font style=&quot;font-size: 13px;&quot;&gt;Hệ thống kiểm tra trạng thái CSDL&lt;br&gt;&amp;amp; Cập nhật cờ khôi phục/xóa/ẩn hiện&lt;/font&gt;" vertex="1">
+        <mxCell id="col4_act2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=30;fillColor=#ffffcc;strokeColor=#ff0000;strokeWidth=1.5;fontColor=#000000;fontSize=12;fontFamily=Helvetica;" value="&lt;font style=&quot;font-size: 13px;&quot;&gt;Quản trị viên chọn &#39;Khôi phục&#39; (Restore)&lt;br&gt;HOẶC &#39;Xóa vĩnh viễn&#39; (Force Delete)&lt;/font&gt;" vertex="1">
           <mxGeometry height="50" width="240" x="1080" y="390" as="geometry" />
         </mxCell>
         <mxCell id="e_col4_2" edge="1" parent="1" source="col4_act1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#ff0000;strokeWidth=1.5;endArrow=open;endSize=6;" target="col4_act2">
@@ -169,14 +169,14 @@
         <mxCell id="e_col4_3" edge="1" parent="1" source="col4_act2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#ff0000;strokeWidth=1.5;endArrow=open;endSize=6;" target="col4_dec">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="col4_no" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=30;fillColor=#ffffcc;strokeColor=#ff0000;strokeWidth=1.5;fontColor=#000000;fontSize=11;fontFamily=Helvetica;" value="&lt;font style=&quot;font-size: 12px;&quot;&gt;Thông báo câu hỏi không tồn tại &amp;amp; Hoặc đã bị xóa vĩnh viễn&lt;/font&gt;" vertex="1">
+        <mxCell id="col4_no" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=30;fillColor=#ffffcc;strokeColor=#ff0000;strokeWidth=1.5;fontColor=#000000;fontSize=11;fontFamily=Helvetica;" value="&lt;font style=&quot;font-size: 12px;&quot;&gt;Thông báo thao tác không hợp lệ &amp;amp; Giữ nguyên Thùng rác&lt;/font&gt;" vertex="1">
           <mxGeometry height="55" width="123" x="1062" y="575" as="geometry" />
         </mxCell>
         <mxCell id="e_col4_no" edge="1" parent="1" source="col4_dec" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#ff0000;strokeWidth=1.5;endArrow=open;endSize=6;labelBackgroundColor=#ffffff;fontColor=#000000;fontStyle=1;exitX=0.0;exitY=0.5;entryX=0.5;entryY=0.0;" target="col4_no" value="no">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="col4_yes" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=30;fillColor=#ffffcc;strokeColor=#ff0000;strokeWidth=1.5;fontColor=#000000;fontSize=11;fontFamily=Helvetica;" value="&lt;font style=&quot;font-size: 12px;&quot;&gt;Chuyển Thùng rác / Khôi phục hoặc Xóa vĩnh viễn câu hỏi&lt;/font&gt;" vertex="1">
-          <mxGeometry height="55" width="119" x="1211" y="575" as="geometry" />
+        <mxCell id="col4_yes" parent="1" style="rounded=1;whiteSpace=wrap;html=1;arcSize=30;fillColor=#ffffcc;strokeColor=#ff0000;strokeWidth=1.5;fontColor=#000000;fontSize=11;fontFamily=Helvetica;" value="&lt;font style=&quot;font-size: 12px;&quot;&gt;Khôi phục về kho hoạt động HOẶC Xóa vĩnh viễn khỏi CSDL&lt;/font&gt;" vertex="1">
+          <mxGeometry height="55" width="130" x="1206" y="579" as="geometry" />
         </mxCell>
         <mxCell id="e_col4_yes" edge="1" parent="1" source="col4_dec" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#ff0000;strokeWidth=1.5;endArrow=open;endSize=6;labelBackgroundColor=#ffffff;fontColor=#000000;fontStyle=1;exitX=1.0;exitY=0.5;entryX=0.5;entryY=0.0;" target="col4_yes" value="yes">
           <mxGeometry relative="1" as="geometry" />
