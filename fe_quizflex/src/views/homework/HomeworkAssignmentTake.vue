@@ -275,9 +275,10 @@ const loadAttempt = async () => {
     assignment.value = data.assignment
     attemptId.value = data.attempt?.id
     quizMeta.value = {
-      title: data.assignment?.quiz?.title || data.assignment?.title || 'Homework',
+      title: data.quiz?.title || data.assignment?.quiz?.title || data.assignment?.title || 'Homework',
     }
-    questions.value = (data.assignment?.quiz?.questions || []).map(normalizeQuestion)
+    const rawQuestions = data.quiz?.questions || data.assignment?.quiz?.questions || []
+    questions.value = rawQuestions.map(normalizeQuestion)
   } catch (error) {
     errorMessage.value = `Không tải được bài tập: ${error.message}`
   } finally {

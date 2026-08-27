@@ -29,13 +29,28 @@ class QuizController extends Controller
 
         if ($request->filled('search')) {
             $keyword = trim((string) $request->query('search'));
-            $query->where(function ($q) use ($keyword) {
-                $q->where('title', 'like', "%{$keyword}%")
-                    ->orWhere('description', 'like', "%{$keyword}%")
-                    ->orWhere('category', 'like', "%{$keyword}%")
-                    ->orWhere('tag', 'like', "%{$keyword}%")
-                    ->orWhere('topic_name', 'like', "%{$keyword}%")
-                    ->orWhere('room_code', 'like', "%{$keyword}%");
+            $cleanKeyword = ltrim($keyword, '#');
+            $numericId = is_numeric($cleanKeyword) ? (int) $cleanKeyword : null;
+
+            $query->where(function ($q) use ($keyword, $numericId) {
+                if ($numericId !== null) {
+                    $q->where('id', $numericId)
+                        ->orWhere('title', 'like', "%{$keyword}%")
+                        ->orWhere('description', 'like', "%{$keyword}%")
+                        ->orWhere('category', 'like', "%{$keyword}%")
+                        ->orWhere('tag', 'like', "%{$keyword}%")
+                        ->orWhere('topic_name', 'like', "%{$keyword}%")
+                        ->orWhere('room_code', 'like', "%{$keyword}%")
+                        ->orWhereHas('user', fn($uq) => $uq->where('name', 'like', "%{$keyword}%"));
+                } else {
+                    $q->where('title', 'like', "%{$keyword}%")
+                        ->orWhere('description', 'like', "%{$keyword}%")
+                        ->orWhere('category', 'like', "%{$keyword}%")
+                        ->orWhere('tag', 'like', "%{$keyword}%")
+                        ->orWhere('topic_name', 'like', "%{$keyword}%")
+                        ->orWhere('room_code', 'like', "%{$keyword}%")
+                        ->orWhereHas('user', fn($uq) => $uq->where('name', 'like', "%{$keyword}%"));
+                }
             });
         }
 
@@ -65,6 +80,14 @@ class QuizController extends Controller
 
         if ($request->filled('status')) {
             $query->where('status', $request->query('status'));
+        }
+
+        if ($request->filled('creation_mode')) {
+            $query->where('creation_mode', $request->query('creation_mode'));
+        }
+
+        if ($request->filled('review_status')) {
+            $query->where('review_status', $request->query('review_status'));
         }
 
         $isAdmin = $user && strtolower($user->role ?? '') === 'admin';
@@ -115,7 +138,7 @@ class QuizController extends Controller
             }
         }
 
-        $perPage = min(max((int) $request->query('per_page', 50), 1), 100);
+        $perPage = min(max((int) $request->query('per_page', 12), 1), 100);
         $quizzes = $query->paginate($perPage)->through(fn(Quiz $quiz) => $this->formatQuiz($quiz));
 
         return response()->json([
@@ -127,8 +150,19 @@ class QuizController extends Controller
 
     public function store(Request $request)
     {
+        $user = auth('api')->user();
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Unauthenticated.'], 401);
+        }
+
+        if (Gate::forUser($user)->denies('create', Quiz::class)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Admin không được tạo Quiz trực tiếp.',
+            ], 403);
+        }
+
         $data = $this->prepareQuizData($request, $this->validateQuizPayload($request));
-        $user = $this->resolveUser($request);
 
         $quiz = DB::transaction(function () use ($data, $user) {
             $quiz = Quiz::create($this->quizAttributes($data, $user->id));
@@ -189,7 +223,16 @@ class QuizController extends Controller
     public function editData(Quiz $quiz)
     {
         $user = auth('api')->user();
-        Gate::forUser($user)->authorize('update', $quiz);
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Unauthenticated.'], 401);
+        }
+
+        if (Gate::forUser($user)->denies('update', $quiz)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn không có quyền chỉnh sửa bài Quiz này.',
+            ], 403);
+        }
 
         $quiz->load(['user:id,name', 'educationLevel', 'grade', 'subject', 'questions.answers'])
             ->loadCount(['questions', 'attempts'])
@@ -204,7 +247,17 @@ class QuizController extends Controller
 
     public function update(Request $request, Quiz $quiz)
     {
-        Gate::forUser(auth('api')->user())->authorize('update', $quiz);
+        $user = auth('api')->user();
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Unauthenticated.'], 401);
+        }
+
+        if (Gate::forUser($user)->denies('update', $quiz)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn không có quyền chỉnh sửa bài Quiz này.',
+            ], 403);
+        }
 
         $data = $this->prepareQuizData($request, $this->validateQuizPayload($request, true), $quiz);
 
@@ -218,63 +271,14 @@ class QuizController extends Controller
             return $quiz->fresh(['user:id,name', 'questions.answers']);
         });
 
-        // NẾU NGƯỜI SỬA KHÔNG PHẢI LÀ CHỦ QUIZ (LÀ ADMIN) -> GỬI THÔNG BÁO 'edited'
-        $currentUserId = auth('api')->id();
-        if ($currentUserId !== null && $currentUserId !== $quiz->user_id) {
-            $owner = User::find($quiz->user_id);
-            if ($owner) {
-                $owner->notify(new QuizModerated($quiz, 'edited'));
-            }
-        } else {
-            // NẾU TÁC GIẢ SỬA QUIZ TỪNG BỊ BÁO CÁO / ẨN -> THÔNG BÁO CHO CÁC ADMIN
-            $currentUser = auth('api')->user();
-            if ($currentUser && strtolower($currentUser->role ?? '') !== 'admin') {
-                $hasReport = \App\Models\ReportTicket::where('quiz_id', $quiz->id)->exists();
-                if ($hasReport || !$quiz->is_public) {
-                    $admins = User::whereIn('role', ['admin', 'ADMIN'])->get();
-                    if ($admins->isNotEmpty()) {
-                        \Illuminate\Support\Facades\Notification::send($admins, new \App\Notifications\ReportAuthorUpdated($quiz, 'quiz', $currentUser));
-                    }
-                }
-            }
-        }
-
         return response()->json([
             'success' => true,
             'message' => 'Cập nhật quiz thành công',
             'data' => $this->formatQuiz($quiz, true),
         ]);
+
     }
 
-    // public function destroy(Quiz $quiz)
-    // {
-    //     Gate::forUser(auth('api')->user())->authorize('delete', $quiz);
-
-    //     if ($quiz->trashed()) {
-    //         return response()->json([
-    //             'success' => true,
-    //             'message' => 'Quiz đã được xóa mềm trước đó.',
-    //         ]);
-    //     }
-
-    //     $ownerId = $quiz->user_id; // Lưu lại ID chủ Quiz trước khi xóa
-
-    //     $quiz->delete();
-
-    //     // NẾU NGƯỜI XÓA KHÔNG PHẢI LÀ CHỦ QUIZ (LÀ ADMIN) -> GỬI THÔNG BÁO 'deleted'
-    //     $currentUserId = auth('api')->id();
-    //     if ($currentUserId !== null && $currentUserId !== $ownerId) {
-    //         $owner = User::find($ownerId);
-    //         if ($owner) {
-    //             $owner->notify(new QuizModerated($quiz, 'deleted')); // Gửi trực tiếp biến $quiz vì nó đã bị Soft Delete nhưng vẫn truy cập được dữ liệu
-    //         }
-    //     }
-
-    //     return response()->json([
-    //         'success' => true,
-    //         'message' => 'Đã xóa mềm quiz',
-    //     ]);
-    // }
     public function destroy(Quiz $quiz)
     {
         $currentUser = auth('api')->user();
@@ -289,7 +293,7 @@ class QuizController extends Controller
         if (Gate::forUser($currentUser)->denies('delete', $quiz)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Bạn không có quyền xóa quiz này. Admin chỉ được xóa quiz đã bị báo cáo vi phạm.'
+                'message' => 'Bạn không có quyền xóa quiz này.'
             ], 403);
         }
 
@@ -324,12 +328,6 @@ class QuizController extends Controller
         // Đảo trạng thái public/private
         $quiz->is_public = !$quiz->is_public;
         $quiz->save();
-
-        if ($quiz->is_public) {
-            \App\Models\ReportTicket::where('quiz_id', $quiz->id)
-                ->where('status', 'pending')
-                ->update(['status' => 'resolved']);
-        }
 
         // Gửi thông báo cho người tạo quiz
         $owner = User::find($quiz->user_id);
@@ -454,21 +452,35 @@ class QuizController extends Controller
 
     private function quizAttributes(array $data, int $userId, ?Quiz $currentQuiz = null): array
     {
+        $user = auth('api')->user();
+        $isAdmin = $user && strtolower($user->role ?? '') === 'admin';
+
         $visibility = $data['visibility'] ?? null;
         $roomCode = $data['room_code'] ?? $data['roomCode'] ?? $currentQuiz?->room_code;
-        $isPublic = array_key_exists('is_public', $data)
-            ? (bool) $data['is_public']
-            : ($visibility === null && $currentQuiz ? (bool) $currentQuiz->is_public : $visibility === 'public');
+        
+        $creationMode = $currentQuiz?->creation_mode ?? ($data['creation_mode'] ?? 'manual');
 
-        if ($visibility === 'public') {
-            $isPublic = true;
-            $data['status'] = 'published';
-            $roomCode = null;
-        }
-
-        if ($visibility === 'private') {
-            $isPublic = false;
-            $roomCode = null;
+        if ($creationMode === 'manual') {
+            // Quiz thủ công: User thường không được tự ý công khai (phải qua kiểm duyệt)
+            if ($isAdmin) {
+                $isPublic = array_key_exists('is_public', $data)
+                    ? (bool) $data['is_public']
+                    : ($visibility === null && $currentQuiz ? (bool) $currentQuiz->is_public : $visibility === 'public');
+                $reviewStatus = $isPublic ? 'approved' : ($data['review_status'] ?? $currentQuiz?->review_status ?? 'draft');
+                $status = $data['status'] ?? $currentQuiz?->status ?? ($isPublic ? 'published' : 'draft');
+            } else {
+                // User thường: Luôn ở chế độ private trừ khi đã được Admin duyệt
+                $isPublic = false;
+                $reviewStatus = $currentQuiz?->review_status ?? 'draft';
+                $status = $currentQuiz?->status ?? 'draft';
+            }
+        } else {
+            // Quiz tự động (auto): 100% câu hỏi từ Ngân hàng đã duyệt
+            $isPublic = array_key_exists('is_public', $data)
+                ? (bool) $data['is_public']
+                : ($visibility === null && $currentQuiz ? (bool) $currentQuiz->is_public : $visibility === 'public');
+            $reviewStatus = $isPublic ? 'approved' : 'draft';
+            $status = $data['status'] ?? $currentQuiz?->status ?? ($isPublic ? 'published' : 'draft');
         }
 
         if ($visibility === 'group') {
@@ -491,7 +503,12 @@ class QuizController extends Controller
             'topic_name' => array_key_exists('topic_name', $data) ? $data['topic_name'] : $currentQuiz?->topic_name,
             'tag' => array_key_exists('tag', $data) ? $data['tag'] : $currentQuiz?->tag,
             'difficulty' => $this->normalizeDifficulty($data['difficulty'] ?? $currentQuiz?->difficulty ?? 'medium'),
-            'status' => $data['status'] ?? $currentQuiz?->status ?? ($isPublic ? 'published' : 'draft'),
+            'creation_mode' => $creationMode,
+            'review_status' => $reviewStatus,
+            'rejection_reason' => $currentQuiz?->rejection_reason,
+            'reviewed_by' => $currentQuiz?->reviewed_by,
+            'reviewed_at' => $currentQuiz?->reviewed_at,
+            'status' => $status,
             'is_public' => $isPublic,
             'room_code' => $roomCode,
             'time_limit_seconds' => $this->resolveTimeLimitSeconds($data, $currentQuiz),
@@ -665,6 +682,11 @@ class QuizController extends Controller
             'tag' => $quiz->tag ?? $quiz->category,
             'difficulty' => $quiz->difficulty,
             'difficulty_label' => $this->difficultyLabel($quiz->difficulty),
+            'creation_mode' => $quiz->creation_mode ?? 'manual',
+            'review_status' => $quiz->review_status ?? ($quiz->is_public ? 'approved' : 'draft'),
+            'rejection_reason' => $quiz->rejection_reason,
+            'reviewed_at' => $quiz->reviewed_at ? $quiz->reviewed_at->toIso8601String() : null,
+            'pending_review' => $quiz->review_status === 'pending_review',
             'status' => $quiz->status,
             'is_public' => (bool) $quiz->is_public,
             'visibility' => $visibility,
@@ -731,96 +753,139 @@ class QuizController extends Controller
     // 3.1 QUẢN LÝ QUIZ - ADMIN
     // =========================
 
-    // Danh sách quiz
-    public function adminIndex(Request $request)
-    {
-        $query = Quiz::query()
-            ->with('user:id,name')
-            ->withCount(['questions', 'attempts'])
-            ->latest();
+   
+   // Danh sách quiz
+public function adminIndex(Request $request)
+{
+    $query = Quiz::query()
+        ->with('user:id,name')
+        ->withCount(['questions', 'attempts'])
+        ->withAvg(['attempts as avg_score' => fn($q) => $q->where('status', 'completed')], 'score')
+        ->latest();
 
-        // Tìm kiếm quiz
-        if ($request->filled('search')) {
-            $keyword = trim((string) $request->search);
+    // Tìm kiếm quiz
+    if ($request->filled('search')) {
+        $keyword = trim((string) $request->search);
+        $cleanKeyword = ltrim($keyword, '#');
+        $numericId = is_numeric($cleanKeyword) ? (int) $cleanKeyword : null;
 
-            $query->where(function ($q) use ($keyword) {
+        $query->where(function ($q) use ($keyword, $numericId) {
+            if ($numericId !== null) {
+                $q->where('id', $numericId)
+                    ->orWhere('title', 'like', "%{$keyword}%")
+                    ->orWhere('category', 'like', "%{$keyword}%")
+                    ->orWhere('tag', 'like', "%{$keyword}%")
+                    ->orWhere('topic_name', 'like', "%{$keyword}%")
+                    ->orWhere('room_code', 'like', "%{$keyword}%")
+                    ->orWhereHas('user', fn($uq) => $uq->where('name', 'like', "%{$keyword}%")->orWhere('email', 'like', "%{$keyword}%"));
+            } else {
                 $q->where('title', 'like', "%{$keyword}%")
-                    ->orWhere('category', 'like', "%{$keyword}%");
-            });
-        }
-
-        // Tìm kiếm người tạo
-        if ($request->filled('creator')) {
-            $query->whereHas('user', function ($q) use ($request) {
-                $q->where(
-                    'name',
-                    'like',
-                    '%' . $request->creator . '%'
-                );
-            });
-        }
-
-        // Lọc độ khó
-        if ($request->filled('difficulty')) {
-            $query->where(
-                'difficulty',
-                $request->difficulty
-            );
-        }
-
-        // Lọc public/private
-        if ($request->filled('visibility')) {
-            if ($request->visibility === 'public') {
-                $query->where('is_public', true);
+                    ->orWhere('category', 'like', "%{$keyword}%")
+                    ->orWhere('tag', 'like', "%{$keyword}%")
+                    ->orWhere('topic_name', 'like', "%{$keyword}%")
+                    ->orWhere('room_code', 'like', "%{$keyword}%")
+                    ->orWhereHas('user', fn($uq) => $uq->where('name', 'like', "%{$keyword}%")->orWhere('email', 'like', "%{$keyword}%"));
             }
-            if ($request->visibility === 'private') {
-                $query->where('is_public', false);
-            }
-        }
-
-        // Lọc quiz sinh bởi AI
-        if ($request->filled('ai_generated')) {
-            $query->where(
-                'is_ai_generated',
-                (bool)$request->ai_generated
-            );
-        }
-
-        $quizzes = $query
-            ->paginate(10)
-            ->through(function ($quiz) {
-                return [
-                    'id' => $quiz->id,
-                    'title' => $quiz->title,
-                    'category' => $quiz->category,
-                    'difficulty' => $quiz->difficulty,
-                    'difficulty_label' => $this->difficultyLabel($quiz->difficulty),
-                    'questions_count' => $quiz->questions_count,
-                    'attempts_count' => $quiz->attempts_count,
-                    'avg_score' => round(
-                        $quiz->attempts()->avg('score') ?? 0,
-                        1
-                    ),
-                    'is_public' => (bool)$quiz->is_public,
-                    'author' => $quiz->user?->name ?? 'Chưa có',
-                    'created_at' => $quiz->created_at,
-                ];
-            });
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Danh sách quiz',
-            'data' => $quizzes,
-        ]);
+        });
     }
 
+    // Tìm kiếm người tạo
+    if ($request->filled('creator')) {
+        $query->whereHas('user', function ($q) use ($request) {
+            $q->where(
+                'name',
+                'like',
+                '%' . $request->creator . '%'
+            );
+        });
+    }
+
+    // Lọc độ khó
+    if ($request->filled('difficulty')) {
+        $query->where(
+            'difficulty',
+            $request->difficulty
+        );
+    }
+
+    // Lọc public/private
+    if ($request->filled('visibility')) {
+        if ($request->visibility === 'public') {
+            $query->where('is_public', true);
+        }
+        if ($request->visibility === 'private') {
+            $query->where('is_public', false);
+        }
+    }
+
+    // Lọc trạng thái duyệt
+    if ($request->filled('review_status')) {
+        $query->where('review_status', $request->review_status);
+    }
+
+    // Lọc chế độ tạo
+    if ($request->filled('creation_mode')) {
+        $query->where('creation_mode', $request->creation_mode);
+    }
+
+    // Lọc quiz sinh bởi AI
+    if ($request->filled('ai_generated')) {
+        $query->where(
+            'is_ai_generated',
+            (bool)$request->ai_generated
+        );
+    }
+
+    $perPage = min(max((int) $request->query('per_page', 10), 1), 100);
+
+    $quizzes = $query
+        ->paginate($perPage)
+        ->through(function ($quiz) {
+            return [
+                'id' => $quiz->id,
+                'title' => $quiz->title,
+                'category' => $quiz->category,
+                'difficulty' => $quiz->difficulty,
+                'difficulty_label' => $this->difficultyLabel($quiz->difficulty),
+                'questions_count' => $quiz->questions_count,
+                'attempts_count' => $quiz->attempts_count,
+                'avg_score' => round((float) ($quiz->avg_score ?? 0), 1),
+                'creation_mode' => $quiz->creation_mode ?? 'manual',
+                'review_status' => $quiz->review_status ?? ($quiz->is_public ? 'approved' : 'draft'),
+                'rejection_reason' => $quiz->rejection_reason,
+                'is_public' => (bool)$quiz->is_public,
+                'author' => $quiz->user?->name ?? 'Chưa có',
+                'created_at' => $quiz->created_at,
+            ];
+        });
+
+    // ✅ THÊM MỚI: tính thống kê tổng toàn hệ thống (không phụ thuộc filter/trang hiện tại)
+    $stats = [
+        'total' => Quiz::count(),
+        'public' => Quiz::where('is_public', true)->count(),
+        'private' => Quiz::where('is_public', false)->count(),
+    ];
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Danh sách quiz',
+        // ✅ Gộp 'stats' vào cùng cấp với total/last_page/data bên trong object phân trang
+        'data' => array_merge($quizzes->toArray(), [
+            'stats' => $stats,
+        ]),
+    ]);
+}
     // Chi tiết quiz
     public function adminShow($id)
     {
         $quiz = Quiz::withTrashed()
             ->with([
-                'user:id,name,email',
+                'user:id,name,email,avatar',
+                'educationLevel',
+                'grade',
+                'subject',
                 'questions.answers',
+                'questions.user:id,name,email',
                 'attempts.user:id,name'
             ])
             ->withCount([
@@ -834,12 +899,20 @@ class QuizController extends Controller
             2
         );
 
+        $reviewService = app(\App\Services\QuizReviewService::class);
+        $diffData = $reviewService->getReviewDetailsWithDiff($quiz);
+
         return response()->json([
             'success' => true,
             'data' => [
                 'quiz' => $quiz,
                 'average_score' => $averageScore,
                 'is_ai_generated' => (bool)$quiz->is_ai_generated,
+                'current_revision' => $diffData['current_revision'] ?? null,
+                'previous_revision' => $diffData['previous_revision'] ?? null,
+                'previous_rejection_reason' => $diffData['previous_rejection_reason'] ?? null,
+                'diff' => $diffData['diff'] ?? null,
+                'history' => $diffData['history'] ?? [],
             ]
         ]);
     }

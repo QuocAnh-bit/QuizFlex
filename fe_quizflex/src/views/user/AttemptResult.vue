@@ -94,7 +94,7 @@
             </span>
 
             <b class="mt-1 block text-lg font-bold text-emerald-700 capitalize">
-              {{ attempt.status }}
+              {{ formatStatus(attempt.status) }}
             </b>
           </div>
 
@@ -124,36 +124,55 @@
           </p>
         </div>
 
-        <!-- QUESTIONS -->
+        <!-- QUESTIONS SECTION -->
         <div class="space-y-3 pt-2">
-          <h3 class="text-base font-bold text-slate-900">
-            Chi tiết câu hỏi & đáp án
-          </h3>
+          <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+            <h3 class="text-base font-bold text-slate-900">
+              Chi tiết câu hỏi & đáp án
+            </h3>
+            <span class="text-xs font-semibold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-full">
+              Tổng số: <b class="text-[#7C3AED]">{{ attempt.answers_snapshot?.length || 0 }} câu</b>
+            </span>
+          </div>
 
-          <div class="grid gap-3">
+          <!-- Independent Scroll Container (Shows ~1-2 questions on desktop) -->
+          <div class="max-h-[600px] overflow-y-auto pr-1.5 space-y-3 scrollbar-soft">
             <article
               v-for="(item, index) in attempt.answers_snapshot"
-              :key="item.question_id"
-              class="rounded-xl border p-4 transition space-y-2"
+              :key="item.question_id || index"
+              class="rounded-xl border p-4 transition space-y-3 bg-white shadow-2xs"
               :class="
                 item.is_correct
-                  ? 'border-emerald-200 bg-emerald-50/50'
-                  : 'border-red-200 bg-red-50/50'
+                  ? 'border-emerald-200 bg-emerald-50/15'
+                  : 'border-rose-200 bg-rose-50/15'
               "
             >
-              <div class="flex flex-wrap items-start justify-between gap-2">
-                <span
-                  class="rounded px-2 py-0.5 text-xs font-bold"
-                  :class="
-                    item.is_correct
-                      ? 'bg-emerald-100 text-emerald-800'
-                      : 'bg-red-100 text-red-800'
-                  "
-                >
-                  Câu {{ index + 1 }}
-                  ·
-                  {{ item.is_correct ? 'Đúng' : 'Sai' }}
-                </span>
+              <!-- Question Card Header -->
+              <div
+                class="flex flex-wrap items-center justify-between gap-2 border-b pb-2"
+                :class="item.is_correct ? 'border-emerald-100' : 'border-rose-100'"
+              >
+                <div class="flex items-center gap-2">
+                  <span
+                    class="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-bold"
+                    :class="
+                      item.is_correct
+                        ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                        : 'bg-rose-100 text-rose-800 border border-rose-200'
+                    "
+                  >
+                    <Check v-if="item.is_correct" :size="12" :stroke-width="2.5" />
+                    <X v-else :size="12" :stroke-width="2.5" />
+                    <span>Câu {{ index + 1 }} · {{ item.is_correct ? 'Đúng' : 'Sai' }}</span>
+                  </span>
+
+                  <span
+                    v-if="item.type === 'multi_choice'"
+                    class="rounded bg-purple-100 px-1.5 py-0.5 text-[10px] font-bold text-purple-700 uppercase"
+                  >
+                    Nhiều đáp án
+                  </span>
+                </div>
 
                 <div class="flex items-center gap-2">
                   <span class="text-xs font-bold text-slate-600">
@@ -172,35 +191,90 @@
                 </div>
               </div>
 
-              <h4 class="text-sm font-bold text-slate-900 leading-snug">
-                {{ item.question }}
-              </h4>
+              <!-- Question Content -->
+              <div class="text-sm font-bold text-slate-900 leading-snug">
+                <MathText :text="item.question || item.question_content" />
+              </div>
 
-              <div class="text-xs space-y-0.5 pt-1 text-slate-600">
-                <p>
-                  Bạn đã chọn:
-
-                  <b
-                    :class="
-                      item.is_correct
-                        ? 'text-emerald-700'
-                        : 'text-red-700'
-                    "
+              <!-- All Answer Options List: 2-column grid on desktop, 1-column on mobile -->
+              <div
+                v-if="item.answers && item.answers.length > 0"
+                class="grid grid-cols-1 sm:grid-cols-2 gap-2"
+              >
+                <div
+                  v-for="(ans, aIdx) in item.answers"
+                  :key="ans.id || aIdx"
+                  class="flex items-center gap-2.5 rounded-lg border p-2.5 text-xs transition duration-150"
+                  :class="getAnswerOptionCardClass(item, ans)"
+                >
+                  <!-- Key badge -->
+                  <span
+                    class="flex h-6 w-6 shrink-0 items-center justify-center rounded text-xs font-black transition"
+                    :class="getAnswerOptionKeyClass(item, ans)"
                   >
-                    {{
-                      item.selected_answer_keys?.join(', ')
-                      || 'Chưa chọn'
-                    }}
-                  </b>
-                </p>
+                    {{ ans.key || ans.answer_key || String.fromCharCode(65 + aIdx) }}
+                  </span>
 
-                <p v-if="!item.is_correct">
-                  Đáp án đúng:
+                  <!-- Content text -->
+                  <span class="flex-1 font-medium leading-snug break-words text-xs">
+                    <MathText :text="ans.content || ans.text" />
+                  </span>
 
-                  <b class="text-emerald-700">
-                    {{ item.correct_answer_keys?.join(', ') }}
-                  </b>
-                </p>
+                  <!-- Status Badge on the right (Compact & Inline) -->
+                  <div class="shrink-0">
+                    <!-- User selected AND correct -->
+                    <span
+                      v-if="isAnswerSelected(item, ans) && isAnswerCorrect(item, ans)"
+                      class="inline-flex items-center gap-0.5 rounded bg-emerald-600 text-white px-1.5 py-0.5 text-[10px] font-bold shadow-xs whitespace-nowrap"
+                    >
+                      <Check :size="11" :stroke-width="3" />
+                      <span>Bạn chọn • Đúng</span>
+                    </span>
+
+                    <!-- User selected AND WRONG -->
+                    <span
+                      v-else-if="isAnswerSelected(item, ans) && !isAnswerCorrect(item, ans)"
+                      class="inline-flex items-center gap-0.5 rounded bg-rose-600 text-white px-1.5 py-0.5 text-[10px] font-bold shadow-xs whitespace-nowrap"
+                    >
+                      <X :size="11" :stroke-width="3" />
+                      <span>Bạn chọn</span>
+                    </span>
+
+                    <!-- Not selected BUT is the correct answer -->
+                    <span
+                      v-else-if="!isAnswerSelected(item, ans) && isAnswerCorrect(item, ans)"
+                      class="inline-flex items-center gap-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300 px-1.5 py-0.5 text-[10px] font-bold whitespace-nowrap"
+                    >
+                      <Check :size="11" :stroke-width="2.5" />
+                      <span>Đáp án đúng</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Question Report Action -->
+              <div
+                class="flex items-center justify-end pt-1.5 border-t"
+                :class="item.is_correct ? 'border-emerald-100' : 'border-rose-100'"
+              >
+                <span
+                  v-if="reportedQuestionIds.has(item.question_id)"
+                  class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-100/80 border border-emerald-200 px-2 py-0.5 rounded-md"
+                >
+                  <Check :size="12" :stroke-width="2.5" />
+                  <span>Đã báo cáo</span>
+                </span>
+
+                <button
+                  v-else
+                  type="button"
+                  class="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-400 hover:text-rose-600 hover:bg-rose-50 px-2 py-0.5 rounded-md transition cursor-pointer"
+                  title="Báo cáo câu hỏi có sai sót"
+                  @click="openReportModal(item)"
+                >
+                  <Flag :size="12" />
+                  <span>Báo cáo câu hỏi</span>
+                </button>
               </div>
             </article>
           </div>
@@ -244,11 +318,22 @@
       </aside>
     </div>
 
+<<<<<<< HEAD
     <!-- Question Report Modal -->
     <QuestionReportModal
       :question-id="reportingQuestionId"
       :is-open="isReportModalOpen"
       @close="isReportModalOpen = false"
+=======
+    <!-- QUESTION REPORT MODAL -->
+    <QuestionReportModal
+      v-if="selectedReportQuestion"
+      :is-open="isReportModalOpen"
+      :question-id="selectedReportQuestion.question_id"
+      :question-snippet="selectedReportQuestion.question || selectedReportQuestion.question_content"
+      @close="closeReportModal"
+      @reported="handleQuestionReported"
+>>>>>>> 21a1000b7c9899c06f815fc810327f65e32ea575
     />
   </section>
 </template>
@@ -256,10 +341,15 @@
 <script setup>
 import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
+import { Check, X, Flag } from 'lucide-vue-next'
 
 import AppLoadingState from '@/components/common/AppLoadingState.vue'
 import AppErrorState from '@/components/common/AppErrorState.vue'
 import QuestionReportModal from '@/components/question/QuestionReportModal.vue'
+<<<<<<< HEAD
+=======
+import MathText from '@/components/MathText.vue'
+>>>>>>> 21a1000b7c9899c06f815fc810327f65e32ea575
 
 import {
   attemptsApi,
@@ -273,6 +363,7 @@ const isLoading = ref(false)
 const errorMessage = ref('')
 
 const isReportModalOpen = ref(false)
+<<<<<<< HEAD
 const reportingQuestionId = ref(null)
 
 const openReportModal = (questionId) => {
@@ -281,6 +372,94 @@ const openReportModal = (questionId) => {
   isReportModalOpen.value = true
 }
 
+=======
+const selectedReportQuestion = ref(null)
+const reportedQuestionIds = ref(new Set())
+
+const isAnswerSelected = (item, ans) => {
+  const ansKey = ans.key || ans.answer_key
+  const selectedKeys = item.selected_answer_keys || []
+  const selectedIds = item.selected_answer_ids || []
+  if (ansKey && selectedKeys.includes(ansKey)) return true
+  if (ans.id && selectedIds.includes(ans.id)) return true
+  return false
+}
+
+const isAnswerCorrect = (item, ans) => {
+  if (ans.is_correct !== undefined && ans.is_correct !== null) {
+    return Boolean(ans.is_correct)
+  }
+  const ansKey = ans.key || ans.answer_key
+  const correctKeys = item.correct_answer_keys || []
+  const correctIds = item.correct_answer_ids || []
+  if (ansKey && correctKeys.includes(ansKey)) return true
+  if (ans.id && correctIds.includes(ans.id)) return true
+  return false
+}
+
+const getAnswerOptionCardClass = (item, ans) => {
+  const selected = isAnswerSelected(item, ans)
+  const correct = isAnswerCorrect(item, ans)
+
+  if (selected && correct) {
+    return 'border-emerald-500 bg-emerald-50/80 text-emerald-950 shadow-xs'
+  }
+  if (selected && !correct) {
+    return 'border-rose-400 bg-rose-50/80 text-rose-950 shadow-xs'
+  }
+  if (!selected && correct) {
+    return 'border-emerald-400 bg-emerald-50/40 text-emerald-900'
+  }
+  return 'border-slate-200 bg-white text-slate-700'
+}
+
+const getAnswerOptionKeyClass = (item, ans) => {
+  const selected = isAnswerSelected(item, ans)
+  const correct = isAnswerCorrect(item, ans)
+
+  if (selected && correct) {
+    return 'bg-emerald-600 text-white font-black'
+  }
+  if (selected && !correct) {
+    return 'bg-rose-600 text-white font-black'
+  }
+  if (!selected && correct) {
+    return 'bg-emerald-100 text-emerald-800 border border-emerald-300 font-black'
+  }
+  return 'bg-slate-100 text-slate-700 border border-slate-200 font-bold'
+}
+
+const formatStatus = (status) => {
+  if (!status) return ''
+  const s = String(status).toLowerCase()
+  const map = {
+    completed: 'Hoàn thành',
+    in_progress: 'Đang làm',
+    submitted: 'Đã nộp bài',
+    finished: 'Đã kết thúc',
+    abandoned: 'Bỏ dở',
+    timed_out: 'Hết giờ',
+  }
+  return map[s] || status
+}
+
+const openReportModal = (questionItem) => {
+  selectedReportQuestion.value = questionItem
+  isReportModalOpen.value = true
+}
+
+const closeReportModal = () => {
+  isReportModalOpen.value = false
+  selectedReportQuestion.value = null
+}
+
+const handleQuestionReported = () => {
+  if (selectedReportQuestion.value?.question_id) {
+    reportedQuestionIds.value.add(selectedReportQuestion.value.question_id)
+  }
+}
+
+>>>>>>> 21a1000b7c9899c06f815fc810327f65e32ea575
 const formatDateTime = (value) => {
   if (!value) return ''
 

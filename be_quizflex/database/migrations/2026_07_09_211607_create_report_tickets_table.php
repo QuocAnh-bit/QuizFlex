@@ -27,7 +27,7 @@ return new class extends Migration
             $table->text('description')->nullable(); 
             
             // Trạng thái xử lý của Admin (mặc định khi mới tạo là đang chờ xử lý - pending)
-            $table->enum('status', ['pending', 'resolved', 'dismissed'])->default('pending');
+            $table->enum('status', ['pending', 'author_updated', 'admin_review_required', 'resolved', 'dismissed'])->default('pending');
             
             $table->timestamps();
         });

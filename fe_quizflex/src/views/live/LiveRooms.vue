@@ -132,7 +132,7 @@ import {
   Clock3,
   Crown,
   Gamepad2,
-} from '@lucide/vue'
+} from 'lucide-vue-next'
 import { currentUserStorage } from '@/services/api'
 
 const currentUser = currentUserStorage.get()

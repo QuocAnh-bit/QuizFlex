@@ -7,10 +7,14 @@
     </div>
 
     <div v-else-if="fetchError" class="relative overflow-hidden rounded-[2rem] border border-rose-500/30 bg-rose-500/10 p-8 text-sm font-bold text-rose-300 xl:col-span-2">
-      ⚠️ {{ fetchError }}
+      <div class="flex items-center gap-2">
+        <AlertTriangle :size="16" class="shrink-0 text-rose-400" />
+        <span>{{ fetchError }}</span>
+      </div>
       <div class="mt-4">
-        <button type="button" class="btn-ghost text-xs" @click="goBack">
-          ← Quay lại kho câu hỏi
+        <button type="button" class="btn-ghost text-xs inline-flex items-center gap-1.5" @click="goBack">
+          <ArrowLeft :size="14" />
+          <span>Quay lại kho câu hỏi</span>
         </button>
       </div>
     </div>
@@ -32,7 +36,8 @@
               class="inline-flex items-center gap-2 text-xs font-bold text-[var(--muted)] hover:text-[var(--primary)] transition duration-200 mb-3"
               @click="goBack"
             >
-              <span>← Quay lại kho câu hỏi</span>
+              <ArrowLeft :size="14" />
+              <span>Quay lại kho câu hỏi</span>
             </button>
 
             <div class="flex flex-wrap items-center justify-between gap-3">
@@ -41,13 +46,14 @@
                 <span class="inline-block h-2.5 w-2.5 rounded-full bg-[var(--primary)] shadow-[0_0_12px_var(--primary)]"></span>
               </h1>
 
-              <span v-if="originalQuestion?.is_locked_by_admin" class="rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40 px-3 py-1 text-xs font-black animate-pulse">
-                🔒 Đã bị Admin gỡ công khai
+              <span v-if="originalQuestion?.is_locked_by_admin" class="inline-flex items-center gap-1.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40 px-3 py-1 text-xs font-black animate-pulse">
+                <Lock :size="12" />
+                <span>Đã bị Admin gỡ công khai</span>
               </span>
             </div>
 
             <p class="mt-2 text-sm leading-6 text-[var(--muted)]">
-              Cập nhật chi tiết nội dung câu hỏi, độ khó, môn học, các phương án đáp án và phạm vi hiển thị. Sau khi cập nhật, hệ thống sẽ gửi thông báo đính chính cho Admin kiểm duyệt.
+              Cập nhật chi tiết nội dung câu hỏi, độ khó, môn học, các phương án đáp án và thông tin phân loại. Sau khi lưu thay đổi, câu hỏi chưa được gửi lại cho Admin; bạn có thể chủ động bấm "Gửi duyệt" tại Kho câu hỏi để gửi yêu cầu kiểm duyệt mới.
             </p>
           </div>
 
@@ -70,15 +76,15 @@
           <div class="grid gap-4 pt-5 border-t border-[var(--border)]">
             <h2 class="text-lg font-black tracking-[-0.04em] text-[var(--text)] flex items-center">
               <span class="h-4 w-1 rounded-full bg-[var(--primary)] inline-block mr-2.5 shadow-[0_0_8px_var(--primary)]"></span>
-              <span>2. Phân loại & Cấu hình</span>
+              <span>2. Phân loại kiến thức</span>
             </h2>
 
-            <div class="grid gap-4 md:grid-cols-2">
+            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <!-- Cấp học -->
               <label class="grid gap-1.5 text-xs font-black text-[var(--text)]">
                 Cấp học
-                <select v-model="form.education_level_id" class="field" @change="onLevelChange">
-                  <option value="">Tất cả cấp học</option>
+                <select v-model="form.education_level_id" class="field text-xs" @change="onLevelChange">
+                  <option value="">Chọn cấp học</option>
                   <option v-for="level in taxonomyLevels" :key="level.id" :value="level.id">{{ level.name }}</option>
                 </select>
               </label>
@@ -86,25 +92,25 @@
               <!-- Khối lớp -->
               <label class="grid gap-1.5 text-xs font-black text-[var(--text)]">
                 Khối lớp
-                <select v-model="form.grade_id" class="field">
-                  <option value="">Tất cả khối lớp</option>
+                <select v-model="form.grade_id" class="field text-xs" @change="onGradeSubjectChange">
+                  <option value="">Chọn khối lớp</option>
                   <option v-for="grade in availableGrades" :key="grade.id" :value="grade.id">{{ grade.name }}</option>
                 </select>
               </label>
 
               <!-- Bộ môn -->
               <label class="grid gap-1.5 text-xs font-black text-[var(--text)]">
-                Bộ môn
-                <select v-model="form.subject_id" class="field">
-                  <option value="">Tất cả bộ môn</option>
+                Bộ môn *
+                <select v-model="form.subject_id" class="field text-xs font-bold" @change="onGradeSubjectChange">
+                  <option value="">Chọn bộ môn *</option>
                   <option v-for="subject in availableSubjects" :key="subject.id" :value="subject.id">{{ subject.name }}</option>
                 </select>
               </label>
 
               <!-- Độ khó -->
               <label class="grid gap-1.5 text-xs font-black text-[var(--text)]">
-                Độ khó
-                <select v-model="form.difficulty" class="field">
+                Độ khó *
+                <select v-model="form.difficulty" class="field text-xs font-bold">
                   <option value="easy">Dễ (Nhận biết)</option>
                   <option value="medium">Vừa (Thông hiểu)</option>
                   <option value="hard">Khó (Vận dụng)</option>
@@ -112,24 +118,24 @@
               </label>
             </div>
 
-            <!-- Chủ đề -->
-            <div class="grid gap-4 md:grid-cols-2">
+            <!-- Chủ đề / Topic -->
+            <div class="grid md:grid-cols-2 gap-4 pt-1">
               <label class="grid gap-1.5 text-xs font-black text-[var(--text)]">
-                Chọn Chủ đề có sẵn (từ Ngân hàng)
-                <select v-model="selectedBankTopic" class="field cursor-pointer" @change="onBankTopicSelect">
-                  <option value="">-- Chọn chủ đề từ kho --</option>
-                  <option v-for="top in topicsList" :key="top.topic_name || top" :value="top.topic_name || top">
-                    {{ top.topic_name || top }}{{ top.total_questions ? ' (' + top.total_questions + ' câu)' : '' }}
+                Chủ đề gợi ý từ Ngân hàng
+                <select v-model="selectedBankTopic" class="field text-xs cursor-pointer" @change="onBankTopicSelect">
+                  <option value="">-- Chọn chủ đề có sẵn --</option>
+                  <option v-for="top in topicsList" :key="top.topic_name" :value="top.topic_name">
+                    {{ top.topic_name }} ({{ top.total_questions }} câu)
                   </option>
                 </select>
               </label>
 
               <label class="grid gap-1.5 text-xs font-black text-[var(--text)]">
-                Tên Chủ đề (hoặc nhập chủ đề mới)
+                Tên chủ đề hiển thị
                 <input 
                   v-model="form.topic_name" 
-                  class="field" 
-                  placeholder="VD: Văn học, Hàm số, Tiếng Anh B1..." 
+                  class="field text-xs font-bold" 
+                  placeholder="Nhập tên chủ đề bài học..." 
                   @input="onTopicInputChange"
                 />
               </label>
@@ -146,10 +152,11 @@
 
               <button 
                 type="button" 
-                class="btn-ghost !px-3 !py-1 text-xs font-bold text-[var(--primary)] hover:bg-[var(--primary)]/10"
+                class="btn-ghost !px-3 !py-1 text-xs font-bold text-[var(--primary)] hover:bg-[var(--primary)]/10 inline-flex items-center gap-1"
                 @click="addAnswerChoice"
               >
-                + Thêm đáp án
+                <Plus :size="13" />
+                <span>Thêm đáp án</span>
               </button>
             </div>
 
@@ -189,56 +196,48 @@
                     @change="setCorrectAnswer(idx)" 
                     class="accent-emerald-500 h-4 w-4 cursor-pointer" 
                   />
-                  <span>{{ ans.is_correct ? '✓ Đúng' : 'Đánh dấu đúng' }}</span>
+                  <span class="inline-flex items-center gap-1">
+                    <Check v-if="ans.is_correct" :size="13" />
+                    <span>{{ ans.is_correct ? 'Đúng' : 'Đánh dấu đúng' }}</span>
+                  </span>
                 </label>
 
                 <!-- Remove button -->
                 <button 
                   v-if="form.answers.length > 2" 
                   type="button" 
-                  class="h-8 w-8 grid place-items-center rounded-xl text-xs text-[var(--muted)] hover:text-rose-400 hover:bg-rose-500/10 transition shrink-0"
+                  class="h-8 w-8 grid place-items-center rounded-xl text-xs text-[var(--muted)] hover:text-rose-400 hover:bg-rose-500/10 transition shrink-0 cursor-pointer"
+                  aria-label="Xóa đáp án này"
                   title="Xóa đáp án này"
                   @click="removeAnswerChoice(idx)"
                 >
-                  ✕
+                  <X :size="14" />
                 </button>
               </div>
             </div>
           </div>
 
-          <!-- 4. Phạm vi hiển thị -->
+          <!-- 4. Lưu trữ & Quy trình Ngân hàng câu hỏi -->
           <div class="grid gap-4 pt-5 border-t border-[var(--border)]">
             <h2 class="text-lg font-black tracking-[-0.04em] text-[var(--text)] flex items-center">
               <span class="h-4 w-1 rounded-full bg-[var(--primary)] inline-block mr-2.5 shadow-[0_0_8px_var(--primary)]"></span>
-              <span>4. Phạm vi hiển thị</span>
+              <span>4. Lưu trữ & Kiểm duyệt</span>
             </h2>
 
-            <div class="grid md:grid-cols-2 gap-4">
-              <label 
-                class="flex items-start gap-3 rounded-2xl border p-4 cursor-pointer transition duration-200"
-                :class="!form.is_public ? 'border-amber-500/60 bg-amber-500/10 text-[var(--text)] shadow-sm' : 'border-[var(--border)] bg-[var(--surface-soft)] text-[var(--muted)] hover:border-[var(--border-strong)]'"
-              >
-                <input type="radio" v-model="form.is_public" :value="false" class="mt-1 accent-amber-500 h-4 w-4" />
-                <div class="grid gap-1">
-                  <span class="font-black text-sm text-amber-300 flex items-center gap-1.5">
-                    <span>🔒</span> Riêng tư
-                  </span>
-                  <span class="text-xs leading-relaxed text-[var(--muted)]">Lưu vào kho cá nhân của bạn để sử dụng khi tạo quiz.</span>
+            <div class="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4">
+              <div class="flex items-start gap-3">
+                <div class="rounded-xl bg-amber-500/20 p-2.5 text-amber-400">
+                  <Lock :size="20" />
                 </div>
-              </label>
-
-              <label 
-                class="flex items-start gap-3 rounded-2xl border p-4 cursor-pointer transition duration-200"
-                :class="form.is_public ? 'border-[var(--primary)] bg-[var(--primary)]/10 text-[var(--text)] shadow-sm' : 'border-[var(--border)] bg-[var(--surface-soft)] text-[var(--muted)] hover:border-[var(--border-strong)]'"
-              >
-                <input type="radio" v-model="form.is_public" :value="true" class="mt-1 accent-[var(--primary)] h-4 w-4" />
                 <div class="grid gap-1">
-                  <span class="font-black text-sm text-[var(--primary)] flex items-center gap-1.5">
-                    <span>🌐</span> Công khai
+                  <span class="font-black text-sm text-[var(--text)]">
+                    Lưu vào Kho câu hỏi cá nhân
                   </span>
-                  <span class="text-xs leading-relaxed text-[var(--muted)]">Chia sẻ lên ngân hàng câu hỏi dùng chung cho mọi người.</span>
+                  <span class="text-xs leading-relaxed text-[var(--muted)]">
+                    Mọi chỉnh sửa sẽ được lưu trong Kho cá nhân của bạn. Sau khi chỉnh sửa hoàn tất, bạn có thể gửi yêu cầu kiểm duyệt để đưa câu hỏi vào Ngân hàng dùng chung từ trang <strong>Kho câu hỏi của tôi</strong>.
+                  </span>
                 </div>
-              </label>
+              </div>
             </div>
           </div>
 
@@ -257,7 +256,7 @@
               class="btn-primary !px-8 !py-3 text-xs font-black shadow-lg shadow-[var(--primary)]/25 hover:shadow-[var(--primary)]/40 transition duration-200 hover:-translate-y-0.5 flex items-center gap-2" 
               :disabled="isSubmitting"
             >
-              <span>✏️</span>
+              <Pencil :size="13" />
               <span>{{ isSubmitting ? "Đang lưu đính chính..." : "Lưu thay đổi câu hỏi" }}</span>
             </button>
           </div>
@@ -276,11 +275,11 @@
 
         <button 
           type="button" 
-          class="btn-primary !px-6 !py-2.5 text-xs font-black shadow-lg shadow-[var(--primary)]/25 hover:shadow-[var(--primary)]/40 transition duration-200 hover:-translate-y-0.5 flex items-center gap-2" 
+          class="btn-primary !px-6 !py-2.5 text-xs font-black shadow-lg shadow-[var(--primary)]/25 hover:shadow-[var(--primary)]/40 transition duration-200 hover:-translate-y-0.5 flex items-center gap-2 cursor-pointer" 
           :disabled="isSubmitting"
           @click="saveQuestion"
         >
-          <span>✏️</span>
+          <Pencil :size="13" />
           <span>{{ isSubmitting ? "Đang lưu đính chính..." : "Lưu câu hỏi" }}</span>
         </button>
       </div>
@@ -301,9 +300,8 @@
             </span>
           </div>
 
-          <!-- 2. Tag Meta Section (Không bị chèn lẹm, thoáng đạt) -->
+          <!-- 2. Tag Meta Section -->
           <div class="grid gap-3 pt-1">
-            <!-- Level, Grade, Subject Breadcrumb Path -->
             <div v-if="selectedLevelName || selectedGradeName || selectedSubjectName" class="flex flex-wrap items-center gap-2 text-xs font-bold text-[var(--muted)]">
               <span v-if="selectedLevelName" class="text-[var(--text)] font-black">{{ selectedLevelName }}</span>
               <span v-if="selectedLevelName && (selectedGradeName || selectedSubjectName)" class="opacity-30">•</span>
@@ -314,9 +312,7 @@
               <span v-if="selectedSubjectName" class="text-[var(--primary)] font-black">{{ selectedSubjectName }}</span>
             </div>
 
-            <!-- Sleek Badges Grid (Difficulty + Privacy + Topic Tag) -->
             <div class="flex flex-wrap items-center gap-2.5">
-              <!-- Difficulty Badge -->
               <span 
                 class="inline-flex items-center gap-1.5 rounded-xl px-3 py-1 text-xs font-black border transition"
                 :class="{
@@ -336,15 +332,14 @@
                 <span>{{ difficultyText(form.difficulty) }}</span>
               </span>
 
-              <!-- Privacy Scope Badge -->
               <span 
                 class="inline-flex items-center gap-1.5 rounded-xl px-3 py-1 text-xs font-black border transition"
                 :class="form.is_public ? 'border-[var(--primary)]/30 bg-[var(--primary)]/10 text-[var(--primary)]' : 'border-amber-500/30 bg-amber-500/10 text-amber-400'"
               >
-                <span>{{ form.is_public ? '🌐 Công khai' : '🔒 Riêng tư' }}</span>
+                <component :is="form.is_public ? Globe : Lock" :size="12" />
+                <span>{{ form.is_public ? 'Công khai' : 'Riêng tư' }}</span>
               </span>
 
-              <!-- Topic Hashtag Pill -->
               <span 
                 v-if="form.topic_name" 
                 class="inline-flex items-center gap-1 rounded-xl border border-[var(--border)] bg-[var(--surface-soft)] px-3 py-1 text-xs font-bold text-[var(--muted)] truncate max-w-[200px]"
@@ -356,7 +351,7 @@
             </div>
           </div>
 
-          <!-- 3. Question Content (Tối giản tinh tế, không ô hộp thô cứng) -->
+          <!-- 3. Question Content -->
           <div class="border-t border-b border-[var(--border)] py-4 my-1">
             <p class="text-base font-extrabold text-[var(--text)] leading-relaxed break-words">
               <span v-if="form.content.trim()">{{ form.content }}</span>
@@ -390,7 +385,8 @@
               </span>
 
               <span v-if="ans.is_correct" class="text-emerald-400 text-xs font-black shrink-0 flex items-center gap-1 bg-emerald-500/20 px-2.5 py-1 rounded-lg border border-emerald-500/30">
-                ✓ Đáp án đúng
+                <Check :size="12" />
+                <span>Đáp án đúng</span>
               </span>
             </div>
           </div>
@@ -403,6 +399,16 @@
 <script setup>
 import { computed, inject, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import {
+  ArrowLeft,
+  AlertTriangle,
+  Lock,
+  Globe,
+  Plus,
+  Check,
+  X,
+  Pencil,
+} from 'lucide-vue-next'
 import { formatApiErrorMessage, myQuestionsApi, questionsBankApi, taxonomyApi } from '@/services/api'
 
 const route = useRoute()
@@ -651,7 +657,7 @@ const saveQuestion = async () => {
     }
 
     await myQuestionsApi.update(questionId.value, payload)
-    if (showToast) showToast('Cập nhật đính chính thành công! Đã gửi thông báo cho Admin kiểm duyệt.', 'success')
+    if (showToast) showToast('Đã lưu thay đổi thành công! Vui lòng bấm "Gửi duyệt" tại Kho câu hỏi để gửi yêu cầu kiểm duyệt lại cho Admin.', 'success')
     router.push(`/dashboard/my-questions?question_id=${questionId.value}&updated=1`)
   } catch (err) {
     const msg = formatApiErrorMessage(err, 'Cập nhật thất bại. Vui lòng kiểm tra lại.')

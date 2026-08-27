@@ -69,8 +69,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             EducationTaxonomySeeder::class,
             BadgeSeeder::class,
-            QuizSeeder::class,
-            QuizAttemptSeeder::class,
+            QuestionSeeder::class,
         ]);
     }
 }

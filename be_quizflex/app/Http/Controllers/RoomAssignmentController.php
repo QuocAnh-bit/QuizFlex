@@ -156,11 +156,11 @@ class RoomAssignmentController extends Controller
         $attempt = $this->findReusableHomeworkAttempt($assignment, $user->id, $data['attempt_id'] ?? null);
 
         if ($attempt) {
-           $attempt = $this->questionOrderService->ensureAttemptOrder(
-    $attempt,
-    $assignment->quiz,
-    $assignment->shuffle_questions
-);
+            $attempt = $this->questionOrderService->ensureAttemptOrder(
+                $attempt,
+                $assignment->quiz,
+                (bool) $assignment->shuffle_questions
+            );
         } else {
             $attemptCount = QuizAttempt::where('assignment_id', $assignment->id)
                 ->where('user_id', $user->id)
@@ -186,9 +186,9 @@ class RoomAssignmentController extends Controller
                 'time_spent_seconds' => null,
                 'answers_snapshot' => [],
                 'question_order' => $this->questionOrderService->makeForQuiz(
-                  $assignment->quiz,
-                  $assignment->shuffle_questions
-),
+                    $assignment->quiz,
+                    (bool) $assignment->shuffle_questions
+                ),
                 'status' => 'in_progress',
                 'started_at' => now(),
             ]);
@@ -200,7 +200,7 @@ class RoomAssignmentController extends Controller
             'data' => [
                 'attempt' => $this->formatAttempt($attempt),
                 'assignment' => $this->formatAssignment($assignment, $user),
-                'quiz' => $this->formatQuizForTaking($assignment->quiz, $attempt,  $assignment->shuffle_answers),
+                'quiz' => $this->formatQuizForTaking($assignment->quiz, $attempt, (bool) $assignment->shuffle_answers),
             ],
         ], 201);
     }

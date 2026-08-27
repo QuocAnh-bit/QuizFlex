@@ -430,7 +430,7 @@ import {
   Trophy,
   Rocket,
   Medal,
-} from '@lucide/vue'
+} from 'lucide-vue-next'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import { getEcho, getTabId } from '@/echo'
 import { currentUserStorage, liveRoomApi } from '@/services/api'

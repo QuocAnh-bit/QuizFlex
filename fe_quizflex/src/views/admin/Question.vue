@@ -37,7 +37,7 @@
             ← Quay lại
           </button>
         </div>
-        <div class="flex flex-wrap gap-3 mt-4">
+        <div v-if="isUserWorkspace" class="flex flex-wrap gap-3 mt-4">
           <router-link class="btn-ghost" :to="`${questionBase}/ocr`">Upload OCR</router-link>
           <router-link class="btn-ghost" :to="`${questionBase}/ai`">AI Generator</router-link>
           <router-link class="btn-primary shadow-lg transition hover:scale-105" :to="`${questionBase}/create`">┼ Tạo quiz</router-link>
@@ -53,9 +53,9 @@
           v-model="search" 
           class="field text-xs" 
           placeholder="Tìm theo tên quiz, tác giả, thẻ tag..." 
-          @keyup.enter="loadQuizzes" 
+          @keyup.enter="handleFilterChange" 
         />
-        <select v-model="difficultyFilter" class="field text-xs" @change="loadQuizzes">
+        <select v-model="difficultyFilter" class="field text-xs" @change="handleFilterChange">
           <option value="">Tất cả độ khó</option>
           <option value="easy">Dễ</option>
           <option value="medium">Vừa</option>
@@ -65,7 +65,7 @@
           <option value="all">Tất cả tag</option>
           <option v-for="tag in tags" :key="tag" :value="tag">{{ tag }}</option>
         </select>
-        <select v-model="visibilityFilter" class="field text-xs" @change="loadQuizzes">
+        <select v-model="visibilityFilter" class="field text-xs" @change="handleFilterChange">
           <option value="all">Tất cả hiển thị</option>
           <option value="public">Public</option>
           <option value="private">Private</option>
@@ -158,8 +158,9 @@
           </router-link>
           
           <router-link
+            v-if="isUserWorkspace && !showTrash"
             class="btn-primary text-xs px-3 py-1.5"
-            :to="`${questionBase}/edit/${quiz.id}`"
+            :to="`/dashboard/questions/edit/${quiz.id}`"
           >
             Sửa
           </router-link>
@@ -203,6 +204,20 @@
       </article>
     </div>
 
+    <!-- Pagination Bar -->
+    <AppPagination
+      v-if="!isLoading && total > 0"
+      :current-page="currentPage"
+      :last-page="lastPage"
+      :total="total"
+      :per-page="perPage"
+      :show-per-page-selector="true"
+      :per-page-options="[12, 24, 48]"
+      item-label="bộ quiz"
+      @update:current-page="onPageChange"
+      @update:per-page="onPerPageChange"
+    />
+
     <!-- Empty State -->
     <div v-if="!isLoading && filteredQuizzes.length === 0" class="card p-10 text-center text-xs text-slate-400 space-y-2">
       <div class="text-3xl">🔎</div>
@@ -215,8 +230,9 @@
 <script setup>
 import { computed, onMounted, ref, inject } from 'vue'
 import { useRoute } from 'vue-router'
-import { Bot, Globe, LibraryBig, Lock, Users } from '@lucide/vue'
+import { Bot, Globe, Lock, Users } from 'lucide-vue-next'
 import VisibilityBadge from '@/components/common/VisibilityBadge.vue'
+import AppPagination from '@/components/common/AppPagination.vue'
 import { normalizeQuizCard, quizzesApi } from '@/services/api'
 
 const showConfirm = inject('showConfirm')
@@ -233,6 +249,11 @@ const quizzes = ref([])
 const isLoading = ref(false)
 const errorMessage = ref('')
 const showTrash = ref(false)
+
+const currentPage = ref(1)
+const lastPage = ref(1)
+const total = ref(0)
+const perPage = ref(12)
 
 const visibilityChips = [
   { value: 'all', label: 'Tất cả', icon: null },
@@ -251,47 +272,84 @@ const filteredQuizzes = computed(() => {
   return list
 })
 
-const setVisibility = async (value) => {
-  visibilityFilter.value = value
-  await loadQuizzes()
+const handleFilterChange = () => {
+  currentPage.value = 1
+  loadQuizzes(1)
 }
 
-const loadQuizzes = async () => {
+const onPageChange = (page) => {
+  if (showTrash.value) {
+    loadTrash(page)
+  } else {
+    loadQuizzes(page)
+  }
+}
+
+const onPerPageChange = (p) => {
+  perPage.value = p
+  currentPage.value = 1
+  if (showTrash.value) {
+    loadTrash(1)
+  } else {
+    loadQuizzes(1)
+  }
+}
+
+const setVisibility = async (value) => {
+  visibilityFilter.value = value
+  currentPage.value = 1
+  await loadQuizzes(1)
+}
+
+const loadQuizzes = async (page = currentPage.value) => {
   showTrash.value = false
   isLoading.value = true
   errorMessage.value = ''
+  currentPage.value = page
 
   try {
-    const data = await quizzesApi.list({
-      search: search.value || undefined,
+    const res = await quizzesApi.fetchPaginated({
+      search: search.value ? search.value.trim() : undefined,
       difficulty: difficultyFilter.value || undefined,
       visibility: visibilityFilter.value === 'all' ? undefined : visibilityFilter.value,
       owner: isUserWorkspace.value ? 'me' : undefined,
-      per_page: 100
+      page,
+      per_page: perPage.value
     })
-    quizzes.value = data.map(normalizeQuizCard)
+    quizzes.value = (res.items || []).map(normalizeQuizCard)
+    total.value = res.total || 0
+    lastPage.value = res.lastPage || 1
+    currentPage.value = res.currentPage || page
   } catch (error) {
     errorMessage.value = `Không tải được danh sách: ${error.message}`
     quizzes.value = []
+    total.value = 0
+    lastPage.value = 1
   } finally {
     isLoading.value = false
   }
 }
 
-const loadTrash = async () => {
+const loadTrash = async (page = 1) => {
   showTrash.value = true
   isLoading.value = true
   errorMessage.value = ''
+  currentPage.value = page
 
   try {
     const data = await quizzesApi.trash({
-      search: search.value || undefined,
-      per_page: 100
+      search: search.value ? search.value.trim() : undefined,
+      per_page: perPage.value,
+      page
     })
     quizzes.value = data.map(normalizeQuizCard)
+    total.value = data.length
+    lastPage.value = 1
   } catch (error) {
     errorMessage.value = `Không tải được thùng rác: ${error.message}`
     quizzes.value = []
+    total.value = 0
+    lastPage.value = 1
   } finally {
     isLoading.value = false
   }
@@ -312,8 +370,8 @@ const deleteQuiz = async (id) => {
 const executeDeleteQuiz = async (id) => {
   try {
     await quizzesApi.remove(id)
-    quizzes.value = quizzes.value.filter((quiz) => quiz.id !== id)
     if (showToast) showToast('Đã chuyển Quiz vào thùng rác.', 'success')
+    loadQuizzes(currentPage.value)
   } catch (error) {
     errorMessage.value = `Xóa thất bại: ${error.message}`
     if (showToast) showToast(errorMessage.value, 'error')
@@ -323,8 +381,8 @@ const executeDeleteQuiz = async (id) => {
 const restoreQuiz = async (id) => {
   try {
     await quizzesApi.restore(id)
-    quizzes.value = quizzes.value.filter((quiz) => quiz.id !== id)
     if (showToast) showToast('Đã khôi phục Quiz thành công.', 'success')
+    loadTrash(currentPage.value)
   } catch (error) {
     if (showToast) showToast(`Khôi phục thất bại: ${error.message}`, 'error')
   }
@@ -334,8 +392,8 @@ const forceDeleteQuiz = async (id) => {
   if (!window.confirm('Xóa vĩnh viễn quiz này? Không thể hoàn tác!')) return
   try {
     await quizzesApi.forceDelete(id)
-    quizzes.value = quizzes.value.filter((quiz) => quiz.id !== id)
     if (showToast) showToast('Đã xóa vĩnh viễn Quiz.', 'success')
+    loadTrash(currentPage.value)
   } catch (error) {
     if (showToast) showToast(`Xóa thất bại: ${error.message}`, 'error')
   }
@@ -351,5 +409,7 @@ const toggleVisibility = async (quiz) => {
   }
 }
 
-onMounted(loadQuizzes)
+onMounted(() => {
+  loadQuizzes(1)
+})
 </script>

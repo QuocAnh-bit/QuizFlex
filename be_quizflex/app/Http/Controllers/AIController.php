@@ -5,9 +5,14 @@ namespace App\Http\Controllers;
 use App\Jobs\GenerateQuizJob;
 use App\Models\AiJob;
 use App\Models\AiLog;
+use App\Models\CurriculumUnit;
+use App\Models\Grade;
+use App\Models\Subject;
 use App\Services\AI\PromptQualityValidator;
+use App\Services\RAG\Curriculum\CurriculumSubjectResolver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Throwable;
 
 class AIController extends Controller
@@ -20,7 +25,45 @@ class AIController extends Controller
             'difficulty' => ['nullable', 'string', 'in:easy,medium,hard'],
             'language' => ['nullable', 'string', 'in:vi,en'],
             'visibility' => ['nullable', 'string', 'in:private,public,group'],
+            'education_level_id' => [
+                'nullable',
+                'required_with:grade_id,subject_id,topic_name,curriculum_unit_ids',
+                'integer',
+                'exists:education_levels,id',
+            ],
+            'grade_id' => [
+                'nullable',
+                'required_with:education_level_id,subject_id,topic_name,curriculum_unit_ids',
+                'integer',
+                'exists:grades,id',
+            ],
+            'subject_id' => [
+                'nullable',
+                'required_with:education_level_id,grade_id,topic_name,curriculum_unit_ids',
+                'integer',
+                'exists:subjects,id',
+            ],
+            'topic_name' => [
+                'nullable',
+                'required_with:education_level_id,grade_id,subject_id,curriculum_unit_ids',
+                'string',
+                'max:150',
+            ],
+            'curriculum_unit_ids' => [
+                'nullable',
+                'required_with:education_level_id,grade_id,subject_id,topic_name',
+                'array',
+                'min:1',
+                'max:100',
+            ],
+            'curriculum_unit_ids.*' => [
+                'integer',
+                'distinct',
+                'exists:curriculum_units,id',
+            ],
         ]);
+
+        $data = $this->validateTaxonomy($data);
 
         $prompt = trim((string) $data['prompt']);
 
@@ -53,6 +96,11 @@ class AIController extends Controller
             'user_id' => $user->id,
             'uuid' => (string) Str::uuid(),
             'prompt' => $prompt,
+            'education_level_id' => $data['education_level_id'] ?? null,
+            'grade_id' => $data['grade_id'] ?? null,
+            'subject_id' => $data['subject_id'] ?? null,
+            'topic_name' => $data['topic_name'] ?? null,
+            'curriculum_unit_ids' => $data['curriculum_unit_ids'] ?? null,
             'requested_count' => $data['count'] ?? 10,
             'difficulty' => $data['difficulty'] ?? 'medium',
             'language' => $data['language'] ?? 'vi',
@@ -85,6 +133,11 @@ class AIController extends Controller
                 'job_id' => $job->uuid,
                 'status' => $job->status,
                 'prompt' => $job->prompt,
+                'education_level_id' => $job->education_level_id,
+                'grade_id' => $job->grade_id,
+                'subject_id' => $job->subject_id,
+                'topic_name' => $job->topic_name,
+                'curriculum_unit_ids' => $job->curriculum_unit_ids,
                 'requested_count' => $job->requested_count,
                 'difficulty' => $job->difficulty,
                 'language' => $job->language,
@@ -94,6 +147,91 @@ class AIController extends Controller
                 'error_message' => $job->error_message,
             ],
         ], $job->status === 'failed' ? 500 : ($runSynchronously ? 200 : 202));
+    }
+
+    private function validateTaxonomy(array $data): array
+    {
+        if (empty($data['subject_id'])) {
+            return $data;
+        }
+
+        $grade = Grade::query()
+            ->whereKey($data['grade_id'])
+            ->where(
+                'education_level_id',
+                $data['education_level_id']
+            )
+            ->first();
+
+        if (!$grade) {
+            throw ValidationException::withMessages([
+                'grade_id' => 'Lớp không thuộc cấp học đã chọn.',
+            ]);
+        }
+
+        $subject = Subject::query()
+            ->whereKey($data['subject_id'])
+            ->first();
+
+        if (
+            !$subject
+            || !$grade->subjects()
+                ->where('subjects.id', $subject->id)
+                ->exists()
+        ) {
+            throw ValidationException::withMessages([
+                'subject_id' => 'Môn học không thuộc lớp đã chọn.',
+            ]);
+        }
+
+        $scope = app(CurriculumSubjectResolver::class)
+            ->resolve(
+                subject: $subject,
+                grade: $grade,
+            );
+
+        if ($scope === null) {
+            throw ValidationException::withMessages([
+                'subject_id' => 'Môn học chưa có dữ liệu RAG.',
+            ]);
+        }
+
+        $unitIds = collect($data['curriculum_unit_ids'])
+            ->map(fn($id): int => (int) $id)
+            ->unique()
+            ->values();
+
+        $validUnits = CurriculumUnit::query()
+            ->whereIn('id', $unitIds)
+            ->where('subject', $scope['subject'])
+            ->where('grade_min', '<=', $grade->level_number)
+            ->where('grade_max', '>=', $grade->level_number)
+            ->when(
+                !empty($scope['domain']),
+                fn($query) => $query->where(
+                    'domain',
+                    $scope['domain']
+                )
+            )
+            ->whereHas(
+                'chunks',
+                fn($query) => $query
+                    ->where('embedding_status', 'embedded')
+                    ->whereNotNull('qdrant_point_id')
+            )
+            ->count();
+
+        if ($validUnits !== $unitIds->count()) {
+            throw ValidationException::withMessages([
+                'curriculum_unit_ids' =>
+                    'Nguồn RAG không thuộc môn, lớp hoặc chủ đề đã chọn.',
+            ]);
+        }
+
+        $data['topic_name'] = trim($data['topic_name']);
+        $data['curriculum_unit_ids'] = $unitIds->all();
+
+        return $data;
     }
 
     public function show(int $id)
@@ -133,6 +271,11 @@ class AIController extends Controller
                 'job_id' => $job->uuid,
                 'status' => $job->status,
                 'prompt' => $job->prompt,
+                'education_level_id' => $job->education_level_id,
+                'grade_id' => $job->grade_id,
+                'subject_id' => $job->subject_id,
+                'topic_name' => $job->topic_name,
+                'curriculum_unit_ids' => $job->curriculum_unit_ids,
                 'requested_count' => $job->requested_count,
                 'difficulty' => $job->difficulty,
                 'language' => $job->language,

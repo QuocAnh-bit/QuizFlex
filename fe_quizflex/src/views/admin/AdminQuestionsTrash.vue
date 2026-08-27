@@ -195,8 +195,8 @@
                 </div>
               </td>
 
-              <td class="p-4 text-center text-xs font-medium text-rose-600">
-                {{ formatDate(q.deleted_at || q.updated_at) }}
+              <td class="p-4 text-center text-xs font-medium text-rose-700 whitespace-nowrap">
+                  <span>{{ formatDate(q.deleted_at || q.updated_at) }}</span>
               </td>
 
               <td class="space-x-1.5 p-4 text-center whitespace-nowrap">
@@ -312,7 +312,8 @@ import {
   User,
   ChevronLeft,
   ChevronsLeft,
-  ChevronsRight
+  ChevronsRight,
+  Clock
 } from 'lucide-vue-next'
 import { adminQuestionsApi } from '@/services/api'
 
