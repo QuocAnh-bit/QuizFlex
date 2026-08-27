@@ -81,6 +81,13 @@ export const taxonomyApi = {
   }
 };
 
+export const curriculumApi = {
+  async fetchOptions(params = {}) {
+    const { data } = await api.get('/curriculum/options', { params });
+    return unwrap(data);
+  }
+};
+
 export const questionsBankApi = {
   async fetchBank(params = {}) {
     const { data } = await api.get('/questions/bank', { params });

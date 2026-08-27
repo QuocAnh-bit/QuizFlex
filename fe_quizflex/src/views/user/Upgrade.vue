@@ -759,9 +759,8 @@
           </button>
         </div>
       </div>
-    </div>
-  </Transition>
-</Teleport>
+    </Transition>
+  </Teleport>
   </section>
 </template>
 
