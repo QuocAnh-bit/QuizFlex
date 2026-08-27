@@ -173,7 +173,7 @@ const submitReport = async () => {
       description: description.value.trim(),
     })
 
-    const successMsg = res?.message || 'Cảm ơn bạn! Báo cáo vi phạm đã được gửi tới Quản trị viên (Admin) và tác giả để đính chính trên Ngân hàng câu hỏi.'
+    const successMsg = res?.message || 'Cảm ơn bạn! Báo cáo đã được gửi tới tác giả để đính chính.'
     if (showToast) {
       showToast(successMsg, 'success')
     }

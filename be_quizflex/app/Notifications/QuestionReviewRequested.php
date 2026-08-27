@@ -5,9 +5,10 @@ namespace App\Notifications;
 use App\Models\Question;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
 
-class QuestionReviewRequested extends Notification
+class QuestionReviewRequested extends Notification implements ShouldQueue
 {
     use Queueable;
 
@@ -43,15 +44,15 @@ class QuestionReviewRequested extends Notification
 
         if ($this->isPriority) {
             $title = '🔴 [ƯU TIÊN] Yêu cầu duyệt câu hỏi đính chính sau báo cáo vi phạm';
-            $message = "Tác giả {$this->author->name} đã hoàn tất đính chính câu hỏi #{$this->question->id} (\"{$snippet}\"). Vui lòng ưu tiên kiểm duyệt để công khai lại trên Ngân hàng câu hỏi!";
+            $message = "Tác giả {$this->author->name} vừa đính chính và gửi duyệt lại câu hỏi #{$this->question->id} (\"{$snippet}\") từng bị báo cáo. Vui lòng ưu tiên xét duyệt!";
         } else {
             $title = $this->revisionNumber > 1
-                ? '🔄 Yêu cầu duyệt lại câu hỏi vào Ngân hàng câu hỏi'
-                : '🔔 Yêu cầu duyệt câu hỏi vào Ngân hàng câu hỏi';
+                ? '🔄 Yêu cầu duyệt lại câu hỏi vào Ngân hàng'
+                : '🔔 Yêu cầu duyệt câu hỏi vào Ngân hàng';
 
             $message = $this->revisionNumber > 1
-                ? "Tác giả {$this->author->name} đã cập nhật và gửi duyệt lại câu hỏi #{$this->question->id} (\"{$snippet}\") vào Ngân hàng câu hỏi (Lần #{$this->revisionNumber})."
-                : "Tác giả {$this->author->name} đã gửi yêu cầu duyệt câu hỏi #{$this->question->id} (\"{$snippet}\") vào Ngân hàng câu hỏi.";
+                ? "Tác giả {$this->author->name} đã cập nhật và gửi duyệt lại câu hỏi #{$this->question->id} (\"{$snippet}\") (Lần #{$this->revisionNumber})."
+                : "Tác giả {$this->author->name} đã gửi yêu cầu duyệt câu hỏi #{$this->question->id} (\"{$snippet}\") vào Ngân hàng.";
         }
 
         return [

@@ -89,4 +89,9 @@ class QuestionReviewRequest extends Model
     {
         return $query->where('status', 'rejected');
     }
+
+    public function scopeSuperseded($query)
+    {
+        return $query->where('status', 'superseded');
+    }
 }

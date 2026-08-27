@@ -255,29 +255,6 @@ export const adminBankRequestsApi = {
 };
 
 export const adminQuestionsApi = {
-  async fetchPending(params = {}) {
-    const { data } = await api.get('/admin/questions/pending', { params });
-    const payload = unwrap(data);
-    const items = Array.isArray(payload?.data) ? payload.data : (Array.isArray(payload?.items) ? payload.items : (Array.isArray(payload) ? payload : []));
-    return {
-      items,
-      total: payload?.total ?? items.length,
-      currentPage: payload?.current_page ?? 1,
-      lastPage: payload?.last_page ?? 1,
-      perPage: payload?.per_page ?? 20
-    };
-  },
-
-  async moderate(id, payload) {
-    const { data } = await api.put(`/admin/questions/${id}/moderate`, payload);
-    return unwrap(data);
-  },
-
-  async bulkModerate(payload) {
-    const { data } = await api.post('/admin/questions/bulk-moderate', payload);
-    return unwrap(data);
-  },
-
   async list(params = {}) {
     const { data } = await api.get('/admin/questions-management', { params });
     const payload = unwrap(data);
@@ -355,6 +332,39 @@ export const adminQuestionsApi = {
 
   async remove(id) {
     const { data } = await api.delete(`/admin/questions/${id}`);
+    return unwrap(data);
+  }
+};
+
+export const adminQuizzesApi = {
+  async list(params = {}) {
+    const { data } = await api.get('/admin/quizzes', { params });
+    const payload = unwrap(data);
+    const items = Array.isArray(payload?.items) 
+      ? payload.items 
+      : (Array.isArray(payload?.data) ? payload.data : (Array.isArray(payload) ? payload : []));
+    return {
+      items,
+      total: payload?.total ?? items.length,
+      currentPage: payload?.current_page ?? 1,
+      lastPage: payload?.last_page ?? 1,
+      perPage: payload?.per_page ?? 15,
+      stats: payload?.stats ?? { total: 0, public: 0, private: 0, pending: 0, rejected: 0 }
+    };
+  },
+
+  async get(id) {
+    const { data } = await api.get(`/admin/quizzes/${id}`);
+    return unwrap(data);
+  },
+
+  async toggleVisibility(id) {
+    const { data } = await api.patch(`/admin/quizzes/${id}/toggle-visibility`);
+    return unwrap(data);
+  },
+
+  async remove(id) {
+    const { data } = await api.delete(`/admin/quizzes/${id}`);
     return unwrap(data);
   }
 };
@@ -1274,12 +1284,18 @@ export const homeworkApi = {
     return unwrapCollection(data);
   },
 
-  async startRoomAssignmentAttempt(assignmentId, payload = {}) {
+  async startAssignmentAttempt(firstArg, secondArg) {
+    const assignmentId = secondArg !== undefined && secondArg !== null ? secondArg : firstArg;
+    const payload = typeof secondArg === 'object' && secondArg !== null ? secondArg : {};
     const { data } = await api.post(
       `/room-assignments/${assignmentId}/attempts/start`,
       payload,
     );
     return unwrap(data);
+  },
+
+  async startRoomAssignmentAttempt(assignmentId, payload = {}) {
+    return this.startAssignmentAttempt(assignmentId, payload);
   },
 
   async answerRoomAssignmentAttempt(assignmentId, attemptId, payload) {
@@ -1290,13 +1306,44 @@ export const homeworkApi = {
     return unwrap(data);
   },
 
-  async submitRoomAssignmentAttempt(assignmentId, attemptId, payload) {
+  async submitAssignmentAttempt(firstArg, secondArg, thirdArg) {
+    let assignmentId;
+    let attemptId;
+    let payload;
+
+    if (thirdArg !== undefined) {
+      if (typeof thirdArg === 'object' && thirdArg?.attempt_id) {
+        // Form: submitAssignmentAttempt(roomId, assignmentId, { attempt_id, answers })
+        assignmentId = secondArg;
+        attemptId = thirdArg.attempt_id;
+        payload = { answers: thirdArg.answers || {} };
+      } else {
+        // Form: submitAssignmentAttempt(assignmentId, attemptId, payload)
+        assignmentId = firstArg;
+        attemptId = secondArg;
+        payload = thirdArg;
+      }
+    } else if (secondArg !== undefined && typeof secondArg === 'object' && secondArg?.attempt_id) {
+      // Form: submitAssignmentAttempt(assignmentId, { attempt_id, answers })
+      assignmentId = firstArg;
+      attemptId = secondArg.attempt_id;
+      payload = { answers: secondArg.answers || {} };
+    } else {
+      assignmentId = firstArg;
+      attemptId = secondArg;
+      payload = {};
+    }
+
     const body = payload?.answers ? payload : { answers: payload };
     const { data } = await api.post(
       `/room-assignments/${assignmentId}/attempts/${attemptId}/submit`,
       body,
     );
     return unwrap(data);
+  },
+
+  async submitRoomAssignmentAttempt(assignmentId, attemptId, payload) {
+    return this.submitAssignmentAttempt(assignmentId, attemptId, payload);
   },
 
   async resetRoomAssignmentAttempt(assignmentId, attemptId) {
@@ -1641,14 +1688,34 @@ export const reportApi = {
   // Dành cho Admin: Lấy danh sách audit log các báo cáo
   async listAdmin(params = {}) {
     const { data } = await api.get("/admin/report-tickets", { params });
-    return unwrapCollection(data);
+    const payload = unwrap(data);
+    const items = Array.isArray(payload) ? payload : (Array.isArray(payload?.data) ? payload.data : []);
+    return {
+      items,
+      stats: payload?.stats ?? data?.stats ?? { total: 0, pending: 0, resolved: 0, dismissed: 0, questions_count: 0 },
+      total: items.length
+    };
   },
 
-  // Dành cho Admin: Cập nhật trạng thái báo cáo vi phạm câu hỏi (pending, resolved, dismissed)
-  async updateStatus(id, status) {
-    const { data } = await api.put(`/admin/report-tickets/${id}`, { status });
+  async get(id) {
+    const { data } = await api.get(`/admin/report-tickets/${id}`);
     return unwrap(data);
   },
+
+  async updateStatus(id, payload = {}) {
+    const { data } = await api.patch(`/admin/report-tickets/${id}/status`, payload);
+    return unwrap(data);
+  },
+
+  async resolveQuestionReports(payload = {}) {
+    const { data } = await api.post('/admin/report-tickets/resolve-question', payload);
+    return unwrap(data);
+  },
+
+  async countPending() {
+    const { data } = await api.get('/admin/report-tickets/count');
+    return unwrap(data);
+  }
 };
 
 

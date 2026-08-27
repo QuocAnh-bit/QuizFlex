@@ -152,6 +152,19 @@ class QuizReviewService
         }
 
         $quiz = $target instanceof QuizReviewRequest ? $target->quiz : $target;
+
+        if (!$quiz) {
+            throw ValidationException::withMessages([
+                'quiz' => 'Không tìm thấy bài Quiz để phê duyệt.',
+            ]);
+        }
+
+        if ($quiz->review_status !== 'pending_review') {
+            throw ValidationException::withMessages([
+                'quiz' => 'Chỉ có thể phê duyệt bài Quiz đang ở trạng thái chờ duyệt (pending_review).',
+            ]);
+        }
+
         $questions = $quiz->questions()->with('answers')->get();
 
         // Kiểm tra tính hợp lệ của toàn bộ câu hỏi trước khi duyệt
@@ -161,6 +174,11 @@ class QuizReviewService
             // 1. Tìm hoặc sử dụng request đang xử lý
             if ($target instanceof QuizReviewRequest) {
                 $request = $target;
+                if ($request->status !== 'pending') {
+                    throw ValidationException::withMessages([
+                        'quiz' => 'Yêu cầu kiểm duyệt này không ở trạng thái chờ xử lý (pending).',
+                    ]);
+                }
             } else {
                 $request = QuizReviewRequest::where('quiz_id', $quiz->id)
                     ->where('status', 'pending')
@@ -168,14 +186,8 @@ class QuizReviewService
                     ->first();
 
                 if (!$request) {
-                    $maxRevision = QuizReviewRequest::where('quiz_id', $quiz->id)->max('revision_number') ?? 0;
-                    $request = QuizReviewRequest::create([
-                        'quiz_id' => $quiz->id,
-                        'user_id' => $quiz->user_id ?? $admin->id,
-                        'revision_number' => $maxRevision + 1,
-                        'status' => 'pending',
-                        'snapshot_title' => $quiz->title,
-                        'snapshot_description' => $quiz->description,
+                    throw ValidationException::withMessages([
+                        'quiz' => 'Không tìm thấy yêu cầu kiểm duyệt đang chờ xử lý cho bài Quiz này.',
                     ]);
                 }
             }
@@ -266,9 +278,26 @@ class QuizReviewService
 
         $quiz = $target instanceof QuizReviewRequest ? $target->quiz : $target;
 
+        if (!$quiz) {
+            throw ValidationException::withMessages([
+                'quiz' => 'Không tìm thấy bài Quiz để từ chối.',
+            ]);
+        }
+
+        if ($quiz->review_status !== 'pending_review') {
+            throw ValidationException::withMessages([
+                'quiz' => 'Chỉ có thể từ chối bài Quiz đang ở trạng thái chờ duyệt (pending_review).',
+            ]);
+        }
+
         return DB::transaction(function () use ($quiz, $target, $admin, $trimmedReason) {
             if ($target instanceof QuizReviewRequest) {
                 $request = $target;
+                if ($request->status !== 'pending') {
+                    throw ValidationException::withMessages([
+                        'quiz' => 'Yêu cầu kiểm duyệt này không ở trạng thái chờ xử lý (pending).',
+                    ]);
+                }
             } else {
                 $request = QuizReviewRequest::where('quiz_id', $quiz->id)
                     ->where('status', 'pending')
@@ -276,14 +305,8 @@ class QuizReviewService
                     ->first();
 
                 if (!$request) {
-                    $maxRevision = QuizReviewRequest::where('quiz_id', $quiz->id)->max('revision_number') ?? 0;
-                    $request = QuizReviewRequest::create([
-                        'quiz_id' => $quiz->id,
-                        'user_id' => $quiz->user_id ?? $admin->id,
-                        'revision_number' => $maxRevision + 1,
-                        'status' => 'pending',
-                        'snapshot_title' => $quiz->title,
-                        'snapshot_description' => $quiz->description,
+                    throw ValidationException::withMessages([
+                        'quiz' => 'Không tìm thấy yêu cầu kiểm duyệt đang chờ xử lý cho bài Quiz này.',
                     ]);
                 }
             }

@@ -40,12 +40,11 @@ class QuestionController extends Controller
     }
 
     /**
-     * Scope lọc chỉ lấy các câu hỏi công khai ĐÃ ĐƯỢC ADMIN DUYỆT thuộc ngân hàng chung
+     * Scope lọc chỉ lấy các câu hỏi công khai thuộc ngân hàng chung hoặc bài thi công khai đã xuất bản
      */
     private function applyPublicQuestionScope($query)
     {
         return $query->where('is_public', true)
-            ->where('status', 'approved')
             ->where(function ($q) {
                 $q->whereNull('quiz_id')
                     ->orWhereHas('quiz', fn($sq) => $sq->where('is_public', true)->where('status', 'published'))
@@ -65,7 +64,18 @@ class QuestionController extends Controller
 
         if ($request->filled('search')) {
             $keyword = trim((string) $request->query('search'));
-            $query->where('content', 'like', "%{$keyword}%");
+            $cleanKeyword = ltrim($keyword, '#');
+            $numericId = is_numeric($cleanKeyword) ? (int) $cleanKeyword : null;
+
+            $query->where(function ($q) use ($keyword, $numericId) {
+                if ($numericId !== null) {
+                    $q->where('id', $numericId)
+                      ->orWhere('origin_question_id', $numericId)
+                      ->orWhere('content', 'like', "%{$keyword}%");
+                } else {
+                    $q->where('content', 'like', "%{$keyword}%");
+                }
+            });
         }
 
         if ($request->filled('education_level_id')) {
@@ -634,24 +644,6 @@ class QuestionController extends Controller
 
         $fingerprint = $this->snapshotService->computeFingerprintFromSnapshot($content, $type, $normalizedAnswers);
 
-        $relatedIds = array_filter(array_unique([
-            $question->id,
-            $question->origin_question_id,
-            ...Question::where('origin_question_id', $question->id)->pluck('id')->all(),
-            ...($question->origin_question_id ? Question::where('origin_question_id', $question->origin_question_id)->pluck('id')->all() : [])
-        ]));
-
-        $activeReportTicket = \App\Models\ReportTicket::whereIn('question_id', $relatedIds)
-            ->where('status', 'pending')
-            ->latest()
-            ->first();
-
-        $isReportedOrLocked = $activeReportTicket !== null
-            || !$question->is_public
-            || $question->status === 'rejected'
-            || $question->bank_submission_status === 'rejected'
-            || \App\Models\ReportTicket::whereIn('question_id', $relatedIds)->exists();
-
         $duplicate = Question::where(function ($q) use ($user, $question) {
                 $q->where('user_id', $user->id);
                 if ($question->quiz_id) {
@@ -660,7 +652,7 @@ class QuestionController extends Controller
             })
             ->whereNull('origin_question_id')
             ->where('fingerprint', $fingerprint)
-            ->whereNotIn('id', $relatedIds)
+            ->where('id', '!=', $question->id)
             ->exists();
 
         if ($duplicate) {
@@ -669,18 +661,7 @@ class QuestionController extends Controller
             ]);
         }
 
-        $question = DB::transaction(function () use ($question, $data, $content, $type, $fingerprint, $relatedIds, $activeReportTicket, $isReportedOrLocked, $user) {
-            $isBankSubmissionRejection = $question->bank_submission_status === 'rejected' || $question->bank_submission_status === 'pending';
-
-            if ($activeReportTicket) {
-                // Đây là câu hỏi bị người học BÁO CÁO VI PHẠM -> Cập nhật trạng thái đính chính trên ReportTicket
-                $activeReportTicket->update(['has_author_updated' => true]);
-            } elseif ($isReportedOrLocked && \App\Models\ReportTicket::whereIn('question_id', $relatedIds)->exists()) {
-                \App\Models\ReportTicket::whereIn('question_id', $relatedIds)
-                    ->where('status', 'pending')
-                    ->update(['has_author_updated' => true]);
-            }
-
+        $question = DB::transaction(function () use ($question, $data, $content, $type, $fingerprint) {
             $question->update([
                 'content' => $content,
                 'image_url' => $data['image_url'] ?? $question->image_url,
@@ -688,21 +669,10 @@ class QuestionController extends Controller
                 'order' => $data['order'] ?? $question->order,
                 'points' => $data['points'] ?? $question->points,
                 'fingerprint' => $fingerprint,
-                'status' => ($isReportedOrLocked || $isBankSubmissionRejection) ? 'pending' : $question->status,
-                'bank_submission_status' => $isBankSubmissionRejection ? 'pending' : $question->bank_submission_status,
             ]);
 
             if (array_key_exists('answers', $data)) {
                 $this->syncAnswers($question, $data['answers'], $data['correct'] ?? null);
-            }
-
-            // Nếu đây là đính chính sau khi bị từ chối duyệt Ngân hàng -> Tạo QuestionReviewRequest nộp lại (Revision n+1)
-            if ($isBankSubmissionRejection && !$activeReportTicket) {
-                try {
-                    $this->reviewService->submitToBank($question, $user, 'Tác giả cập nhật nội dung đính chính sau khi từ chối');
-                } catch (\Throwable $e) {
-                    \Illuminate\Support\Facades\Log::warning('Không thể tạo QuestionReviewRequest nộp lại: ' . $e->getMessage());
-                }
             }
 
             return $question->fresh('answers');
@@ -816,24 +786,14 @@ class QuestionController extends Controller
         }
 
         $reportQuestionIds = array_filter(array_unique([$question->id, $question->origin_question_id]));
-        $pendingReport = ReportTicket::whereIn('question_id', $reportQuestionIds)
-            ->where('status', 'pending')
+        $unresolvedReport = ReportTicket::whereIn('question_id', $reportQuestionIds)
+            ->whereIn('status', ['pending', 'author_updated', 'admin_review_required'])
             ->latest()
             ->first();
 
-        $latestReport = $pendingReport ?? ReportTicket::whereIn('question_id', $reportQuestionIds)->latest()->first();
-        $hasPendingReport = $pendingReport !== null;
-        $isUpdatedAfterCreation = $question->status === 'pending' && $question->updated_at && $question->created_at && ($question->updated_at->timestamp > $question->created_at->timestamp + 2);
-
-        $hasAuthorUpdated = (bool) (
-            $question->status === 'pending' && (
-                ($pendingReport && $pendingReport->has_author_updated) ||
-                ($latestReport && $latestReport->has_author_updated) ||
-                $isUpdatedAfterCreation
-            )
-        );
-
-        $isLockedByAdmin = !$question->is_public && ($hasPendingReport || ($latestReport !== null && $latestReport->status !== 'dismissed')) && !$hasAuthorUpdated;
+        $latestReport = $unresolvedReport ?? ReportTicket::whereIn('question_id', $reportQuestionIds)->latest()->first();
+        $hasPendingReport = $unresolvedReport !== null;
+        $isLockedByAdmin = $hasPendingReport;
 
         return [
             'id' => $question->id,
@@ -854,14 +814,12 @@ class QuestionController extends Controller
             'topic_name' => $question->topic_name,
             'origin_question_id' => $question->origin_question_id,
             'is_public' => (bool) $question->is_public,
-            'status' => $question->status ?? ($hasAuthorUpdated ? 'pending' : 'approved'),
             'bank_submission_status' => $question->bank_submission_status ?? 'none',
             'bank_submission_note' => $question->bank_submission_note,
             'bank_submission_at' => $question->bank_submission_at ? $question->bank_submission_at->toIso8601String() : null,
             'has_report' => $hasPendingReport,
-            'has_author_updated' => $hasAuthorUpdated,
             'is_locked_by_admin' => $isLockedByAdmin,
-            'report_reason' => $pendingReport?->description ?? $pendingReport?->reason ?? $question->bank_submission_note ?? $latestReport?->description ?? $latestReport?->reason ?? null,
+            'report_reason' => $pendingReport?->reason ?? $pendingReport?->description ?? ($isLockedByAdmin ? ($latestReport?->reason ?? $latestReport?->description) : null),
             'order' => $question->order,
             'points' => $question->points ?? 10,
             'author_name' => $question->user?->name ?? $question->quiz?->user?->name ?? 'Vô danh',
@@ -889,69 +847,6 @@ class QuestionController extends Controller
     }
 
     /**
-     * Admin duyệt hoặc từ chối hàng loạt câu hỏi
-     */
-    public function bulkModerateQuestions(Request $request)
-    {
-        $admin = auth('api')->user();
-        if (!$admin || strtolower($admin->role ?? '') !== 'admin') {
-            return response()->json(['success' => false, 'message' => 'Bạn không có quyền thực hiện chức năng này.'], 403);
-        }
-
-        $validated = $request->validate([
-            'question_ids' => ['required', 'array', 'min:1'],
-            'question_ids.*' => ['integer', 'exists:questions,id'],
-            'action' => ['required', Rule::in(['approve', 'reject'])],
-            'note' => ['nullable', 'string', 'max:500'],
-        ]);
-
-        $isApprove = $validated['action'] === 'approve';
-        $note = $validated['note'] ?? null;
-        $questions = Question::with('user')->whereIn('id', $validated['question_ids'])->get();
-
-        foreach ($questions as $question) {
-            $question->update([
-                'is_public' => $isApprove ? true : false,
-                'status' => $isApprove ? 'approved' : 'rejected',
-            ]);
-
-            if ($isApprove) {
-                \App\Models\ReportTicket::where('question_id', $question->id)
-                    ->update(['status' => 'resolved', 'has_author_updated' => false]);
-            } else {
-                \App\Models\ReportTicket::updateOrCreate(
-                    [
-                        'question_id' => $question->id,
-                        'status' => 'pending',
-                    ],
-                    [
-                        'user_id' => $admin->id,
-                        'reason' => 'Admin từ chối duyệt công khai',
-                        'description' => $note ?: 'Nội dung chưa đạt yêu cầu duyệt công khai',
-                        'has_author_updated' => false,
-                    ]
-                );
-            }
-
-            if ($question->user) {
-                try {
-                    $question->user->notify(new \App\Notifications\QuestionModerated($question, $validated['action'], $note));
-                } catch (\Exception $e) {
-                    // Ignore broadcast error
-                }
-            }
-        }
-
-        return response()->json([
-            'success' => true,
-            'message' => $isApprove 
-                ? "Đã duyệt công khai {$questions->count()} câu hỏi thành công!" 
-                : "Đã từ chối {$questions->count()} câu hỏi thành công!",
-            'count' => $questions->count(),
-        ]);
-    }
-
-    /**
      * Danh sách Kho câu hỏi cá nhân của user
      */
     public function userBank(Request $request)
@@ -975,7 +870,17 @@ class QuestionController extends Controller
 
         if ($request->filled('search')) {
             $keyword = trim((string) $request->query('search'));
-            $query->where('content', 'like', "%{$keyword}%");
+            $cleanKeyword = ltrim($keyword, '#');
+            $numericId = is_numeric($cleanKeyword) ? (int) $cleanKeyword : null;
+
+            $query->where(function ($q) use ($keyword, $numericId) {
+                if ($numericId !== null) {
+                    $q->where('id', $numericId)
+                      ->orWhere('content', 'like', "%{$keyword}%");
+                } else {
+                    $q->where('content', 'like', "%{$keyword}%");
+                }
+            });
         }
 
         if ($request->filled('education_level_id')) {
@@ -1084,9 +989,7 @@ class QuestionController extends Controller
             'answers.*.content.required' => 'Vui lòng điền đầy đủ nội dung cho tất cả các lựa chọn đáp án.',
         ]);
 
-        $isPublicNew = array_key_exists('is_public', $validated) ? (bool)$validated['is_public'] : ($question->is_public ?? true);
         $isAdmin = strtolower($user->role ?? '') === 'admin';
-        $statusNew = $isAdmin ? 'approved' : 'pending';
 
         $type = $question->type ?? 'single_choice';
         $fingerprint = $this->snapshotService->computeFingerprintFromSnapshot(
@@ -1095,29 +998,10 @@ class QuestionController extends Controller
             $validated['answers']
         );
 
-        $relatedIds = array_filter(array_unique([
-            $question->id,
-            $question->origin_question_id,
-            ...Question::where('origin_question_id', $question->id)->pluck('id')->all(),
-            ...($question->origin_question_id ? Question::where('origin_question_id', $question->origin_question_id)->pluck('id')->all() : [])
-        ]));
-
-        $activeReportTicket = \App\Models\ReportTicket::whereIn('question_id', $relatedIds)
-            ->where('status', 'pending')
-            ->latest()
-            ->first();
-
-        // Tự động nhận diện nếu câu hỏi từng bị báo cáo, bị gỡ công khai hoặc bị từ chối
-        $isReportedOrLocked = $activeReportTicket !== null
-            || !$question->is_public
-            || $question->status === 'rejected'
-            || $question->bank_submission_status === 'rejected'
-            || \App\Models\ReportTicket::whereIn('question_id', $relatedIds)->exists();
-
         $duplicate = Question::where('user_id', $user->id)
             ->whereNull('origin_question_id')
             ->where('fingerprint', $fingerprint)
-            ->whereNotIn('id', $relatedIds)
+            ->where('id', '!=', $question->id)
             ->exists();
 
         if ($duplicate) {
@@ -1126,9 +1010,7 @@ class QuestionController extends Controller
             ]);
         }
 
-        DB::transaction(function () use ($question, $validated, $isPublicNew, $statusNew, $isAdmin, $fingerprint, $relatedIds, $activeReportTicket, $isReportedOrLocked, $user) {
-            $isBankSubmissionRejection = $question->bank_submission_status === 'rejected' || $question->bank_submission_status === 'pending';
-
+        DB::transaction(function () use ($question, $validated, $isAdmin, $fingerprint) {
             $updateData = [
                 'content' => trim($validated['content']),
                 'difficulty' => $validated['difficulty'] ?? $question->difficulty ?? 'medium',
@@ -1140,42 +1022,28 @@ class QuestionController extends Controller
                 'fingerprint' => $fingerprint,
             ];
 
-            if ($activeReportTicket) {
-                // REPORT WORKFLOW: Tác giả đính chính câu hỏi thực sự bị người học báo cáo vi phạm
-                $updateData['status'] = 'pending';
-                $activeReportTicket->update(['has_author_updated' => true]);
-            } elseif ($isBankSubmissionRejection && !$isAdmin) {
-                // BANK WORKFLOW: Tác giả đính chính câu hỏi bị từ chối duyệt Ngân hàng -> Chuyển thành pending để gửi duyệt lại
-                $updateData['status'] = 'pending';
-                $updateData['bank_submission_status'] = 'pending';
-            } elseif ($isAdmin && array_key_exists('is_public', $validated)) {
+            if ($isAdmin && array_key_exists('is_public', $validated)) {
                 $updateData['is_public'] = (bool)$validated['is_public'];
                 if ($updateData['is_public']) {
                     $updateData['bank_submission_status'] = 'approved';
-                    $updateData['status'] = 'approved';
                 }
             } else {
-                $updateData['is_public'] = $isPublicNew;
-                $updateData['status'] = $statusNew;
+                // Người dùng chỉnh sửa câu hỏi:
+                $updateData['is_public'] = false;
+                // Nếu câu hỏi trước đó là approved và user sửa nội dung cá nhân, reset về none
                 if ($question->bank_submission_status === 'approved') {
                     $updateData['bank_submission_status'] = 'none';
                     $updateData['bank_submission_note'] = null;
                 }
+                // Nếu đang là 'rejected', 'none', 'pending': GIỮ NGUYÊN trạng thái hiện tại.
+                // Không tự động chuyển sang pending, không xóa lý do bị từ chối trước đó,
+                // chỉ khi người dùng chủ động bấm 'Gửi duyệt' thì mới tạo revision mới.
             }
 
             $question->update($updateData);
 
             if (isset($validated['answers'])) {
                 $this->syncAnswers($question, $validated['answers'], null);
-            }
-
-            // Nếu đây là đính chính câu hỏi bị từ chối duyệt Ngân hàng -> Tạo QuestionReviewRequest gửi nộp lại (Revision n+1)
-            if ($isBankSubmissionRejection && !$activeReportTicket && !$isAdmin) {
-                try {
-                    $this->reviewService->submitToBank($question, $user, 'Tác giả cập nhật đính chính nội dung sau khi bị từ chối');
-                } catch (\Throwable $e) {
-                    \Illuminate\Support\Facades\Log::warning('Không thể tạo QuestionReviewRequest nộp lại trong updateQuestion: ' . $e->getMessage());
-                }
             }
         });
 
@@ -1194,12 +1062,23 @@ class QuestionController extends Controller
             return;
         }
 
-        // Chỉ gửi thông báo ReportAuthorUpdated cho Admin nếu câu hỏi này thực sự đang có Báo cáo vi phạm chờ xử lý
-        $hasPendingReport = \App\Models\ReportTicket::where('question_id', $question->id)
-            ->where('status', 'pending')
+        $targetQuestionIds = array_filter(array_unique([
+            $question->id,
+            $question->origin_question_id,
+        ]));
+        $snapshotIds = Question::where('origin_question_id', $question->id)->pluck('id')->all();
+        $allRelatedIds = array_values(array_unique(array_merge($targetQuestionIds, $snapshotIds)));
+
+        // Cập nhật các ReportTicket pending / admin_review_required sang author_updated
+        ReportTicket::whereIn('question_id', $allRelatedIds)
+            ->whereIn('status', [ReportTicket::STATUS_PENDING, ReportTicket::STATUS_ADMIN_REVIEW_REQUIRED])
+            ->update(['status' => ReportTicket::STATUS_AUTHOR_UPDATED]);
+
+        $hasAuthorUpdatedReport = ReportTicket::whereIn('question_id', $allRelatedIds)
+            ->where('status', ReportTicket::STATUS_AUTHOR_UPDATED)
             ->exists();
 
-        if ($hasPendingReport) {
+        if ($hasAuthorUpdatedReport) {
             $admins = User::whereIn('role', ['admin', 'ADMIN'])->get();
             if ($admins->isNotEmpty()) {
                 Notification::send($admins, new ReportAuthorUpdated($question, 'question', $user));
@@ -1241,11 +1120,8 @@ class QuestionController extends Controller
         ]);
 
         $isAdmin = strtolower($user->role ?? '') === 'admin';
-        $isPublicRequested = isset($validated['is_public']) ? (bool)$validated['is_public'] : false;
-        
-        $isPublic = $isAdmin ? $isPublicRequested : false;
-        $status = (!$isPublicRequested || $isAdmin) ? 'approved' : 'pending';
-        $bankSubmissionStatus = $isPublicRequested ? ($isAdmin ? 'approved' : 'pending') : 'none';
+        $isPublic = $isAdmin && isset($validated['is_public']) ? (bool)$validated['is_public'] : false;
+        $bankSubmissionStatus = $isPublic ? 'approved' : 'none';
         $type = $validated['type'] ?? 'single_choice';
 
         $fingerprint = $this->snapshotService->computeFingerprintFromSnapshot(
@@ -1265,7 +1141,7 @@ class QuestionController extends Controller
             ]);
         }
 
-        $question = DB::transaction(function () use ($user, $validated, $isPublic, $status, $bankSubmissionStatus, $type, $fingerprint) {
+        $question = DB::transaction(function () use ($user, $validated, $isPublic, $bankSubmissionStatus, $type, $fingerprint) {
             $q = Question::create([
                 'user_id' => $user->id,
                 'content' => trim($validated['content']),
@@ -1277,7 +1153,6 @@ class QuestionController extends Controller
                 'subject_id' => $validated['subject_id'] ?? null,
                 'topic_name' => $validated['topic_name'] ?? null,
                 'is_public' => $isPublic,
-                'status' => $status,
                 'bank_submission_status' => $bankSubmissionStatus,
                 'fingerprint' => $fingerprint,
             ]);
@@ -1286,118 +1161,14 @@ class QuestionController extends Controller
                 $this->syncAnswers($q, $validated['answers'], null);
             }
 
-            if ($bankSubmissionStatus === 'pending') {
-                try {
-                    $this->reviewService->submitToBank($q, $user);
-                } catch (\Throwable $e) {
-                    \Illuminate\Support\Facades\Log::warning('Không thể tạo QuestionReviewRequest khi tạo mới: ' . $e->getMessage());
-                }
-            }
-
             return $q;
         });
 
-        $msg = $status === 'pending'
-            ? 'Tạo câu hỏi mới thành công! Đã gửi thông báo chờ Admin duyệt công khai lên Ngân hàng.'
-            : 'Tạo câu hỏi mới thành công!';
-
         return response()->json([
             'success' => true,
-            'message' => $msg,
+            'message' => 'Tạo câu hỏi mới thành công!',
             'data' => $this->formatQuestion($question->fresh(['answers', 'educationLevel', 'grade', 'subject']), true),
         ], 201);
-    }
-
-    /**
-     * Danh sách câu hỏi chờ Admin duyệt công khai
-     */
-    public function pendingQuestions(Request $request)
-    {
-        $user = auth('api')->user();
-        if (!$user || strtolower($user->role ?? '') !== 'admin') {
-            return response()->json(['success' => false, 'message' => 'Bạn không có quyền thực hiện chức năng này.'], 403);
-        }
-
-        $query = Question::query()
-            ->with(['answers', 'user:id,name,email', 'educationLevel', 'grade', 'subject'])
-            ->where('status', 'pending');
-
-        if ($request->filled('search')) {
-            $keyword = trim((string) $request->query('search'));
-            $query->where('content', 'like', "%{$keyword}%");
-        }
-
-        $query->latest();
-        $perPage = min(max((int) $request->query('per_page', 20), 1), 100);
-        $questions = $query->paginate($perPage)->through(fn(Question $q) => $this->formatQuestion($q));
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Danh sách câu hỏi chờ kiểm duyệt',
-            'data' => $questions,
-        ]);
-    }
-
-    /**
-     * Admin duyệt hoặc từ chối công khai câu hỏi
-     */
-    public function moderateQuestion(Request $request, $id)
-    {
-        $admin = auth('api')->user();
-        if (!$admin || strtolower($admin->role ?? '') !== 'admin') {
-            return response()->json(['success' => false, 'message' => 'Bạn không có quyền thực hiện chức năng này.'], 403);
-        }
-
-        $question = Question::with('user')->find($id);
-        if (!$question) {
-            return response()->json(['success' => false, 'message' => 'Không tìm thấy câu hỏi.'], 404);
-        }
-
-        $validated = $request->validate([
-            'action' => ['required', Rule::in(['approve', 'reject'])],
-            'note' => ['nullable', 'string', 'max:500'],
-        ]);
-
-        $isApprove = $validated['action'] === 'approve';
-        $note = $validated['note'] ?? null;
-
-        $question->update([
-            'is_public' => $isApprove ? true : false,
-            'status' => $isApprove ? 'approved' : 'rejected',
-            'bank_submission_status' => $isApprove ? 'approved' : 'rejected',
-        ]);
-
-        if ($isApprove) {
-            \App\Models\ReportTicket::where('question_id', $question->id)
-                ->update(['status' => 'resolved', 'has_author_updated' => false]);
-        } else {
-            \App\Models\ReportTicket::updateOrCreate(
-                [
-                    'question_id' => $question->id,
-                    'status' => 'pending',
-                ],
-                [
-                    'user_id' => $admin->id,
-                    'reason' => 'Admin từ chối duyệt công khai',
-                    'description' => $note ?: 'Nội dung chưa đạt yêu cầu duyệt công khai',
-                    'has_author_updated' => false,
-                ]
-            );
-        }
-
-        if ($question->user) {
-            try {
-                $question->user->notify(new \App\Notifications\QuestionModerated($question, $validated['action'], $note));
-            } catch (\Exception $e) {
-                // Ignore
-            }
-        }
-
-        return response()->json([
-            'success' => true,
-            'message' => $isApprove ? 'Đã duyệt công khai câu hỏi thành công!' : 'Đã từ chối công khai câu hỏi và chuyển về Kho cá nhân.',
-            'data' => $this->formatQuestion($question->fresh(['answers', 'educationLevel', 'grade', 'subject'])),
-        ]);
     }
 
     /**
@@ -1422,9 +1193,14 @@ class QuestionController extends Controller
         $note = $request->input('note') ?? $request->input('request_note');
         $reviewRequest = $this->reviewService->submitToBank($question, $user, $note);
 
+        $isAutoApproved = $reviewRequest->status === 'approved';
+        $message = $isAutoApproved
+            ? 'Câu hỏi đã được hệ thống tự động kiểm duyệt và phê duyệt thành công!'
+            : 'Đã gửi yêu cầu kiểm duyệt câu hỏi vào Ngân hàng thành công!';
+
         return response()->json([
             'success' => true,
-            'message' => 'Đã gửi yêu cầu kiểm duyệt câu hỏi vào Ngân hàng thành công!',
+            'message' => $message,
             'data' => [
                 'question' => $this->formatQuestion($question->fresh(['answers', 'educationLevel', 'grade', 'subject']), true),
                 'review_request' => $this->reviewService->formatRevision($reviewRequest),
@@ -1504,9 +1280,22 @@ class QuestionController extends Controller
 
         if ($request->filled('search')) {
             $keyword = trim((string) $request->query('search'));
-            $query->where(function ($q) use ($keyword) {
-                $q->where('content', 'like', "%{$keyword}%")
-                  ->orWhereHas('user', fn($uq) => $uq->where('name', 'like', "%{$keyword}%"));
+            $cleanKeyword = ltrim($keyword, '#');
+            $numericId = is_numeric($cleanKeyword) ? (int) $cleanKeyword : null;
+
+            $query->where(function ($q) use ($keyword, $numericId) {
+                if ($numericId !== null) {
+                    $q->where('id', $numericId)
+                      ->orWhere('origin_question_id', $numericId)
+                      ->orWhereHas('reviewRequests', fn($rq) => $rq->where('id', $numericId))
+                      ->orWhere('content', 'like', "%{$keyword}%")
+                      ->orWhereHas('user', fn($uq) => $uq->where('name', 'like', "%{$keyword}%")->orWhere('email', 'like', "%{$keyword}%"))
+                      ->orWhereHas('quiz', fn($qz) => $qz->where('title', 'like', "%{$keyword}%"));
+                } else {
+                    $q->where('content', 'like', "%{$keyword}%")
+                      ->orWhereHas('user', fn($uq) => $uq->where('name', 'like', "%{$keyword}%")->orWhere('email', 'like', "%{$keyword}%"))
+                      ->orWhereHas('quiz', fn($qz) => $qz->where('title', 'like', "%{$keyword}%"));
+                }
             });
         }
 
@@ -1722,15 +1511,20 @@ class QuestionController extends Controller
         ]);
 
         $ids = $request->input('ids');
-        $questions = Question::with(['user', 'quiz.user', 'answers', 'educationLevel', 'grade', 'subject'])->whereIn('id', $ids)->get();
+        $questions = Question::with(['user', 'quiz.user', 'answers', 'educationLevel', 'grade', 'subject'])
+            ->whereIn('id', $ids)
+            ->where('bank_submission_status', 'pending')
+            ->get();
 
+        $processedCount = 0;
         foreach ($questions as $question) {
             $this->reviewService->approveQuestion($question, $user);
+            $processedCount++;
         }
 
         return response()->json([
             'success' => true,
-            'message' => "Đã phê duyệt " . count($ids) . " câu hỏi vào Ngân hàng thành công!",
+            'message' => "Đã phê duyệt {$processedCount} câu hỏi vào Ngân hàng thành công!",
         ]);
     }
 
@@ -1754,15 +1548,20 @@ class QuestionController extends Controller
 
         $ids = $request->input('ids');
         $note = trim($request->input('note'));
-        $questions = Question::with(['user', 'quiz.user', 'answers', 'educationLevel', 'grade', 'subject'])->whereIn('id', $ids)->get();
+        $questions = Question::with(['user', 'quiz.user', 'answers', 'educationLevel', 'grade', 'subject'])
+            ->whereIn('id', $ids)
+            ->where('bank_submission_status', 'pending')
+            ->get();
 
+        $processedCount = 0;
         foreach ($questions as $question) {
             $this->reviewService->rejectQuestion($question, $user, $note);
+            $processedCount++;
         }
 
         return response()->json([
             'success' => true,
-            'message' => "Đã từ chối kiểm duyệt " . count($ids) . " câu hỏi.",
+            'message' => "Đã từ chối kiểm duyệt {$processedCount} câu hỏi.",
         ]);
     }
 
@@ -1862,10 +1661,21 @@ class QuestionController extends Controller
 
         if ($request->filled('search')) {
             $keyword = trim((string) $request->query('search'));
-            $query->where(function ($q) use ($keyword) {
-                $q->where('content', 'like', "%{$keyword}%")
-                  ->orWhereHas('user', fn($uq) => $uq->where('name', 'like', "%{$keyword}%"))
-                  ->orWhereHas('quiz', fn($qz) => $qz->where('title', 'like', "%{$keyword}%"));
+            $cleanKeyword = ltrim($keyword, '#');
+            $numericId = is_numeric($cleanKeyword) ? (int) $cleanKeyword : null;
+
+            $query->where(function ($q) use ($keyword, $numericId) {
+                if ($numericId !== null) {
+                    $q->where('id', $numericId)
+                      ->orWhere('origin_question_id', $numericId)
+                      ->orWhere('content', 'like', "%{$keyword}%")
+                      ->orWhereHas('user', fn($uq) => $uq->where('name', 'like', "%{$keyword}%")->orWhere('email', 'like', "%{$keyword}%"))
+                      ->orWhereHas('quiz', fn($qz) => $qz->where('title', 'like', "%{$keyword}%"));
+                } else {
+                    $q->where('content', 'like', "%{$keyword}%")
+                      ->orWhereHas('user', fn($uq) => $uq->where('name', 'like', "%{$keyword}%")->orWhere('email', 'like', "%{$keyword}%"))
+                      ->orWhereHas('quiz', fn($qz) => $qz->where('title', 'like', "%{$keyword}%"));
+                }
             });
         }
 
@@ -1941,6 +1751,7 @@ class QuestionController extends Controller
     {
         $question = Question::with(['answers', 'educationLevel', 'grade', 'subject', 'user', 'quiz.user'])->findOrFail($id);
         $question->is_public = !$question->is_public;
+        $question->save();
 
         $targetQuestionIds = array_filter(array_unique([
             $question->id,
@@ -1949,40 +1760,18 @@ class QuestionController extends Controller
         $snapshotIds = Question::where('origin_question_id', $question->id)->pluck('id')->all();
         $allRelatedIds = array_values(array_unique(array_merge($targetQuestionIds, $snapshotIds)));
 
-        if (!$question->is_public) {
-            $question->status = 'rejected';
-            $question->bank_submission_status = 'rejected';
-            $latestReport = \App\Models\ReportTicket::whereIn('question_id', $allRelatedIds)->latest()->first();
-            $reasonDesc = $latestReport ? ($latestReport->description ?: $latestReport->reason) : 'Nội dung chưa đạt yêu cầu duyệt công khai';
-
-            \App\Models\ReportTicket::updateOrCreate(
-                [
-                    'question_id' => $question->id,
-                    'status' => 'pending',
-                ],
-                [
-                    'user_id' => auth('api')->id() ?? $question->user_id,
-                    'reason' => 'Admin gỡ công khai',
-                    'description' => $reasonDesc,
-                    'has_author_updated' => false,
-                ]
-            );
-        } else {
-            $question->status = 'approved';
-            $question->bank_submission_status = 'approved';
+        if ($question->is_public) {
             \App\Models\ReportTicket::whereIn('question_id', $allRelatedIds)
                 ->where('status', 'pending')
                 ->update(['status' => 'resolved']);
         }
-
-        $question->save();
 
         // Gửi thông báo cho tác giả của câu hỏi kèm lý do vi phạm (nếu có)
         $author = $question->user ?? $question->quiz?->user;
         if ($author) {
             $action = $question->is_public ? 'shown' : 'hidden';
             $latestReport = \App\Models\ReportTicket::whereIn('question_id', $allRelatedIds)->latest()->first();
-            $reason = $latestReport?->reason ? ($latestReport->reason . (!empty($latestReport->description) ? " - {$latestReport->description}" : "")) : null;
+            $reason = $latestReport?->reason ?? $latestReport?->description;
             $author->notify(new QuestionModerated($question, $action, $reason));
         }
 
@@ -2196,6 +1985,19 @@ class QuestionController extends Controller
 
         $formatted['reports'] = $reports;
 
+        // Review diff & history details (lấy từ câu hỏi gốc hoặc chính câu hỏi)
+        $originQuestion = $question->origin_question_id 
+            ? (Question::find($question->origin_question_id) ?? $question) 
+            : $question;
+
+        $diffData = $this->reviewService->getReviewDetailsWithDiff($originQuestion);
+        $formatted['review_details'] = $diffData;
+        $formatted['current_revision'] = $diffData['current_revision'] ?? null;
+        $formatted['previous_revision'] = $diffData['previous_revision'] ?? null;
+        $formatted['history'] = $diffData['history'] ?? [];
+        $formatted['is_priority'] = (bool)($diffData['is_priority'] ?? false);
+        $formatted['review_priority'] = $diffData['review_priority'] ?? 'normal';
+
         return response()->json([
             'success' => true,
             'data' => $formatted,
@@ -2225,7 +2027,20 @@ class QuestionController extends Controller
 
         if ($request->filled('search')) {
             $keyword = trim((string) $request->query('search'));
-            $query->where('content', 'like', "%{$keyword}%");
+            $cleanKeyword = ltrim($keyword, '#');
+            $numericId = is_numeric($cleanKeyword) ? (int) $cleanKeyword : null;
+
+            $query->where(function ($q) use ($keyword, $numericId) {
+                if ($numericId !== null) {
+                    $q->where('id', $numericId)
+                      ->orWhere('origin_question_id', $numericId)
+                      ->orWhere('content', 'like', "%{$keyword}%")
+                      ->orWhereHas('user', fn($uq) => $uq->where('name', 'like', "%{$keyword}%")->orWhere('email', 'like', "%{$keyword}%"));
+                } else {
+                    $q->where('content', 'like', "%{$keyword}%")
+                      ->orWhereHas('user', fn($uq) => $uq->where('name', 'like', "%{$keyword}%")->orWhere('email', 'like', "%{$keyword}%"));
+                }
+            });
         }
 
         $query->latest('deleted_at');

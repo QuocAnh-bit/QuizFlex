@@ -2,15 +2,10 @@
   <section class="max-w-6xl mx-auto py-4 space-y-6">
     <!-- Header -->
     <div class="card p-6 sm:p-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-      <div class="flex items-start gap-3">
-        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-purple-500/10 text-purple-500">
-          <Sparkles class="h-5 w-5" />
-        </div>
-        <div>
-          <p class="text-xs font-bold uppercase tracking-wider text-[#7C3AED]">Trí tuệ nhân tạo</p>
-          <h1 class="text-3xl font-black tracking-[-0.04em] text-[var(--text)]">Tạo đề thi bằng AI</h1>
-          <p class="mt-1 text-sm font-medium text-[var(--muted)]">Nhập chủ đề hoặc tài liệu, AI sẽ tự động sinh ngân hàng câu hỏi và tạo quiz hoàn chỉnh.</p>
-        </div>
+      <div>
+        <p class="text-xs font-bold uppercase tracking-wider text-[#7C3AED]">Trí tuệ nhân tạo</p>
+        <h1 class="mt-1 text-2xl font-black text-slate-900 sm:text-3xl">Tạo đề thi bằng AI</h1>
+        <p class="mt-1 text-sm text-slate-600">Nhập chủ đề hoặc tài liệu, AI sẽ tự động sinh ngân hàng câu hỏi và tạo quiz hoàn chỉnh.</p>
       </div>
       <router-link :to="`${questionBase}/ocr`" class="btn-secondary inline-flex items-center gap-2 text-xs px-3.5 py-1.5">
         <FileText class="h-3.5 w-3.5" />
@@ -38,17 +33,276 @@
       <article class="card p-6 sm:p-8 space-y-5">
         <h2 class="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3">Cấu hình yêu cầu sinh đề</h2>
 
-        <div class="space-y-1.5">
-          <label class="text-xs font-bold text-slate-700 block">Prompt / Chủ đề câu hỏi</label>
+        <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div class="border-b border-purple-100 bg-gradient-to-br from-purple-50 via-white to-indigo-50 px-5 py-5">
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <p class="text-sm font-black text-slate-900">Chọn chương trình học</p>
+                <p class="mt-1 text-[11px] leading-5 text-slate-500">
+                  Hệ thống dùng thông tin này để tìm đúng ngữ cảnh RAG trước khi gọi AI.
+                </p>
+              </div>
+              <span class="shrink-0 rounded-full bg-white px-3 py-1 text-[10px] font-black uppercase tracking-wide text-[#7C3AED] shadow-sm ring-1 ring-purple-100">
+                {{ currentTaxonomyStep <= 4 ? `Bước ${currentTaxonomyStep}/4` : 'Đã hoàn tất' }}
+              </span>
+            </div>
+
+            <div class="mt-5 grid grid-cols-4 gap-2">
+              <button
+                v-for="step in taxonomySteps"
+                :key="step.number"
+                type="button"
+                class="group flex min-w-0 flex-col items-center gap-1.5 rounded-xl px-1 py-2 transition"
+                :class="step.number === currentTaxonomyStep
+                  ? 'bg-white shadow-sm ring-1 ring-purple-100'
+                  : 'hover:bg-white/70'"
+                :disabled="step.number >= currentTaxonomyStep || isGenerating || isPolling"
+                @click="goToTaxonomyStep(step.number)"
+              >
+                <span
+                  class="flex h-8 w-8 items-center justify-center rounded-full text-xs font-black transition"
+                  :class="step.number < currentTaxonomyStep
+                    ? 'bg-[#7C3AED] text-white shadow-sm shadow-purple-200'
+                    : step.number === currentTaxonomyStep
+                      ? 'bg-purple-100 text-[#7C3AED] ring-4 ring-purple-50'
+                      : 'bg-slate-100 text-slate-400'"
+                >
+                  {{ step.number < currentTaxonomyStep ? '✓' : step.number }}
+                </span>
+                <span
+                  class="truncate text-[10px] font-bold"
+                  :class="step.number <= currentTaxonomyStep ? 'text-slate-700' : 'text-slate-400'"
+                >
+                  {{ step.label }}
+                </span>
+              </button>
+            </div>
+          </div>
+
+          <div class="p-5">
+            <div v-if="taxonomyLoading" class="flex items-center gap-3 rounded-xl bg-purple-50 px-4 py-4">
+              <span class="h-2.5 w-2.5 animate-pulse rounded-full bg-[#7C3AED]"></span>
+              <p class="text-xs font-bold text-[#7C3AED]">Đang tải danh mục chương trình học...</p>
+            </div>
+
+            <div v-else-if="taxonomyError" class="rounded-xl border border-red-100 bg-red-50 p-4">
+              <p class="text-xs font-bold text-red-700">{{ taxonomyError }}</p>
+              <button type="button" class="mt-3 text-[11px] font-black text-red-700 underline" @click="loadTaxonomy">
+                Thử tải lại
+              </button>
+            </div>
+
+            <div v-else-if="currentTaxonomyStep === 1" class="space-y-3">
+              <div>
+                <label class="text-xs font-black text-slate-800">Bạn đang dạy ở cấp nào?</label>
+                <p class="mt-1 text-[11px] text-slate-500">Chọn cấp học để lọc danh sách lớp phù hợp.</p>
+              </div>
+              <select
+                v-model="taxonomyForm.education_level_id"
+                class="field text-sm"
+                :disabled="isGenerating || isPolling"
+                @change="onEducationLevelChange"
+              >
+                <option value="">Chọn cấp học</option>
+                <option v-for="level in taxonomyLevels" :key="level.id" :value="level.id">
+                  {{ level.name }}
+                </option>
+              </select>
+            </div>
+
+            <div v-else-if="currentTaxonomyStep === 2" class="space-y-3">
+              <div>
+                <label class="text-xs font-black text-slate-800">Chọn lớp cần tạo đề</label>
+                <p class="mt-1 text-[11px] text-slate-500">Cấp học đã chọn: {{ selectedEducationLevel?.name }}</p>
+              </div>
+              <select
+                v-model="taxonomyForm.grade_id"
+                class="field text-sm"
+                :disabled="isGenerating || isPolling"
+                @change="onGradeChange"
+              >
+                <option value="">Chọn lớp</option>
+                <option v-for="grade in availableGrades" :key="grade.id" :value="grade.id">
+                  {{ grade.name }}
+                </option>
+              </select>
+            </div>
+
+            <div v-else-if="currentTaxonomyStep === 3" class="space-y-3">
+              <div>
+                <label class="text-xs font-black text-slate-800">Chọn bộ môn</label>
+                <p class="mt-1 text-[11px] text-slate-500">Danh sách môn học dành cho {{ selectedGrade?.name }}.</p>
+              </div>
+              <select
+                v-model="taxonomyForm.subject_id"
+                class="field text-sm"
+                :disabled="isGenerating || isPolling"
+                @change="onSubjectChange"
+              >
+                <option value="">Chọn bộ môn</option>
+                <option v-for="subject in availableSubjects" :key="subject.id" :value="subject.id">
+                  {{ subject.name }}
+                </option>
+              </select>
+            </div>
+
+            <div v-else-if="currentTaxonomyStep === 4" class="space-y-4">
+              <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <label class="text-xs font-black text-slate-800">Chọn chủ đề chính</label>
+                  <p class="mt-1 text-[11px] text-slate-500">
+                    Chủ đề được lấy từ dữ liệu đã RAG của {{ selectedSubject?.name }} - {{ selectedGrade?.name }}.
+                  </p>
+                </div>
+                <span class="w-fit shrink-0 rounded-full bg-purple-100 px-3 py-1 text-[10px] font-black text-[#7C3AED]">
+                  {{ selectedSubject?.name }}
+                </span>
+              </div>
+
+              <div v-if="curriculumLoading" class="flex min-h-28 items-center justify-center gap-3 rounded-2xl border border-purple-100 bg-purple-50/60">
+                <span class="h-5 w-5 animate-spin rounded-full border-2 border-purple-200 border-t-[#7C3AED]"></span>
+                <p class="text-xs font-bold text-[#7C3AED]">Đang tìm chủ đề chương trình phù hợp...</p>
+              </div>
+
+              <div v-else-if="curriculumError" class="rounded-2xl border border-red-100 bg-red-50 p-4">
+                <p class="text-xs font-black text-red-700">Không tải được chủ đề chương trình</p>
+                <p class="mt-1 text-[11px] leading-5 text-red-600">{{ curriculumError }}</p>
+                <button type="button" class="mt-3 text-[11px] font-black text-red-700 underline" @click="loadCurriculumOptions">
+                  Thử tải lại
+                </button>
+              </div>
+
+              <div
+                v-else-if="!curriculumAvailable || curriculumOptions.length === 0"
+                class="rounded-2xl border border-amber-200 bg-amber-50 p-5"
+              >
+                <div class="flex gap-3">
+                  <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-100 text-sm">!</span>
+                  <div>
+                    <p class="text-xs font-black text-amber-900">Môn học này chưa có chủ đề RAG</p>
+                    <p class="mt-1 text-[11px] leading-5 text-amber-700">
+                      Hiện chưa có dữ liệu chương trình đã nhúng cho {{ selectedSubject?.name }} - {{ selectedGrade?.name }}.
+                      Bạn có thể quay lại chọn bộ môn khác.
+                    </p>
+                  </div>
+                </div>
+                <button type="button" class="btn-secondary mt-4 px-4 py-2 text-[11px]" @click="goToTaxonomyStep(3)">
+                  ← Chọn lại bộ môn
+                </button>
+              </div>
+
+              <template v-else>
+                <div class="relative">
+                  <svg class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="7"></circle>
+                    <path d="m20 20-3.5-3.5"></path>
+                  </svg>
+                  <input
+                    v-model="curriculumSearch"
+                    class="field pl-9 text-xs"
+                    type="search"
+                    placeholder="Tìm chủ đề..."
+                  />
+                </div>
+
+                <div class="flex items-center justify-between gap-3">
+                  <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    {{ filteredCurriculumOptions.length }} chủ đề phù hợp
+                  </p>
+                  <p v-if="selectedCurriculumOption" class="text-[10px] font-black text-emerald-600">Đã chọn 1 chủ đề</p>
+                </div>
+
+                <div v-if="filteredCurriculumOptions.length" class="max-h-80 space-y-2 overflow-y-auto pr-1">
+                  <label
+                    v-for="option in filteredCurriculumOptions"
+                    :key="option._key"
+                    class="block cursor-pointer rounded-2xl border p-4 transition"
+                    :class="selectedCurriculumKey === option._key
+                      ? 'border-[#7C3AED] bg-purple-50 shadow-sm'
+                      : 'border-slate-200 bg-white hover:border-purple-200 hover:bg-slate-50'"
+                  >
+                    <input
+                      v-model="selectedCurriculumKey"
+                      class="sr-only"
+                      type="radio"
+                      name="curriculum-option"
+                      :value="option._key"
+                      :disabled="isGenerating || isPolling"
+                    />
+                    <span class="flex items-start gap-3">
+                      <span
+                        class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border"
+                        :class="selectedCurriculumKey === option._key ? 'border-[#7C3AED] bg-[#7C3AED]' : 'border-slate-300 bg-white'"
+                      >
+                        <span v-if="selectedCurriculumKey === option._key" class="h-1.5 w-1.5 rounded-full bg-white"></span>
+                      </span>
+                      <span class="min-w-0 flex-1">
+                        <span class="block text-xs font-black leading-5 text-slate-800">{{ option.label }}</span>
+                      </span>
+                    </span>
+                  </label>
+                </div>
+
+                <div v-else class="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-5 text-center">
+                  <p class="text-xs font-black text-slate-700">Không tìm thấy chủ đề khớp từ khóa</p>
+                  <button type="button" class="mt-2 text-[11px] font-black text-[#7C3AED] underline" @click="curriculumSearch = ''">
+                    Xóa từ khóa tìm kiếm
+                  </button>
+                </div>
+
+                <div class="flex justify-end border-t border-slate-100 pt-4">
+                  <button
+                    type="button"
+                    class="btn-primary px-5 py-2.5 text-xs"
+                    :disabled="!selectedCurriculumOption"
+                    @click="confirmTaxonomy"
+                  >
+                    Dùng chủ đề này →
+                  </button>
+                </div>
+              </template>
+            </div>
+
+            <div v-else class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-100 text-xs font-black text-emerald-700">✓</span>
+                  <p class="text-xs font-black text-slate-900">Đã chọn đủ thông tin</p>
+                </div>
+                <div class="mt-3 flex flex-wrap gap-2">
+                  <span class="rounded-full bg-slate-100 px-3 py-1 text-[10px] font-bold text-slate-600">{{ selectedEducationLevel?.name }}</span>
+                  <span class="rounded-full bg-slate-100 px-3 py-1 text-[10px] font-bold text-slate-600">{{ selectedGrade?.name }}</span>
+                  <span class="rounded-full bg-slate-100 px-3 py-1 text-[10px] font-bold text-slate-600">{{ selectedSubject?.name }}</span>
+                  <span class="rounded-full bg-purple-100 px-3 py-1 text-[10px] font-bold text-[#7C3AED]">{{ taxonomyForm.topic_name }}</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                class="btn-secondary shrink-0 px-4 py-2 text-[11px]"
+                :disabled="isGenerating || isPolling"
+                @click="goToTaxonomyStep(1)"
+              >
+                Chọn lại
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="isTaxonomyComplete" class="space-y-2 rounded-2xl border border-purple-100 bg-purple-50/40 p-5">
+          <div>
+            <label class="text-sm font-black text-slate-900">Mô tả yêu cầu cho AI</label>
+            <p class="mt-1 text-[11px] text-slate-500">Nêu dạng câu hỏi, yêu cầu đáp án hoặc tình huống bạn muốn AI tạo.</p>
+          </div>
           <textarea 
             v-model="prompt" 
-            class="field text-xs resize-none" 
+            class="field min-h-32 resize-none bg-white text-sm"
             rows="5"
-            placeholder="Ví dụ: Tạo 10 câu hỏi trắc nghiệm Lịch sử Việt Nam lớp 12 giai đoạn 1945-1954, mức độ vừa, có giải thích đáp án..."
+            :disabled="isGenerating || isPolling"
+            :placeholder="promptPlaceholder"
           ></textarea>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div v-if="isTaxonomyComplete" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div class="space-y-1">
             <label class="text-[11px] font-bold text-slate-600 block">Số lượng câu</label>
             <select v-model.number="settings.count" class="field text-xs">
@@ -83,12 +337,12 @@
         </div>
 
         <!-- Action & Progress -->
-        <div class="pt-3 border-t border-slate-100 space-y-4">
+        <div v-if="isTaxonomyComplete" class="pt-3 border-t border-slate-100 space-y-4">
           <div class="flex items-center gap-3">
             <button 
               class="btn-primary text-xs px-5 py-2.5" 
               type="button" 
-              :disabled="isGenerating || isPolling" 
+              :disabled="!isTaxonomyComplete || isGenerating || isPolling"
               @click="generateQuiz"
             >
               {{ actionLabel }}
@@ -182,10 +436,9 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Sparkles } from 'lucide-vue-next'
-import { aiApi, authApi, currentUserStorage } from '@/services/api'
+import { aiApi, authApi, currentUserStorage, curriculumApi, taxonomyApi } from '@/services/api'
 
 const route = useRoute()
 const router = useRouter()
@@ -199,6 +452,230 @@ const settings = ref({
   language: 'vi',
   visibility: 'private',
 })
+
+const taxonomyLevels = ref([])
+const taxonomyLoading = ref(false)
+const taxonomyError = ref('')
+const taxonomyConfirmed = ref(false)
+const curriculumLoading = ref(false)
+const curriculumError = ref('')
+const curriculumAvailable = ref(true)
+const curriculumOptions = ref([])
+const curriculumSearch = ref('')
+const selectedCurriculumKey = ref('')
+let curriculumRequestId = 0
+const taxonomySteps = [
+  { number: 1, label: 'Cấp học' },
+  { number: 2, label: 'Lớp' },
+  { number: 3, label: 'Bộ môn' },
+  { number: 4, label: 'Chủ đề' },
+]
+const taxonomyForm = ref({
+  education_level_id: '',
+  grade_id: '',
+  subject_id: '',
+  topic_name: '',
+  curriculum_unit_ids: [],
+})
+
+const availableGrades = computed(() => {
+  if (!taxonomyForm.value.education_level_id) return []
+
+  const level = taxonomyLevels.value.find(
+    (item) => item.id === Number(taxonomyForm.value.education_level_id)
+  )
+
+  return level?.grades || []
+})
+
+const selectedEducationLevel = computed(() => taxonomyLevels.value.find(
+  (item) => item.id === Number(taxonomyForm.value.education_level_id)
+) || null)
+
+const selectedGrade = computed(() => availableGrades.value.find(
+  (item) => item.id === Number(taxonomyForm.value.grade_id)
+) || null)
+
+const availableSubjects = computed(() => {
+  if (!taxonomyForm.value.grade_id) return []
+
+  return selectedGrade.value?.subjects || []
+})
+
+const selectedSubject = computed(() => availableSubjects.value.find(
+  (item) => item.id === Number(taxonomyForm.value.subject_id)
+) || null)
+
+const selectedCurriculumOption = computed(() => curriculumOptions.value.find(
+  (option) => option._key === selectedCurriculumKey.value
+) || null)
+
+const filteredCurriculumOptions = computed(() => {
+  const keyword = curriculumSearch.value.trim().toLocaleLowerCase('vi')
+  if (!keyword) return curriculumOptions.value
+
+  return curriculumOptions.value.filter((option) =>
+    option.label.toLocaleLowerCase('vi').includes(keyword)
+  )
+})
+
+const currentTaxonomyStep = computed(() => {
+  if (!taxonomyForm.value.education_level_id) return 1
+  if (!taxonomyForm.value.grade_id) return 2
+  if (!taxonomyForm.value.subject_id) return 3
+  if (!taxonomyConfirmed.value) return 4
+  return 5
+})
+
+const isTaxonomyComplete = computed(() => Boolean(
+  taxonomyConfirmed.value
+  && taxonomyForm.value.education_level_id
+  && taxonomyForm.value.grade_id
+  && taxonomyForm.value.subject_id
+  && taxonomyForm.value.topic_name.trim()
+  && taxonomyForm.value.curriculum_unit_ids.length > 0
+))
+
+const promptPlaceholder = computed(() => (
+  isTaxonomyComplete.value
+    ? 'Ví dụ: Tạo câu hỏi trắc nghiệm có giải thích đáp án và tình huống thực tế...'
+    : 'Chọn đầy đủ thông tin chương trình học trước khi nhập prompt.'
+))
+
+const resetCurriculum = (clearOptions = true) => {
+  curriculumRequestId += 1
+  curriculumLoading.value = false
+  taxonomyForm.value.topic_name = ''
+  taxonomyForm.value.curriculum_unit_ids = []
+  selectedCurriculumKey.value = ''
+  curriculumSearch.value = ''
+  curriculumError.value = ''
+  curriculumAvailable.value = true
+  if (clearOptions) curriculumOptions.value = []
+}
+
+const loadCurriculumOptions = async () => {
+  if (!taxonomyForm.value.education_level_id || !taxonomyForm.value.grade_id || !taxonomyForm.value.subject_id) return
+
+  const requestId = ++curriculumRequestId
+  curriculumLoading.value = true
+  curriculumError.value = ''
+  curriculumAvailable.value = true
+  curriculumOptions.value = []
+  selectedCurriculumKey.value = ''
+  curriculumSearch.value = ''
+
+  try {
+    const result = await curriculumApi.fetchOptions({
+      education_level_id: Number(taxonomyForm.value.education_level_id),
+      grade_id: Number(taxonomyForm.value.grade_id),
+      subject_id: Number(taxonomyForm.value.subject_id),
+    })
+    if (requestId !== curriculumRequestId) return
+
+    const seen = new Set()
+    curriculumOptions.value = result.options.reduce((options, option, index) => {
+      const ids = Array.isArray(option.curriculum_unit_ids)
+        ? option.curriculum_unit_ids.map(Number).filter(Number.isInteger)
+        : []
+      if (!ids.length || !String(option.label || '').trim()) return options
+
+      const duplicateKey = String(option.label)
+        .trim()
+        .toLocaleLowerCase('vi')
+      if (seen.has(duplicateKey)) return options
+      seen.add(duplicateKey)
+
+      options.push({
+        ...option,
+        label: String(option.label).trim(),
+        curriculum_unit_ids: ids,
+        _key: `curriculum-${ids.join('-')}-${index}`,
+      })
+      return options
+    }, [])
+    curriculumAvailable.value = Boolean(result.available && curriculumOptions.value.length)
+  } catch (error) {
+    if (requestId !== curriculumRequestId) return
+    curriculumAvailable.value = false
+    curriculumError.value = error.response?.data?.message || error.message || 'Đã xảy ra lỗi không xác định.'
+  } finally {
+    if (requestId === curriculumRequestId) curriculumLoading.value = false
+  }
+}
+
+const onEducationLevelChange = () => {
+  taxonomyConfirmed.value = false
+  taxonomyForm.value.grade_id = ''
+  taxonomyForm.value.subject_id = ''
+  resetCurriculum()
+}
+
+const onGradeChange = () => {
+  taxonomyConfirmed.value = false
+  taxonomyForm.value.subject_id = ''
+  resetCurriculum()
+}
+
+const onSubjectChange = async () => {
+  taxonomyConfirmed.value = false
+  resetCurriculum()
+  settings.value.language = selectedSubject.value?.code === 'english'
+    ? 'en'
+    : 'vi'
+  if (taxonomyForm.value.subject_id) await loadCurriculumOptions()
+}
+
+const confirmTaxonomy = () => {
+  const option = selectedCurriculumOption.value
+  if (!option) return
+
+  taxonomyForm.value.topic_name = option.label
+  taxonomyForm.value.curriculum_unit_ids = [...option.curriculum_unit_ids]
+  taxonomyConfirmed.value = true
+}
+
+const goToTaxonomyStep = (step) => {
+  taxonomyConfirmed.value = false
+  prompt.value = ''
+
+  if (step <= 1) {
+    taxonomyForm.value.education_level_id = ''
+    taxonomyForm.value.grade_id = ''
+    taxonomyForm.value.subject_id = ''
+    resetCurriculum()
+    return
+  }
+
+  if (step === 2) {
+    taxonomyForm.value.grade_id = ''
+    taxonomyForm.value.subject_id = ''
+    resetCurriculum()
+    return
+  }
+
+  if (step === 3) {
+    taxonomyForm.value.subject_id = ''
+    resetCurriculum()
+    return
+  }
+
+  resetCurriculum(false)
+}
+
+const loadTaxonomy = async () => {
+  taxonomyLoading.value = true
+  taxonomyError.value = ''
+
+  try {
+    const data = await taxonomyApi.tree()
+    taxonomyLevels.value = data?.education_levels || data?.educationLevels || []
+  } catch (error) {
+    taxonomyError.value = `Không tải được danh mục chương trình học: ${error.message}`
+  } finally {
+    taxonomyLoading.value = false
+  }
+}
 
 const user = computed(() => currentUserStorage.get())
 const ocrLimit = computed(() => {
@@ -344,6 +821,11 @@ const pollJob = async () => {
 const generateQuiz = async () => {
   const trimmedPrompt = prompt.value.trim()
 
+  if (!isTaxonomyComplete.value) {
+    errorMessage.value = 'Vui lòng chọn đủ cấp học, lớp, bộ môn và chủ đề.'
+    return
+  }
+
   if (!trimmedPrompt) {
     errorMessage.value = 'Bạn cần nhập prompt để AI sinh quiz.'
     return
@@ -372,6 +854,11 @@ const generateQuiz = async () => {
       difficulty: settings.value.difficulty,
       language: settings.value.language,
       visibility: settings.value.visibility,
+      education_level_id: Number(taxonomyForm.value.education_level_id),
+      grade_id: Number(taxonomyForm.value.grade_id),
+      subject_id: Number(taxonomyForm.value.subject_id),
+      topic_name: taxonomyForm.value.topic_name.trim(),
+      curriculum_unit_ids: taxonomyForm.value.curriculum_unit_ids,
     })
 
     jobId.value = response.job_id
@@ -398,6 +885,8 @@ const openInEditor = () => {
   if (!generatedQuiz.value?.id) return
   router.push(`${questionBase.value}/edit/${generatedQuiz.value.id}`)
 }
+
+onMounted(loadTaxonomy)
 
 onBeforeUnmount(() => {
   stopProgressLoop()

@@ -39,14 +39,28 @@ class QuizGradingService
                 $correctCount++;
             }
 
+            $allAnswers = $question->answers->values()->map(function (Answer $answer, int $index) {
+                $key = chr(65 + (int) ($answer->order ?? $index));
+                return [
+                    'id' => $answer->id,
+                    'key' => $key,
+                    'answer_key' => $key,
+                    'content' => $answer->content,
+                    'text' => $answer->content,
+                    'is_correct' => (bool) $answer->is_correct,
+                ];
+            })->all();
+
             $snapshot[] = [
                 'question_id' => $question->id,
                 'question_content' => $question->content,
                 'question' => $question->content,
+                'type' => $question->type ?? 'single_choice',
                 'selected_answer_ids' => $selectedIds,
                 'selected_answer_keys' => $this->answerKeysFromIds($question, $selectedIds),
                 'correct_answer_ids' => $correctIds,
                 'correct_answer_keys' => $this->answerKeysFromIds($question, $correctIds),
+                'answers' => $allAnswers,
                 'is_correct' => $isCorrect,
                 'points' => $points,
                 'earned_points' => $earnedPoints,

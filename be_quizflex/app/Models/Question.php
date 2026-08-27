@@ -24,7 +24,6 @@ class Question extends Model
         'subject_id',
         'topic_name',
         'is_public',
-        'status',
         'bank_submission_status',
         'bank_submission_note',
         'bank_submission_at',

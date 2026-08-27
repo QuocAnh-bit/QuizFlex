@@ -85,9 +85,8 @@ class QuestionSnapshotService
             $fingerprint = $this->computeFingerprint($originalQuestion);
             $answers = $originalQuestion->relationLoaded('answers') ? $originalQuestion->answers : $originalQuestion->answers()->get();
 
-            // 1. Tìm Bank Snapshot hiện tại theo origin_question_id HOẶC fingerprint công khai đã có
-            $existingSnapshot = $this->findBankSnapshotByOriginId($originalQuestion->id, true)
-                ?? $this->findExistingBankQuestion($fingerprint, true);
+            // 1. Tìm Bank Snapshot hiện tại theo origin_question_id (KHÔNG tìm theo fingerprint)
+            $existingSnapshot = $this->findBankSnapshotByOriginId($originalQuestion->id, true);
 
             if ($existingSnapshot) {
                 // Đã có snapshot trong ngân hàng -> UPDATE snapshot hiện tại (Giữ nguyên snapshot.id và origin_question_id)
@@ -166,9 +165,8 @@ class QuestionSnapshotService
                 $snapshotAnswers
             );
 
-            // 1. Tìm Bank Snapshot hiện tại theo origin_question_id HOẶC fingerprint công khai đã có
-            $existingSnapshot = $this->findBankSnapshotByOriginId($originQuestionId, true)
-                ?? $this->findExistingBankQuestion($fingerprint, true);
+            // 1. Tìm Bank Snapshot hiện tại theo origin_question_id (KHÔNG tìm theo fingerprint)
+            $existingSnapshot = $this->findBankSnapshotByOriginId($originQuestionId, true);
 
             if ($existingSnapshot) {
                 // TRƯỜNG HỢP 1: ĐÃ CÓ SNAPSHOT -> UPDATE SNAPSHOT HIỆN TẠI (Giữ nguyên snapshot.id và origin_question_id)

@@ -14,6 +14,11 @@ class AiJob extends Model
         'ai_log_id',
         'uuid',
         'prompt',
+        'education_level_id',
+        'grade_id',
+        'subject_id',
+        'topic_name',
+        'curriculum_unit_ids',
         'requested_count',
         'difficulty',
         'language',
@@ -31,6 +36,7 @@ class AiJob extends Model
     protected $casts = [
         'requested_count' => 'integer',
         'questions_generated' => 'integer',
+        'curriculum_unit_ids' => 'array',
         'response_json' => 'array',
         'started_at' => 'datetime',
         'finished_at' => 'datetime',
@@ -49,5 +55,20 @@ class AiJob extends Model
     public function quiz(): BelongsTo
     {
         return $this->belongsTo(Quiz::class);
+    }
+
+    public function educationLevel(): BelongsTo
+    {
+        return $this->belongsTo(EducationLevel::class);
+    }
+
+    public function grade(): BelongsTo
+    {
+        return $this->belongsTo(Grade::class);
+    }
+
+    public function subject(): BelongsTo
+    {
+        return $this->belongsTo(Subject::class);
     }
 }

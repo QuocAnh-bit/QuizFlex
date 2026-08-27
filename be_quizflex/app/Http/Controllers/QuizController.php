@@ -29,13 +29,28 @@ class QuizController extends Controller
 
         if ($request->filled('search')) {
             $keyword = trim((string) $request->query('search'));
-            $query->where(function ($q) use ($keyword) {
-                $q->where('title', 'like', "%{$keyword}%")
-                    ->orWhere('description', 'like', "%{$keyword}%")
-                    ->orWhere('category', 'like', "%{$keyword}%")
-                    ->orWhere('tag', 'like', "%{$keyword}%")
-                    ->orWhere('topic_name', 'like', "%{$keyword}%")
-                    ->orWhere('room_code', 'like', "%{$keyword}%");
+            $cleanKeyword = ltrim($keyword, '#');
+            $numericId = is_numeric($cleanKeyword) ? (int) $cleanKeyword : null;
+
+            $query->where(function ($q) use ($keyword, $numericId) {
+                if ($numericId !== null) {
+                    $q->where('id', $numericId)
+                        ->orWhere('title', 'like', "%{$keyword}%")
+                        ->orWhere('description', 'like', "%{$keyword}%")
+                        ->orWhere('category', 'like', "%{$keyword}%")
+                        ->orWhere('tag', 'like', "%{$keyword}%")
+                        ->orWhere('topic_name', 'like', "%{$keyword}%")
+                        ->orWhere('room_code', 'like', "%{$keyword}%")
+                        ->orWhereHas('user', fn($uq) => $uq->where('name', 'like', "%{$keyword}%"));
+                } else {
+                    $q->where('title', 'like', "%{$keyword}%")
+                        ->orWhere('description', 'like', "%{$keyword}%")
+                        ->orWhere('category', 'like', "%{$keyword}%")
+                        ->orWhere('tag', 'like', "%{$keyword}%")
+                        ->orWhere('topic_name', 'like', "%{$keyword}%")
+                        ->orWhere('room_code', 'like', "%{$keyword}%")
+                        ->orWhereHas('user', fn($uq) => $uq->where('name', 'like', "%{$keyword}%"));
+                }
             });
         }
 
@@ -750,10 +765,26 @@ class QuizController extends Controller
         // Tìm kiếm quiz
         if ($request->filled('search')) {
             $keyword = trim((string) $request->search);
+            $cleanKeyword = ltrim($keyword, '#');
+            $numericId = is_numeric($cleanKeyword) ? (int) $cleanKeyword : null;
 
-            $query->where(function ($q) use ($keyword) {
-                $q->where('title', 'like', "%{$keyword}%")
-                    ->orWhere('category', 'like', "%{$keyword}%");
+            $query->where(function ($q) use ($keyword, $numericId) {
+                if ($numericId !== null) {
+                    $q->where('id', $numericId)
+                        ->orWhere('title', 'like', "%{$keyword}%")
+                        ->orWhere('category', 'like', "%{$keyword}%")
+                        ->orWhere('tag', 'like', "%{$keyword}%")
+                        ->orWhere('topic_name', 'like', "%{$keyword}%")
+                        ->orWhere('room_code', 'like', "%{$keyword}%")
+                        ->orWhereHas('user', fn($uq) => $uq->where('name', 'like', "%{$keyword}%")->orWhere('email', 'like', "%{$keyword}%"));
+                } else {
+                    $q->where('title', 'like', "%{$keyword}%")
+                        ->orWhere('category', 'like', "%{$keyword}%")
+                        ->orWhere('tag', 'like', "%{$keyword}%")
+                        ->orWhere('topic_name', 'like', "%{$keyword}%")
+                        ->orWhere('room_code', 'like', "%{$keyword}%")
+                        ->orWhereHas('user', fn($uq) => $uq->where('name', 'like', "%{$keyword}%")->orWhere('email', 'like', "%{$keyword}%"));
+                }
             });
         }
 
@@ -839,8 +870,12 @@ class QuizController extends Controller
     {
         $quiz = Quiz::withTrashed()
             ->with([
-                'user:id,name,email',
+                'user:id,name,email,avatar',
+                'educationLevel',
+                'grade',
+                'subject',
                 'questions.answers',
+                'questions.user:id,name,email',
                 'attempts.user:id,name'
             ])
             ->withCount([
@@ -854,12 +889,20 @@ class QuizController extends Controller
             2
         );
 
+        $reviewService = app(\App\Services\QuizReviewService::class);
+        $diffData = $reviewService->getReviewDetailsWithDiff($quiz);
+
         return response()->json([
             'success' => true,
             'data' => [
                 'quiz' => $quiz,
                 'average_score' => $averageScore,
                 'is_ai_generated' => (bool)$quiz->is_ai_generated,
+                'current_revision' => $diffData['current_revision'] ?? null,
+                'previous_revision' => $diffData['previous_revision'] ?? null,
+                'previous_rejection_reason' => $diffData['previous_rejection_reason'] ?? null,
+                'diff' => $diffData['diff'] ?? null,
+                'history' => $diffData['history'] ?? [],
             ]
         ]);
     }

@@ -21,6 +21,7 @@ use App\Http\Controllers\UnlockRequestController;
 use App\Services\AI\AIService;
 use App\AI\Prompts\QuizPrompt;
 use App\Http\Controllers\AIController;
+use App\Http\Controllers\CurriculumOptionController;
 use App\Http\Controllers\TaxonomyController;
 use App\Http\Controllers\AdminSubjectController;
 use App\Http\Controllers\ReportTicketController;
@@ -73,6 +74,13 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/ocr/scan', [OcrController::class, 'scan']);
     Route::post('/orc/ai/quiz-suggestions', [OcrController::class, 'suggest']);
     Route::post('/orc/ai/review', [OcrController::class, 'review']);
+    Route::get(
+        '/curriculum/options',
+        [
+            CurriculumOptionController::class,
+            'index',
+        ]
+    );
 
     Route::post('/payments/activate-trial', [PaymentController::class, 'activateTrial']);
     Route::get('/payments/upgrade-costs', [PaymentController::class, 'getUpgradeCosts']);
@@ -136,14 +144,13 @@ Route::middleware('auth:api')->group(function () {
 
         Route::get('/admin/report-tickets/count', [ReportTicketController::class, 'countPending']);
 
-        // Danh sách báo cáo vi phạm cho admin (Audit/Theo dõi)
+        // Danh sách báo cáo vi phạm cho admin (Audit/Theo dõi/Kiểm duyệt)
         Route::get('/admin/report-tickets', [ReportTicketController::class, 'index']);
-        Route::put('/admin/report-tickets/{id}', [ReportTicketController::class, 'update']);
+        Route::get('/admin/report-tickets/{id}', [ReportTicketController::class, 'show']);
+        Route::patch('/admin/report-tickets/{id}/status', [ReportTicketController::class, 'updateStatus']);
+        Route::post('/admin/report-tickets/resolve-question', [ReportTicketController::class, 'resolveQuestionReports']);
 
         // Quản lý ngân hàng câu hỏi toàn hệ thống cho admin
-        Route::get('/admin/questions/pending', [QuestionController::class, 'pendingQuestions']);
-        Route::put('/admin/questions/{id}/moderate', [QuestionController::class, 'moderateQuestion']);
-        Route::post('/admin/questions/bulk-moderate', [QuestionController::class, 'bulkModerateQuestions']);
         Route::get('/admin/questions-management', [QuestionController::class, 'adminIndex']);
         Route::get('/admin/questions-trash', [QuestionController::class, 'adminTrash']);
         Route::post('/admin/questions/{id}/restore', [QuestionController::class, 'adminRestore']);

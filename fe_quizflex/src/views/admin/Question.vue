@@ -2,23 +2,19 @@
   <section class="max-w-6xl mx-auto py-4 space-y-6">
     <!-- Header -->
     <div class="card p-6 sm:p-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-      <div class="flex items-start gap-3">
-        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-purple-500/10 text-purple-500">
-          <LibraryBig class="h-5 w-5" />
-        </div>
-        <div>
-          <p class="text-xs font-bold uppercase tracking-wider text-[#7C3AED]">
-            {{ isUserWorkspace ? 'Kho quiz cá nhân' : 'Ngân hàng đề thi' }}
-          </p>
-          <h1 class="text-3xl font-black tracking-[-0.04em] text-[var(--text)]">
-            {{ isUserWorkspace ? 'Kho quiz của tôi' : 'Kho quiz' }}
-          </h1>
-          <p class="mt-1 text-sm text-slate-600 max-w-2xl">
-            {{ isUserWorkspace 
-              ? 'Quản lý, chỉnh sửa hoặc kiểm tra lượt làm bài các bộ quiz do bạn tạo.' 
-              : 'Tìm kiếm, lọc danh mục, độ khó và trạng thái hiển thị của các quiz trên toàn hệ thống.' 
-            }}
-          </p>
+      <div>
+        <p class="text-xs font-bold uppercase tracking-wider text-[#7C3AED]">
+          {{ isUserWorkspace ? 'Kho quiz cá nhân' : 'Ngân hàng đề thi' }}
+        </p>
+        <h1 class="mt-1 text-2xl font-black text-slate-900 sm:text-3xl">
+          {{ isUserWorkspace ? 'Kho quiz của tôi' : 'Kho quiz' }}
+        </h1>
+        <p class="mt-1 text-sm text-slate-600 max-w-2xl">
+          {{ isUserWorkspace 
+            ? 'Quản lý, chỉnh sửa hoặc kiểm tra lượt làm bài các bộ quiz do bạn tạo.' 
+            : 'Tìm kiếm, lọc danh mục, độ khó và trạng thái hiển thị của các quiz trên toàn hệ thống.' 
+          }}
+        </p>
 
         <div v-if="isUserWorkspace" class="mt-4 flex gap-2.5">
           <button
@@ -41,7 +37,6 @@
           <router-link class="btn-ghost" :to="`${questionBase}/ocr`">Upload OCR</router-link>
           <router-link class="btn-ghost" :to="`${questionBase}/ai`">AI Generator</router-link>
           <router-link class="btn-primary shadow-lg transition hover:scale-105" :to="`${questionBase}/create`">┼ Tạo quiz</router-link>
-        </div>
         </div>
       </div>
     </div>
@@ -230,7 +225,7 @@
 <script setup>
 import { computed, onMounted, ref, inject } from 'vue'
 import { useRoute } from 'vue-router'
-import { Bot, Globe, LibraryBig, Lock, Users } from 'lucide-vue-next'
+import { Bot, Globe, Lock, Users } from 'lucide-vue-next'
 import VisibilityBadge from '@/components/common/VisibilityBadge.vue'
 import AppPagination from '@/components/common/AppPagination.vue'
 import { normalizeQuizCard, quizzesApi } from '@/services/api'

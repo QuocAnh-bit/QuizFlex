@@ -10,6 +10,7 @@ use App\Models\Quiz;
 use App\Models\User;
 use App\Services\AI\AIService;
 use App\Services\AI\PromptQualityValidator;
+use App\Services\RAG\Curriculum\CurriculumSubjectResolver;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -35,8 +36,10 @@ class GenerateQuizJob implements ShouldQueue
 
     public function __construct(public string $jobUuid) {}
 
-    public function handle(AIService $aiService): void
-    {
+    public function handle(
+        AIService $aiService,
+        CurriculumSubjectResolver $subjectResolver,
+    ): void {
         $job = AiJob::query()
             ->where('uuid', $this->jobUuid)
             ->first();
@@ -65,11 +68,23 @@ class GenerateQuizJob implements ShouldQueue
         $job->update(['current_step' => 'calling_ai_api']); // <-- Thêm dòng này
         sleep(2); // 💡 THÊM VÀO ĐÂY: Dừng 2s để sáng đèn ô 2 (giả vờ AI đang nghĩ lâu)
 
+        $ragScope = $this->resolveRagScopeFromJob(
+            job: $job,
+            subjectResolver: $subjectResolver,
+        );
+
         // Gọi AI nhiều lần theo batch, ghép kết quả trước khi lưu
         $allQuestions = $this->collectAllQuestions(
             $aiService,
-            $this->buildPromptFromJob($job),
-            (int) $job->requested_count
+            $this->buildPromptFromJob(
+                job: $job,
+                subject: $ragScope['subject'],
+                grade: $ragScope['grade'],
+            ),
+            (int) $job->requested_count,
+            $ragScope['subject'],
+            $ragScope['grade'],
+            $ragScope['curriculum_unit_ids'],
         );
 
         $job->update(['current_step' => 'parsing_ai_response']); // <-- Thêm dòng này
@@ -167,8 +182,14 @@ class GenerateQuizJob implements ShouldQueue
      * chống trùng nội dung, retry nếu một lần thất bại.
      * Chỉ trả về mảng questions khi đã đủ số lượng yêu cầu.
      */
-    private function collectAllQuestions(AIService $aiService, string $prompt, int $requestedCount): array
-    {
+    private function collectAllQuestions(
+        AIService $aiService,
+        string $prompt,
+        int $requestedCount,
+        ?string $subject = null,
+        ?int $grade = null,
+        array $curriculumUnitIds = [],
+    ): array {
         $allQuestions = [];
         $seenContents = [];
 
@@ -182,7 +203,13 @@ class GenerateQuizJob implements ShouldQueue
             // Retry tối đa MAX_RETRIES_PER_BATCH lần nếu batch thất bại
             for ($retry = 1; $retry <= self::MAX_RETRIES_PER_BATCH; $retry++) {
                 try {
-                    $batchResult = $aiService->generateQuiz($prompt, $batchCount);
+                    $batchResult = $aiService->generateQuiz(
+                        prompt: $prompt,
+                        count: $batchCount,
+                        subject: $subject,
+                        grade: $grade,
+                        curriculumUnitIds: $curriculumUnitIds,
+                    );
                     break;
                 } catch (\Throwable $e) {
                     $lastError = $e;
@@ -237,6 +264,10 @@ class GenerateQuizJob implements ShouldQueue
             'title' => Str::limit(trim((string) ($generatedQuiz['title'] ?? $job->prompt)), 255, ''),
             'description' => $job->prompt,
             'category' => 'AI Generated',
+            'education_level_id' => $job->education_level_id,
+            'grade_id' => $job->grade_id,
+            'subject_id' => $job->subject_id,
+            'topic_name' => $job->topic_name,
             'tag' => 'AI',
             'difficulty' => $this->normalizeDifficulty($job->difficulty),
             'status' => $job->visibility === 'public' ? 'published' : 'draft',
@@ -248,28 +279,25 @@ class GenerateQuizJob implements ShouldQueue
             'badge' => 'AI',
         ]);
 
-        $snapshotService = app(\App\Services\QuestionSnapshotService::class);
         foreach ($questions as $questionIndex => $questionData) {
             $correctAnswers = collect($questionData['answers'])
                 ->filter(fn(array $answer): bool => !empty($answer['is_correct']))
                 ->count();
-
-            $type = $correctAnswers > 1 ? 'multiple_choice' : 'single_choice';
-            $fingerprint = $snapshotService->computeFingerprintFromSnapshot(
-                $questionData['content'],
-                $type,
-                $questionData['answers']
-            );
 
             $question = Question::create([
                 'quiz_id' => $quiz->id,
                 'user_id' => $job->user_id,
                 'content' => trim((string) $questionData['content']),
                 'image_url' => null,
-                'type' => $type,
+                'type' => $correctAnswers > 1 ? 'multiple_choice' : 'single_choice',
+                'difficulty' => $this->normalizeDifficulty($job->difficulty),
+                'education_level_id' => $job->education_level_id,
+                'grade_id' => $job->grade_id,
+                'subject_id' => $job->subject_id,
+                'topic_name' => $job->topic_name,
+                'is_public' => $job->visibility === 'public',
                 'order' => $questionIndex,
                 'points' => 1,
-                'fingerprint' => $fingerprint,
             ]);
 
             $quiz->questions()->syncWithoutDetaching([
@@ -292,8 +320,11 @@ class GenerateQuizJob implements ShouldQueue
         return $quiz->fresh(['questions.answers']);
     }
 
-    private function buildPromptFromJob(AiJob $job): string
-    {
+    private function buildPromptFromJob(
+        AiJob $job,
+        ?string $subject = null,
+        ?int $grade = null,
+    ): string {
         $language = match (strtolower((string) $job->language)) {
             'en' => 'English',
             default => 'Vietnamese',
@@ -314,11 +345,199 @@ class GenerateQuizJob implements ShouldQueue
         );
         $cleanPrompt = trim((string) preg_replace('/\s{2,}/', ' ', $cleanPrompt));
 
-        return trim(implode("\n", [
+        $topic = trim((string) $job->topic_name);
+
+        $lines = [
             "Language: {$language}",
             "Difficulty: {$difficulty}",
-            "Topic: {$cleanPrompt}",
-        ]));
+            'Topic: ' . ($topic !== '' ? $topic : $cleanPrompt),
+        ];
+
+        if ($topic !== '' && $cleanPrompt !== '') {
+            $lines[] = "User request: {$cleanPrompt}";
+        }
+
+        if ($subject !== null && $grade !== null) {
+            $lines[] = "Subject: {$subject}";
+            $lines[] = "Grade: {$grade}";
+        }
+
+        return trim(implode("\n", $lines));
+    }
+
+    /**
+     * Ưu tiên taxonomy đã được controller xác thực.
+     * Chỉ dùng nhận diện từ prompt cho caller cũ.
+     *
+     * @return array{
+     *     subject: ?string,
+     *     grade: ?int,
+     *     curriculum_unit_ids: array<int>
+     * }
+     */
+    private function resolveRagScopeFromJob(
+        AiJob $job,
+        CurriculumSubjectResolver $subjectResolver,
+    ): array {
+        if ($job->subject_id && $job->grade_id) {
+            $job->loadMissing([
+                'subject',
+                'grade',
+            ]);
+
+            if (!$job->subject || !$job->grade) {
+                throw new \RuntimeException(
+                    'Không tìm thấy môn hoặc lớp của AI job.'
+                );
+            }
+
+            $scope = $subjectResolver->resolve(
+                subject: $job->subject,
+                grade: $job->grade,
+            );
+
+            if ($scope === null) {
+                throw new \RuntimeException(
+                    'Môn học chưa có dữ liệu RAG.'
+                );
+            }
+
+            return [
+                'subject' => $scope['subject'],
+                'grade' => (int) $job->grade->level_number,
+                'curriculum_unit_ids' => array_values(
+                    array_map(
+                        'intval',
+                        $job->curriculum_unit_ids ?? []
+                    )
+                ),
+            ];
+        }
+
+        $scope = $this->resolveRagScopeFromPrompt(
+            (string) $job->prompt
+        );
+
+        return [
+            ...$scope,
+            'curriculum_unit_ids' => [],
+        ];
+    }
+
+    /**
+     * AiJob chưa lưu subject/grade riêng nên tạm thời
+     * nhận diện scope RAG từ prompt người dùng.
+     *
+     * @return array{subject: ?string, grade: ?int}
+     */
+    private function resolveRagScopeFromPrompt(
+        string $prompt
+    ): array {
+        $normalizedPrompt = mb_strtolower(
+            trim($prompt)
+        );
+
+        $subject = $this->detectRagSubject(
+            $normalizedPrompt
+        );
+
+        $grade = $this->detectRagGrade(
+            $normalizedPrompt
+        );
+
+        /*
+         * QuizGenerationService yêu cầu có đủ cả hai.
+         * Không nhận diện đủ thì giữ luồng không RAG.
+         */
+        if ($subject === null || $grade === null) {
+            return [
+                'subject' => null,
+                'grade' => null,
+            ];
+        }
+
+        return [
+            'subject' => $subject,
+            'grade' => $grade,
+        ];
+    }
+
+    private function detectRagSubject(
+        string $normalizedPrompt
+    ): ?string {
+        $subjectAliases = [
+            'Tiếng Anh' => [
+                'tiếng anh',
+                'english',
+            ],
+            'Ngữ văn' => [
+                'ngữ văn',
+                'văn học',
+                'môn văn',
+            ],
+            'Vật lý' => [
+                'vật lý',
+                'vật lí',
+                'physics',
+            ],
+            'Hóa học' => [
+                'hóa học',
+                'hoá học',
+                'chemistry',
+            ],
+            'Sinh học' => [
+                'sinh học',
+                'biology',
+            ],
+            'Lịch sử' => [
+                'lịch sử',
+                'history',
+            ],
+            'Địa lý' => [
+                'địa lý',
+                'địa lí',
+                'geography',
+            ],
+            'Tin học' => [
+                'tin học',
+                'informatics',
+            ],
+            'Toán' => [
+                'toán học',
+                'môn toán',
+                'toán',
+                'math',
+            ],
+        ];
+
+        foreach ($subjectAliases as $subject => $aliases) {
+            foreach ($aliases as $alias) {
+                if (str_contains(
+                    $normalizedPrompt,
+                    $alias
+                )) {
+                    return $subject;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private function detectRagGrade(
+        string $normalizedPrompt
+    ): ?int {
+        $matched = preg_match(
+            '/\b(?:lớp|lop|khối|khoi|grade)\s*[:\-]?\s*([1-9]|1[0-2])\b/iu',
+            $normalizedPrompt,
+            $matches
+        );
+
+        if ($matched !== 1) {
+            return null;
+        }
+
+        return (int) $matches[1];
     }
 
     private function normalizeDifficulty(?string $difficulty): string

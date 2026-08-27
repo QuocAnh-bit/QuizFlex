@@ -2,15 +2,10 @@
   <section class="max-w-6xl mx-auto py-4 space-y-6">
     <!-- Header -->
     <div class="card p-6 sm:p-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-      <div class="flex items-start gap-3">
-        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-purple-500/10 text-purple-500">
-          <LayoutDashboard class="h-5 w-5" />
-        </div>
-        <div>
-          <p class="text-xs font-bold uppercase tracking-wider text-[#7C3AED]">Admin Dashboard</p>
-          <h1 class="text-3xl font-black tracking-[-0.04em] text-[var(--text)]">Tổng quan hệ thống</h1>
-          <p class="mt-1 text-sm font-medium text-[var(--muted)]">Theo dõi người dùng, quiz, phòng học, giao dịch và doanh thu thời gian thực.</p>
-        </div>
+      <div>
+        <p class="text-xs font-bold uppercase tracking-wider text-[#7C3AED]">Admin Dashboard</p>
+        <h1 class="mt-1 text-2xl font-black text-slate-900 sm:text-3xl">Tổng quan hệ thống</h1>
+        <p class="mt-1 text-sm text-slate-600">Theo dõi người dùng, quiz, phòng học, giao dịch và doanh thu thời gian thực.</p>
       </div>
       <div class="flex items-center gap-2.5">
         <button class="btn-secondary text-xs px-3.5 py-1.5" type="button" :disabled="isLoading" @click="loadDashboard">
@@ -22,6 +17,66 @@
 
     <div v-if="errorMessage" class="rounded-xl border border-red-200 bg-red-50 p-4 text-xs font-bold text-red-700">
       {{ errorMessage }}
+    </div>
+
+    <!-- ACTION CENTER: CẦN XỬ LÝ (MODERATION ALERTS) -->
+    <div class="rounded-2xl border border-purple-200 bg-gradient-to-r from-purple-50 via-white to-amber-50/40 p-5 shadow-sm space-y-3">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="flex h-2.5 w-2.5 relative">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#7C3AED] opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#7C3AED]"></span>
+          </span>
+          <h2 class="text-xs font-black uppercase tracking-wider text-purple-950">
+            Trung tâm kiểm duyệt — Cần xử lý ngay
+          </h2>
+        </div>
+        <span class="text-xs text-slate-500 font-medium">Tổng hợp các yêu cầu chờ Admin phê duyệt</span>
+      </div>
+
+      <div class="grid gap-3 sm:grid-cols-3">
+        <!-- 1. Question Bank Requests -->
+        <router-link
+          to="/admin/question-bank?tab=pending"
+          class="flex items-center justify-between rounded-xl border border-amber-200 bg-white p-4 transition hover:border-amber-400 hover:shadow-xs group cursor-pointer"
+        >
+          <div class="space-y-0.5">
+            <p class="text-xs font-bold text-slate-900 group-hover:text-amber-700">Câu hỏi đóng góp</p>
+            <p class="text-[11px] text-slate-400">Chờ duyệt vào Ngân hàng</p>
+          </div>
+          <span class="rounded-full bg-amber-100 px-3 py-1 text-sm font-black text-amber-800">
+            {{ actionStats.questionsPending }}
+          </span>
+        </router-link>
+
+        <!-- 2. Quiz Review Requests -->
+        <router-link
+          to="/admin/quizzes?tab=pending"
+          class="flex items-center justify-between rounded-xl border border-purple-200 bg-white p-4 transition hover:border-[#7C3AED] hover:shadow-xs group cursor-pointer"
+        >
+          <div class="space-y-0.5">
+            <p class="text-xs font-bold text-slate-900 group-hover:text-[#7C3AED]">Quiz công khai</p>
+            <p class="text-[11px] text-slate-400">Chờ thẩm định & Diff</p>
+          </div>
+          <span class="rounded-full bg-purple-100 px-3 py-1 text-sm font-black text-[#7C3AED]">
+            {{ actionStats.quizzesPending }}
+          </span>
+        </router-link>
+
+        <!-- 3. Report Tickets -->
+        <router-link
+          to="/admin/reports?status=pending"
+          class="flex items-center justify-between rounded-xl border border-rose-200 bg-white p-4 transition hover:border-rose-400 hover:shadow-xs group cursor-pointer"
+        >
+          <div class="space-y-0.5">
+            <p class="text-xs font-bold text-slate-900 group-hover:text-rose-700">Báo cáo vi phạm</p>
+            <p class="text-[11px] text-slate-400">Phản ánh câu hỏi lỗi</p>
+          </div>
+          <span class="rounded-full bg-rose-100 px-3 py-1 text-sm font-black text-rose-800">
+            {{ actionStats.reportsPending }}
+          </span>
+        </router-link>
+      </div>
     </div>
 
     <!-- 8 System Stats Cards -->
@@ -179,9 +234,8 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
-import { LayoutDashboard } from 'lucide-vue-next'
-import { adminDashboardApi } from '@/services/api'
+import { computed, onMounted, reactive, ref } from 'vue'
+import { adminBankRequestsApi, adminDashboardApi, quizReviewApi, reportApi } from '@/services/api'
 import VueApexCharts from 'vue3-apexcharts'
 
 const dashboard = ref({
@@ -192,6 +246,12 @@ const dashboard = ref({
 const isLoading = ref(false)
 const errorMessage = ref('')
 const chartMode = ref('day')
+
+const actionStats = reactive({
+  questionsPending: 0,
+  quizzesPending: 0,
+  reportsPending: 0,
+})
 
 const chartModes = [
   { label: 'Ngày', value: 'day' },
@@ -304,11 +364,6 @@ const quizTypeCards = computed(() => [
 
 const quizHighlights = computed(() => [
   {
-    label: 'User tạo nhiều quiz nhất',
-    title: entityName(quiz.value.top_quiz_creator),
-    value: `${formatNumber(quiz.value.top_quiz_creator?.quizzes_count)} quiz`,
-  },
-  {
     label: 'Quiz nhiều lượt làm nhất',
     title: quiz.value.most_attempted_quiz?.title || 'Chưa có dữ liệu',
     value: `${formatNumber(quiz.value.most_attempted_quiz?.attempts_count)} lượt`,
@@ -326,10 +381,10 @@ const quizHighlights = computed(() => [
 ])
 
 const quickLinks = [
-  { title: 'Quản lý người dùng', desc: 'Xem danh sách, phân quyền role và khóa tài khoản vi phạm.', to: '/admin/users' },
-  { title: 'Kho bài tập & Quiz', desc: 'Tìm kiếm, duyệt câu hỏi và quản lý các bộ đề trên hệ thống.', to: '/admin/questions' },
-  { title: 'Quản lý phòng học', desc: 'Theo dõi các phòng bài tập và phòng thi đấu trực tuyến.', to: '/admin/rooms' },
-  { title: 'Lịch sử thanh toán', desc: 'Kiểm tra giao dịch nạp VIP, hoàn tiền và đối soát cổng thanh toán.', to: '/admin/payments' },
+  { title: 'Ngân hàng câu hỏi', desc: 'Quản lý, duyệt đóng góp câu hỏi, đối chiếu Revision Diff và xử lý báo cáo.', to: '/admin/question-bank' },
+  { title: 'Kho bài Quiz', desc: 'Thẩm định đề thi công khai, so sánh các phiên bản và kiểm soát hiển thị.', to: '/admin/quizzes' },
+  { title: 'Báo cáo vi phạm', desc: 'Kiểm duyệt phản ánh câu hỏi lỗi theo nhóm câu hỏi và gửi đính chính.', to: '/admin/reports' },
+  { title: 'Quản lý người dùng & Doanh thu', desc: 'Xem danh sách, phân quyền role và theo dõi các giao dịch nạp VIP.', to: '/admin/users' },
 ]
 
 const loadDashboard = async () => {
@@ -337,7 +392,28 @@ const loadDashboard = async () => {
   errorMessage.value = ''
 
   try {
-    dashboard.value = await adminDashboardApi.overview()
+    const [overviewData, bankReqs, quizReqs, reportCount] = await Promise.allSettled([
+      adminDashboardApi.overview(),
+      adminBankRequestsApi.fetchRequests({ status: 'pending', per_page: 1 }),
+      quizReviewApi.fetchAdminReviewRequests({ status: 'pending', per_page: 1 }),
+      reportApi.countPending(),
+    ])
+
+    if (overviewData.status === 'fulfilled') {
+      dashboard.value = overviewData.value
+    } else {
+      errorMessage.value = overviewData.reason?.message || 'Không tải được dữ liệu dashboard.'
+    }
+
+    if (bankReqs.status === 'fulfilled') {
+      actionStats.questionsPending = bankReqs.value.stats?.pending || bankReqs.value.total || 0
+    }
+    if (quizReqs.status === 'fulfilled') {
+      actionStats.quizzesPending = quizReqs.value.stats?.pending || quizReqs.value.total || 0
+    }
+    if (reportCount.status === 'fulfilled') {
+      actionStats.reportsPending = reportCount.value.question_pending || reportCount.value.count || 0
+    }
   } catch (error) {
     errorMessage.value = error.message || 'Không tải được dữ liệu dashboard.'
   } finally {
