@@ -384,8 +384,7 @@ const quickLinks = [
   { title: 'Ngân hàng câu hỏi', desc: 'Quản lý, duyệt đóng góp câu hỏi, đối chiếu Revision Diff và xử lý báo cáo.', to: '/admin/question-bank' },
   { title: 'Kho bài Quiz', desc: 'Thẩm định đề thi công khai, so sánh các phiên bản và kiểm soát hiển thị.', to: '/admin/quizzes' },
   { title: 'Báo cáo vi phạm', desc: 'Kiểm duyệt phản ánh câu hỏi lỗi theo nhóm câu hỏi và gửi đính chính.', to: '/admin/reports' },
-  { title: 'Giao dịch & Doanh thu VIP', desc: 'Theo dõi doanh thu, lịch sử nạp VIP, đối soát cổng thanh toán và phân tích khách hàng.', to: '/admin/payments' },
-  { title: 'Quản lý người dùng', desc: 'Xem danh sách người dùng, phân quyền role và xử lý vi phạm.', to: '/admin/users' },
+  { title: 'Quản lý người dùng & Doanh thu', desc: 'Xem danh sách, phân quyền role và theo dõi các giao dịch nạp VIP.', to: '/admin/users' },
 ]
 
 const loadDashboard = async () => {
