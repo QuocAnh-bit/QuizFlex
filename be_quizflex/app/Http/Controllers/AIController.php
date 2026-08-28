@@ -27,33 +27,30 @@ class AIController extends Controller
             'visibility' => ['nullable', 'string', 'in:private,public,group'],
             'education_level_id' => [
                 'nullable',
-                'required_with:grade_id,subject_id,topic_name,curriculum_unit_ids',
+                'required_with:grade_id,subject_id',
                 'integer',
                 'exists:education_levels,id',
             ],
             'grade_id' => [
                 'nullable',
-                'required_with:education_level_id,subject_id,topic_name,curriculum_unit_ids',
+                'required_with:education_level_id,subject_id',
                 'integer',
                 'exists:grades,id',
             ],
             'subject_id' => [
                 'nullable',
-                'required_with:education_level_id,grade_id,topic_name,curriculum_unit_ids',
+                'required_with:education_level_id,grade_id',
                 'integer',
                 'exists:subjects,id',
             ],
             'topic_name' => [
                 'nullable',
-                'required_with:education_level_id,grade_id,subject_id,curriculum_unit_ids',
                 'string',
                 'max:150',
             ],
             'curriculum_unit_ids' => [
                 'nullable',
-                'required_with:education_level_id,grade_id,subject_id,topic_name',
                 'array',
-                'min:1',
                 'max:100',
             ],
             'curriculum_unit_ids.*' => [
@@ -191,52 +188,47 @@ class AIController extends Controller
             ]);
         }
 
-        $scope = app(CurriculumSubjectResolver::class)
-            ->resolve(
-                subject: $subject,
-                grade: $grade,
-            );
-
-        if ($scope === null) {
-            throw ValidationException::withMessages([
-                'subject_id' => 'Môn học chưa có dữ liệu RAG.',
-            ]);
-        }
-
-        $unitIds = collect($data['curriculum_unit_ids'])
+        $unitIds = collect($data['curriculum_unit_ids'] ?? [])
             ->map(fn($id): int => (int) $id)
+            ->filter(fn($id): bool => $id > 0)
             ->unique()
             ->values();
 
-        $validUnits = CurriculumUnit::query()
-            ->whereIn('id', $unitIds)
-            ->where('subject', $scope['subject'])
-            ->where('grade_min', '<=', $grade->level_number)
-            ->where('grade_max', '>=', $grade->level_number)
-            ->when(
-                !empty($scope['domain']),
-                fn($query) => $query->where(
-                    'domain',
-                    $scope['domain']
-                )
-            )
-            ->whereHas(
-                'chunks',
-                fn($query) => $query
-                    ->where('embedding_status', 'embedded')
-                    ->whereNotNull('qdrant_point_id')
-            )
-            ->count();
+        if ($unitIds->isNotEmpty()) {
+            $scope = app(CurriculumSubjectResolver::class)
+                ->resolve(
+                    subject: $subject,
+                    grade: $grade,
+                );
 
-        if ($validUnits !== $unitIds->count()) {
-            throw ValidationException::withMessages([
-                'curriculum_unit_ids' =>
-                    'Nguồn RAG không thuộc môn, lớp hoặc chủ đề đã chọn.',
-            ]);
+            if ($scope !== null) {
+                $validUnits = CurriculumUnit::query()
+                    ->whereIn('id', $unitIds)
+                    ->where('subject', $scope['subject'])
+                    ->where('grade_min', '<=', $grade->level_number)
+                    ->where('grade_max', '>=', $grade->level_number)
+                    ->when(
+                        !empty($scope['domain']),
+                        fn($query) => $query->where(
+                            'domain',
+                            $scope['domain']
+                        )
+                    )
+                    ->count();
+
+                if ($validUnits > 0) {
+                    $data['curriculum_unit_ids'] = $unitIds->all();
+                } else {
+                    $data['curriculum_unit_ids'] = [];
+                }
+            } else {
+                $data['curriculum_unit_ids'] = [];
+            }
+        } else {
+            $data['curriculum_unit_ids'] = [];
         }
 
-        $data['topic_name'] = trim($data['topic_name']);
-        $data['curriculum_unit_ids'] = $unitIds->all();
+        $data['topic_name'] = isset($data['topic_name']) ? trim((string) $data['topic_name']) : null;
 
         return $data;
     }

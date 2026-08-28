@@ -74,24 +74,6 @@
                   Tham gia phòng
                   <span class="ml-2 text-base">♧</span>
                 </router-link>
-                <!-- NÚT AI TẠO QUIZ -->
-   <!-- NÚT AI TẠO QUIZ -->
-  <router-link
-    to="/dashboard/questions/ai"
-    class="inline-flex items-center justify-center rounded-lg bg-[#7C3AED] px-5 py-2.5 text-xs sm:text-sm font-bold text-white transition hover:bg-[#6D28D9] active:scale-[0.98] shadow-sm"
-  >
-    <Sparkles class="mr-2 w-4 h-4" />
-    Tạo quiz AI
-  </router-link>
-
-  <!-- NÚT OCR -->
-  <router-link
-    to="/dashboard/questions/ocr"
-    class="inline-flex items-center justify-center rounded-lg bg-[#7C3AED] px-5 py-2.5 text-xs sm:text-sm font-bold text-white transition hover:bg-[#6D28D9] active:scale-[0.98] shadow-sm"
-  >
-    <Camera class="mr-2 w-4 h-4" />
-    Quét OCR
-  </router-link>
               </div>
             </div>
 

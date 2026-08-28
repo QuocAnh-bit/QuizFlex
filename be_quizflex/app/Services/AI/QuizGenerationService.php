@@ -85,42 +85,36 @@ final class QuizGenerationService
             ? (float) $configuredScoreThreshold
             : null;
 
-        if ($hasSubject && $hasGrade) {
-            $rag = $this->contextProvider->provide(
-                subject: $subject,
-                grade: $grade,
-                query: $prompt,
-                limit: $retrievalLimit,
-                scoreThreshold: $scoreThreshold,
-                curriculumUnitIds: $curriculumUnitIds,
-            );
-
-            $curriculumContext = trim(
-                (string) (
-                    $rag['context'] ?? ''
-                )
-            );
-
-            $ragSources = is_array(
-                $rag['sources'] ?? null
-            )
-                ? $rag['sources']
-                : [];
-
-            /*
-             * Khi caller yêu cầu RAG nhưng không
-             * tìm thấy dữ liệu thì không fallback
-             * sang kiến thức tự do của model.
-             */
-            if ($curriculumContext === '') {
-                throw new RuntimeException(
-                    'Không tìm thấy nội dung chương trình '
-                        . "phù hợp cho môn {$subject} "
-                        . "lớp {$grade}."
+        if ($hasSubject && $hasGrade && !empty($curriculumUnitIds)) {
+            try {
+                $rag = $this->contextProvider->provide(
+                    subject: $subject,
+                    grade: $grade,
+                    query: $prompt,
+                    limit: $retrievalLimit,
+                    scoreThreshold: $scoreThreshold,
+                    curriculumUnitIds: $curriculumUnitIds,
                 );
-            }
 
-            $ragEnabled = true;
+                $curriculumContext = trim(
+                    (string) (
+                        $rag['context'] ?? ''
+                    )
+                );
+
+                $ragSources = is_array(
+                    $rag['sources'] ?? null
+                )
+                    ? $rag['sources']
+                    : [];
+
+                if ($curriculumContext !== '') {
+                    $ragEnabled = true;
+                }
+            } catch (\Throwable $e) {
+                $curriculumContext = '';
+                $ragEnabled = false;
+            }
         }
 
         $finalPrompt = $this->promptBuilder->build(

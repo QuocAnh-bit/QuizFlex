@@ -69,6 +69,22 @@ const unwrapCollection = (payload) => {
   if (Array.isArray(body?.data)) return body.data;
   return [];
 };
+const unwrapPaginated = (payload, defaultPerPage = 12) => {
+  const body = unwrap(payload);
+  const items = Array.isArray(body)
+    ? body
+    : Array.isArray(body?.data)
+    ? body.data
+    : Array.isArray(body?.items)
+    ? body.items
+    : [];
+  const total = body?.total ?? items.length;
+  const currentPage = body?.current_page ?? body?.currentPage ?? 1;
+  const lastPage = body?.last_page ?? body?.lastPage ?? 1;
+  const perPage = body?.per_page ?? body?.perPage ?? defaultPerPage;
+  const stats = body?.stats ?? payload?.stats ?? payload?.data?.stats ?? null;
+  return { items, total, currentPage, lastPage, perPage, ...(stats ? { stats } : {}) };
+};
 
 export const taxonomyApi = {
   async tree(force = false) {
@@ -127,6 +143,10 @@ export const questionsBankApi = {
   async createQuestion(payload) {
     const { data } = await api.post('/questions', payload);
     return unwrap(data);
+  },
+  async getQuestion(id) {
+    const { data } = await api.get(`/questions/${id}`);
+    return unwrap(data);
   }
 };
 
@@ -164,6 +184,19 @@ export const myQuestionsApi = {
   async forceDelete(id) {
     const { data } = await api.delete(`/user/my-questions/${id}/force`);
     return data;
+  },
+  async submitToBank(id, payload = {}) {
+    const body = typeof payload === 'string' ? { note: payload } : payload;
+    const { data } = await api.post(`/user/my-questions/${id}/submit-to-bank`, body);
+    return unwrap(data);
+  },
+  async bulkSubmitToBank(ids) {
+    const { data } = await api.post('/user/my-questions/bulk-submit-to-bank', { ids });
+    return unwrap(data);
+  },
+  async getReviewHistory(id) {
+    const { data } = await api.get(`/user/my-questions/${id}/review-history`);
+    return unwrap(data);
   }
 };
 
@@ -275,6 +308,46 @@ export const adminQuestionsApi = {
     const { data } = await api.delete(`/user/my-questions/${id}`);
     return data;
   }
+};
+
+export const adminBankRequestsApi = {
+  async fetchRequests(params = {}) {
+    const { data } = await api.get('/admin/question-bank-requests', { params });
+    const payload = unwrap(data);
+    const items = Array.isArray(payload?.items) 
+      ? payload.items 
+      : (Array.isArray(payload?.data) ? payload.data : (Array.isArray(payload) ? payload : []));
+    return {
+      items,
+      total: payload?.total ?? items.length,
+      currentPage: payload?.current_page ?? 1,
+      lastPage: payload?.last_page ?? 1,
+      perPage: payload?.per_page ?? 15,
+      stats: payload?.stats ?? { pending: 0, approved: 0, rejected: 0, priority: 0, total: 0 },
+    };
+  },
+  async fetchRequestDetail(id) {
+    const { data } = await api.get(`/admin/question-bank-requests/${id}`);
+    return unwrap(data);
+  },
+  async approve(id) {
+    const { data } = await api.post(`/admin/question-bank-requests/${id}/approve`);
+    return unwrap(data);
+  },
+  async reject(id, payload = {}) {
+    const body = typeof payload === 'string' ? { note: payload, reason: payload } : payload;
+    const { data } = await api.post(`/admin/question-bank-requests/${id}/reject`, body);
+    return unwrap(data);
+  },
+  async bulkApprove(ids) {
+    const { data } = await api.post('/admin/question-bank-requests/bulk-approve', { ids });
+    return unwrap(data);
+  },
+  async bulkReject(ids, reason) {
+    const note = typeof reason === 'object' ? (reason.note || reason.reason || '') : String(reason || '');
+    const { data } = await api.post('/admin/question-bank-requests/bulk-reject', { ids, note, reason: note });
+    return unwrap(data);
+  },
 };
 
 
@@ -731,6 +804,11 @@ export const quizzesApi = {
     return unwrapCollection(data);
   },
 
+  async fetchPaginated(params = {}) {
+    const { data } = await api.get("/quizzes", { params });
+    return unwrapPaginated(data, params?.per_page || 12);
+  },
+
   async get(id) {
     const { data } = await api.get(`/quizzes/${id}`);
     return unwrap(data);
@@ -825,6 +903,71 @@ export const quizzesApi = {
       payload
     );
 
+    return unwrap(data);
+  },
+};
+
+export const adminQuizzesApi = {
+  async list(params = {}) {
+    const { data } = await api.get("/admin/quizzes", { params });
+    return unwrapPaginated(data, params?.per_page || 10);
+  },
+  async get(id) {
+    const { data } = await api.get(`/admin/quizzes/${id}`);
+    return unwrap(data);
+  },
+  async toggleVisibility(id) {
+    const { data } = await api.patch(`/admin/quizzes/${id}/toggle-visibility`);
+    return unwrap(data);
+  },
+  async restore(id) {
+    const { data } = await api.post(`/admin/quizzes/${id}/restore`);
+    return unwrap(data);
+  },
+  async forceDelete(id) {
+    const { data } = await api.delete(`/admin/quizzes/${id}/force-delete`);
+    return data;
+  },
+  async trash() {
+    const { data } = await api.get("/admin/quizzes/trash");
+    return unwrapCollection(data);
+  },
+};
+
+export const quizReviewApi = {
+  async requestReview(id, payload = {}) {
+    const body = typeof payload === "string" ? { note: payload } : payload;
+    const { data } = await api.post(`/quizzes/${id}/request-review`, body);
+    return unwrap(data);
+  },
+  async getReviewHistory(id) {
+    const { data } = await api.get(`/quizzes/${id}/review-history`);
+    return unwrapCollection(data);
+  },
+  async fetchAdminReviewRequests(params = {}) {
+    const { data } = await api.get("/admin/quiz-reviews", { params });
+    return unwrapPaginated(data, params?.per_page || 15);
+  },
+  async getAdminReviewRequest(id) {
+    const { data } = await api.get(`/admin/quiz-reviews/${id}`);
+    return unwrap(data);
+  },
+  async adminApprove(id) {
+    const { data } = await api.post(`/admin/quiz-reviews/${id}/approve`);
+    return unwrap(data);
+  },
+  async adminReject(id, reason) {
+    const payload = typeof reason === "object" ? reason : { reason };
+    const { data } = await api.post(`/admin/quiz-reviews/${id}/reject`, payload);
+    return unwrap(data);
+  },
+  async adminBulkApprove(ids) {
+    const { data } = await api.post("/admin/quiz-reviews/bulk-approve", { ids });
+    return unwrap(data);
+  },
+  async adminBulkReject(ids, reason) {
+    const payload = typeof reason === "object" ? { ids, ...reason } : { ids, reason };
+    const { data } = await api.post("/admin/quiz-reviews/bulk-reject", payload);
     return unwrap(data);
   },
 };
@@ -1319,6 +1462,13 @@ export const aiApi = {
   },
 };
 
+export const curriculumApi = {
+  async fetchOptions(params = {}) {
+    const { data } = await api.get("/curriculums/options", { params });
+    return unwrap(data);
+  },
+};
+
 export const difficultyLabel = (value) =>
   ({
     easy: "Dễ",
@@ -1516,15 +1666,34 @@ export const reportApi = {
     return unwrap(data);
   },
 
+  async createQuestionReport(payload) {
+    const { data } = await api.post("/report-tickets", payload);
+    return unwrap(data);
+  },
+
   // Dành cho Admin: Lấy danh sách
   async listAdmin(params = {}) {
     const { data } = await api.get("/admin/report-tickets", { params });
-    return unwrapCollection(data);
+    const items = unwrapCollection(data);
+    const stats = data?.stats ?? data?.data?.stats ?? null;
+    return { items, stats, raw: data };
   },
 
-  // Dành cho Admin: Cập nhật trạng thái
+  // Dành cho Admin: Cập nhật trạng thái ticket đơn
   async updateAdminStatus(id, status, action = null) {
     const { data } = await api.put(`/admin/report-tickets/${id}`, { status, action });
+    return unwrap(data);
+  },
+
+  // Dành cho Admin: Giải quyết nhóm báo cáo theo câu hỏi
+  async resolveQuestionReports(payload) {
+    const { data } = await api.post("/admin/report-tickets/resolve-question-reports", payload);
+    return unwrap(data);
+  },
+
+  // Dành cho Admin: Đếm số lượng báo cáo chờ xử lý
+  async countPending() {
+    const { data } = await api.get("/admin/report-tickets/count");
     return unwrap(data);
   },
 };
@@ -1694,6 +1863,32 @@ export const formatApiErrorMessage = (error, defaultMessage = "Có lỗi xảy r
   }
 
   return defaultMessage;
+};
+
+export const liveRoomsApi = {
+  async getLiveRooms(params = {}) {
+    const cacheKey = `live_rooms_${JSON.stringify(params)}`;
+    return withMemoryCache(
+      cacheKey,
+      async () => {
+        const { data } = await api.get("/live-rooms", { params });
+        return data?.data || unwrapCollection(data);
+      },
+      10000,
+    );
+  },
+
+  async createLiveRoom(payload) {
+    clearMemoryCache("live_rooms");
+    const { data } = await api.post("/live-rooms", payload);
+    return unwrap(data);
+  },
+
+  async joinLiveRoom(pin, nickname) {
+    clearMemoryCache("live_rooms");
+    const { data } = await api.post("/live-rooms/join", { pin, nickname });
+    return unwrap(data);
+  },
 };
 
 export default api;

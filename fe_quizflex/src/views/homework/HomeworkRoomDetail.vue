@@ -68,7 +68,7 @@
           </div>
           <div class="flex flex-col items-start sm:items-end gap-2">
             <span class="font-mono text-sm font-bold text-blue-700 bg-blue-50 px-3 py-1 rounded-lg border border-blue-200">
-              Mã: {{ room.code || 'NO CODE' }}
+              Mã phòng: {{ room.code || 'NO CODE' }}
             </span>
             <StatusBadge :value="room.status || 'active'" />
           </div>

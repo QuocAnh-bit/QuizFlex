@@ -25,8 +25,12 @@ use App\Http\Controllers\TaxonomyController;
 use App\Http\Controllers\AdminSubjectController;
 use App\Http\Controllers\ReportTicketController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\QuizReviewController;
+use App\Http\Controllers\CurriculumOptionController;
 
 Route::get('/taxonomies/tree', [TaxonomyController::class, 'tree']);
+Route::get('/curriculums/options', [CurriculumOptionController::class, 'index']);
+Route::get('/curriculum/options', [CurriculumOptionController::class, 'index']);
 Route::get('/questions/bank', [QuestionController::class, 'bank']);
 Route::post('/quizzes/from-bank', [QuestionController::class, 'createQuizFromBank']);
 
@@ -96,6 +100,9 @@ Route::middleware('auth:api')->group(function () {
     Route::delete('/user/my-questions/{id}', [QuestionController::class, 'softDeleteQuestion']);
     Route::post('/user/my-questions/{id}/restore', [QuestionController::class, 'restoreQuestion']);
     Route::delete('/user/my-questions/{id}/force', [QuestionController::class, 'forceDeleteQuestion']);
+    Route::post('/user/my-questions/{id}/submit-to-bank', [QuestionController::class, 'submitToBank']);
+    Route::post('/user/my-questions/bulk-submit-to-bank', [QuestionController::class, 'bulkSubmitToBank']);
+    Route::get('/user/my-questions/{id}/review-history', [QuestionController::class, 'questionReviewHistory']);
 
 
     Route::middleware('role:admin')->group(function () {
@@ -133,9 +140,18 @@ Route::middleware('auth:api')->group(function () {
 
         // Quản lý báo cáo vi phạm cho admin
         Route::get('/admin/report-tickets', [ReportTicketController::class, 'index']);
-        Route::put('/admin/report-tickets/{id}', [ReportTicketController::class, 'update']);
+        Route::get('/admin/report-tickets/{id}', [ReportTicketController::class, 'show']);
+        Route::put('/admin/report-tickets/{id}', [ReportTicketController::class, 'updateStatus']);
+        Route::post('/admin/report-tickets/resolve-question-reports', [ReportTicketController::class, 'resolveQuestionReports']);
+        Route::post('/admin/report-tickets/resolve', [ReportTicketController::class, 'resolveQuestionReports']);
 
         // Quản lý ngân hàng câu hỏi toàn hệ thống cho admin
+        Route::get('/admin/question-bank-requests', [QuestionController::class, 'adminBankRequests']);
+        Route::get('/admin/question-bank-requests/{id}', [QuestionController::class, 'adminShowBankRequest']);
+        Route::post('/admin/question-bank-requests/{id}/approve', [QuestionController::class, 'adminApproveBankRequest']);
+        Route::post('/admin/question-bank-requests/{id}/reject', [QuestionController::class, 'adminRejectBankRequest']);
+        Route::post('/admin/question-bank-requests/bulk-approve', [QuestionController::class, 'adminBulkApproveBankRequests']);
+        Route::post('/admin/question-bank-requests/bulk-reject', [QuestionController::class, 'adminBulkRejectBankRequests']);
         Route::get('/admin/questions/pending', [QuestionController::class, 'pendingQuestions']);
         Route::put('/admin/questions/{id}/moderate', [QuestionController::class, 'moderateQuestion']);
         Route::post('/admin/questions/bulk-moderate', [QuestionController::class, 'bulkModerateQuestions']);
@@ -191,6 +207,14 @@ Route::middleware('auth:api')->group(function () {
                 [QuizController::class, 'forceDelete']
             );
         });
+
+        // Quản lý kiểm duyệt quiz cho admin
+        Route::get('/admin/quiz-reviews', [QuizReviewController::class, 'adminIndex']);
+        Route::get('/admin/quiz-reviews/{id}', [QuizReviewController::class, 'adminShow']);
+        Route::post('/admin/quiz-reviews/bulk-approve', [QuizReviewController::class, 'adminBulkApprove']);
+        Route::post('/admin/quiz-reviews/bulk-reject', [QuizReviewController::class, 'adminBulkReject']);
+        Route::post('/admin/quiz-reviews/{id}/approve', [QuizReviewController::class, 'adminApprove']);
+        Route::post('/admin/quiz-reviews/{id}/reject', [QuizReviewController::class, 'adminReject']);
     });
 
     Route::middleware('role:free,plus,pro,ultra,admin')->group(function () {
@@ -211,6 +235,8 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/quizzes/trash', [QuizController::class, 'trash']);
         Route::patch('/quizzes/{id}/restore', [QuizController::class, 'restore']);
         Route::delete('/quizzes/{id}/force-delete', [QuizController::class, 'forceDelete']);
+        Route::post('/quizzes/{id}/request-review', [QuizReviewController::class, 'requestReview']);
+        Route::get('/quizzes/{id}/review-history', [QuizReviewController::class, 'quizReviewHistory']);
 
         // Protected Question & Answer Routes
         Route::post('/quizzes/{quiz}/questions', [QuestionController::class, 'store']);
@@ -263,6 +289,7 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/room-assignments/{assignment}/attempts/{attempt}/reset', [RoomAssignmentController::class, 'resetAttempt']);
 
         // Live Room Routes
+        Route::get('/live-rooms', [LiveRoomController::class, 'index']);
         Route::post('/live-rooms', [LiveRoomController::class, 'store']);
         Route::post('/live-rooms/join', [LiveRoomController::class, 'join']);
         Route::get('/live-rooms/{liveRoom}', [LiveRoomController::class, 'show']);

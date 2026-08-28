@@ -68,6 +68,7 @@ class DatabaseSeeder extends Seeder
         // 2. Chạy các Seeder dữ liệu chuẩn
         $this->call([
             EducationTaxonomySeeder::class,
+            CurriculumUnitSeeder::class,
             BadgeSeeder::class,
             QuestionSeeder::class,
         ]);

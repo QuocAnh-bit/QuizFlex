@@ -91,7 +91,7 @@
             <span
               class="font-mono text-sm font-bold text-amber-700 bg-amber-50 px-3 py-1 rounded-lg border border-amber-200"
             >
-              Mã PIN: {{ liveRoom.code || '-' }}
+              Mã phòng: {{ liveRoom.code || '-' }}
             </span>
 
             <StatusBadge :value="roomStatus" />
@@ -328,7 +328,7 @@
           </div>
 
           <div v-else class="p-8 text-center text-slate-400 text-xs">
-            Chưa có người chơi tham gia. Hãy chia sẻ mã PIN cho mọi người.
+            Chưa có người chơi tham gia. Hãy chia sẻ mã phòng cho mọi người.
           </div>
         </article>
 
