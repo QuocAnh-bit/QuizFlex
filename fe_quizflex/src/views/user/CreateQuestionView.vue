@@ -206,10 +206,7 @@
                 v-if="form.answers.length > 2"
                 type="button"
                 class="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 cursor-pointer"
-<<<<<<< HEAD
-=======
                 aria-label="Xóa đáp án"
->>>>>>> 21a1000b7c9899c06f815fc810327f65e32ea575
                 title="Xóa đáp án"
                 @click="removeAnswerChoice(idx)"
               >
@@ -222,25 +219,6 @@
         <!-- 4. Phạm vi hiển thị & Quy trình Ngân hàng câu hỏi -->
         <div class="grid gap-4 border-t border-slate-200 pt-5">
           <h2 class="flex items-center gap-2 text-base font-semibold text-slate-900">
-<<<<<<< HEAD
-            <span class="h-4 w-1 rounded-full bg-indigo-500"></span>
-            4. Phạm vi hiển thị
-          </h2>
-
-          <div class="grid gap-4 md:grid-cols-2">
-            <label
-              class="flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition"
-              :class="!form.is_public
-                ? 'border-amber-200 bg-amber-50/70 text-amber-900'
-                : 'border-slate-200 bg-slate-50 hover:border-slate-300'"
-            >
-              <input
-                type="radio"
-                v-model="form.is_public"
-                :value="false"
-                class="mt-1 h-4 w-4 accent-amber-500 cursor-pointer"
-              />
-=======
             <span class="h-4 w-1 rounded-full bg-[#7C3AED]"></span>
             4. Lưu trữ & Kiểm duyệt
           </h2>
@@ -250,7 +228,6 @@
               <div class="rounded-lg bg-amber-500/10 p-2 text-amber-600">
                 <Lock class="h-5 w-5" />
               </div>
->>>>>>> 21a1000b7c9899c06f815fc810327f65e32ea575
               <div class="grid gap-1">
                 <span class="text-sm font-bold text-slate-900">
                   Lưu vào Kho câu hỏi cá nhân (Riêng tư)
@@ -259,34 +236,7 @@
                   Câu hỏi mới sẽ được lưu vào kho cá nhân của bạn. Để đưa câu hỏi vào <strong>Ngân hàng câu hỏi chung</strong> của hệ thống, bạn có thể bấm nút <strong>"Gửi duyệt vào Ngân hàng"</strong> trong trang Kho câu hỏi của tôi sau khi tạo xong.
                 </span>
               </div>
-<<<<<<< HEAD
-            </label>
-
-            <label
-              class="flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition"
-              :class="form.is_public
-                ? 'border-indigo-200 bg-indigo-50/70 text-indigo-900 font-medium'
-                : 'border-slate-200 bg-slate-50 hover:border-slate-300'"
-            >
-              <input
-                type="radio"
-                v-model="form.is_public"
-                :value="true"
-                class="mt-1 h-4 w-4 accent-indigo-600 cursor-pointer"
-              />
-              <div class="grid gap-1">
-                <span class="flex items-center gap-1.5 text-sm font-semibold text-indigo-700">
-                  <Globe class="h-4 w-4" />
-                  Công khai
-                </span>
-                <span class="text-xs leading-relaxed text-slate-500">
-                  Chia sẻ lên ngân hàng câu hỏi dùng chung cho mọi người.
-                </span>
-              </div>
-            </label>
-=======
             </div>
->>>>>>> 21a1000b7c9899c06f815fc810327f65e32ea575
           </div>
         </div>
 

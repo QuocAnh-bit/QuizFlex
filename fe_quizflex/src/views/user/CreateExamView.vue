@@ -664,12 +664,6 @@
           <div v-else class="grid gap-3">
             <!-- Selected Questions List -->
             <div v-if="selectedIds.length > 0" class="grid gap-3">
-<<<<<<< HEAD
-              <div class="flex items-center justify-between text-xs font-bold text-[var(--muted)]">
-                <span>Đã chọn {{ selectedIds.length }} câu hỏi từ ngân hàng.</span>
-                <button type="button" class="text-[var(--primary)] hover:underline font-bold cursor-pointer" @click="isBankDrawerOpen = true">
-                  + Chọn thêm câu hỏi khác
-=======
               <div
                 class="flex flex-wrap items-center justify-between gap-3 text-xs font-bold"
               >
@@ -714,7 +708,6 @@
                 >
                   <Plus :size="13" />
                   <span>Chọn thêm câu hỏi</span>
->>>>>>> 21a1000b7c9899c06f815fc810327f65e32ea575
                 </button>
               </div>
 
@@ -807,10 +800,6 @@
                 <BookOpen :size="40" class="text-[var(--muted)]" />
               </div>
               <div>
-<<<<<<< HEAD
-                <button type="button" class="btn-primary inline-flex items-center gap-2 text-xs !py-2 cursor-pointer" @click="isBankDrawerOpen = true">
-                  <span>📚 Chọn câu hỏi từ Ngân hàng</span>
-=======
                 <p class="text-base font-black text-[var(--text)]">
                   Chưa có câu hỏi nào được chọn
                 </p>
@@ -831,7 +820,6 @@
                 >
                   <Plus :size="14" />
                   <span>Chọn câu hỏi cho Quiz</span>
->>>>>>> 21a1000b7c9899c06f815fc810327f65e32ea575
                 </button>
               </div>
             </div>
@@ -1099,12 +1087,6 @@
 </template>
 
 <script setup>
-<<<<<<< HEAD
-import { computed, inject, onMounted, reactive, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import QuestionBankDrawer from '@/components/question/QuestionBankDrawer.vue'
-import { coverToBackground, questionsBankApi, taxonomyApi } from '@/services/api'
-=======
 import { computed, inject, onMounted, reactive, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import {
@@ -1131,25 +1113,13 @@ import {
   questionsBankApi,
   taxonomyApi,
 } from "@/services/api";
->>>>>>> 21a1000b7c9899c06f815fc810327f65e32ea575
 
 const route = useRoute();
 const router = useRouter();
 const showToast = inject("showToast");
 
-<<<<<<< HEAD
-const mode = ref(route.query.mode === 'manual' ? 'manual' : 'random')
-const isSubmitting = ref(false)
-const isBankDrawerOpen = ref(false)
-
-const onBankDrawerConfirm = (newIds) => {
-  selectedIds.value = newIds
-  updateFormTitle()
-}
-=======
 const mode = ref(route.query.mode === "manual" ? "manual" : "random");
 const isSubmitting = ref(false);
->>>>>>> 21a1000b7c9899c06f815fc810327f65e32ea575
 
 const isPickerModalOpen = ref(false);
 const selectedQuestionsMap = ref(new Map());

@@ -343,3 +343,10 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/quiz/{id}/submit', [QuizAttemptController::class, 'submitGamified']);
     Route::get('/quiz/history', [QuizAttemptController::class, 'history']);
 });
+Route::get(
+    '/curriculum/options',
+    [
+        CurriculumOptionController::class,
+        'index',
+    ]
+);

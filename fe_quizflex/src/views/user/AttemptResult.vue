@@ -318,13 +318,6 @@
       </aside>
     </div>
 
-<<<<<<< HEAD
-    <!-- Question Report Modal -->
-    <QuestionReportModal
-      :question-id="reportingQuestionId"
-      :is-open="isReportModalOpen"
-      @close="isReportModalOpen = false"
-=======
     <!-- QUESTION REPORT MODAL -->
     <QuestionReportModal
       v-if="selectedReportQuestion"
@@ -333,7 +326,6 @@
       :question-snippet="selectedReportQuestion.question || selectedReportQuestion.question_content"
       @close="closeReportModal"
       @reported="handleQuestionReported"
->>>>>>> 21a1000b7c9899c06f815fc810327f65e32ea575
     />
   </section>
 </template>
@@ -346,10 +338,7 @@ import { Check, X, Flag } from 'lucide-vue-next'
 import AppLoadingState from '@/components/common/AppLoadingState.vue'
 import AppErrorState from '@/components/common/AppErrorState.vue'
 import QuestionReportModal from '@/components/question/QuestionReportModal.vue'
-<<<<<<< HEAD
-=======
 import MathText from '@/components/MathText.vue'
->>>>>>> 21a1000b7c9899c06f815fc810327f65e32ea575
 
 import {
   attemptsApi,
@@ -363,16 +352,6 @@ const isLoading = ref(false)
 const errorMessage = ref('')
 
 const isReportModalOpen = ref(false)
-<<<<<<< HEAD
-const reportingQuestionId = ref(null)
-
-const openReportModal = (questionId) => {
-  if (!questionId) return
-  reportingQuestionId.value = questionId
-  isReportModalOpen.value = true
-}
-
-=======
 const selectedReportQuestion = ref(null)
 const reportedQuestionIds = ref(new Set())
 
@@ -459,7 +438,6 @@ const handleQuestionReported = () => {
   }
 }
 
->>>>>>> 21a1000b7c9899c06f815fc810327f65e32ea575
 const formatDateTime = (value) => {
   if (!value) return ''
 

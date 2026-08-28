@@ -1,754 +1,315 @@
 <template>
-  <section class="grid gap-6">
-    <!-- Header Page -->
-    <div class="relative overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-soft)] backdrop-blur-2xl">
-      <div class="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[var(--primary)]/15 blur-3xl"></div>
-      <div class="relative z-10 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-        <div>
-          <h1 class="text-3xl font-black tracking-[-0.04em] text-[var(--text)]">Phòng thi đấu</h1>
-          <p class="mt-1 text-sm font-medium text-[var(--muted)]">
-            Quản lý tất cả phòng thi đấu (live) trên hệ thống
-          </p>
+  <section class="max-w-6xl mx-auto py-4 space-y-6">
+    <!-- Header -->
+    <div class="card p-6 sm:p-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+      <div class="flex items-start gap-3">
+        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-purple-500/10 text-purple-500">
+          <Swords class="h-5 w-5" />
         </div>
-        <button
-          class="btn-ghost flex items-center gap-2 self-start sm:self-auto"
-          type="button"
-          :disabled="listState.loading"
-          @click="refreshData"
-        >
-          <svg class="h-4 w-4" :class="{ 'animate-spin': listState.loading }" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-          </svg>
-          <span>Làm mới</span>
-        </button>
+        <div>
+          <p class="text-xs font-bold uppercase tracking-wider text-[#7C3AED]">Quản trị hệ thống</p>
+          <h1 class="text-3xl font-black tracking-[-0.04em] text-[var(--text)]">Phòng thi đấu</h1>
+          <p class="mt-1 text-sm font-medium text-[var(--muted)]">Quản lý tất cả phòng thi đấu (live) trên hệ thống.</p>
+        </div>
       </div>
+      <button
+        class="btn-secondary text-xs px-3.5 py-1.5 inline-flex items-center gap-1.5"
+        type="button"
+        :disabled="listState.loading"
+        @click="refreshData"
+      >
+        <RefreshCw class="h-3.5 w-3.5" :class="{ 'animate-spin': listState.loading }" />
+        <span>Làm mới</span>
+      </button>
     </div>
 
     <!-- Summary Cards -->
     <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
-      <!-- Card 1: Tổng số phòng thi đấu -->
-      <div
-        class="glass-card flex flex-col justify-between rounded-2xl p-4 transition-all duration-200 hover:-translate-y-0.5"
-      >
-        <div class="flex items-center gap-3">
-          <div
-            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-purple-500/10 text-purple-500"
-          >
-            <svg
-              class="h-5 w-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9" />
-              <path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5" />
-              <circle cx="12" cy="12" r="2" />
-              <path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5" />
-              <path d="M19.1 4.9c3.9 3.9 3.9 10.3 0 14.2" />
-            </svg>
-          </div>
-          <div>
-            <p class="text-xs font-semibold text-[var(--muted)]">
-              Tổng số phòng thi đấu
-            </p>
-            <p class="mt-0.5 text-2xl font-black text-[var(--text)]">
-              {{ formatNumber(stats.live_total) }}
-            </p>
-          </div>
+      <article class="card p-5 card-hover flex items-start justify-between gap-3">
+        <div class="space-y-1">
+          <span class="text-[10px] font-bold uppercase text-slate-400 block">Tổng số phòng thi đấu</span>
+          <strong class="text-2xl font-black text-slate-900 block">{{ formatNumber(stats.live_total) }}</strong>
+          <span class="text-[11px] text-slate-500 font-medium block">Tất cả phòng thi đấu</span>
         </div>
-        <p class="mt-3 text-[11px] font-medium text-[var(--muted)]">
-          Tất cả phòng thi đấu
-        </p>
-      </div>
+        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-purple-500/10 text-[#7C3AED]">
+          <Swords class="h-4 w-4" />
+        </div>
+      </article>
 
-      <!-- Card 2: Đang diễn ra -->
-      <div
-        class="glass-card flex flex-col justify-between rounded-2xl p-4 transition-all duration-200 hover:-translate-y-0.5"
-      >
-        <div class="flex items-center gap-3">
-          <div
-            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-500"
-          >
-            <svg
-              class="h-5 w-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-              <circle cx="9" cy="7" r="4" />
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-            </svg>
-          </div>
-          <div>
-            <p class="text-xs font-semibold text-[var(--muted)]">
-              Đang diễn ra
-            </p>
-            <p class="mt-0.5 text-2xl font-black text-[var(--text)]">
-              {{ formatNumber(stats.active_total) }}
-            </p>
-          </div>
+      <article class="card p-5 card-hover flex items-start justify-between gap-3">
+        <div class="space-y-1">
+          <span class="text-[10px] font-bold uppercase text-slate-400 block">Đang diễn ra</span>
+          <strong class="text-2xl font-black text-amber-600 block">{{ formatNumber(stats.active_total) }}</strong>
+          <span class="text-[11px] text-slate-500 font-medium block">{{ stats.active_percent }}% tổng số</span>
         </div>
-        <p class="mt-3 text-[11px] font-medium text-[var(--muted)]">
-          {{ stats.active_percent }}% tổng số
-        </p>
-      </div>
+        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600">
+          <PlayCircle class="h-4 w-4" />
+        </div>
+      </article>
 
-      <!-- Card 3: Bị khóa -->
-      <div
-        class="glass-card flex flex-col justify-between rounded-2xl p-4 transition-all duration-200 hover:-translate-y-0.5"
-      >
-        <div class="flex items-center gap-3">
-          <div
-            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-500"
-          >
-            <svg
-              class="h-5 w-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-            </svg>
-          </div>
-          <div>
-            <p class="text-xs font-semibold text-[var(--muted)]">
-              Số phòng bị khóa
-            </p>
-            <p class="mt-0.5 text-2xl font-black text-[var(--text)]">
-              {{ formatNumber(stats.banned_total) }}
-            </p>
-          </div>
+      <article class="card p-5 card-hover flex items-start justify-between gap-3">
+        <div class="space-y-1">
+          <span class="text-[10px] font-bold uppercase text-slate-400 block">Số phòng bị khóa</span>
+          <strong class="text-2xl font-black text-slate-900 block">{{ formatNumber(stats.banned_total) }}</strong>
+          <span class="text-[11px] text-slate-500 font-medium block">Đang bị khóa (banned)</span>
         </div>
-        <p class="mt-3 text-[11px] font-medium text-[var(--muted)]">
-          Đang bị khóa (banned)
-        </p>
-      </div>
+        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-blue-600">
+          <Lock class="h-4 w-4" />
+        </div>
+      </article>
 
-      <!-- Card 4: Trong thùng rác -->
-      <div
-        class="glass-card flex flex-col justify-between rounded-2xl p-4 transition-all duration-200 hover:-translate-y-0.5"
-      >
-        <div class="flex items-center gap-3">
-          <div
-            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-rose-500/10 text-rose-500"
-          >
-            <svg
-              class="h-5 w-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <polyline points="3 6 5 6 21 6" />
-              <path
-                d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
-              />
-              <line x1="10" y1="11" x2="10" y2="17" />
-              <line x1="14" y1="11" x2="14" y2="17" />
-            </svg>
-          </div>
-          <div>
-            <p class="text-xs font-semibold text-[var(--muted)]">
-              Trong thùng rác
-            </p>
-            <p class="mt-0.5 text-2xl font-black text-[var(--text)]">
-              {{ formatNumber(stats.trash_total) }}
-            </p>
-          </div>
+      <article class="card p-5 card-hover flex items-start justify-between gap-3">
+        <div class="space-y-1">
+          <span class="text-[10px] font-bold uppercase text-slate-400 block">Trong thùng rác</span>
+          <strong class="text-2xl font-black text-red-600 block">{{ formatNumber(stats.trash_total) }}</strong>
+          <span class="text-[11px] text-slate-500 font-medium block">{{ stats.trash_percent }}% tổng số</span>
         </div>
-        <p class="mt-3 text-[11px] font-medium text-[var(--muted)]">
-          {{ stats.trash_percent }}% tổng số
-        </p>
-      </div>
+        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-red-500/10 text-red-600">
+          <Trash2 class="h-4 w-4" />
+        </div>
+      </article>
     </div>
 
-    <!-- Main Content Container -->
-    <div class="glass-card rounded-[2rem] p-5">
-      <!-- Top Bar: Tabs & Search/Filter Controls -->
-      <div class="flex flex-col gap-4">
-        <!-- Tabs & Filter/Search bar -->
-        <div
-          class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between border-b border-[var(--border)] pb-4"
-        >
-          <!-- Left side: Tabs -->
-          <div class="flex items-center gap-2">
-            <button
-              type="button"
-              class="flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-extrabold transition-all"
-              :class="
-                viewMode === 'all'
-                  ? 'bg-[var(--chip-active)] text-[var(--primary)] border border-[var(--border-strong)]'
-                  : 'text-[var(--muted)] hover:text-[var(--text)] border border-transparent'
-              "
-              @click="setViewMode('all')"
-            >
-              <svg
-                class="h-4 w-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                stroke-width="2"
-              >
-                <rect x="3" y="3" width="18" height="18" rx="2" />
-                <path d="M3 9h18" />
-                <path d="M3 15h18" />
-              </svg>
-              <span>Tất cả phòng thi đấu</span>
-            </button>
+    <<!-- Main Content Container -->
+    <article class="card overflow-hidden">
+      <!-- Tabs Navigation & Filter/Search bar trên cùng 1 hàng -->
+      <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between border-b border-slate-100 bg-slate-50/70 p-3 px-5 text-xs font-bold">
+        <!-- Tabs Navigation -->
+        <div class="flex items-center gap-2 overflow-x-auto">
+          <button
+            type="button"
+            class="rounded-lg px-3.5 py-1.5 transition inline-flex items-center gap-1.5 whitespace-nowrap"
+            :class="viewMode === 'all' ? 'bg-[#7C3AED] text-white shadow-sm' : 'text-slate-600 hover:bg-slate-200/60'"
+            @click="setViewMode('all')"
+          >
+            <LayoutGrid class="h-3.5 w-3.5" />
+            <span>Tất cả phòng thi đấu</span>
+          </button>
+          <button
+            type="button"
+            class="relative rounded-lg px-3.5 py-1.5 transition inline-flex items-center gap-1.5 whitespace-nowrap"
+            :class="viewMode === 'trash' ? 'bg-[#7C3AED] text-white shadow-sm' : 'text-slate-600 hover:bg-slate-200/60'"
+            @click="setViewMode('trash')"
+          >
+            <Trash2 class="h-3.5 w-3.5" />
+            <span>Thùng rác</span>
+            <span v-if="stats.trash_total > 0" class="rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold text-white leading-none">{{ stats.trash_total }}</span>
+          </button>
+        </div>
 
-            <button
-              type="button"
-              class="flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-extrabold transition-all"
-              :class="
-                viewMode === 'trash'
-                  ? 'bg-[var(--chip-active)] text-[var(--primary)] border border-[var(--border-strong)]'
-                  : 'text-[var(--muted)] hover:text-[var(--text)] border border-transparent'
-              "
-              @click="setViewMode('trash')"
-            >
-              <svg
-                class="h-4 w-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                stroke-width="2"
-              >
-                <polyline points="3 6 5 6 21 6" />
-                <path
-                  d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
-                />
-              </svg>
-              <span>Thùng rác</span>
-              <span
-                class="rounded-full bg-rose-500/10 px-2 py-0.5 text-xs font-bold text-rose-500 border border-rose-500/20"
-              >
-                {{ stats.trash_total }}
-              </span>
-            </button>
+        <!-- Filter/Search bar -->
+        <form class="flex flex-wrap items-center gap-2" @submit.prevent="loadRooms(1)">
+          <select
+            v-model="statusFilter"
+            class="field text-xs w-full sm:w-40"
+            :disabled="viewMode === 'trash'"
+            @change="loadRooms(1)"
+          >
+            <option value="">Tất cả trạng thái</option>
+            <option value="waiting">Chờ bắt đầu</option>
+            <option value="playing">Đang diễn ra</option>
+            <option value="finished">Đã kết thúc</option>
+            <option value="banned">Bị khóa (Banned)</option>
+          </select>
+
+          <div class="relative flex-1 sm:w-56">
+            <Search class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+            <input
+              v-model.trim="searchQuery"
+              class="field text-xs pl-8 w-full"
+              type="search"
+              placeholder="Tìm theo tên phòng, mã phòng, host..."
+            />
           </div>
 
-          <!-- Right side: Filter & Search form -->
-          <form
-            class="flex flex-col gap-3 sm:flex-row sm:items-center"
-            @submit.prevent="loadRooms(1)"
-          >
-            <!-- Select Status -->
-            <div class="relative w-full sm:w-44">
-              <select
-                v-model="statusFilter"
-                class="field w-full appearance-none pr-8 text-sm font-semibold"
-                :disabled="viewMode === 'trash'"
-                @change="loadRooms(1)"
-              >
-                <option value="">Tất cả trạng thái</option>
-                <option value="waiting">Chờ bắt đầu</option>
-                <option value="playing">Đang diễn ra</option>
-                <option value="finished">Đã kết thúc</option>
-                <option value="banned">Bị khóa (Banned)</option>
-              </select>
-              <div
-                class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--muted)]"
-              >
-                <svg
-                  class="h-4 w-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  stroke-width="2"
-                >
-                  <path d="m6 9 6 6 6-6" />
-                </svg>
-              </div>
-            </div>
-
-            <!-- Search input -->
-            <div class="relative w-full sm:w-64">
-              <input
-                v-model.trim="searchQuery"
-                class="field w-full pl-9 pr-4 text-sm font-medium"
-                type="search"
-                placeholder="Tìm theo tên phòng, mã phòng, host..."
-              />
-              <div
-                class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)]"
-              >
-                <svg
-                  class="h-4 w-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  stroke-width="2"
-                >
-                  <circle cx="11" cy="11" r="8" />
-                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                </svg>
-              </div>
-            </div>
-
-            <!-- Search button -->
-            <button
-              class="btn-primary min-w-[100px] shrink-0"
-              type="submit"
-              :disabled="listState.loading"
-            >
-              <svg
-                class="h-4 w-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                stroke-width="2"
-              >
-                <circle cx="11" cy="11" r="8" />
-                <line x1="21" y1="21" x2="16.65" y2="16.65" />
-              </svg>
-              <span>Tìm kiếm</span>
-            </button>
-          </form>
-        </div>
+          <button class="btn-primary text-xs px-3 py-2 inline-flex items-center justify-center gap-1.5 shrink-0" type="submit" :disabled="listState.loading">
+            <Search class="h-3.5 w-3.5" />
+            <span>Tìm kiếm</span>
+          </button>
+        </form>
       </div>
 
+      <div class="p-5 space-y-4">
+
       <!-- Info Alert Banner for Trash mode -->
-      <div
-        v-if="viewMode === 'trash'"
-        class="mt-4 flex items-center justify-between rounded-xl border border-blue-500/20 bg-blue-500/10 p-3.5 text-xs font-semibold text-blue-300"
-      >
+      <div v-if="viewMode === 'trash'" class="flex items-center justify-between rounded-xl border border-blue-200 bg-blue-50 p-3.5 text-xs font-bold text-blue-700">
         <div class="flex items-center gap-2">
-          <svg
-            class="h-4 w-4 shrink-0 text-blue-400"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            stroke-width="2"
-          >
-            <circle cx="12" cy="12" r="10" />
-            <line x1="12" y1="16" x2="12" y2="12" />
-            <line x1="12" y1="8" x2="12.01" y2="8" />
-          </svg>
+          <Info class="h-4 w-4 shrink-0" />
           <span>Các phòng trong thùng rác vẫn có thể khôi phục.</span>
         </div>
-        <button
-          class="btn-ghost px-3 py-1 text-xs font-bold"
-          type="button"
-          @click="loadRooms()"
-        >
+        <button class="btn-secondary text-[11px] px-2.5 py-1" type="button" @click="loadRooms()">
           Làm mới
         </button>
       </div>
 
-      <!-- Table Section -->
-      <div
-        v-if="listState.error"
-        class="mt-5 rounded-2xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm font-bold text-rose-300"
-      >
-        {{ listState.error }}
+      <!-- Error / Loading -->
+      <div v-if="listState.error" class="rounded-xl border border-red-200 bg-red-50 p-4 text-xs font-bold text-red-700 flex items-start gap-2">
+        <AlertCircle class="h-4 w-4 shrink-0 mt-0.5" /> <span>{{ listState.error }}</span>
       </div>
 
-      <div
-        v-else-if="listState.loading"
-        class="mt-5 grid place-items-center rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-12 text-sm font-bold text-[var(--muted)]"
-      >
-        <div class="flex items-center gap-3">
-          <svg
-            class="h-5 w-5 animate-spin text-[var(--primary)]"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            stroke-width="2"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-            />
-          </svg>
-          <span>Đang tải danh sách phòng...</span>
-        </div>
+      <div v-else-if="listState.loading" class="rounded-xl border border-slate-100 bg-slate-50 p-12 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
+        <RefreshCw class="h-4 w-4 animate-spin text-[#7C3AED]" />
+        <span>Đang tải danh sách phòng...</span>
       </div>
 
-      <div v-else class="mt-5 overflow-x-auto scrollbar-soft">
-        <!-- ALL ROOMS TABLE (Live only) -->
-        <table
-          v-if="viewMode === 'all'"
-          class="w-full min-w-[900px] border-separate border-spacing-y-2 text-left text-sm"
-        >
-          <thead class="text-xs font-bold text-[var(--muted)]">
-            <tr>
-              <th class="px-4 py-2 w-12">#</th>
-              <th class="px-4 py-2">Tên phòng</th>
-              <th class="px-4 py-2">Chủ phòng</th>
-              <th class="px-4 py-2">Mã phòng</th>
-              <th class="px-4 py-2">Trạng thái</th>
-              <th class="px-4 py-2">Người chơi</th>
-              <th class="px-4 py-2 hidden lg:table-cell">Tạo lúc</th>
-              <th class="px-4 py-2 text-right">Hành động</th>
+      <div v-else class="overflow-x-auto rounded-xl border border-slate-100">
+        <!-- ALL ROOMS TABLE -->
+        <table v-if="viewMode === 'all'" class="w-full min-w-[900px] text-left text-xs">
+          <thead>
+            <tr class="border-b border-slate-100 bg-slate-50 text-slate-400 uppercase text-[10px] font-bold">
+              <th class="py-3 px-3 w-10">#</th>
+              <th class="py-3 px-3">Tên phòng</th>
+              <th class="py-3 px-3">Chủ phòng</th>
+              <th class="py-3 px-3">Mã phòng</th>
+              <th class="py-3 px-3">Trạng thái</th>
+              <th class="py-3 px-3">Người chơi</th>
+              <th class="py-3 px-3 hidden lg:table-cell">Tạo lúc</th>
+              <th class="py-3 px-3 text-right">Hành động</th>
             </tr>
           </thead>
-          <tbody>
-            <tr
-              v-for="(room, index) in listState.items"
-              :key="`live-${room.id}`"
-              class="group rounded-2xl bg-[var(--surface-soft)] text-[var(--text)] transition-all duration-150 hover:bg-[var(--surface)]"
-            >
-              <!-- # Index -->
-              <td
-                class="rounded-l-2xl px-4 py-3.5 font-bold text-xs text-[var(--muted)]"
-              >
+          <tbody class="divide-y divide-slate-100 font-medium">
+            <tr v-for="(room, index) in listState.items" :key="`live-${room.id}`" class="hover:bg-slate-50 transition-colors">
+              <td class="py-3.5 px-3 font-bold text-[11px] text-slate-400">
                 {{ (listState.meta.current_page - 1) * 10 + index + 1 }}
               </td>
 
-              <!-- Room Name & Description -->
-              <td class="px-4 py-3.5 max-w-xs">
-                <p
-                  class="font-bold text-[var(--text)] line-clamp-1 hover:text-[var(--primary)] cursor-pointer"
-                  @click="openDetail(room)"
-                >
+              <td class="py-3.5 px-3 max-w-xs">
+                <p class="font-bold text-slate-900 line-clamp-1 hover:text-[#7C3AED] cursor-pointer" @click="openDetail(room)">
                   {{ room.title || room.name || "Chưa đặt tên" }}
                 </p>
-                <p
-                  v-if="room.description"
-                  class="mt-0.5 text-xs text-[var(--muted)] line-clamp-1"
-                >
+                <p v-if="room.description" class="mt-0.5 text-[11px] text-slate-400 line-clamp-1">
                   {{ room.description }}
                 </p>
               </td>
 
-              <!-- Host Info -->
-              <td class="px-4 py-3.5">
-                <p class="font-semibold text-xs text-[var(--text)]">
-                  {{ room.host?.name || "Không rõ" }}
-                </p>
-                <p class="text-[11px] text-[var(--muted)]">
-                  {{ room.host?.email || "-" }}
-                </p>
+              <td class="py-3.5 px-3">
+                <p class="font-bold text-slate-900">{{ room.host?.name || "Không rõ" }}</p>
+                <p class="text-[10px] text-slate-400">{{ room.host?.email || "-" }}</p>
               </td>
 
-              <!-- Room Code & Copy Button -->
-              <td class="px-4 py-3.5 font-mono text-xs">
-                <div
-                  class="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2.5 py-1 text-[var(--text)]"
-                >
-                  <span class="font-bold tracking-wider">{{
-                    room.code || "-"
-                  }}</span>
+              <td class="py-3.5 px-3 font-mono text-xs">
+                <div class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-slate-700">
+                  <span class="font-bold tracking-wider">{{ room.code || "-" }}</span>
                   <button
                     v-if="room.code"
                     type="button"
-                    class="text-[var(--muted)] transition-colors hover:text-[var(--primary)] focus:outline-none"
-                    :title="
-                      copiedCodeMap[room.code]
-                        ? 'Đã sao chép!'
-                        : 'Sao chép mã phòng'
-                    "
+                    class="text-slate-400 transition-colors hover:text-[#7C3AED] focus:outline-none"
+                    :title="copiedCodeMap[room.code] ? 'Đã sao chép!' : 'Sao chép mã phòng'"
                     aria-label="Sao chép mã phòng"
                     @click="copyRoomCode(room.code)"
                   >
-                    <svg
-                      v-if="copiedCodeMap[room.code]"
-                      class="h-3.5 w-3.5 text-emerald-400"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                      stroke-width="2.5"
-                    >
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                    <svg
-                      v-else
-                      class="h-3.5 w-3.5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                      stroke-width="2"
-                    >
-                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                      <path
-                        d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
-                      />
-                    </svg>
+                    <Check v-if="copiedCodeMap[room.code]" class="h-3.5 w-3.5 text-emerald-600" />
+                    <Copy v-else class="h-3.5 w-3.5" />
                   </button>
                 </div>
               </td>
 
-              <!-- Status Pill -->
-              <td class="px-4 py-3.5">
-                <span
-                  class="inline-flex rounded-full border px-3 py-0.5 text-xs font-extrabold"
-                  :class="getStatusPillClass(room)"
-                >
+              <td class="py-3.5 px-3">
+                <span class="inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-bold" :class="getStatusPillClass(room)">
                   {{ getStatusLabel(room) }}
                 </span>
               </td>
 
-              <!-- Player Count -->
-              <td class="px-4 py-3.5">
-                <div
-                  class="inline-flex items-center gap-1.5 text-xs font-bold text-[var(--text)]"
-                >
-                  <svg
-                    class="h-3.5 w-3.5 text-[var(--muted)]"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    stroke-width="2"
-                  >
-                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                    <circle cx="9" cy="7" r="4" />
-                  </svg>
+              <td class="py-3.5 px-3">
+                <div class="inline-flex items-center gap-1.5 font-bold text-slate-700">
+                  <Users class="h-3.5 w-3.5 text-slate-400" />
                   <span>{{ formatNumber(room.player_count) }} người</span>
                 </div>
               </td>
 
-              <!-- Created At -->
-              <td
-                class="px-4 py-3.5 text-xs text-[var(--muted)] hidden lg:table-cell"
-              >
+              <td class="py-3.5 px-3 text-slate-400 text-[11px] hidden lg:table-cell">
                 {{ formatDateTime(room.created_at) }}
               </td>
 
-              <!-- Action Buttons (Icon-only with Tooltips) -->
-              <td class="rounded-r-2xl px-4 py-3.5 text-right">
+              <td class="py-3.5 px-3 text-right">
                 <div class="flex items-center justify-end gap-1.5">
-                  <!-- Eye: Xem chi tiết -->
-                  <div class="relative group/tooltip">
+                  <button
+                    type="button"
+                    class="btn-secondary text-[11px] px-2.5 py-1 inline-flex items-center gap-1"
+                    @click="openDetail(room)"
+                  >
+                    <Eye class="h-3 w-3" /> Xem
+                  </button>
+
+                  <template v-if="canBanRoom(room)">
                     <button
                       type="button"
-                      class="flex h-8 w-8 items-center justify-center rounded-xl border border-blue-500/20 bg-blue-500/10 text-blue-400 transition-all hover:bg-blue-500/20"
-                      aria-label="Xem chi tiết"
-                      @click="openDetail(room)"
+                      class="rounded-lg border text-[11px] px-2.5 py-1 font-bold inline-flex items-center gap-1 transition"
+                      :class="isRoomBanned(room)
+                        ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                        : 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100'"
+                      :disabled="roomActionLoading === getRoomKey(room)"
+                      @click="toggleBanRoom(room)"
                     >
-                      <svg
-                        class="h-4 w-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        stroke-width="2"
-                      >
-                        <path
-                          d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"
-                        />
-                        <circle cx="12" cy="12" r="3" />
-                      </svg>
+                      <Unlock v-if="isRoomBanned(room)" class="h-3 w-3" />
+                      <Lock v-else class="h-3 w-3" />
+                      {{ isRoomBanned(room) ? 'Mở khóa' : 'Khóa' }}
                     </button>
-                    <span
-                      class="pointer-events-none absolute bottom-full left-1/2 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded-lg bg-[var(--surface-strong)] px-2.5 py-1 text-[11px] font-bold text-[var(--text)] shadow-lg border border-[var(--border)] opacity-0 transition-opacity group-hover/tooltip:opacity-100 z-30"
-                    >
-                      Xem chi tiết
-                    </span>
-                  </div>
-
-                  <!-- Lock / Ban: (Hidden for finished Live rooms!) -->
-                  <template v-if="canBanRoom(room)">
-                    <div class="relative group/tooltip">
-                      <button
-                        type="button"
-                        class="flex h-8 w-8 items-center justify-center rounded-xl border transition-all"
-                        :class="
-                          isRoomBanned(room)
-                            ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'
-                            : 'border-amber-500/20 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20'
-                        "
-                        :aria-label="
-                          isRoomBanned(room)
-                            ? 'Mở khóa phòng'
-                            : 'Khóa phòng (Ban)'
-                        "
-                        :disabled="roomActionLoading === getRoomKey(room)"
-                        @click="toggleBanRoom(room)"
-                      >
-                        <svg
-                          v-if="isRoomBanned(room)"
-                          class="h-4 w-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                          stroke-width="2"
-                        >
-                          <rect
-                            x="3"
-                            y="11"
-                            width="18"
-                            height="11"
-                            rx="2"
-                            ry="2"
-                          />
-                          <path d="M7 11V7a5 5 0 0 1 9.9-1" />
-                        </svg>
-                        <svg
-                          v-else
-                          class="h-4 w-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                          stroke-width="2"
-                        >
-                          <rect
-                            x="3"
-                            y="11"
-                            width="18"
-                            height="11"
-                            rx="2"
-                            ry="2"
-                          />
-                          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                        </svg>
-                      </button>
-                      <span
-                        class="pointer-events-none absolute bottom-full left-1/2 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded-lg bg-[var(--surface-strong)] px-2.5 py-1 text-[11px] font-bold text-[var(--text)] shadow-lg border border-[var(--border)] opacity-0 transition-opacity group-hover/tooltip:opacity-100 z-30"
-                      >
-                        {{
-                          isRoomBanned(room)
-                            ? "Mở khóa phòng"
-                            : "Khóa phòng (Ban)"
-                        }}
-                      </span>
-                    </div>
                   </template>
 
-                  <!-- Trash2: Đưa vào thùng rác -->
-                  <div class="relative group/tooltip">
-                    <button
-                      type="button"
-                      class="flex h-8 w-8 items-center justify-center rounded-xl border border-rose-500/20 bg-rose-500/10 text-rose-400 transition-all hover:bg-rose-500/20 disabled:opacity-50"
-                      aria-label="Đưa vào thùng rác"
-                      :disabled="roomActionLoading === getRoomKey(room)"
-                      @click="softDeleteRoom(room)"
-                    >
-                      <svg
-                        class="h-4 w-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        stroke-width="2"
-                      >
-                        <polyline points="3 6 5 6 21 6" />
-                        <path
-                          d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
-                        />
-                        <line x1="10" y1="11" x2="10" y2="17" />
-                        <line x1="14" y1="11" x2="14" y2="17" />
-                      </svg>
-                    </button>
-                    <span
-                      class="pointer-events-none absolute bottom-full left-1/2 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded-lg bg-[var(--surface-strong)] px-2.5 py-1 text-[11px] font-bold text-[var(--text)] shadow-lg border border-[var(--border)] opacity-0 transition-opacity group-hover/tooltip:opacity-100 z-30"
-                    >
-                      Đưa vào thùng rác
-                    </span>
-                  </div>
+                  <button
+                    type="button"
+                    class="rounded-lg border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 text-[11px] px-2.5 py-1 font-bold inline-flex items-center gap-1 transition disabled:opacity-50"
+                    :disabled="roomActionLoading === getRoomKey(room)"
+                    @click="softDeleteRoom(room)"
+                  >
+                    <Trash2 class="h-3 w-3" /> Xóa
+                  </button>
                 </div>
               </td>
             </tr>
           </tbody>
         </table>
 
-        <!-- TRASH TABLE (Live only) -->
-        <table
-          v-else
-          class="w-full min-w-[900px] border-separate border-spacing-y-2 text-left text-sm"
-        >
-          <thead class="text-xs font-bold text-[var(--muted)]">
-            <tr>
-              <th class="px-4 py-2 w-12">#</th>
-              <th class="px-4 py-2">Tên phòng</th>
-              <th class="px-4 py-2">Chủ phòng</th>
-              <th class="px-4 py-2">Mã phòng</th>
-              <th class="px-4 py-2">Đã xóa lúc</th>
-              <th class="px-4 py-2 text-right">Hành động</th>
+        <!-- TRASH TABLE -->
+        <table v-else class="w-full min-w-[900px] text-left text-xs">
+          <thead>
+            <tr class="border-b border-slate-100 bg-slate-50 text-slate-400 uppercase text-[10px] font-bold">
+              <th class="py-3 px-3 w-10">#</th>
+              <th class="py-3 px-3">Tên phòng</th>
+              <th class="py-3 px-3">Chủ phòng</th>
+              <th class="py-3 px-3">Mã phòng</th>
+              <th class="py-3 px-3">Đã xóa lúc</th>
+              <th class="py-3 px-3 text-right">Hành động</th>
             </tr>
           </thead>
-          <tbody>
-            <tr
-              v-for="(room, index) in listState.items"
-              :key="`trash-live-${room.id}`"
-              class="group rounded-2xl bg-[var(--surface-soft)] text-[var(--text)] transition-all duration-150 hover:bg-[var(--surface)]"
-            >
-              <td
-                class="rounded-l-2xl px-4 py-3.5 font-bold text-xs text-[var(--muted)]"
-              >
+          <tbody class="divide-y divide-slate-100 font-medium">
+            <tr v-for="(room, index) in listState.items" :key="`trash-live-${room.id}`" class="hover:bg-slate-50 transition-colors">
+              <td class="py-3.5 px-3 font-bold text-[11px] text-slate-400">
                 {{ (listState.meta.current_page - 1) * 10 + index + 1 }}
               </td>
-
-              <td class="px-4 py-3.5 max-w-xs font-bold text-[var(--text)]">
+              <td class="py-3.5 px-3 max-w-xs font-bold text-slate-900">
                 {{ room.title || room.name || "Chưa đặt tên" }}
               </td>
-
-              <td class="px-4 py-3.5">
-                <p class="font-semibold text-xs text-[var(--text)]">
-                  {{ room.host?.name || "Không rõ" }}
-                </p>
-                <p class="text-[11px] text-[var(--muted)]">
-                  {{ room.host?.email || "-" }}
-                </p>
+              <td class="py-3.5 px-3">
+                <p class="font-bold text-slate-900">{{ room.host?.name || "Không rõ" }}</p>
+                <p class="text-[10px] text-slate-400">{{ room.host?.email || "-" }}</p>
               </td>
-
-              <td class="px-4 py-3.5 font-mono text-xs">
-                <span
-                  class="inline-flex items-center rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2.5 py-1 font-bold tracking-wider text-[var(--text)]"
-                >
+              <td class="py-3.5 px-3 font-mono text-xs">
+                <span class="inline-flex items-center rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 font-bold tracking-wider text-slate-700">
                   {{ room.code || "-" }}
                 </span>
               </td>
-
-              <td class="px-4 py-3.5 text-xs text-[var(--muted)]">
+              <td class="py-3.5 px-3 text-slate-400 text-[11px]">
                 {{ formatDateTime(room.deleted_at) }}
               </td>
-
-              <!-- Trash Action Buttons -->
-              <td class="rounded-r-2xl px-4 py-3.5 text-right">
-                <div class="flex items-center justify-end gap-2">
-                  <!-- Restore Button -->
+              <td class="py-3.5 px-3 text-right">
+                <div class="flex items-center justify-end gap-1.5">
                   <button
                     type="button"
-                    class="inline-flex items-center gap-1.5 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 text-xs font-bold text-emerald-400 transition-all hover:bg-emerald-500/20 disabled:opacity-50"
+                    class="btn-secondary text-[11px] px-2.5 py-1 text-emerald-700 font-bold inline-flex items-center gap-1"
                     :disabled="roomActionLoading === getRoomKey(room)"
                     @click="restoreRoom(room)"
                   >
-                    <svg
-                      class="h-3.5 w-3.5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                      stroke-width="2"
-                    >
-                      <polyline points="1 4 1 10 7 10" />
-                      <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
-                    </svg>
-                    <span>Khôi phục</span>
+                    <RotateCcw class="h-3 w-3" /> Khôi phục
                   </button>
-
-                  <!-- Permanent Delete Button -->
                   <button
                     type="button"
-                    class="inline-flex items-center gap-1.5 rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-1.5 text-xs font-bold text-rose-400 transition-all hover:bg-rose-500/20 disabled:opacity-50"
+                    class="rounded-lg border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 text-[11px] px-2.5 py-1 font-bold inline-flex items-center gap-1 transition disabled:opacity-50"
                     :disabled="roomActionLoading === getRoomKey(room)"
                     @click="openForceDeleteModal(room)"
                   >
-                    <svg
-                      class="h-3.5 w-3.5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                      stroke-width="2"
-                    >
-                      <polyline points="3 6 5 6 21 6" />
-                      <path
-                        d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
-                      />
-                    </svg>
-                    <span>Xóa vĩnh viễn</span>
+                    <Trash2 class="h-3 w-3" /> Xóa vĩnh viễn
                   </button>
                 </div>
               </td>
@@ -757,128 +318,67 @@
         </table>
 
         <!-- Empty state -->
-        <EmptyState
-          v-if="listState.items.length === 0"
-          :text="
-            viewMode === 'trash'
-              ? 'Chưa có phòng thi đấu nào trong thùng rác.'
-              : 'Không có phòng thi đấu nào phù hợp với bộ lọc.'
-          "
-        />
+        <div v-if="listState.items.length === 0" class="py-10 text-center text-slate-400">
+          <Inbox class="mx-auto mb-2 h-6 w-6 opacity-40" />
+          {{ viewMode === 'trash' ? 'Chưa có phòng thi đấu nào trong thùng rác.' : 'Không có phòng thi đấu nào phù hợp với bộ lọc.' }}
+        </div>
       </div>
 
       <!-- Pagination Bar -->
-      <div
-        v-if="listState.items.length > 0"
-        class="mt-5 flex flex-col gap-3 border-t border-[var(--border)] pt-4 text-xs font-bold text-[var(--muted)] sm:flex-row sm:items-center sm:justify-between"
-      >
-        <span
-          >Hiển thị {{ listState.meta.from || 0 }} đến
-          {{ listState.meta.to || 0 }} của
-          {{ formatNumber(listState.meta.total || 0) }} phòng thi đấu</span
-        >
+      <div v-if="listState.items.length > 0" class="flex flex-col gap-3 border-t border-slate-100 pt-4 text-xs sm:flex-row sm:items-center sm:justify-between">
+        <span class="text-slate-500 text-[11px]">
+          Hiển thị {{ listState.meta.from || 0 }}–{{ listState.meta.to || 0 }} trong số {{ formatNumber(listState.meta.total || 0) }} phòng thi đấu
+        </span>
         <div class="flex items-center gap-2">
           <button
-            class="flex h-8 w-8 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--surface)] text-[var(--text)] transition hover:bg-[var(--surface-soft)] disabled:opacity-40"
+            class="btn-secondary text-[11px] px-2.5 py-1 disabled:opacity-40 inline-flex items-center gap-1"
             type="button"
             :disabled="listState.loading || listState.meta.current_page <= 1"
             @click="loadRooms(listState.meta.current_page - 1)"
           >
-            <svg
-              class="h-4 w-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              stroke-width="2"
-            >
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
+            <ChevronLeft class="h-3 w-3" /> Trước
           </button>
-
-          <span
-            class="flex items-center rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 font-bold text-[var(--text)]"
-          >
-            Trang {{ listState.meta.current_page }} /
-            {{ listState.meta.last_page }}
-          </span>
-
+          <span class="text-slate-700 font-bold">{{ listState.meta.current_page }} / {{ listState.meta.last_page }}</span>
           <button
-            class="flex h-8 w-8 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--surface)] text-[var(--text)] transition hover:bg-[var(--surface-soft)] disabled:opacity-40"
+            class="btn-secondary text-[11px] px-2.5 py-1 disabled:opacity-40 inline-flex items-center gap-1"
             type="button"
-            :disabled="
-              listState.loading ||
-              listState.meta.current_page >= listState.meta.last_page
-            "
+            :disabled="listState.loading || listState.meta.current_page >= listState.meta.last_page"
             @click="loadRooms(listState.meta.current_page + 1)"
           >
-            <svg
-              class="h-4 w-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              stroke-width="2"
-            >
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
+            Sau <ChevronRight class="h-3 w-3" />
           </button>
         </div>
       </div>
-    </div>
+      </div>
+    </article>
 
     <!-- FORCE DELETE CONFIRMATION MODAL -->
     <div
       v-if="forceDeleteModal.show"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
       @click.self="closeForceDeleteModal"
     >
-      <div
-        class="w-full max-w-md overflow-hidden rounded-3xl border border-[var(--border)] bg-[var(--surface-strong)] p-6 shadow-[var(--shadow-soft)] transition-all"
-      >
-        <div class="flex items-center gap-4">
-          <div
-            class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-rose-500/10 text-rose-500 border border-rose-500/20"
-          >
-            <svg
-              class="h-6 w-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              stroke-width="2"
-            >
-              <polyline points="3 6 5 6 21 6" />
-              <path
-                d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
-              />
-              <line x1="10" y1="11" x2="10" y2="17" />
-              <line x1="14" y1="11" x2="14" y2="17" />
-            </svg>
+      <div class="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-xl space-y-4">
+        <div class="flex items-center gap-3">
+          <div class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-red-100 text-red-600">
+            <Trash2 class="h-5 w-5" />
           </div>
           <div>
-            <h3 class="text-lg font-black text-[var(--text)]">
-              Xóa vĩnh viễn phòng?
-            </h3>
-            <p class="mt-1 text-xs text-[var(--muted)]">
-              Hành động này không thể hoàn tác.
-            </p>
+            <h3 class="text-base font-bold text-slate-900">Xóa vĩnh viễn phòng?</h3>
+            <p class="text-xs text-slate-500">Hành động này không thể hoàn tác.</p>
           </div>
         </div>
 
-        <div
-          class="mt-4 rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-4 text-xs font-semibold text-[var(--muted)]"
-        >
+        <div class="rounded-xl border border-slate-100 bg-slate-50 p-4 text-xs font-medium text-slate-600">
           Phòng
-          <span class="font-bold text-[var(--text)]"
-            >"{{
-              forceDeleteModal.room?.title || forceDeleteModal.room?.name
-            }}"</span
-          >
+          <span class="font-bold text-slate-900">"{{ forceDeleteModal.room?.title || forceDeleteModal.room?.name }}"</span>
           sẽ bị xóa hoàn toàn khỏi hệ thống và không thể khôi phục.
         </div>
 
-        <div class="mt-6 flex items-center justify-end gap-3">
+        <div class="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
           <button
             type="button"
-            class="btn-ghost px-5 py-2.5 text-xs font-extrabold"
+            class="btn-secondary text-xs px-4 py-2"
             :disabled="forceDeleteModal.loading"
             @click="closeForceDeleteModal"
           >
@@ -886,10 +386,11 @@
           </button>
           <button
             type="button"
-            class="rounded-full bg-rose-500 hover:bg-rose-600 px-5 py-2.5 text-xs font-extrabold text-white shadow-lg shadow-rose-500/20 transition-all disabled:opacity-50"
+            class="rounded-xl bg-red-600 hover:bg-red-700 px-5 py-2 text-xs font-bold text-white shadow-sm transition disabled:opacity-50 inline-flex items-center gap-1.5"
             :disabled="forceDeleteModal.loading"
             @click="confirmForceDelete"
           >
+            <RefreshCw v-if="forceDeleteModal.loading" class="h-3.5 w-3.5 animate-spin" />
             {{ forceDeleteModal.loading ? "Đang xóa..." : "Xóa vĩnh viễn" }}
           </button>
         </div>
@@ -897,63 +398,39 @@
     </div>
 
     <!-- DETAIL DRAWER MODAL -->
-    <div
-      v-if="detailOpen"
-      class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
-      @click.self="closeDetail"
-    >
-      <aside
-        class="ml-auto flex h-full w-full max-w-full md:max-w-3xl lg:max-w-5xl flex-col border-l border-[var(--border)] bg-[var(--surface-strong)] shadow-[var(--shadow-soft)]"
-      >
-        <header
-          class="flex items-start justify-between gap-4 border-b border-[var(--border)] p-5"
-        >
-          <div>
-            <p
-              class="text-xs font-black uppercase tracking-[0.2em] text-[var(--primary)]"
-            >
-              Phòng thi đấu
-            </p>
-            <h2 class="mt-1 text-2xl font-black text-[var(--text)]">
-              {{ detailTitle }}
-            </h2>
-            <p class="mt-1 text-sm font-bold text-[var(--muted)]">
-              {{ detailCode }}
-            </p>
+    <div v-if="detailOpen" class="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm" @click.self="closeDetail">
+      <aside class="ml-auto flex h-full w-full max-w-full md:max-w-3xl lg:max-w-5xl flex-col border-l border-slate-200 bg-white shadow-xl">
+        <header class="flex items-start justify-between gap-4 border-b border-slate-100 p-5">
+          <div class="flex items-start gap-3">
+            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-purple-500/10 text-purple-500">
+              <Swords class="h-5 w-5" />
+            </div>
+            <div>
+              <p class="text-xs font-bold uppercase tracking-wider text-[#7C3AED]">Phòng thi đấu</p>
+              <h2 class="text-2xl font-black text-slate-900">{{ detailTitle }}</h2>
+              <p class="text-sm font-bold text-slate-500">{{ detailCode }}</p>
+            </div>
           </div>
-          <button
-            class="btn-ghost px-4 py-2"
-            type="button"
-            @click="closeDetail"
-          >
-            Đóng
+          <button class="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition" type="button" @click="closeDetail">
+            <X class="h-4 w-4" />
           </button>
         </header>
 
-        <div
-          v-if="detailLoading"
-          class="grid flex-1 place-items-center p-8 text-sm font-bold text-[var(--muted)]"
-        >
-          Đang tải chi tiết...
+        <div v-if="detailLoading" class="grid flex-1 place-items-center p-8 text-sm font-bold text-slate-400 gap-2">
+          <RefreshCw class="h-5 w-5 animate-spin text-[#7C3AED]" />
+          <span>Đang tải chi tiết...</span>
         </div>
-        <div
-          v-else-if="detailError"
-          class="m-5 rounded-[1.5rem] border border-rose-500/30 bg-rose-500/10 p-4 text-sm font-bold text-rose-300"
-        >
+        <div v-else-if="detailError" class="m-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700">
           {{ detailError }}
         </div>
-        <div v-else class="min-h-0 flex-1 overflow-y-auto p-5 scrollbar-soft">
+        <div v-else class="min-h-0 flex-1 overflow-y-auto p-5">
           <div class="mb-5 flex flex-wrap gap-2">
             <button
               v-for="tab in detailTabs"
               :key="tab.value"
               type="button"
-              class="rounded-full border px-4 py-2 text-sm font-black transition"
-              :class="
-                detailTab === tab.value
-                  ? 'border-[var(--border-strong)] bg-[var(--chip-active)] text-[var(--primary)]'
-                  : 'border-[var(--border)] text-[var(--muted)] hover:text-[var(--text)]'
-              "
+              class="rounded-lg px-3.5 py-1.5 text-xs font-bold transition"
+              :class="detailTab === tab.value ? 'bg-[#7C3AED] text-white shadow-sm' : 'bg-slate-50 border border-slate-200 text-slate-600 hover:text-slate-900'"
               @click="detailTab = tab.value"
             >
               {{ tab.label }}
@@ -979,6 +456,27 @@ import {
   inject,
 } from "vue";
 import { adminRoomApi, adminRoomsApi } from "@/services/api";
+import {
+  Swords,
+  PlayCircle,
+  Lock,
+  Unlock,
+  Trash2,
+  RefreshCw,
+  LayoutGrid,
+  Search,
+  Info,
+  AlertCircle,
+  Eye,
+  Users,
+  Copy,
+  Check,
+  RotateCcw,
+  ChevronLeft,
+  ChevronRight,
+  Inbox,
+  X,
+} from "lucide-vue-next";
 
 const showConfirm = inject("showConfirm");
 const showToast = inject("showToast");
@@ -1121,18 +619,18 @@ const getStatusLabel = (room) => liveStatusLabel(String(room.status || "").toLow
 const getStatusPillClass = (room) => {
   const status = String(room.status || "").toLowerCase();
   if (["active", "playing"].includes(status)) {
-    return "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
+    return "bg-emerald-100 text-emerald-800";
   }
   if (["waiting", "pending"].includes(status)) {
-    return "bg-amber-500/10 text-amber-400 border-amber-500/20";
+    return "bg-amber-100 text-amber-800";
   }
   if (["finished", "closed"].includes(status)) {
-    return "bg-slate-500/10 text-slate-400 border-slate-500/20";
+    return "bg-slate-100 text-slate-600";
   }
   if (["banned"].includes(status)) {
-    return "bg-rose-500/10 text-rose-400 border-rose-500/20";
+    return "bg-red-100 text-red-800";
   }
-  return "bg-[var(--chip-active)] text-[var(--primary)] border-[var(--border-strong)]";
+  return "bg-purple-100 text-[#7C3AED]";
 };
 
 // Ban Restrictions Check for Finished Live Rooms
@@ -1396,7 +894,7 @@ const EmptyState = defineComponent({
         "div",
         {
           class:
-            "rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-10 text-center text-sm font-bold text-[var(--muted)]",
+            "rounded-xl border border-slate-100 bg-slate-50 p-10 text-center text-sm font-bold text-slate-400",
         },
         props.text,
       );
@@ -1415,21 +913,21 @@ const InfoGrid = defineComponent({
             "div",
             {
               class:
-                "rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-4",
+                "rounded-xl border border-slate-100 bg-slate-50 p-4",
             },
             [
               h(
                 "p",
                 {
                   class:
-                    "text-xs font-black uppercase tracking-[0.12em] text-[var(--muted)]",
+                    "text-[10px] font-bold uppercase tracking-wide text-slate-400",
                 },
                 row.label,
               ),
               h(
                 "b",
                 {
-                  class: "mt-1.5 block break-words text-[var(--text)] text-sm",
+                  class: "mt-1.5 block break-words text-slate-900 text-sm",
                 },
                 row.value || "-",
               ),
@@ -1449,40 +947,37 @@ const SimpleTable = defineComponent({
   setup(props) {
     return () =>
       props.rows.length
-        ? h("div", { class: "overflow-x-auto scrollbar-soft" }, [
+        ? h("div", { class: "overflow-x-auto" }, [
             h(
               "table",
               {
-                class:
-                  "min-w-[800px] w-full border-separate border-spacing-y-2 text-left text-sm",
+                class: "min-w-[800px] w-full text-left text-xs",
               },
               [
                 h(
                   "thead",
-                  { class: "text-xs font-bold uppercase text-[var(--muted)]" },
+                  {},
                   [
                     h(
                       "tr",
-                      {},
+                      { class: "border-b border-slate-100 text-slate-400 uppercase text-[10px] font-bold" },
                       props.columns.map((column) =>
-                        h("th", { class: "px-4 py-2" }, column.label),
+                        h("th", { class: "py-3 px-3" }, column.label),
                       ),
                     ),
                   ],
                 ),
                 h(
                   "tbody",
-                  {},
+                  { class: "divide-y divide-slate-100 font-medium" },
                   props.rows.map((row) =>
                     h(
                       "tr",
-                      { class: "bg-[var(--surface-soft)] text-[var(--text)]" },
-                      props.columns.map((column, index) =>
+                      { class: "hover:bg-slate-50 transition-colors text-slate-900" },
+                      props.columns.map((column) =>
                         h(
                           "td",
-                          {
-                            class: `${index === 0 ? "rounded-l-xl" : ""} ${index === props.columns.length - 1 ? "rounded-r-xl" : ""} px-4 py-3 text-xs`,
-                          },
+                          { class: "py-3 px-3" },
                           column.format
                             ? column.format(row)
                             : row[column.key] || "-",
@@ -1649,3 +1144,22 @@ onMounted(() => {
   loadRooms();
 });
 </script>
+
+<style scoped>
+/*
+  Các class .card / .btn-primary / .btn-secondary / .field dùng chung toàn hệ thống.
+  Khối này CHỈ ép lại bo góc trong phạm vi trang Phòng thi đấu (nhờ `scoped`),
+  để đồng nhất với tỉ lệ bo góc đang dùng ở trang Người dùng / Giao dịch / Quiz,
+  không ảnh hưởng tới CSS global hay các trang khác.
+*/
+:deep(.card) {
+  border-radius: 1rem; /* 16px – khớp card ngoài của các trang đã chỉnh */
+}
+:deep(.btn-primary),
+:deep(.btn-secondary) {
+  border-radius: 0.5rem; /* 8px – bỏ dáng pill, khớp ô field bên cạnh */
+}
+:deep(.field) {
+  border-radius: 0.5rem; /* 8px */
+}
+</style>

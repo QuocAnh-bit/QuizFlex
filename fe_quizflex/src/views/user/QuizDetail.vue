@@ -295,21 +295,6 @@
                 :key="question.id"
                 class="rounded-xl border border-slate-100 bg-slate-50/80 p-3 space-y-1 group hover:border-slate-200 transition"
               >
-<<<<<<< HEAD
-                <div class="flex items-center justify-between gap-2">
-                  <span class="text-[11px] font-bold text-[#7C3AED]">
-                    Câu {{ index + 1 }} • {{ question.points }} điểm
-                  </span>
-
-                  <button
-                    v-if="question.id"
-                    type="button"
-                    class="text-[10px] font-bold text-rose-500 hover:text-rose-700 hover:underline cursor-pointer flex items-center gap-1"
-                    title="Báo cáo câu hỏi này bị lỗi hoặc vi phạm"
-                    @click="openQuestionReportModal(question.id)"
-                  >
-                    <span>🚩 Báo lỗi câu này</span>
-=======
                 <div class="flex items-center justify-between">
                   <span class="text-[11px] font-bold text-[#7C3AED]">
                     Câu {{ index + 1 }} • {{ question.points }} điểm
@@ -323,7 +308,6 @@
                   >
                     <Flag :size="12" />
                     <span>Báo lỗi</span>
->>>>>>> 21a1000b7c9899c06f815fc810327f65e32ea575
                   </button>
                 </div>
 
@@ -363,14 +347,6 @@
           </button>
         </div>
 
-<<<<<<< HEAD
-    <!-- QUIZ REPORT MODAL -->
-    <ReportModal
-      v-if="quiz"
-      :is-open="isReportModalOpen"
-      :quiz-id="quiz.id"
-      @close="isReportModalOpen = false"
-=======
         <p class="text-xs leading-relaxed text-slate-600">
           Bài Quiz thủ công của bạn sẽ được gửi tới Ban Quản Trị để kiểm duyệt nội dung. Sau khi được phê duyệt, bài Quiz và các câu hỏi đạt chuẩn sẽ được công khai cho toàn bộ cộng đồng QuizFlex.
         </p>
@@ -415,7 +391,6 @@
       :question-snippet="reportingQuestionSnippet"
       @close="isQuestionReportModalOpen = false"
       @reported="handleQuestionReported"
->>>>>>> 21a1000b7c9899c06f815fc810327f65e32ea575
     />
 
     <!-- QUESTION REPORT MODAL -->
@@ -446,11 +421,7 @@ import {
 import AppLoadingState from '@/components/common/AppLoadingState.vue'
 import AppErrorState from '@/components/common/AppErrorState.vue'
 import VisibilityBadge from '@/components/common/VisibilityBadge.vue'
-<<<<<<< HEAD
-import ReportModal from '@/components/common/ReportModal.vue'
-=======
 import StatusBadge from '@/components/common/StatusBadge.vue'
->>>>>>> 21a1000b7c9899c06f815fc810327f65e32ea575
 import QuestionReportModal from '@/components/question/QuestionReportModal.vue'
 
 import {
@@ -468,17 +439,6 @@ const showToast = inject('showToast')
 const quiz = ref(null)
 const isLoading = ref(true)
 const errorMessage = ref('')
-<<<<<<< HEAD
-const isReportModalOpen = ref(false)
-const isQuestionReportModalOpen = ref(false)
-const reportingQuestionId = ref(null)
-
-const openQuestionReportModal = (questionId) => {
-  if (!questionId) return
-  reportingQuestionId.value = questionId
-  isQuestionReportModalOpen.value = true
-}
-=======
 const isReviewModalOpen = ref(false)
 const reviewRequestNote = ref('')
 const isSubmittingReview = ref(false)
@@ -513,7 +473,6 @@ const canRequestReview = computed(() => {
   const isNotPending = quiz.value.review_status !== 'pending_review'
   return isManual && isNotPublic && isNotPending
 })
->>>>>>> 21a1000b7c9899c06f815fc810327f65e32ea575
 
 const questions = computed(() =>
   (quiz.value?.rawQuestions || []).map(normalizeQuestion)

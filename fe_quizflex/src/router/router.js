@@ -443,33 +443,12 @@ const routes = [
     },
   },
   {
-<<<<<<< HEAD
-    path: "/admin/moderation",
-    name: "admin-question-moderation",
-    component: () => import("@/views/admin/QuestionModeration.vue"),
-    meta: {
-      layout: "admin",
-      title: "Kiểm duyệt Ngân hàng",
-      hideTitle: true,
-      requiresAuth: true,
-      roles: adminRoles,
-    },
-  },
-  {
-    path: "/admin/report-tickets",
-    name: "admin-report-tickets",
-=======
     path: "/admin/reports",
     name: "admin-reports",
->>>>>>> 21a1000b7c9899c06f815fc810327f65e32ea575
     component: () => import("@/views/admin/ReportManager.vue"),
     meta: {
       layout: "admin",
       title: "Quản lý Báo cáo",
-<<<<<<< HEAD
-      hideTitle: true,
-=======
->>>>>>> 21a1000b7c9899c06f815fc810327f65e32ea575
       requiresAuth: true,
       roles: adminRoles,
     },

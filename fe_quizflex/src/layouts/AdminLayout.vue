@@ -97,11 +97,7 @@
 
                   <span
                     v-if="item.badge !== undefined && item.badge !== null && item.badge > 0"
-<<<<<<< HEAD
-                    class="ml-auto shrink-0 rounded-full bg-purple-100 px-2 py-0.5 text-[10px] font-bold text-purple-700"
-=======
                     class="ml-auto shrink-0 rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-700"
->>>>>>> 21a1000b7c9899c06f815fc810327f65e32ea575
                   >
                     {{ item.badge }}
                   </span>
@@ -186,17 +182,9 @@ import ThemeToggle from '@/components/common/ThemeToggle.vue'
 import NotificationBell from '@/components/common/NotificationBell.vue'
 
 const route = useRoute()
-<<<<<<< HEAD
-const reportCount = ref(0)
-const pendingCount = ref(0)
-
-const reportBadge = computed(() => reportCount.value)
-const pendingBadge = computed(() => pendingCount.value)
-=======
 const pendingQuestionsCount = ref(0)
 const pendingQuizzesCount = ref(0)
 const pendingReportsCount = ref(0)
->>>>>>> 21a1000b7c9899c06f815fc810327f65e32ea575
 
 const openGroups = ref({
   'Quản lý nội dung': true,
@@ -262,10 +250,6 @@ const fetchAllCounts = () => {
 
 const handleRealtimeNotification = (event) => {
   const notification = event.detail
-<<<<<<< HEAD
-  if (notification?.type === 'report_created' || notification?.type === 'report_resolved' || notification?.type === 'report_action') {
-    fetchReportCount()
-=======
   if (notification?.type === 'report_created') {
     pendingReportsCount.value++
   }
@@ -277,7 +261,6 @@ const handleRealtimeNotification = (event) => {
   }
   if (notification?.type === 'report_resolved' || notification?.type === 'report_action') {
     fetchPendingCounts()
->>>>>>> 21a1000b7c9899c06f815fc810327f65e32ea575
   }
   if (notification?.type === 'question_submitted' || notification?.type === 'question_moderated') {
     fetchPendingCount()
@@ -285,29 +268,13 @@ const handleRealtimeNotification = (event) => {
 }
 
 const handleNotificationsUpdated = () => {
-<<<<<<< HEAD
-  fetchAllCounts()
-=======
   fetchPendingCounts()
->>>>>>> 21a1000b7c9899c06f815fc810327f65e32ea575
 }
 
 const menu = computed(() => [
   {
     label: 'Quản lý nội dung',
     items: [
-<<<<<<< HEAD
-      { label: 'Tổng quan', to: '/admin', icon: LayoutDashboard },
-      { label: 'Quản lý câu hỏi', to: '/admin/question-bank', icon: HelpCircle },
-      { label: 'Tạo câu hỏi mới', to: '/admin/question-bank/create-question', icon: FolderPlus },
-      { label: 'Kho quiz', to: '/admin/questions', icon: Package },
-      { label: 'Kiểm duyệt Ngân hàng', to: '/admin/moderation', icon: Shield, badge: pendingBadge.value },
-      { label: 'Quản lý Báo cáo', to: '/admin/report-tickets', icon: Flag, badge: reportBadge.value },
-      
-      { label: 'AI Generator', to: '/admin/questions/ai', icon: BrainCircuit },
-      { label: 'OCR Upload', to: '/admin/questions/ocr', icon: Camera },
-      { label: 'Quản lý Bộ môn', to: '/admin/subjects', icon: BookOpen },
-=======
       {
         label: 'Ngân hàng câu hỏi',
         to: '/admin/question-bank',
@@ -331,7 +298,6 @@ const menu = computed(() => [
         to: '/admin/subjects',
         icon: BookOpen,
       },
->>>>>>> 21a1000b7c9899c06f815fc810327f65e32ea575
     ],
   },
   {
@@ -368,11 +334,7 @@ const openCurrentGroup = () => {
 }
 
 onMounted(() => {
-<<<<<<< HEAD
-  fetchAllCounts()
-=======
   fetchPendingCounts()
->>>>>>> 21a1000b7c9899c06f815fc810327f65e32ea575
   openCurrentGroup()
   window.addEventListener('realtime-notification', handleRealtimeNotification)
   window.addEventListener('notifications-updated', handleNotificationsUpdated)

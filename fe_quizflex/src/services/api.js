@@ -15,7 +15,24 @@ const api = axios.create({
 const memoryCache = new Map();
 
 const inflightRequests = new Map();
+export const curriculumApi = {
+  async fetchOptions(params = {}) {
+    const { data } = await api.get('/curriculum/options', {
+      params: {
+        education_level_id: params.education_level_id,
+        grade_id: params.grade_id,
+        subject_id: params.subject_id,
+      }
+    });
 
+    const payload = unwrap(data);
+
+    return {
+      available: Boolean(payload?.available),
+      options: Array.isArray(payload?.options) ? payload.options : [],
+    };
+  }
+};
 export const withMemoryCache = async (key, fetcher, ttlMs = 15000) => {
   const cached = memoryCache.get(key);
   const now = Date.now();
