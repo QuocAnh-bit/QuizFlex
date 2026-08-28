@@ -707,7 +707,6 @@
                   @click="openQuestionPicker"
                 >
                   <Plus :size="13" />
-                  <span>Chọn thêm câu hỏi</span>
                 </button>
               </div>
 
@@ -799,19 +798,17 @@
               <div class="flex justify-center">
                 <BookOpen :size="40" class="text-[var(--muted)]" />
               </div>
-              <div>
-                <p class="text-base font-black text-[var(--text)]">
-                  Chưa có câu hỏi nào được chọn
-                </p>
-                <p
-                  class="text-xs text-[var(--muted)] mt-1.5 max-w-md mx-auto leading-relaxed"
-                >
-                  Hãy chọn các câu hỏi từ
-                  <strong>Kho câu hỏi cá nhân</strong> hoặc
-                  <strong>Ngân hàng câu hỏi công khai</strong> để đưa vào đề
-                  thi.
-                </p>
-              </div>
+              <p class="text-base font-black text-[var(--text)]">
+                Chưa có câu hỏi nào được chọn
+              </p>
+              <p
+                class="text-xs text-[var(--muted)] mt-1.5 max-w-md mx-auto leading-relaxed"
+              >
+                Hãy chọn các câu hỏi từ
+                <strong>Kho câu hỏi cá nhân</strong> hoặc
+                <strong>Ngân hàng câu hỏi công khai</strong> để đưa vào đề
+                thi.
+              </p>
               <div class="pt-2">
                 <button
                   type="button"

@@ -174,9 +174,21 @@
                   </span>
                 </div>
 
-                <span class="text-xs font-bold text-slate-600">
-                  {{ item.earned_points }}/{{ item.points }} điểm
-                </span>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-bold text-slate-600">
+                    {{ item.earned_points }}/{{ item.points }} điểm
+                  </span>
+
+                  <button
+                    v-if="item.question_id"
+                    type="button"
+                    class="inline-flex items-center gap-1 rounded-md border border-rose-200 bg-rose-50 px-2 py-0.5 text-[11px] font-bold text-rose-600 transition hover:bg-rose-100 cursor-pointer"
+                    title="Báo cáo vi phạm hoặc sai sót ở câu hỏi này"
+                    @click="openReportModal(item.question_id)"
+                  >
+                    <span>🚩 Báo cáo</span>
+                  </button>
+                </div>
               </div>
 
               <!-- Question Content -->
@@ -425,7 +437,6 @@ const handleQuestionReported = () => {
     reportedQuestionIds.value.add(selectedReportQuestion.value.question_id)
   }
 }
-
 const formatDateTime = (value) => {
   if (!value) return ''
 

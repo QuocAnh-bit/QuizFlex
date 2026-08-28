@@ -602,6 +602,11 @@ class QuizController extends Controller
         if (!empty($keptAnswerIds)) {
             $question->answers()->whereNotIn('id', $keptAnswerIds)->delete();
         }
+
+        $snapshotService = app(\App\Services\QuestionSnapshotService::class);
+        $question->updateQuietly([
+            'fingerprint' => $snapshotService->computeFingerprint($question->fresh('answers'))
+        ]);
     }
 
     private function resolveUser(Request $request): User
@@ -753,118 +758,128 @@ class QuizController extends Controller
     // 3.1 QUẢN LÝ QUIZ - ADMIN
     // =========================
 
-    // Danh sách quiz
-    public function adminIndex(Request $request)
-    {
-        $query = Quiz::query()
-            ->with('user:id,name')
-            ->withCount(['questions', 'attempts'])
-            ->withAvg(['attempts as avg_score' => fn($q) => $q->where('status', 'completed')], 'score')
-            ->latest();
+   
+   // Danh sách quiz
+public function adminIndex(Request $request)
+{
+    $query = Quiz::query()
+        ->with('user:id,name')
+        ->withCount(['questions', 'attempts'])
+        ->withAvg(['attempts as avg_score' => fn($q) => $q->where('status', 'completed')], 'score')
+        ->latest();
 
-        // Tìm kiếm quiz
-        if ($request->filled('search')) {
-            $keyword = trim((string) $request->search);
-            $cleanKeyword = ltrim($keyword, '#');
-            $numericId = is_numeric($cleanKeyword) ? (int) $cleanKeyword : null;
+    // Tìm kiếm quiz
+    if ($request->filled('search')) {
+        $keyword = trim((string) $request->search);
+        $cleanKeyword = ltrim($keyword, '#');
+        $numericId = is_numeric($cleanKeyword) ? (int) $cleanKeyword : null;
 
-            $query->where(function ($q) use ($keyword, $numericId) {
-                if ($numericId !== null) {
-                    $q->where('id', $numericId)
-                        ->orWhere('title', 'like', "%{$keyword}%")
-                        ->orWhere('category', 'like', "%{$keyword}%")
-                        ->orWhere('tag', 'like', "%{$keyword}%")
-                        ->orWhere('topic_name', 'like', "%{$keyword}%")
-                        ->orWhere('room_code', 'like', "%{$keyword}%")
-                        ->orWhereHas('user', fn($uq) => $uq->where('name', 'like', "%{$keyword}%")->orWhere('email', 'like', "%{$keyword}%"));
-                } else {
-                    $q->where('title', 'like', "%{$keyword}%")
-                        ->orWhere('category', 'like', "%{$keyword}%")
-                        ->orWhere('tag', 'like', "%{$keyword}%")
-                        ->orWhere('topic_name', 'like', "%{$keyword}%")
-                        ->orWhere('room_code', 'like', "%{$keyword}%")
-                        ->orWhereHas('user', fn($uq) => $uq->where('name', 'like', "%{$keyword}%")->orWhere('email', 'like', "%{$keyword}%"));
-                }
-            });
-        }
-
-        // Tìm kiếm người tạo
-        if ($request->filled('creator')) {
-            $query->whereHas('user', function ($q) use ($request) {
-                $q->where(
-                    'name',
-                    'like',
-                    '%' . $request->creator . '%'
-                );
-            });
-        }
-
-        // Lọc độ khó
-        if ($request->filled('difficulty')) {
-            $query->where(
-                'difficulty',
-                $request->difficulty
-            );
-        }
-
-        // Lọc public/private
-        if ($request->filled('visibility')) {
-            if ($request->visibility === 'public') {
-                $query->where('is_public', true);
+        $query->where(function ($q) use ($keyword, $numericId) {
+            if ($numericId !== null) {
+                $q->where('id', $numericId)
+                    ->orWhere('title', 'like', "%{$keyword}%")
+                    ->orWhere('category', 'like', "%{$keyword}%")
+                    ->orWhere('tag', 'like', "%{$keyword}%")
+                    ->orWhere('topic_name', 'like', "%{$keyword}%")
+                    ->orWhere('room_code', 'like', "%{$keyword}%")
+                    ->orWhereHas('user', fn($uq) => $uq->where('name', 'like', "%{$keyword}%")->orWhere('email', 'like', "%{$keyword}%"));
+            } else {
+                $q->where('title', 'like', "%{$keyword}%")
+                    ->orWhere('category', 'like', "%{$keyword}%")
+                    ->orWhere('tag', 'like', "%{$keyword}%")
+                    ->orWhere('topic_name', 'like', "%{$keyword}%")
+                    ->orWhere('room_code', 'like', "%{$keyword}%")
+                    ->orWhereHas('user', fn($uq) => $uq->where('name', 'like', "%{$keyword}%")->orWhere('email', 'like', "%{$keyword}%"));
             }
-            if ($request->visibility === 'private') {
-                $query->where('is_public', false);
-            }
-        }
-
-        // Lọc trạng thái duyệt
-        if ($request->filled('review_status')) {
-            $query->where('review_status', $request->review_status);
-        }
-
-        // Lọc chế độ tạo
-        if ($request->filled('creation_mode')) {
-            $query->where('creation_mode', $request->creation_mode);
-        }
-
-        // Lọc quiz sinh bởi AI
-        if ($request->filled('ai_generated')) {
-            $query->where(
-                'is_ai_generated',
-                (bool)$request->ai_generated
-            );
-        }
-
-        $perPage = min(max((int) $request->query('per_page', 10), 1), 100);
-
-        $quizzes = $query
-            ->paginate($perPage)
-            ->through(function ($quiz) {
-                return [
-                    'id' => $quiz->id,
-                    'title' => $quiz->title,
-                    'category' => $quiz->category,
-                    'difficulty' => $quiz->difficulty,
-                    'difficulty_label' => $this->difficultyLabel($quiz->difficulty),
-                    'questions_count' => $quiz->questions_count,
-                    'attempts_count' => $quiz->attempts_count,
-                    'avg_score' => round((float) ($quiz->avg_score ?? 0), 1),
-                    'creation_mode' => $quiz->creation_mode ?? 'manual',
-                    'review_status' => $quiz->review_status ?? ($quiz->is_public ? 'approved' : 'draft'),
-                    'rejection_reason' => $quiz->rejection_reason,
-                    'is_public' => (bool)$quiz->is_public,
-                    'author' => $quiz->user?->name ?? 'Chưa có',
-                    'created_at' => $quiz->created_at,
-                ];
-            });
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Danh sách quiz',
-            'data' => $quizzes,
-        ]);
+        });
     }
 
+    // Tìm kiếm người tạo
+    if ($request->filled('creator')) {
+        $query->whereHas('user', function ($q) use ($request) {
+            $q->where(
+                'name',
+                'like',
+                '%' . $request->creator . '%'
+            );
+        });
+    }
+
+    // Lọc độ khó
+    if ($request->filled('difficulty')) {
+        $query->where(
+            'difficulty',
+            $request->difficulty
+        );
+    }
+
+    // Lọc public/private
+    if ($request->filled('visibility')) {
+        if ($request->visibility === 'public') {
+            $query->where('is_public', true);
+        }
+        if ($request->visibility === 'private') {
+            $query->where('is_public', false);
+        }
+    }
+
+    // Lọc trạng thái duyệt
+    if ($request->filled('review_status')) {
+        $query->where('review_status', $request->review_status);
+    }
+
+    // Lọc chế độ tạo
+    if ($request->filled('creation_mode')) {
+        $query->where('creation_mode', $request->creation_mode);
+    }
+
+    // Lọc quiz sinh bởi AI
+    if ($request->filled('ai_generated')) {
+        $query->where(
+            'is_ai_generated',
+            (bool)$request->ai_generated
+        );
+    }
+
+    $perPage = min(max((int) $request->query('per_page', 10), 1), 100);
+
+    $quizzes = $query
+        ->paginate($perPage)
+        ->through(function ($quiz) {
+            return [
+                'id' => $quiz->id,
+                'title' => $quiz->title,
+                'category' => $quiz->category,
+                'difficulty' => $quiz->difficulty,
+                'difficulty_label' => $this->difficultyLabel($quiz->difficulty),
+                'questions_count' => $quiz->questions_count,
+                'attempts_count' => $quiz->attempts_count,
+                'avg_score' => round((float) ($quiz->avg_score ?? 0), 1),
+                'creation_mode' => $quiz->creation_mode ?? 'manual',
+                'review_status' => $quiz->review_status ?? ($quiz->is_public ? 'approved' : 'draft'),
+                'rejection_reason' => $quiz->rejection_reason,
+                'is_public' => (bool)$quiz->is_public,
+                'author' => $quiz->user?->name ?? 'Chưa có',
+                'created_at' => $quiz->created_at,
+            ];
+        });
+
+    // ✅ THÊM MỚI: tính thống kê tổng toàn hệ thống (không phụ thuộc filter/trang hiện tại)
+    $stats = [
+        'total' => Quiz::count(),
+        'public' => Quiz::where('is_public', true)->count(),
+        'private' => Quiz::where('is_public', false)->count(),
+    ];
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Danh sách quiz',
+        // ✅ Gộp 'stats' vào cùng cấp với total/last_page/data bên trong object phân trang
+        'data' => array_merge($quizzes->toArray(), [
+            'stats' => $stats,
+        ]),
+    ]);
+}
     // Chi tiết quiz
     public function adminShow($id)
     {

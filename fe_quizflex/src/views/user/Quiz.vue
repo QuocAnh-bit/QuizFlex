@@ -105,7 +105,17 @@
             ← Câu trước
           </button>
 
-          <div class="flex items-center gap-3">
+          <div class="flex items-center gap-2.5">
+            <button
+              v-if="!isLastQuestion"
+              class="btn-secondary text-xs px-4 border-slate-300 text-slate-700 hover:bg-slate-100"
+              type="button"
+              :disabled="isSubmitting"
+              @click="triggerSubmit"
+            >
+              Nộp bài
+            </button>
+
             <button
               class="btn-primary text-xs px-5"
               type="button"
@@ -125,7 +135,20 @@
       <article class="card p-5 space-y-4">
         <div class="flex items-center justify-between border-b border-slate-100 pb-3">
           <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Thời gian làm bài</span>
-          <span class="text-lg">⏱️</span>
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              class="flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-bold transition cursor-pointer"
+              :class="isMuted ? 'bg-slate-100 text-slate-500 hover:bg-slate-200' : 'bg-purple-50 text-[#7C3AED] hover:bg-purple-100'"
+              :title="isMuted ? 'Bật âm thanh' : 'Tắt âm thanh'"
+              @click="toggleSound"
+            >
+              <VolumeX v-if="isMuted" :size="14" />
+              <Volume2 v-else :size="14" />
+              <span>{{ isMuted ? "Tắt tiếng" : "Âm thanh" }}</span>
+            </button>
+            <span class="text-lg">⏱️</span>
+          </div>
         </div>
 
         <div
@@ -176,14 +199,21 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { computed, onBeforeUnmount, onMounted, onUnmounted, ref, watch } from "vue";
+import { onBeforeRouteLeave, useRoute, useRouter } from "vue-router";
+import { Volume2, VolumeX } from "lucide-vue-next";
 import { formatSeconds, normalizeQuestion, quizzesApi } from "@/services/api";
 import MathText from "@/components/MathText.vue";
 import audioService from "@/services/audioService";
 
 const route = useRoute();
 const router = useRouter();
+
+const isMuted = ref(audioService.isMuted);
+
+const toggleSound = () => {
+  isMuted.value = audioService.toggleMute();
+};
 
 const currentIndex = ref(0);
 const selectedAnswers = ref({});
@@ -206,6 +236,24 @@ const attemptStorageKey = computed(
   () => `quizflex_practice_attempt_${route.params.id}`,
 );
 
+const answersStorageKey = computed(
+  () => `quizflex_practice_answers_${route.params.id}_${attemptId.value || "temp"}`,
+);
+
+const indexStorageKey = computed(
+  () => `quizflex_practice_index_${route.params.id}_${attemptId.value || "temp"}`,
+);
+
+watch(currentIndex, (newIndex) => {
+  if (attemptId.value) {
+    try {
+      sessionStorage.setItem(indexStorageKey.value, String(newIndex));
+    } catch (e) {
+      console.error("Failed to save index to sessionStorage", e);
+    }
+  }
+});
+
 const currentQuestion = computed(
   () =>
     quizQuestions.value[currentIndex.value] || {
@@ -226,7 +274,7 @@ const selectedAnswer = computed({
   },
 });
 
-const selectAnswer = async (answerKey) => {
+const selectAnswer = (answerKey) => {
   const question = currentQuestion.value;
   if (!question?.id || !attemptId.value) return;
 
@@ -235,28 +283,13 @@ const selectAnswer = async (answerKey) => {
     [question.id]: answerKey,
   };
 
-  const answer = question.answers.find(
-    (item) => item.key === answerKey
-  );
-  if (!answer?.id) return;
-
   try {
-    const result = await quizzesApi.checkAnswer(
-      route.params.id,
-      {
-        attempt_id: attemptId.value,
-        question_id: question.id,
-        answer_id: answer.id,
-      }
+    sessionStorage.setItem(
+      answersStorageKey.value,
+      JSON.stringify(selectedAnswers.value),
     );
-
-    if (result?.is_correct === true) {
-      audioService.playCorrect();
-    } else {
-      audioService.playWrong();
-    }
-  } catch (error) {
-    console.error("Check answer error:", error);
+  } catch (e) {
+    console.error("Failed to save answers to sessionStorage", e);
   }
 };
 
@@ -293,22 +326,22 @@ const unansweredCount = computed(() =>
   quizQuestions.value.filter((q) => !selectedAnswers.value[q.id]).length,
 );
 
-const showConfirmSubmit = ref(false);
-
-const goNext = async () => {
-  if (!selectedAnswer.value) return;
-
-  if (!isLastQuestion.value) {
-    currentIndex.value += 1;
-    return;
-  }
-
+const triggerSubmit = async () => {
   if (unansweredCount.value > 0) {
     showConfirmSubmit.value = true;
     return;
   }
 
   await submitAttempt();
+};
+
+const goNext = async () => {
+  if (!isLastQuestion.value) {
+    currentIndex.value += 1;
+    return;
+  }
+
+  await triggerSubmit();
 };
 
 const confirmSubmit = async () => {
@@ -337,6 +370,11 @@ const submitAttempt = async (autoSubmit = false) => {
   if (isSubmitting.value) return;
   if (!autoSubmit && !quizQuestions.value.length) return;
 
+  if (!attemptId.value) {
+    errorMessage.value = "Không tìm thấy mã lượt làm bài. Vui lòng tải lại trang.";
+    return;
+  }
+
   isSubmitting.value = true;
   errorMessage.value = "";
   clearInterval(timer);
@@ -344,16 +382,25 @@ const submitAttempt = async (autoSubmit = false) => {
   try {
     const result = await quizzesApi.submitAttempt(route.params.id, {
       attempt_id: attemptId.value,
-      answers: selectedAnswers.value,
+      answers: selectedAnswers.value || {},
     });
 
-    const id = result.attempt?.id;
+    const id = result.attempt?.id || result.id || attemptId.value;
     if (id) {
+      const currentAttempt = attemptId.value;
       sessionStorage.removeItem(attemptStorageKey.value);
+      if (currentAttempt) {
+        sessionStorage.removeItem(
+          `quizflex_practice_answers_${route.params.id}_${currentAttempt}`,
+        );
+        sessionStorage.removeItem(
+          `quizflex_practice_index_${route.params.id}_${currentAttempt}`,
+        );
+      }
       audioService.playFinish();
       setTimeout(() => {
         router.push(`/results/${id}`);
-      }, 1000);
+      }, 800);
       return;
     }
 
@@ -361,7 +408,8 @@ const submitAttempt = async (autoSubmit = false) => {
       ? "Đã hết giờ nhưng không nhận được mã kết quả."
       : "Nộp bài xong nhưng không nhận được mã kết quả.";
   } catch (error) {
-    errorMessage.value = `Không nộp được bài: ${error.message}`;
+    console.error("Submit attempt error:", error);
+    errorMessage.value = `Không nộp được bài: ${error.message || "Lỗi kết nối máy chủ"}`;
     startTimer();
   } finally {
     isSubmitting.value = false;
@@ -383,7 +431,16 @@ const loadQuiz = async () => {
     attemptId.value = data.attempt?.id;
     if (attemptId.value) {
       sessionStorage.setItem(attemptStorageKey.value, String(attemptId.value));
+      try {
+        const savedAnswers = sessionStorage.getItem(answersStorageKey.value);
+        if (savedAnswers) {
+          selectedAnswers.value = JSON.parse(savedAnswers);
+        }
+      } catch (e) {
+        console.error("Failed to restore answers from sessionStorage", e);
+      }
     }
+
     quizMeta.value = {
       title: quiz.title,
       category: quiz.category,
@@ -397,7 +454,41 @@ const loadQuiz = async () => {
         category: quiz.category,
       }),
     );
-    timeLeft.value = quiz.time_limit_seconds || 600;
+
+    if (attemptId.value) {
+      try {
+        const savedIndex = sessionStorage.getItem(indexStorageKey.value);
+        if (savedIndex !== null && savedIndex !== undefined) {
+          const parsedIndex = Number(savedIndex);
+          if (
+            !isNaN(parsedIndex) &&
+            parsedIndex >= 0 &&
+            parsedIndex < quizQuestions.value.length
+          ) {
+            currentIndex.value = parsedIndex;
+          }
+        }
+      } catch (e) {
+        console.error("Failed to restore index from sessionStorage", e);
+      }
+    }
+
+    const totalLimit = quiz.time_limit_seconds || 600;
+    if (data.attempt?.started_at) {
+      const startedAtMs = new Date(data.attempt.started_at).getTime();
+      const nowMs = Date.now();
+      const elapsedSeconds = Math.max(0, Math.floor((nowMs - startedAtMs) / 1000));
+      timeLeft.value = Math.max(0, totalLimit - elapsedSeconds);
+    } else {
+      timeLeft.value = totalLimit;
+    }
+
+    if (timeLeft.value <= 0) {
+      timeLeft.value = 0;
+      await submitAttempt(true);
+      return;
+    }
+
     startTimer();
   } catch (error) {
     errorMessage.value = `Không tải được bài thi: ${error.message}`;
@@ -407,11 +498,22 @@ const loadQuiz = async () => {
 };
 
 onMounted(async () => {
+  audioService.stopAll();
   await loadQuiz();
   audioService.playLobby();
 });
 
+onBeforeRouteLeave(() => {
+  clearInterval(timer);
+  audioService.stopAll();
+});
+
 onBeforeUnmount(() => {
+  clearInterval(timer);
+  audioService.stopAll();
+});
+
+onUnmounted(() => {
   clearInterval(timer);
   audioService.stopAll();
 });

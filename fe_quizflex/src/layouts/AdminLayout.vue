@@ -97,7 +97,7 @@
 
                   <span
                     v-if="item.badge !== undefined && item.badge !== null && item.badge > 0"
-                    class="ml-auto shrink-0 rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-700"
+                    class="ml-auto shrink-0 rounded-full bg-purple-100 px-2 py-0.5 text-[10px] font-bold text-purple-700"
                   >
                     {{ item.badge }}
                   </span>
@@ -128,13 +128,21 @@
         <!-- DESKTOP HEADER -->
         <header class="mb-6 hidden items-center justify-between gap-4 lg:flex">
           <div>
-            <p class="text-xs font-bold uppercase tracking-wider text-[#7C3AED]">QuizFlex Admin</p>
-            <h1 class="mt-0.5 text-2xl font-black text-slate-900">{{ pageTitle }}</h1>
+            <template v-if="!route.meta?.hideTitle">
+              <p class="text-xs font-bold uppercase tracking-wider text-[#7C3AED]">QuizFlex Admin</p>
+            </template>
+            <template v-else>
+              <div class="flex items-center gap-2 text-xs font-bold">
+                <span class="text-[#7C3AED] uppercase tracking-wider">QuizFlex Admin</span>
+                <span class="text-slate-300">/</span>
+                <span class="text-slate-600 font-semibold">{{ pageTitle }}</span>
+              </div>
+            </template>
           </div>
 
           <div class="flex items-center gap-2.5">
             <NotificationBell />
-            <ThemeToggle />
+            
             <router-link to="/" class="btn-ghost flex items-center gap-1.5 text-xs">
               <ArrowLeft class="h-3.5 w-3.5" />
               Trang người dùng
@@ -163,6 +171,7 @@ import {
   LayoutDashboard,
   Package,
   Settings,
+  Shield,
   Users,
   Video,
 } from 'lucide-vue-next'

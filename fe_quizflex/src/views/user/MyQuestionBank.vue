@@ -113,6 +113,7 @@
     <!-- Loaded Questions List -->
     <template v-else>
       <!-- Focused Question Banner -->
+      <!-- Focused Question Banner -->
       <div v-if="focusedQuestionId" class="mb-2">
         <!-- SUCCESS BANNER (When question was just updated) -->
         <div v-if="highlightedUpdatedQuestionId === focusedQuestionId" class="rounded-2xl border border-[#FDE68A] bg-[#FFFBEB] p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-2xs">
@@ -341,7 +342,7 @@
                 :to="`/dashboard/my-questions/${q.id}/edit`"
                 class="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition cursor-pointer active:scale-95"
               >
-                <Pencil :size="13" />
+                <Pencil :size="13" class="text-slate-500" />
                 <span>Sửa câu hỏi</span>
               </router-link>
 
@@ -554,15 +555,16 @@ import {
   Eye,
   X,
   Lock,
+  Globe,
+  Clock,
+  XCircle,
+  ShieldAlert,
   Flag,
   Check,
   Pencil,
   ChevronLeft,
   ChevronRight,
   Send,
-  Clock,
-  Globe,
-  XCircle,
   GraduationCap,
   Users,
   BookOpen,
@@ -575,6 +577,7 @@ const route = useRoute()
 const router = useRouter()
 const highlightedQuestionId = ref(null)
 const highlightedUpdatedQuestionId = ref(null)
+const highlightedApprovedQuestionId = ref(null)
 const hasAutoOpenedModal = ref(false)
 
 const focusedQuestionId = computed(() => {
@@ -625,6 +628,7 @@ const editForm = reactive({
   content: '',
   difficulty: 'medium',
   topic_name: '',
+  report_reason: '',
   answers: [],
 })
 
@@ -810,7 +814,9 @@ const loadQuestions = async () => {
   errorMessage.value = ''
 
   try {
-    const targetQId = route.query.question_id || route.query.id || undefined
+    const targetQId = (route.query.question_id || route.query.id) && !route.query.highlight
+      ? (route.query.question_id || route.query.id)
+      : undefined
 
     const res = await myQuestionsApi.fetchBank({
       search: filters.search || undefined,
@@ -829,6 +835,19 @@ const loadQuestions = async () => {
     pagination.current_page = res.currentPage ?? 1
     pagination.last_page = res.lastPage ?? 1
 
+    const highlightId = route.query.highlight ? Number(route.query.highlight) : null
+    if (pagination.current_page === 1 && highlightId && !questions.value.some(q => q.id === highlightId)) {
+      try {
+        const singleRes = await myQuestionsApi.fetchBank({ question_id: highlightId })
+        const singleItem = singleRes?.items && singleRes.items[0]
+        if (singleItem) {
+          questions.value.unshift(singleItem)
+        }
+      } catch (e) {
+        console.error('Không tải được câu hỏi highlight:', e)
+      }
+    }
+
     handleHighlightFromQuery()
   } catch (err) {
     errorMessage.value = `Không tải được kho câu hỏi: ${err.message}`
@@ -842,6 +861,7 @@ const openEditModal = (q) => {
   editForm.content = q.content || q.text || ''
   editForm.difficulty = q.difficulty || 'medium'
   editForm.topic_name = q.topic_name || ''
+  editForm.report_reason = q.report_reason || ''
   editForm.answers = (q.answers || []).map((ans, idx) => ({
     id: ans.id,
     key: ans.key || chrKey(idx),
@@ -895,6 +915,38 @@ const saveEditQuestion = async () => {
     if (showToast) showToast(`Cập nhật thất bại: ${err.message}`, 'error')
   } finally {
     isSavingEdit.value = false
+  }
+}
+
+const toggleQuestionVisibility = async (q) => {
+  try {
+    const newIsPublic = !q.is_public
+    const res = await myQuestionsApi.update(q.id, {
+      content: q.content || q.text,
+      difficulty: q.difficulty || 'medium',
+      topic_name: q.topic_name || '',
+      is_public: newIsPublic,
+      answers: (q.answers || []).map((ans) => ({
+        id: ans.id,
+        content: ans.content || ans.text,
+        key: ans.key,
+        is_correct: Boolean(ans.is_correct)
+      }))
+    })
+    const updatedData = res?.data ?? res
+    q.is_public = Boolean(updatedData?.is_public ?? newIsPublic)
+    q.status = updatedData?.status ?? (q.is_public ? 'pending' : 'approved')
+
+    if (showToast) {
+      showToast(
+        q.is_public
+          ? 'Đã đăng ký công khai thành công! Câu hỏi đang ở trạng thái ⏳ Chờ Admin duyệt.'
+          : 'Đã chuyển câu hỏi về trạng thái 🔒 Riêng tư trong Kho cá nhân.',
+        'success'
+      )
+    }
+  } catch (err) {
+    if (showToast) showToast(`Đổi trạng thái thất bại: ${err.message}`, 'error')
   }
 }
 
@@ -975,15 +1027,38 @@ const clearQuestionFocus = () => {
   hasAutoOpenedModal.value = false
   highlightedQuestionId.value = null
   highlightedUpdatedQuestionId.value = null
+  highlightedApprovedQuestionId.value = null
   router.push({ path: '/dashboard/my-questions' })
 }
 
 const handleHighlightFromQuery = () => {
   const targetId = route.query.question_id || route.query.id
+  const highlightId = route.query.highlight ? Number(route.query.highlight) : null
   const isUpdated = route.query.updated === '1' || route.query.updated === 'true'
 
-  if (targetId) {
+  if (highlightId) {
+    highlightedApprovedQuestionId.value = highlightId
+    highlightedQuestionId.value = null
+    highlightedUpdatedQuestionId.value = null
+
+    // Chỉ ghim câu hỏi vừa duyệt công khai lên ĐẦU DANH SÁCH ở Trang 1
+    if (pagination.current_page === 1) {
+      const idx = questions.value.findIndex(q => q.id === highlightId)
+      if (idx > 0) {
+        const [matchedItem] = questions.value.splice(idx, 1)
+        questions.value.unshift(matchedItem)
+      }
+
+      setTimeout(() => {
+        const cardEl = document.getElementById(`question-card-${highlightId}`)
+        if (cardEl) {
+          cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
+      }, 250)
+    }
+  } else if (targetId) {
     const qId = Number(targetId)
+    highlightedApprovedQuestionId.value = null
     if (isUpdated) {
       highlightedUpdatedQuestionId.value = qId
       highlightedQuestionId.value = null
@@ -1004,12 +1079,13 @@ const handleHighlightFromQuery = () => {
   } else {
     highlightedQuestionId.value = null
     highlightedUpdatedQuestionId.value = null
+    highlightedApprovedQuestionId.value = null
     hasAutoOpenedModal.value = false
   }
 }
 
 watch(
-  () => route.query.question_id,
+  () => [route.query.question_id, route.query.highlight],
   () => {
     loadQuestions()
   }

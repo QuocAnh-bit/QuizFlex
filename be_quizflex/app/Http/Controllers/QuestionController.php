@@ -40,11 +40,12 @@ class QuestionController extends Controller
     }
 
     /**
-     * Scope lọc chỉ lấy các câu hỏi công khai thuộc ngân hàng chung hoặc bài thi công khai đã xuất bản
+     * Scope lọc chỉ lấy các câu hỏi công khai ĐÃ ĐƯỢC ADMIN DUYỆT thuộc ngân hàng chung
      */
     private function applyPublicQuestionScope($query)
     {
         return $query->where('is_public', true)
+            ->where('status', 'approved')
             ->where(function ($q) {
                 $q->whereNull('quiz_id')
                     ->orWhereHas('quiz', fn($sq) => $sq->where('is_public', true)->where('status', 'published'))
@@ -771,6 +772,11 @@ class QuestionController extends Controller
         if (!empty($keptAnswerIds)) {
             $question->answers()->whereNotIn('id', $keptAnswerIds)->delete();
         }
+
+        $snapshotService = app(\App\Services\QuestionSnapshotService::class);
+        $question->updateQuietly([
+            'fingerprint' => $snapshotService->computeFingerprint($question->fresh('answers'))
+        ]);
     }
 
     private function formatQuestion(Question $question, bool $includeAnswerKey = false): array
@@ -793,6 +799,8 @@ class QuestionController extends Controller
 
         $latestReport = $unresolvedReport ?? ReportTicket::whereIn('question_id', $reportQuestionIds)->latest()->first();
         $hasPendingReport = $unresolvedReport !== null;
+        $hasAuthorUpdated = $unresolvedReport?->status === ReportTicket::STATUS_AUTHOR_UPDATED;
+        $pendingReport = $unresolvedReport;
         $isLockedByAdmin = $hasPendingReport;
 
         return [
@@ -818,8 +826,9 @@ class QuestionController extends Controller
             'bank_submission_note' => $question->bank_submission_note,
             'bank_submission_at' => $question->bank_submission_at ? $question->bank_submission_at->toIso8601String() : null,
             'has_report' => $hasPendingReport,
+            'has_author_updated' => $hasAuthorUpdated,
             'is_locked_by_admin' => $isLockedByAdmin,
-            'report_reason' => $pendingReport?->reason ?? $pendingReport?->description ?? ($isLockedByAdmin ? ($latestReport?->reason ?? $latestReport?->description) : null),
+            'report_reason' => $pendingReport?->description ?? $pendingReport?->reason ?? $latestReport?->description ?? $latestReport?->reason ?? null,
             'order' => $question->order,
             'points' => $question->points ?? 10,
             'author_name' => $question->user?->name ?? $question->quiz?->user?->name ?? 'Vô danh',
@@ -844,6 +853,69 @@ class QuestionController extends Controller
                 return $ans;
             })->values(),
         ];
+    }
+
+    /**
+     * Admin duyệt hoặc từ chối hàng loạt câu hỏi
+     */
+    public function bulkModerateQuestions(Request $request)
+    {
+        $admin = auth('api')->user();
+        if (!$admin || strtolower($admin->role ?? '') !== 'admin') {
+            return response()->json(['success' => false, 'message' => 'Bạn không có quyền thực hiện chức năng này.'], 403);
+        }
+
+        $validated = $request->validate([
+            'question_ids' => ['required', 'array', 'min:1'],
+            'question_ids.*' => ['integer', 'exists:questions,id'],
+            'action' => ['required', Rule::in(['approve', 'reject'])],
+            'note' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $isApprove = $validated['action'] === 'approve';
+        $note = $validated['note'] ?? null;
+        $questions = Question::with('user')->whereIn('id', $validated['question_ids'])->get();
+
+        foreach ($questions as $question) {
+            $question->update([
+                'is_public' => $isApprove ? true : false,
+                'status' => $isApprove ? 'approved' : 'rejected',
+            ]);
+
+            if ($isApprove) {
+                \App\Models\ReportTicket::where('question_id', $question->id)
+                    ->update(['status' => 'resolved', 'has_author_updated' => false]);
+            } else {
+                \App\Models\ReportTicket::updateOrCreate(
+                    [
+                        'question_id' => $question->id,
+                        'status' => 'pending',
+                    ],
+                    [
+                        'user_id' => $admin->id,
+                        'reason' => 'Admin từ chối duyệt công khai',
+                        'description' => $note ?: 'Nội dung chưa đạt yêu cầu duyệt công khai',
+                        'has_author_updated' => false,
+                    ]
+                );
+            }
+
+            if ($question->user) {
+                try {
+                    $question->user->notify(new \App\Notifications\QuestionModerated($question, $validated['action'], $note));
+                } catch (\Exception $e) {
+                    // Ignore broadcast error
+                }
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => $isApprove 
+                ? "Đã duyệt công khai {$questions->count()} câu hỏi thành công!" 
+                : "Đã từ chối {$questions->count()} câu hỏi thành công!",
+            'count' => $questions->count(),
+        ]);
     }
 
     /**
@@ -1042,6 +1114,11 @@ class QuestionController extends Controller
 
             $question->update($updateData);
 
+            // Đánh dấu cho tất cả các vé báo cáo vi phạm liên quan là tác giả đã đính chính
+            \App\Models\ReportTicket::where('question_id', $question->id)
+                ->where('status', 'pending')
+                ->update(['has_author_updated' => true]);
+
             if (isset($validated['answers'])) {
                 $this->syncAnswers($question, $validated['answers'], null);
             }
@@ -1164,9 +1241,13 @@ class QuestionController extends Controller
             return $q;
         });
 
+        $msg = $bankSubmissionStatus === 'pending'
+            ? 'Tạo câu hỏi mới thành công! Đã gửi thông báo chờ Admin duyệt công khai lên Ngân hàng.'
+            : 'Tạo câu hỏi mới thành công!';
+
         return response()->json([
             'success' => true,
-            'message' => 'Tạo câu hỏi mới thành công!',
+            'message' => $msg,
             'data' => $this->formatQuestion($question->fresh(['answers', 'educationLevel', 'grade', 'subject']), true),
         ], 201);
     }
@@ -1751,7 +1832,6 @@ class QuestionController extends Controller
     {
         $question = Question::with(['answers', 'educationLevel', 'grade', 'subject', 'user', 'quiz.user'])->findOrFail($id);
         $question->is_public = !$question->is_public;
-        $question->save();
 
         $targetQuestionIds = array_filter(array_unique([
             $question->id,
@@ -1765,6 +1845,8 @@ class QuestionController extends Controller
                 ->where('status', 'pending')
                 ->update(['status' => 'resolved']);
         }
+
+        $question->save();
 
         // Gửi thông báo cho tác giả của câu hỏi kèm lý do vi phạm (nếu có)
         $author = $question->user ?? $question->quiz?->user;
@@ -2176,7 +2258,6 @@ class QuestionController extends Controller
         ]);
     }
 }
-
 
 
 
