@@ -248,7 +248,7 @@
           </span>
         </div>
 
-        <div class="mt-5 grid gap-4 md:grid-cols-2">
+        <div class="mt-5 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <div>
             <label class="text-xs font-black uppercase text-[var(--muted)]">
               Tên bộ đề *
@@ -324,27 +324,24 @@
             </p>
           </div>
 
+          <!-- Ô Thang điểm bài thi đồng nhất với form -->
           <div>
             <label class="text-xs font-black uppercase text-[var(--muted)]">
-              Điểm mặc định mỗi câu
+              Thang điểm bài thi
             </label>
 
-            <input
-              v-model.number="quizInfo.default_points"
-              type="number"
-              min="1"
-              max="1000"
-              class="mt-2 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm font-semibold text-[var(--text)] outline-none"
-              :class="getValidationClass('quiz.default_points')"
-              data-validation-key="quiz.default_points"
-              @input="handleValidatedInput('quiz.default_points')"
-            />
-            <p
-              v-if="validationErrors['quiz.default_points']"
-              class="mt-2 text-xs font-bold text-rose-400"
-            >
-              {{ validationErrors["quiz.default_points"] }}
-            </p>
+            <div class="mt-2 flex items-center justify-between rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm font-semibold text-[var(--text)]">
+              <div class="flex items-center gap-2">
+                <span class="font-mono font-bold text-[var(--text)]">10.00</span>
+                <span class="text-xs text-[var(--muted)] font-normal">điểm (Tự động chia)</span>
+              </div>
+              <span
+                class="text-xs font-bold"
+                :class="isTotalScoreValid ? 'text-emerald-500' : 'text-amber-500'"
+              >
+                {{ isTotalScoreValid ? '✓ Chuẩn 10đ' : `${totalAllocatedScoreFormatted}/10đ` }}
+              </span>
+            </div>
           </div>
 
           <div>
@@ -354,7 +351,7 @@
 
             <select
               v-model="quizInfo.status"
-              class="mt-2 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm font-bold text-[var(--text)] outline-none"
+              class="mt-2 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm font-bold text-[var(--text)] outline-none cursor-pointer"
               @change="markDirty"
             >
               <option value="draft">Nháp</option>
@@ -700,6 +697,102 @@
         </div>
       </div>
 
+      <!-- BỘ PHÂN BỔ ĐIỂM THÔNG MINH (THANG 10.00 CHUẨN) -->
+      <div
+        v-if="questions.length > 0"
+        id="score-allocator-banner"
+        class="mt-6 rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface-soft)] p-4 sm:p-5 transition-all duration-300"
+        :class="{ 'ring-2 ring-amber-400 border-amber-400/70 bg-amber-500/5 shadow-lg shadow-amber-500/10': !isTotalScoreValid }"
+      >
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <div
+              class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-purple-500/10 text-purple-500"
+            >
+              <Scale class="h-4 w-4" />
+            </div>
+            <div>
+              <h3 class="text-sm font-black text-[var(--text)]">
+                Phân bổ điểm số (Thang 10.00)
+              </h3>
+              <p class="text-xs text-[var(--muted)]">
+                Tự động cân bằng điểm số các câu hỏi chuẩn thang điểm 10.00
+              </p>
+            </div>
+          </div>
+
+          <!-- Total score badge & Reallocate button -->
+          <div class="flex items-center gap-2.5">
+            <div
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition"
+              :class="
+                isTotalScoreValid
+                  ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
+                  : 'border-amber-500/30 bg-amber-500/10 text-amber-400'
+              "
+            >
+              <span>Tổng điểm:</span>
+              <span class="font-mono text-sm">{{ totalAllocatedScoreFormatted }}</span>
+              <span>/ 10.00</span>
+              <span v-if="!isTotalScoreValid" class="text-[11px] font-semibold ml-1">
+                {{
+                  totalAllocatedScore < 10.0
+                    ? `⚠️ Thiếu ${(10.0 - totalAllocatedScore).toFixed(2)}`
+                    : `⚠️ Thừa ${(totalAllocatedScore - 10.0).toFixed(2)}`
+                }}
+              </span>
+              <span v-else class="text-emerald-400 font-bold ml-0.5">✓</span>
+            </div>
+
+            <button
+              type="button"
+              class="inline-flex items-center gap-1.5 rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-xs font-bold text-[var(--text)] transition hover:border-[var(--border-strong)] hover:bg-[var(--chip-active)] cursor-pointer active:scale-[0.98]"
+              @click="reallocatePoints(false)"
+              title="Cân bằng lại điểm cho các câu chưa chỉnh sửa"
+            >
+              <RotateCcw class="h-3.5 w-3.5" />
+              <span>Phân bổ lại</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Strategy Options -->
+        <div class="mt-3.5 flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-[var(--border)] text-xs">
+          <div class="flex flex-wrap items-center gap-4">
+            <label class="flex items-center gap-2 cursor-pointer font-semibold text-[var(--text)]">
+              <input
+                type="radio"
+                name="ocr_scoring_strategy"
+                value="equal"
+                v-model="scoringStrategy"
+                @change="reallocatePoints(false)"
+                class="accent-purple-600"
+              />
+              <span>Chia đều (Mặc định: {{ (10.0 / Math.max(1, questions.length)).toFixed(2) }} đ/câu)</span>
+            </label>
+
+            <label class="flex items-center gap-2 cursor-pointer font-semibold text-[var(--text)]">
+              <input
+                type="radio"
+                name="ocr_scoring_strategy"
+                value="difficulty"
+                v-model="scoringStrategy"
+                @change="reallocatePoints(false)"
+                class="accent-purple-600"
+              />
+              <span>Theo độ khó (Dễ 1x • Vừa 2x • Khó 3x)</span>
+            </label>
+          </div>
+
+          <div
+            v-if="manualEditedCount > 0"
+            class="text-[11px] font-medium text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/20"
+          >
+            Đang có <b>{{ manualEditedCount }}</b> câu chỉnh sửa điểm thủ công
+          </div>
+        </div>
+      </div>
+
       <div class="mt-8 grid gap-5">
         <div
           v-for="(q, index) in questions"
@@ -733,13 +826,51 @@
 
               <select
                 v-model="q.type"
-                class="rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-1 text-xs font-black text-[var(--muted)] outline-none"
+                class="rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-1 text-xs font-black text-[var(--muted)] outline-none cursor-pointer"
                 @change="changeQuestionType(q)"
               >
                 <option value="single_choice">Một đáp án</option>
                 <option value="multi_choice">Nhiều đáp án</option>
                 <option value="fill_blank">Điền đáp án</option>
               </select>
+
+              <!-- Độ khó -->
+              <select
+                v-model="q.difficulty"
+                class="rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-1 text-xs font-bold text-[var(--muted)] outline-none cursor-pointer"
+                @change="handleQuestionDifficultyChange"
+              >
+                <option value="easy">Dễ</option>
+                <option value="medium">Vừa</option>
+                <option value="hard">Khó</option>
+              </select>
+
+              <!-- Ô Điểm số tinh tế & dễ nhìn -->
+              <div
+                class="flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-1 text-xs transition"
+                :class="q.is_manual ? 'border-amber-500/50 bg-amber-500/10' : ''"
+              >
+                <span class="text-xs font-bold text-[var(--muted)]">Điểm:</span>
+                <input
+                  v-model.number="q.points"
+                  type="number"
+                  step="0.05"
+                  min="0.01"
+                  max="10"
+                  class="w-12 text-center font-mono text-xs font-black text-[var(--text)] bg-transparent outline-none"
+                  @input="handleQuestionPointManualChange(q)"
+                  title="Nhấp để sửa điểm câu này"
+                />
+                <button
+                  v-if="q.is_manual"
+                  type="button"
+                  @click="resetQuestionToAuto(q)"
+                  class="text-[10px] font-black text-purple-400 hover:text-purple-300 underline cursor-pointer ml-0.5"
+                  title="Khôi phục tính điểm tự động"
+                >
+                  Tự động
+                </button>
+              </div>
             </div>
 
             <div class="flex flex-wrap gap-2">
@@ -753,7 +884,7 @@
 
               <button
                 type="button"
-                class="rounded-full bg-[var(--chip-active)] px-3 py-1 text-xs font-black text-[var(--text)]"
+                class="rounded-full bg-[var(--chip-active)] px-3 py-1 text-xs font-black text-[var(--text)] cursor-pointer hover:opacity-80"
                 @click="openQuestionImagePicker(index)"
               >
                 + Ảnh
@@ -761,7 +892,7 @@
 
               <button
                 type="button"
-                class="rounded-full bg-rose-500/10 px-3 py-1 text-xs font-black text-rose-300"
+                class="rounded-full bg-rose-500/10 px-3 py-1 text-xs font-black text-rose-300 cursor-pointer hover:bg-rose-500/20"
                 @click="removeQuestion(index)"
               >
                 Xóa
@@ -1446,6 +1577,8 @@ import {
   CheckCheck,
   CheckCircle2,
   Lightbulb,
+  RotateCcw,
+  Scale,
   ScanText,
   Sparkles,
   Target,
@@ -1521,6 +1654,123 @@ const aiSuggestions = ref([]);
 const aiLoading = ref(false);
 const validationErrors = ref({});
 
+// --- BỘ PHÂN BỔ ĐIỂM THÔNG MINH (THANG 10.00 CHUẨN EDTECH) ---
+const scoringStrategy = ref("equal"); // 'equal' | 'difficulty'
+
+const totalAllocatedScore = computed(() => {
+  const qs = questions.value || [];
+  if (qs.length === 0) return 0;
+  const sum = qs.reduce((acc, q) => acc + (parseFloat(q.points) || 0), 0);
+  return Math.round(sum * 100) / 100;
+});
+
+const totalAllocatedScoreFormatted = computed(() => {
+  return totalAllocatedScore.value.toFixed(2);
+});
+
+const isTotalScoreValid = computed(() => {
+  if (!questions.value || questions.value.length === 0) return true;
+  return Math.abs(totalAllocatedScore.value - 10.0) < 0.005;
+});
+
+const manualEditedCount = computed(() => {
+  const qs = questions.value || [];
+  return qs.filter((q) => Boolean(q.is_manual)).length;
+});
+
+const reallocatePoints = (forceAll = false) => {
+  const qs = questions.value || [];
+  const n = qs.length;
+  if (n === 0) return;
+
+  if (forceAll) {
+    qs.forEach((q) => {
+      q.is_manual = false;
+    });
+  }
+
+  const autoQuestions = [];
+  let manualSum = 0;
+
+  qs.forEach((q) => {
+    if (q.is_manual && !forceAll) {
+      manualSum += parseFloat(q.points) || 0;
+    } else {
+      autoQuestions.push(q);
+    }
+  });
+
+  const autoCount = autoQuestions.length;
+  if (autoCount === 0) return;
+
+  const remainingBudget = Math.max(
+    0,
+    Math.round((10.0 - manualSum) * 100) / 100,
+  );
+
+  if (scoringStrategy.value === "difficulty") {
+    const weights = autoQuestions.map((q) => {
+      const diff = (q.difficulty || "medium").toLowerCase();
+      return diff === "hard" ? 3 : diff === "easy" ? 1 : 2;
+    });
+    const totalWeight = weights.reduce((a, b) => a + b, 0);
+
+    let allocatedSum = 0;
+    autoQuestions.forEach((q, idx) => {
+      const w = weights[idx];
+      if (idx === autoCount - 1) {
+        q.points = Math.max(
+          0.01,
+          Math.round((remainingBudget - allocatedSum) * 100) / 100,
+        );
+      } else {
+        const pt = Math.max(
+          0.01,
+          Math.round(((w / totalWeight) * remainingBudget) * 100) / 100,
+        );
+        q.points = pt;
+        allocatedSum += pt;
+      }
+    });
+  } else {
+    // Chia đều
+    const basePoint = Math.max(
+      0.01,
+      Math.round((remainingBudget / autoCount) * 100) / 100,
+    );
+    let allocatedSum = 0;
+    autoQuestions.forEach((q, idx) => {
+      if (idx === autoCount - 1) {
+        q.points = Math.max(
+          0.01,
+          Math.round((remainingBudget - allocatedSum) * 100) / 100,
+        );
+      } else {
+        q.points = basePoint;
+        allocatedSum += basePoint;
+      }
+    });
+  }
+};
+
+const handleQuestionPointManualChange = (q) => {
+  q.is_manual = true;
+  markDirty();
+};
+
+const resetQuestionToAuto = (q) => {
+  q.is_manual = false;
+  reallocatePoints(false);
+  markDirty();
+};
+
+const handleQuestionDifficultyChange = () => {
+  if (scoringStrategy.value === "difficulty") {
+    reallocatePoints(false);
+  }
+  markDirty();
+};
+
 const aiOptions = ref({
   action: "similar",
   difficulty: "medium",
@@ -1545,7 +1795,6 @@ const quizInfo = ref({
   subject: "",
   grade: "",
   duration: 45,
-  default_points: 10,
   status: "draft",
 });
 
@@ -1639,12 +1888,48 @@ const showValidationErrors = async (errors) => {
   return Boolean(firstKey);
 };
 
+const focusProblematicQuestionPoint = async () => {
+  await nextTick();
+  const manualQ = questions.value.find((q) => Boolean(q.is_manual));
+  const targetQ =
+    manualQ ||
+    questions.value.reduce(
+      (maxQ, q) =>
+        (parseFloat(q.points) || 0) > (parseFloat(maxQ?.points) || 0) ? q : maxQ,
+      questions.value[0],
+    );
+
+  if (targetQ) {
+    const card = document.querySelector(`[data-question-id="${targetQ.id}"]`);
+    if (card) {
+      card.scrollIntoView({ behavior: "smooth", block: "center" });
+      const pointInput = card.querySelector('input[type="number"]');
+      if (pointInput) {
+        pointInput.focus();
+        pointInput.select();
+      }
+    }
+  }
+};
+
 // Kiểm tra dữ liệu Quiz trước khi gửi lên server.
 const validateQuizPayload = async (payload) => {
   const errors = {};
 
   if (!payload.quiz.title.trim()) {
     errors["quiz.title"] = "Vui lòng nhập tên bộ đề.";
+  }
+
+  if (!isTotalScoreValid.value) {
+    const diff = Math.abs(10.0 - totalAllocatedScore.value).toFixed(2);
+    const msg =
+      totalAllocatedScore.value < 10.0
+        ? `Tổng điểm hiện tại là ${totalAllocatedScoreFormatted.value}/10.00 (đang thiếu ${diff} điểm). Vui lòng nhấn 'Phân bổ lại' hoặc cân chỉnh lại điểm các câu để đạt chuẩn 10.00 điểm.`
+        : `Tổng điểm hiện tại là ${totalAllocatedScoreFormatted.value}/10.00 (đang thừa ${diff} điểm). Vui lòng nhấn 'Phân bổ lại' hoặc cân chỉnh lại điểm các câu để đạt chuẩn 10.00 điểm.`;
+    showToast(msg, "error");
+
+    await focusProblematicQuestionPoint();
+    return false;
   }
 
   payload.questions.forEach((question, index) => {
@@ -1852,6 +2137,9 @@ const normalizeQuestion = (item = {}) => {
   return {
     id: item.id || createId(),
     type,
+    difficulty: item.difficulty || "medium",
+    points: parseFloat(item.points) || 1.0,
+    is_manual: Boolean(item.is_manual),
     question: questionText,
     question_blocks: parseBlocks(questionText),
     options,
@@ -2125,10 +2413,11 @@ const buildSavePayload = () => {
 
     return {
       type: q.type,
+      difficulty: q.difficulty || "medium",
       question,
       options: q.type === "fill_blank" ? null : options,
       correct_answer: q.correct_answer,
-      points: quizInfo.value.default_points || 10,
+      points: parseFloat(q.points) || 1.0,
       images: (q.images || []).map((image) => ({
         name: image.name,
         type: image.type,
@@ -2148,7 +2437,6 @@ const buildQuizPayload = () => {
       subject: quizInfo.value.subject,
       grade: quizInfo.value.grade,
       duration: quizInfo.value.duration,
-      default_points: quizInfo.value.default_points,
       status: quizInfo.value.status,
     },
     questions: buildSavePayload(),
@@ -2227,6 +2515,7 @@ const handleFile = async (event) => {
     const quizData = responseData.data || responseData.quizOrc || responseData;
 
     questions.value = normalizeQuestions(quizData.questions || []);
+    reallocatePoints(true);
     aiReviewResult.value = null;
     lastAiReviewQuestions.value = null;
     aiReviewOpen.value = false;
@@ -2314,7 +2603,6 @@ const resetFile = () => {
       subject: "",
       grade: "",
       duration: 45,
-      default_points: 10,
       status: "draft",
     };
     aiReviewResult.value = null;
@@ -2337,6 +2625,7 @@ const resetFile = () => {
 const addQuestion = async (type = "single_choice") => {
   const newQuestion = normalizeQuestion({
     type,
+    difficulty: "medium",
     question: "",
     options:
       type === "fill_blank"
@@ -2353,6 +2642,7 @@ const addQuestion = async (type = "single_choice") => {
   });
 
   questions.value.push(newQuestion);
+  reallocatePoints(false);
 
   markDirty();
 
@@ -2390,6 +2680,7 @@ const addQuestion = async (type = "single_choice") => {
 // Xóa một câu hỏi khỏi danh sách.
 const removeQuestion = (index) => {
   questions.value.splice(index, 1);
+  reallocatePoints(false);
   markDirty();
 };
 
@@ -2404,9 +2695,16 @@ const validateBeforeSave = () => {
     return "Thời gian làm bài phải từ 1 đến 1440 phút.";
   }
 
-  const points = Number(quizInfo.value.default_points);
-  if (!Number.isFinite(points) || points < 1 || points > 1000) {
-    return "Điểm mặc định mỗi câu phải từ 1 đến 1000.";
+  if (questions.value.length === 0) return "Bộ đề cần ít nhất 1 câu hỏi.";
+
+  if (!isTotalScoreValid.value) {
+    focusProblematicQuestionPoint();
+    const diff = Math.abs(10.0 - totalAllocatedScore.value).toFixed(2);
+    if (totalAllocatedScore.value < 10.0) {
+      return `Tổng điểm hiện tại là ${totalAllocatedScoreFormatted.value}/10.00 (đang thiếu ${diff} điểm). Vui lòng nhấn 'Phân bổ lại' hoặc cân chỉnh lại điểm các câu để đạt chuẩn 10.00 điểm.`;
+    } else {
+      return `Tổng điểm hiện tại là ${totalAllocatedScoreFormatted.value}/10.00 (đang thừa ${diff} điểm). Vui lòng nhấn 'Phân bổ lại' hoặc cân chỉnh lại điểm các câu để đạt chuẩn 10.00 điểm.`;
+    }
   }
 
   if (questions.value.length === 0) return "Bộ đề cần ít nhất 1 câu hỏi.";
@@ -2775,6 +3073,7 @@ const applyAiSuggestion = async (item) => {
 
   const newQuestion = normalizeQuestion({
     type: item.type || "single_choice",
+    difficulty: item.difficulty || aiOptions.value.difficulty || "medium",
     question: item.question,
     options: item.options,
     correct_answer: item.correct_answer,
@@ -2782,6 +3081,7 @@ const applyAiSuggestion = async (item) => {
   });
 
   questions.value.push(newQuestion);
+  reallocatePoints(false);
   markDirty();
 
   // Đánh dấu câu mới để nhấp nháy.

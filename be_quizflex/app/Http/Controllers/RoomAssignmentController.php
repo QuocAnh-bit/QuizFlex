@@ -454,6 +454,15 @@ class RoomAssignmentController extends Controller
 
     private function formatAttempt(QuizAttempt $attempt, bool $includeSnapshot = false, ?RoomAssignment $assignment = null, $user = null): array
     {
+        $totalPoints = (float) ($attempt->total_points ?? 0);
+        $score = (float) ($attempt->score ?? 0);
+        $scorePercent = $totalPoints > 0 ? round($score * 100 / $totalPoints, 2) : 0;
+        $scaledScore10 = $totalPoints > 0 ? round(($score / $totalPoints) * 10, 2) : 0.0;
+        $snapshot = is_array($attempt->answers_snapshot) ? $attempt->answers_snapshot : [];
+        $totalQuestions = count($snapshot) ?: (is_array($attempt->question_order) ? count($attempt->question_order) : 0);
+        $correctCount = collect($snapshot)->filter(fn ($item) => !empty($item['is_correct']))->count();
+        $accuracyPercentage = $totalQuestions > 0 ? round(($correctCount / $totalQuestions) * 100, 1) : $scorePercent;
+
         $data = [
             'id' => $attempt->id,
             'user_id' => $attempt->user_id,
@@ -462,9 +471,13 @@ class RoomAssignmentController extends Controller
             'assignment_id' => $attempt->assignment_id,
             'mode' => $attempt->mode,
             'attempt_number' => $attempt->attempt_number,
-            'score' => $attempt->score,
-            'total_points' => $attempt->total_points,
-            'score_percent' => $attempt->total_points > 0 ? round($attempt->score * 100 / $attempt->total_points, 2) : 0,
+            'score' => round($score, 2),
+            'total_points' => round($totalPoints, 2),
+            'scaled_score_10' => $scaledScore10,
+            'correct_count' => $correctCount,
+            'total_questions' => $totalQuestions,
+            'accuracy_percentage' => $accuracyPercentage,
+            'score_percent' => $scorePercent,
             'time_spent_seconds' => $attempt->time_spent_seconds,
             'status' => $attempt->status,
             'started_at' => $attempt->started_at,
@@ -484,9 +497,15 @@ class RoomAssignmentController extends Controller
 
     private function formatAttemptSummary(QuizAttempt $attempt): array
     {
-        $snapshot = collect($attempt->answers_snapshot ?? []);
+        $totalPoints = (float) ($attempt->total_points ?? 0);
+        $score = (float) ($attempt->score ?? 0);
+        $scorePercent = $totalPoints > 0 ? round($score * 100 / $totalPoints, 2) : 0;
+        $scaledScore10 = $totalPoints > 0 ? round(($score / $totalPoints) * 10, 2) : 0.0;
+        $snapshot = collect(is_array($attempt->answers_snapshot) ? $attempt->answers_snapshot : []);
         $questionOrder = is_array($attempt->question_order) ? $attempt->question_order : [];
         $totalQuestions = $snapshot->count() ?: count($questionOrder);
+        $correctCount = $snapshot->filter(fn ($item) => !empty($item['is_correct']))->count();
+        $accuracyPercentage = $totalQuestions > 0 ? round(($correctCount / $totalQuestions) * 100, 1) : $scorePercent;
 
         return [
             'id' => $attempt->id,
@@ -496,11 +515,13 @@ class RoomAssignmentController extends Controller
             'assignment_id' => $attempt->assignment_id,
             'mode' => $attempt->mode,
             'attempt_number' => $attempt->attempt_number,
-            'score' => $attempt->score,
-            'total_points' => $attempt->total_points,
-            'score_percent' => $attempt->total_points > 0 ? round($attempt->score * 100 / $attempt->total_points, 2) : 0,
-            'correct_count' => $snapshot->where('is_correct', true)->count(),
+            'score' => round($score, 2),
+            'total_points' => round($totalPoints, 2),
+            'scaled_score_10' => $scaledScore10,
+            'score_percent' => $scorePercent,
+            'correct_count' => $correctCount,
             'total_questions' => $totalQuestions,
+            'accuracy_percentage' => $accuracyPercentage,
             'time_spent_seconds' => $attempt->time_spent_seconds,
             'status' => $attempt->status,
             'started_at' => $attempt->started_at,

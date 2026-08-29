@@ -30,8 +30,8 @@ class QuizAttempt extends Model
 
     protected $casts = [
         'attempt_number' => 'integer',
-        'score' => 'integer',
-        'total_points' => 'integer',
+        'score' => 'float',
+        'total_points' => 'float',
         'time_spent_seconds' => 'integer',
         'answers_snapshot' => 'array',
         'question_order' => 'array',

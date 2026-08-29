@@ -37,7 +37,7 @@ class Question extends Model
         'is_public' => 'boolean',
         'bank_submission_at' => 'datetime',
         'order' => 'integer',
-        'points' => 'integer',
+        'points' => 'float',
     ];
 
     protected static function booted()

@@ -1313,6 +1313,14 @@ export const homeworkApi = {
     return unwrap(data);
   },
 
+  async startAssignmentAttempt(roomIdOrAssignmentId, maybeAssignmentId, payload = {}) {
+    const assignmentId = maybeAssignmentId !== undefined && typeof maybeAssignmentId !== 'object'
+      ? maybeAssignmentId
+      : roomIdOrAssignmentId;
+    const body = typeof maybeAssignmentId === 'object' ? maybeAssignmentId : payload;
+    return this.startRoomAssignmentAttempt(assignmentId, body);
+  },
+
   async answerRoomAssignmentAttempt(assignmentId, attemptId, payload) {
     const { data } = await api.post(
       `/room-assignments/${assignmentId}/attempts/${attemptId}/answer`,
@@ -1328,6 +1336,28 @@ export const homeworkApi = {
       body,
     );
     return unwrap(data);
+  },
+
+  async submitAssignmentAttempt(roomIdOrAssignmentId, assignmentIdOrAttemptId, maybePayload = {}) {
+    let assignmentId = roomIdOrAssignmentId;
+    let attemptId = null;
+    let payload = {};
+
+    if (maybePayload && typeof maybePayload === 'object' && Object.keys(maybePayload).length > 0) {
+      assignmentId = assignmentIdOrAttemptId;
+      attemptId = maybePayload.attempt_id;
+      payload = maybePayload.answers !== undefined ? maybePayload.answers : maybePayload;
+    } else if (typeof assignmentIdOrAttemptId === 'object') {
+      assignmentId = roomIdOrAssignmentId;
+      attemptId = assignmentIdOrAttemptId.attempt_id;
+      payload = assignmentIdOrAttemptId.answers !== undefined ? assignmentIdOrAttemptId.answers : assignmentIdOrAttemptId;
+    } else {
+      assignmentId = roomIdOrAssignmentId;
+      attemptId = assignmentIdOrAttemptId;
+      payload = maybePayload;
+    }
+
+    return this.submitRoomAssignmentAttempt(assignmentId, attemptId, payload);
   },
 
   async resetRoomAssignmentAttempt(assignmentId, attemptId) {

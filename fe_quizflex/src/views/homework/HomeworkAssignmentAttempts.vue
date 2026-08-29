@@ -196,8 +196,16 @@ const formatDateTime = (value) => {
 
 const formatScore = (attempt) => {
   if (attempt.score === null || attempt.score === undefined) return '-'
-  if (attempt.total_points === null || attempt.total_points === undefined) return String(attempt.score)
-  return `${attempt.score}/${attempt.total_points}`
+  let raw = 0
+  if (attempt.scaled_score_10 !== undefined && attempt.scaled_score_10 !== null) {
+    raw = Number(attempt.scaled_score_10)
+  } else {
+    const tot = Number(attempt.total_points) || 0
+    const sc = Number(attempt.score) || 0
+    raw = tot > 0 ? (sc / tot) * 10 : 0
+  }
+  const formatted = Number.isInteger(raw) ? raw.toString() : parseFloat(raw.toFixed(2)).toString()
+  return `${formatted} / 10`
 }
 
 const formatCorrectCount = (attempt) => {

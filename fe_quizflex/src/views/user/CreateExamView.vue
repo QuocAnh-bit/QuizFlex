@@ -683,9 +683,91 @@
           </div>
 
           <!-- B. KHỐI CHỌN THỦ CÔNG (MANUAL MODE) -->
-          <div v-else class="grid gap-3">
-            <!-- Selected Questions List -->
-            <div v-if="selectedIds.length > 0" class="grid gap-3">
+          <div v-else class="grid gap-4">
+            <!-- Selected Questions List & Scoring Allocator -->
+            <div v-if="selectedIds.length > 0" class="grid gap-3.5">
+              <!-- SMART SCORING ALLOCATOR PANEL -->
+              <div
+                id="score-allocator-banner"
+                class="rounded-2xl border border-purple-100 bg-gradient-to-br from-purple-50/60 via-slate-50/40 to-white p-4 shadow-2xs grid gap-3 transition-all duration-300"
+                :class="{ 'ring-2 ring-amber-400 border-amber-300 bg-amber-50/40 shadow-md shadow-amber-500/10': !isTotalScoreValid }"
+              >
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div class="flex items-center gap-2.5">
+                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-purple-600 text-white shadow-xs">
+                      <Sparkles :size="15" />
+                    </div>
+                    <div>
+                      <h4 class="text-xs font-bold text-slate-900 flex items-center gap-2">
+                        <span>Phân bổ điểm số</span>
+                        <span class="text-[10px] font-semibold text-purple-700 bg-purple-100 px-2 py-0.5 rounded-full">Chuẩn thang 10.00</span>
+                      </h4>
+                      <p class="text-[11px] text-slate-500 font-medium mt-0.5">Tự động chia điểm chuẩn xác cho toàn bộ câu hỏi hoặc phân bổ theo độ khó</p>
+                    </div>
+                  </div>
+
+                  <!-- Tổng điểm Indicator & Nút Phân bổ lại -->
+                  <div class="flex items-center gap-2 shrink-0 self-start sm:self-auto">
+                    <div
+                      class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition"
+                      :class="isTotalScoreValid ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-amber-300 bg-amber-50 text-amber-900'"
+                    >
+                      <span>Tổng điểm:</span>
+                      <span class="font-mono text-sm">{{ totalAllocatedScoreFormatted }}</span>
+                      <span>/ 10.00</span>
+                      <span v-if="!isTotalScoreValid" class="text-[11px] font-semibold text-amber-700 ml-1">
+                        {{ totalAllocatedScore < 10.0 ? `⚠️ Thiếu ${(10.0 - totalAllocatedScore).toFixed(2)} điểm` : `⚠️ Thừa ${(totalAllocatedScore - 10.0).toFixed(2)} điểm` }}
+                      </span>
+                      <span v-else class="text-emerald-600 font-bold ml-0.5">✓</span>
+                    </div>
+
+                    <button
+                      type="button"
+                      class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-purple-200 bg-white text-purple-700 text-xs font-bold hover:bg-purple-50 transition cursor-pointer shadow-2xs active:scale-[0.98]"
+                      @click="reallocatePoints(false)"
+                      title="Cân bằng lại điểm cho các câu chưa chỉnh sửa"
+                    >
+                      <RotateCcw :size="13" />
+                      <span>Phân bổ lại</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Scoring Strategy Options -->
+                <div class="flex flex-wrap items-center justify-between gap-3 pt-2.5 border-t border-purple-100/70 text-xs">
+                  <div class="flex flex-wrap items-center gap-4">
+                    <label class="flex items-center gap-2 cursor-pointer text-slate-700 font-medium hover:text-slate-900">
+                      <input
+                        type="radio"
+                        name="scoring_strategy"
+                        value="equal"
+                        v-model="scoringStrategy"
+                        @change="reallocatePoints(false)"
+                        class="text-purple-600 focus:ring-purple-500 h-3.5 w-3.5"
+                      />
+                      <span>Chia đều (Mặc định)</span>
+                    </label>
+
+                    <label class="flex items-center gap-2 cursor-pointer text-slate-700 font-medium hover:text-slate-900">
+                      <input
+                        type="radio"
+                        name="scoring_strategy"
+                        value="difficulty"
+                        v-model="scoringStrategy"
+                        @change="reallocatePoints(false)"
+                        class="text-purple-600 focus:ring-purple-500 h-3.5 w-3.5"
+                      />
+                      <span>Theo độ khó (Dễ 1x • Vừa 2x • Khó 3x)</span>
+                    </label>
+                  </div>
+
+                  <div v-if="manualEditedCount > 0" class="text-[11px] text-amber-700 font-medium bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200/80">
+                    Đang có <b>{{ manualEditedCount }}</b> câu chỉnh sửa thủ công (giữ nguyên khi phân bổ lại)
+                  </div>
+                </div>
+              </div>
+
+              <!-- Filter Tabs & Add button -->
               <div
                 class="flex flex-wrap items-center justify-between gap-3 text-xs font-medium"
               >
@@ -731,11 +813,13 @@
                 </button>
               </div>
 
-              <!-- List of Selected Question Items -->
+              <!-- List of Selected Question Items with Point Inputs -->
               <div class="grid gap-2.5 max-h-[460px] overflow-y-auto pr-1">
                 <div
                   v-for="(q, idx) in filteredSelectedQuestions"
                   :key="q.id"
+                  :id="`selected-question-item-${q.id}`"
+                  :data-selected-question-id="q.id"
                   class="flex items-center justify-between gap-3 rounded-xl border border-slate-200/90 bg-slate-50/50 p-3.5 transition hover:border-purple-300 hover:bg-white hover:shadow-xs group"
                 >
                   <div class="flex items-center gap-3 min-w-0 flex-1">
@@ -789,15 +873,50 @@
                     </div>
                   </div>
 
-                  <button
-                    type="button"
-                    class="h-8 w-8 shrink-0 flex items-center justify-center rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition cursor-pointer"
-                    aria-label="Bỏ câu hỏi này khỏi đề thi"
-                    title="Bỏ câu hỏi này khỏi đề thi"
-                    @click="removeSelectedQuestion(q.id)"
-                  >
-                    <X :size="14" />
-                  </button>
+                  <!-- Point Input & Controls -->
+                  <div class="flex items-center gap-2 shrink-0">
+                    <div class="flex items-center gap-1.5 bg-white px-2 py-1 rounded-lg border border-slate-200 shadow-2xs group-hover:border-purple-200">
+                      <span class="text-[11px] text-slate-500 font-medium">Điểm:</span>
+                      <input
+                        type="number"
+                        step="0.05"
+                        min="0.01"
+                        max="10"
+                        :value="questionPointsMap[q.id]"
+                        @input="handleManualPointInput(q.id, $event.target.value)"
+                        class="w-14 text-center font-mono text-xs font-bold text-purple-700 bg-slate-50 border border-slate-200 rounded px-1 py-0.5 focus:bg-white focus:outline-none focus:ring-1 focus:ring-purple-500"
+                      />
+                    </div>
+
+                    <span
+                      v-if="isQuestionManual(q.id)"
+                      class="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded"
+                      title="Điểm số đã được giáo viên chỉnh sửa thủ công"
+                    >
+                      <Lock :size="10" />
+                      <span>Đã chỉnh</span>
+                    </span>
+
+                    <button
+                      v-if="isQuestionManual(q.id)"
+                      type="button"
+                      @click="resetQuestionToAuto(q.id)"
+                      class="text-[10px] text-slate-400 hover:text-purple-600 underline cursor-pointer"
+                      title="Trả về tính điểm tự động"
+                    >
+                      Tự động
+                    </button>
+
+                    <button
+                      type="button"
+                      class="h-8 w-8 shrink-0 flex items-center justify-center rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition cursor-pointer"
+                      aria-label="Bỏ câu hỏi này khỏi đề thi"
+                      title="Bỏ câu hỏi này khỏi đề thi"
+                      @click="removeSelectedQuestion(q.id)"
+                    >
+                      <X :size="14" />
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1122,6 +1241,7 @@ import {
   AlertTriangle,
   FileQuestion,
   GraduationCap,
+  RotateCcw,
 } from "lucide-vue-next";
 import QuestionPickerModal from "@/components/question/QuestionPickerModal.vue";
 import {
@@ -1427,6 +1547,149 @@ const filteredSelectedQuestions = computed(() => {
   );
 });
 
+// --- BỘ PHÂN BỔ ĐIỂM THÔNG MINH (THANG 10.00 CHUẨN EDTECH) ---
+const scoringStrategy = ref("equal"); // 'equal' | 'difficulty'
+const questionPointsMap = ref({});
+const manualEditedQuestionIds = ref(new Set());
+
+const isQuestionManual = (id) => manualEditedQuestionIds.value.has(id);
+
+const totalAllocatedScore = computed(() => {
+  const ids = selectedIds.value;
+  if (!ids || ids.length === 0) return 0;
+  let sum = 0;
+  for (const id of ids) {
+    const pt = parseFloat(questionPointsMap.value[id]) || 0;
+    sum += pt;
+  }
+  return Math.round(sum * 100) / 100;
+});
+
+const totalAllocatedScoreFormatted = computed(() => {
+  return totalAllocatedScore.value.toFixed(2);
+});
+
+const isTotalScoreValid = computed(() => {
+  if (selectedIds.value.length === 0) return true;
+  return Math.abs(totalAllocatedScore.value - 10.0) < 0.005;
+});
+
+const manualEditedCount = computed(() => {
+  return manualEditedQuestionIds.value.size;
+});
+
+const reallocatePoints = (forceAll = false) => {
+  const ids = selectedIds.value;
+  const n = ids.length;
+  if (n === 0) {
+    questionPointsMap.value = {};
+    return;
+  }
+
+  if (forceAll) {
+    manualEditedQuestionIds.value.clear();
+  }
+
+  const newPointsMap = { ...questionPointsMap.value };
+
+  // Danh sách các câu tự động và các câu đã chỉnh sửa thủ công
+  const manualIds = [];
+  const autoIds = [];
+  let manualSum = 0;
+
+  for (const id of ids) {
+    if (manualEditedQuestionIds.value.has(id) && !forceAll) {
+      manualIds.push(id);
+      manualSum += parseFloat(newPointsMap[id]) || 0;
+    } else {
+      autoIds.push(id);
+    }
+  }
+
+  const autoCount = autoIds.length;
+  if (autoCount === 0) {
+    questionPointsMap.value = newPointsMap;
+    return;
+  }
+
+  const remainingBudget = Math.max(0, Math.round((10.0 - manualSum) * 100) / 100);
+
+  if (scoringStrategy.value === "difficulty") {
+    // Trọng số: Dễ = 1x, Vừa = 2x, Khó = 3x
+    const weights = {};
+    let totalWeight = 0;
+    for (const id of autoIds) {
+      const q = selectedQuestionsMap.value.get(id);
+      const diff = (q?.difficulty || "medium").toLowerCase();
+      const w = diff === "hard" ? 3 : (diff === "easy" ? 1 : 2);
+      weights[id] = w;
+      totalWeight += w;
+    }
+
+    let allocatedSum = 0;
+    for (let i = 0; i < autoCount; i++) {
+      const id = autoIds[i];
+      const w = weights[id];
+      if (i === autoCount - 1) {
+        const lastPt = Math.max(0.01, Math.round((remainingBudget - allocatedSum) * 100) / 100);
+        newPointsMap[id] = lastPt;
+      } else {
+        const pt = Math.max(0.01, Math.round(((w / totalWeight) * remainingBudget) * 100) / 100);
+        newPointsMap[id] = pt;
+        allocatedSum += pt;
+      }
+    }
+  } else {
+    // Chia đều (Equal weight)
+    const basePoint = Math.max(0.01, Math.round((remainingBudget / autoCount) * 100) / 100);
+    let allocatedSum = 0;
+    for (let i = 0; i < autoCount; i++) {
+      const id = autoIds[i];
+      if (i === autoCount - 1) {
+        const lastPt = Math.max(0.01, Math.round((remainingBudget - allocatedSum) * 100) / 100);
+        newPointsMap[id] = lastPt;
+      } else {
+        newPointsMap[id] = basePoint;
+        allocatedSum += basePoint;
+      }
+    }
+  }
+
+  questionPointsMap.value = newPointsMap;
+};
+
+const handleManualPointInput = (id, val) => {
+  const num = parseFloat(val);
+  if (isNaN(num) || num < 0) return;
+  manualEditedQuestionIds.value.add(id);
+  questionPointsMap.value = {
+    ...questionPointsMap.value,
+    [id]: Math.round(num * 100) / 100,
+  };
+};
+
+const resetQuestionToAuto = (id) => {
+  manualEditedQuestionIds.value.delete(id);
+  reallocatePoints(false);
+};
+
+// Theo dõi khi danh sách câu hỏi thay đổi để phân bổ lại điểm
+watch(
+  () => selectedIds.value,
+  (newIds) => {
+    if (newIds) {
+      const currentSet = new Set(newIds);
+      for (const id of Array.from(manualEditedQuestionIds.value)) {
+        if (!currentSet.has(id)) {
+          manualEditedQuestionIds.value.delete(id);
+        }
+      }
+      reallocatePoints(false);
+    }
+  },
+  { deep: true },
+);
+
 const ensureAnswerKeysForSelectedQuestions = async (questionsList) => {
   if (!Array.isArray(questionsList) || questionsList.length === 0) return;
   const needDetailFetch = questionsList.filter((q) => {
@@ -1681,11 +1944,37 @@ const handleCreateQuizSubmit = async () => {
       return;
     }
   }
-  if (mode.value === "manual" && selectedIds.value.length === 0) {
-    if (showToast)
-      showToast("Vui lòng chọn ít nhất 1 câu hỏi cho Quiz!", "error");
-    else alert("Vui lòng chọn ít nhất 1 câu hỏi cho Quiz!");
-    return;
+  if (mode.value === "manual") {
+    if (selectedIds.value.length === 0) {
+      if (showToast)
+        showToast("Vui lòng chọn ít nhất 1 câu hỏi cho Quiz!", "error");
+      else alert("Vui lòng chọn ít nhất 1 câu hỏi cho Quiz!");
+      return;
+    }
+    if (!isTotalScoreValid.value) {
+      const diff = Math.abs(10.0 - totalAllocatedScore.value).toFixed(2);
+      const msg = totalAllocatedScore.value < 10.0
+        ? `Tổng điểm hiện tại là ${totalAllocatedScoreFormatted.value}/10.00 (đang thiếu ${diff} điểm). Vui lòng nhấn 'Phân bổ lại' hoặc cân chỉnh lại điểm các câu để đạt chuẩn 10.00 điểm.`
+        : `Tổng điểm hiện tại là ${totalAllocatedScoreFormatted.value}/10.00 (đang thừa ${diff} điểm). Vui lòng nhấn 'Phân bổ lại' hoặc cân chỉnh lại điểm các câu để đạt chuẩn 10.00 điểm.`;
+      if (showToast) showToast(msg, "error");
+      else alert(msg);
+
+      await nextTick();
+      const manualId = manualEditedQuestionIds.value?.[0];
+      const targetId = manualId || selectedIds.value[0];
+      if (targetId) {
+        const card = document.getElementById(`selected-question-item-${targetId}`) || document.querySelector(`[data-selected-question-id="${targetId}"]`);
+        if (card) {
+          card.scrollIntoView({ behavior: "smooth", block: "center" });
+          const pointInput = card.querySelector('input[type="number"]');
+          if (pointInput) {
+            pointInput.focus();
+            pointInput.select();
+          }
+        }
+      }
+      return;
+    }
   }
 
   isSubmitting.value = true;
@@ -1712,11 +2001,14 @@ const handleCreateQuizSubmit = async () => {
 
     if (isManualMode) {
       payload.question_ids = selectedIds.value;
+      payload.scoring_mode = scoringStrategy.value;
+      payload.question_points = questionPointsMap.value;
     } else {
       payload.easy_count = quizForm.easy_count || 0;
       payload.medium_count = quizForm.medium_count || 0;
       payload.hard_count = quizForm.hard_count || 0;
       payload.random_count = totalMatrixQuestions.value;
+      payload.scoring_mode = scoringStrategy.value;
     }
 
     const createdQuiz = await questionsBankApi.createQuizFromBank(payload);

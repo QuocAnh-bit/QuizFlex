@@ -1,5 +1,9 @@
 <template>
-  <div class="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 space-y-4 shadow-sm transition hover:border-purple-200">
+  <div
+    :id="`quiz-question-card-${index}`"
+    :data-question-uid="question._uid || question.id"
+    class="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 space-y-4 shadow-sm transition hover:border-purple-200"
+  >
     <!-- Header: Question Number & Actions -->
     <div class="flex items-center justify-between border-b border-slate-100 pb-3 flex-wrap gap-2">
       <div class="flex items-center gap-2.5">
@@ -83,13 +87,35 @@
       </div>
 
       <div class="space-y-1">
-        <label class="text-[11px] font-bold text-slate-600 block">Điểm số</label>
+        <div class="flex items-center justify-between">
+          <label class="text-[11px] font-bold text-slate-600">Điểm số</label>
+          <span
+            v-if="question.is_manual"
+            class="inline-flex items-center gap-0.5 text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1 py-0.2 rounded"
+            title="Điểm số đã được chỉnh sửa thủ công"
+          >
+            <Lock :size="9" />
+            <span>Đã chỉnh</span>
+          </span>
+          <button
+            v-if="question.is_manual"
+            type="button"
+            @click="resetToAuto"
+            class="text-[10px] text-slate-400 hover:text-purple-600 underline cursor-pointer"
+            title="Trả về tự động phân bổ điểm"
+          >
+            Tự động
+          </button>
+        </div>
         <input
+          data-points-input
           v-model.number="question.points"
           type="number"
-          min="1"
-          max="100"
-          class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-900 outline-none focus:border-[#7C3AED] focus:ring-2 focus:ring-[#7C3AED]/20 text-center"
+          step="0.05"
+          min="0.01"
+          max="10"
+          @input="onPointsInput"
+          class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-purple-700 outline-none focus:border-[#7C3AED] focus:ring-2 focus:ring-[#7C3AED]/20 text-center"
         />
       </div>
 
@@ -210,6 +236,7 @@ import {
   Plus,
   Check,
   X,
+  Lock,
 } from 'lucide-vue-next'
 
 const props = defineProps({
@@ -227,7 +254,17 @@ const props = defineProps({
   },
 })
 
-defineEmits(['move-up', 'move-down', 'remove'])
+const emit = defineEmits(['move-up', 'move-down', 'remove', 'manual-point-change', 'reset-point-auto'])
+
+const onPointsInput = () => {
+  props.question.is_manual = true
+  emit('manual-point-change', { index: props.index, question: props.question })
+}
+
+const resetToAuto = () => {
+  props.question.is_manual = false
+  emit('reset-point-auto', { index: props.index, question: props.question })
+}
 
 // Generate or use stable unique local ID for scoped radio names
 const questionUid = computed(() => {

@@ -478,8 +478,16 @@ public function checkAnswer(Request $request, Quiz $quiz)
 
     private function formatAttempt(QuizAttempt $attempt, bool $includeSnapshot = false): array
     {
-        $scorePercent = $attempt->total_points > 0 ? round($attempt->score * 100 / $attempt->total_points, 2) : 0;
+        $totalPoints = (float) ($attempt->total_points ?? 0);
+        $score = (float) ($attempt->score ?? 0);
+        $scorePercent = $totalPoints > 0 ? round($score * 100 / $totalPoints, 2) : 0;
+        $scaledScore10 = $totalPoints > 0 ? round(($score / $totalPoints) * 10, 2) : 0.0;
         $quiz = $attempt->quiz;
+
+        $snapshot = is_array($attempt->answers_snapshot) ? $attempt->answers_snapshot : [];
+        $totalQuestions = count($snapshot) > 0 ? count($snapshot) : ($quiz && $quiz->relationLoaded('questions') ? $quiz->questions->count() : 0);
+        $correctCount = collect($snapshot)->filter(fn ($item) => !empty($item['is_correct']))->count();
+        $accuracyPercentage = $totalQuestions > 0 ? round(($correctCount / $totalQuestions) * 100, 1) : $scorePercent;
 
         $data = [
             'id' => $attempt->id,
@@ -493,8 +501,12 @@ public function checkAnswer(Request $request, Quiz $quiz)
                 'visibility' => $quiz->room_code ? 'group' : ($quiz->is_public ? 'public' : 'private'),
             ] : null,
             'user_name' => $attempt->user?->name,
-            'score' => $attempt->score,
-            'total_points' => $attempt->total_points,
+            'score' => round($score, 2),
+            'total_points' => round($totalPoints, 2),
+            'scaled_score_10' => $scaledScore10,
+            'correct_count' => $correctCount,
+            'total_questions' => $totalQuestions,
+            'accuracy_percentage' => $accuracyPercentage,
             'score_percent' => $scorePercent,
             'time_spent_seconds' => $attempt->time_spent_seconds,
             'status' => $attempt->status,

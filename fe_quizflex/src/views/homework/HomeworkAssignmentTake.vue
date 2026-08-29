@@ -35,17 +35,21 @@
           </div>
 
           <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <div class="rounded-xl border border-slate-100 bg-slate-50 p-4 text-center">
-              <span class="text-xs font-semibold text-slate-500">Điểm số</span>
-              <b class="mt-1 block text-2xl font-black text-slate-900">{{ result.score ?? 0 }}/{{ result.total_points ?? 0 }}</b>
-            </div>
-            <div class="rounded-xl border border-slate-100 bg-slate-50 p-4 text-center">
-              <span class="text-xs font-semibold text-slate-500">Tỷ lệ chính xác</span>
-              <b class="mt-1 block text-2xl font-black text-[#7C3AED]">{{ Math.round(result.score_percent ?? 0) }}%</b>
+            <div class="rounded-xl border border-purple-200 bg-purple-50/60 p-4 text-center">
+              <span class="text-xs font-semibold text-slate-500">Điểm số (Thang 10)</span>
+              <b class="mt-1 block text-2xl font-black text-[#7C3AED]">
+                {{ formatDisplayScore(result) }} <span class="text-xs font-bold text-slate-500">/ 10</span>
+              </b>
             </div>
             <div class="rounded-xl border border-slate-100 bg-slate-50 p-4 text-center">
               <span class="text-xs font-semibold text-slate-500">Số câu đúng</span>
-              <b class="mt-1 block text-2xl font-black text-emerald-700">{{ result.correct_count ?? '-' }}/{{ result.total_questions ?? '-' }}</b>
+              <b class="mt-1 block text-2xl font-black text-emerald-700">
+                {{ result.correct_count ?? result.result?.correct_count ?? '-' }}/{{ result.total_questions ?? result.result?.total_questions ?? questions.length }} câu
+              </b>
+            </div>
+            <div class="rounded-xl border border-slate-100 bg-slate-50 p-4 text-center">
+              <span class="text-xs font-semibold text-slate-500">Độ chính xác</span>
+              <b class="mt-1 block text-2xl font-black text-slate-900">{{ Math.round(result.accuracy_percentage ?? result.score_percent ?? 0) }}%</b>
             </div>
             <div class="rounded-xl border border-slate-100 bg-slate-50 p-4 text-center">
               <span class="text-xs font-semibold text-slate-500">Trạng thái</span>
@@ -231,6 +235,19 @@ const isAnswerSelected = (answer) => {
   const current = selectedAnswers.value[currentQuestion.value.id]
   if (Array.isArray(current)) return current.includes(answer.id)
   return current === answer.id
+}
+
+const formatDisplayScore = (res) => {
+  if (!res) return '0'
+  let raw = 0
+  if (res.scaled_score_10 !== undefined && res.scaled_score_10 !== null) {
+    raw = Number(res.scaled_score_10)
+  } else {
+    const tot = Number(res.total_points) || 0
+    const sc = Number(res.score) || 0
+    raw = tot > 0 ? (sc / tot) * 10 : 0
+  }
+  return Number.isInteger(raw) ? raw.toString() : parseFloat(raw.toFixed(2)).toString()
 }
 
 const toggleAnswer = (answer) => {

@@ -1,43 +1,83 @@
 <template>
   <section class="max-w-6xl mx-auto py-4 space-y-6">
     <!-- Header -->
-    <div class="card p-6 sm:p-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-      <div>
-        <p class="text-xs font-bold uppercase tracking-wider text-[#7C3AED]">
-          {{ isUserWorkspace ? 'Kho quiz cá nhân' : 'Ngân hàng đề thi' }}
-        </p>
-        <h1 class="mt-1 text-2xl font-black text-slate-900 sm:text-3xl">
-          {{ isUserWorkspace ? 'Kho quiz của tôi' : 'Kho quiz' }}
+    <div class="card p-6 sm:p-7 flex flex-col justify-between gap-5 lg:flex-row lg:items-center">
+      <div class="space-y-1">
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-bold uppercase tracking-wider text-[#7C3AED]">
+            {{ isUserWorkspace ? 'Kho quiz cá nhân' : 'Ngân hàng đề thi' }}
+          </span>
+          <span v-if="showTrash" class="text-[11px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
+            Thùng rác
+          </span>
+        </div>
+        <h1 class="text-2xl font-black text-slate-900 sm:text-3xl tracking-tight">
+          {{ isUserWorkspace ? (showTrash ? 'Thùng rác Quiz' : 'Kho quiz của tôi') : 'Kho quiz' }}
         </h1>
-        <p class="mt-1 text-sm text-slate-600 max-w-2xl">
+        <p class="text-sm text-slate-500 max-w-2xl">
           {{ isUserWorkspace 
-            ? 'Quản lý, chỉnh sửa hoặc kiểm tra lượt làm bài các bộ quiz do bạn tạo.' 
+            ? (showTrash ? 'Danh sách các bộ quiz đã xóa tạm thời. Bạn có thể khôi phục hoặc xóa vĩnh viễn.' : 'Quản lý, chỉnh sửa hoặc kiểm tra lượt làm bài các bộ quiz do bạn tạo.') 
             : 'Tìm kiếm, lọc danh mục, độ khó và trạng thái hiển thị của các quiz trên toàn hệ thống.' 
           }}
         </p>
+      </div>
 
-        <div v-if="isUserWorkspace" class="mt-4 flex gap-2.5">
-          <button
-            type="button"
-            class="rounded-lg border border-red-200 bg-red-50 px-3.5 py-1.5 text-xs font-bold text-red-700 hover:bg-red-100 transition"
-            @click="loadTrash"
-          >
-            🗑 Thùng rác
-          </button>
-          <button
-            v-if="showTrash"
-            type="button"
-            class="btn-secondary text-xs px-3.5 py-1.5"
-            @click="loadQuizzes"
-          >
-            ← Quay lại
-          </button>
-        </div>
-        <div v-if="isUserWorkspace" class="flex flex-wrap gap-3 mt-4">
-          <router-link class="btn-ghost" :to="`${questionBase}/ocr`">Upload OCR</router-link>
-          <router-link class="btn-ghost" :to="`${questionBase}/ai`">AI Generator</router-link>
-          <router-link class="btn-primary shadow-lg transition hover:scale-105" :to="`${questionBase}/create`">┼ Tạo quiz</router-link>
-        </div>
+      <!-- Action Toolbar -->
+      <div v-if="isUserWorkspace" class="flex flex-wrap items-center gap-2 sm:gap-2.5 shrink-0">
+        <!-- Nút Thùng rác / Quay lại -->
+        <button
+          v-if="!showTrash"
+          type="button"
+          class="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-600 hover:border-rose-200 hover:bg-rose-50/50 hover:text-rose-600 transition shadow-2xs cursor-pointer active:scale-95"
+          @click="loadTrash"
+          title="Xem các quiz đã xóa trong thùng rác"
+        >
+          <Trash2 class="h-3.5 w-3.5 text-slate-400" />
+          <span>Thùng rác</span>
+        </button>
+
+        <button
+          v-else
+          type="button"
+          class="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition shadow-2xs cursor-pointer active:scale-95"
+          @click="loadQuizzes"
+        >
+          <ArrowLeft class="h-3.5 w-3.5" />
+          <span>Quay lại kho quiz</span>
+        </button>
+
+        <!-- Divider -->
+        <div v-if="!showTrash" class="h-6 w-px bg-slate-200 hidden sm:block"></div>
+
+        <!-- OCR Upload Button -->
+        <router-link
+          v-if="!showTrash"
+          class="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 hover:border-purple-300 hover:bg-purple-50/40 hover:text-purple-700 transition shadow-2xs cursor-pointer active:scale-95"
+          :to="`${questionBase}/ocr`"
+        >
+          <ScanLine class="h-3.5 w-3.5 text-purple-600" />
+          <span>Upload OCR</span>
+        </router-link>
+
+        <!-- AI Generator Button -->
+        <router-link
+          v-if="!showTrash"
+          class="inline-flex items-center gap-1.5 rounded-xl border border-purple-200 bg-gradient-to-r from-purple-50 to-indigo-50/50 px-3.5 py-2 text-xs font-bold text-purple-700 hover:border-purple-300 hover:from-purple-100 hover:to-indigo-100/60 transition shadow-2xs cursor-pointer active:scale-95"
+          :to="`${questionBase}/ai`"
+        >
+          <Sparkles class="h-3.5 w-3.5 text-purple-600" />
+          <span>AI Generator</span>
+        </router-link>
+
+        <!-- Create Quiz Button -->
+        <router-link
+          v-if="!showTrash"
+          class="inline-flex items-center gap-1.5 rounded-xl bg-[#7C3AED] px-4 py-2 text-xs font-bold text-white shadow-md shadow-purple-500/20 hover:bg-[#6D28D9] transition cursor-pointer active:scale-95"
+          :to="`${questionBase}/create`"
+        >
+          <Plus class="h-3.5 w-3.5" />
+          <span>Tạo quiz</span>
+        </router-link>
       </div>
     </div>
 
@@ -225,7 +265,18 @@
 <script setup>
 import { computed, onMounted, ref, inject } from 'vue'
 import { useRoute } from 'vue-router'
-import { Bot, Globe, Lock, Users, LibraryBig } from 'lucide-vue-next'
+import {
+  ArrowLeft,
+  Bot,
+  Globe,
+  LibraryBig,
+  Lock,
+  Plus,
+  ScanLine,
+  Sparkles,
+  Trash2,
+  Users,
+} from 'lucide-vue-next'
 import VisibilityBadge from '@/components/common/VisibilityBadge.vue'
 import AppPagination from '@/components/common/AppPagination.vue'
 import { normalizeQuizCard, quizzesApi } from '@/services/api'
