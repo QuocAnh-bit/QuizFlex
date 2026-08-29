@@ -498,7 +498,11 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { aiApi, authApi, currentUserStorage, curriculumApi, taxonomyApi } from '@/services/api'
-
+import {
+  Sparkles,
+  FileText,
+  // các icon khác đang có sẵn...
+} from 'lucide-vue-next'
 const route = useRoute()
 const router = useRouter()
 const questionBase = computed(() => route.path.startsWith('/dashboard') ? '/dashboard/questions' : '/admin/questions')

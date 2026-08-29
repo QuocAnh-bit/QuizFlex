@@ -65,17 +65,41 @@ class GamificationController extends Controller
     {
         $leaderboard = \Illuminate\Support\Facades\Cache::remember('gamification_leaderboard', 15, function () {
             return UserXp::whereHas('user')
-                ->with('user:id,name')
+                ->with([
+                    'user:id,name',
+                    'user.userBadges.badge:id,name,icon,description',
+                ])
                 ->orderByDesc('xp')
                 ->take(50)
                 ->get()
                 ->map(function ($item, $index) {
+                    $user = $item->user;
+                    $userBadges = $user && $user->userBadges ? $user->userBadges : collect();
+
+                    // Tìm huy hiệu thành tích có độ ưu tiên cao nhất / mới nhất của người dùng
+                    $primaryUserBadge = $userBadges
+                        ->filter(fn ($ub) => $ub->badge !== null)
+                        ->sortByDesc(fn ($ub) => [$ub->badge_id, $ub->earned_at])
+                        ->first();
+
+                    $badgeData = null;
+                    if ($primaryUserBadge && $primaryUserBadge->badge) {
+                        $badgeData = [
+                            'id' => $primaryUserBadge->badge->id,
+                            'name' => $primaryUserBadge->badge->name,
+                            'icon' => $primaryUserBadge->badge->icon ?? '🏆',
+                            'description' => $primaryUserBadge->badge->description,
+                        ];
+                    }
+
                     return [
                         'rank' => $index + 1,
                         'user_id' => $item->user_id,
-                        'name' => optional($item->user)->name ?? 'Người dùng ẩn danh',
-                        'xp' => $item->xp,
-                        'level' => $item->level,
+                        'name' => optional($user)->name ?? 'Người dùng ẩn danh',
+                        'xp' => (int) $item->xp,
+                        'level' => (int) $item->level,
+                        'badge' => $badgeData,
+                        'title' => $badgeData ? ($badgeData['icon'] . ' ' . $badgeData['name']) : '🌱 Tập sự',
                     ];
                 });
         });

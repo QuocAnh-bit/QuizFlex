@@ -1043,6 +1043,7 @@ class QuestionController extends Controller
 
         $validated = $request->validate([
             'content' => ['required', 'string'],
+            'type' => ['nullable', Rule::in(['single_choice', 'multi_choice', 'true_false', 'fill_blank'])],
             'difficulty' => ['nullable', Rule::in(['easy', 'medium', 'hard'])],
             'points' => ['nullable', 'integer', 'min:1', 'max:1000'],
             'education_level_id' => ['nullable', 'integer'],
@@ -1063,7 +1064,7 @@ class QuestionController extends Controller
 
         $isAdmin = strtolower($user->role ?? '') === 'admin';
 
-        $type = $question->type ?? 'single_choice';
+        $type = $validated['type'] ?? $question->type ?? 'single_choice';
         $fingerprint = $this->snapshotService->computeFingerprintFromSnapshot(
             $validated['content'],
             $type,
@@ -1082,9 +1083,10 @@ class QuestionController extends Controller
             ]);
         }
 
-        DB::transaction(function () use ($question, $validated, $isAdmin, $fingerprint) {
+        DB::transaction(function () use ($question, $validated, $isAdmin, $type, $fingerprint) {
             $updateData = [
                 'content' => trim($validated['content']),
+                'type' => $type,
                 'difficulty' => $validated['difficulty'] ?? $question->difficulty ?? 'medium',
                 'points' => $validated['points'] ?? $question->points ?? 10,
                 'education_level_id' => array_key_exists('education_level_id', $validated) ? $validated['education_level_id'] : $question->education_level_id,

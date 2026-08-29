@@ -1464,8 +1464,18 @@ export const aiApi = {
 
 export const curriculumApi = {
   async fetchOptions(params = {}) {
-    const { data } = await api.get("/curriculums/options", { params });
-    return unwrap(data);
+    const { data } = await api.get("/curriculums/options", {
+      params: {
+        education_level_id: params.education_level_id,
+        grade_id: params.grade_id,
+        subject_id: params.subject_id,
+      },
+    });
+    const payload = unwrap(data);
+    return {
+      available: Boolean(payload?.available),
+      options: Array.isArray(payload?.options) ? payload.options : [],
+    };
   },
 };
 
@@ -1891,5 +1901,18 @@ export const liveRoomsApi = {
   },
 };
 
+export const adminSettingsApi = {
+  async getSettings() {
+    const { data } = await api.get("/admin/settings");
+    return unwrap(data);
+  },
+
+  async updateSettings(payload) {
+    const { data } = await api.put("/admin/settings", payload);
+    return unwrap(data);
+  },
+};
+
 export default api;
+
 

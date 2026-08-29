@@ -145,19 +145,55 @@
 
         <!-- 3. Đáp án -->
         <div id="answers-section" class="grid gap-4 border-t border-slate-200 pt-5">
-          <div class="flex items-center justify-between gap-4">
+          <div class="flex flex-wrap items-center justify-between gap-3">
             <h2 class="flex items-center gap-2 text-base font-semibold text-slate-900">
               <span class="h-4 w-1 rounded-full bg-indigo-500"></span>
-              3. Đáp án
+              <span>3. Đáp án</span>
             </h2>
-            <button
-              type="button"
-              class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-indigo-600 transition hover:bg-indigo-50 cursor-pointer"
-              @click="addAnswerChoice"
-            >
-              <Plus class="h-3.5 w-3.5" />
-              Thêm đáp án
-            </button>
+
+            <div class="flex flex-wrap items-center gap-2.5">
+              <!-- Question Type Segmented Switcher -->
+              <div class="inline-flex rounded-xl border border-slate-200 bg-slate-50 p-1 text-xs font-semibold">
+                <button
+                  type="button"
+                  class="rounded-lg px-3 py-1.5 transition cursor-pointer"
+                  :class="form.type === 'single_choice'
+                    ? 'bg-white text-indigo-600 font-bold shadow-xs border border-slate-200/80'
+                    : 'text-slate-600 hover:text-slate-900'"
+                  @click="switchQuestionType('single_choice')"
+                >
+                  1 đáp án đúng
+                </button>
+                <button
+                  type="button"
+                  class="rounded-lg px-3 py-1.5 transition cursor-pointer"
+                  :class="form.type === 'multi_choice'
+                    ? 'bg-white text-indigo-600 font-bold shadow-xs border border-slate-200/80'
+                    : 'text-slate-600 hover:text-slate-900'"
+                  @click="switchQuestionType('multi_choice')"
+                >
+                  Nhiều đáp án đúng
+                </button>
+              </div>
+
+              <button
+                type="button"
+                class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-indigo-600 transition hover:bg-indigo-50 cursor-pointer shadow-2xs"
+                @click="addAnswerChoice"
+              >
+                <Plus class="h-3.5 w-3.5" />
+                <span>Thêm đáp án</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Type Hint Callout -->
+          <div
+            v-if="form.type === 'multi_choice'"
+            class="rounded-xl border border-purple-200 bg-purple-50/70 px-3.5 py-2 text-xs text-purple-900 flex items-center gap-2"
+          >
+            <span class="font-bold uppercase tracking-wider text-[10px] bg-purple-200 text-purple-800 px-1.5 py-0.5 rounded">Nhiều đáp án</span>
+            <span>Bạn có thể đánh dấu chọn <strong>từ 2 đáp án đúng trở lên</strong> bằng cách tick vào các ô vuông bên phải.</span>
           </div>
 
           <div class="grid gap-3">
@@ -193,11 +229,19 @@
                   : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'"
               >
                 <input
+                  v-if="form.type === 'single_choice'"
                   type="radio"
                   name="correct_answer_choice"
                   :checked="ans.is_correct"
                   class="h-4 w-4 cursor-pointer accent-emerald-500"
                   @change="setCorrectAnswer(idx)"
+                />
+                <input
+                  v-else
+                  type="checkbox"
+                  :checked="ans.is_correct"
+                  class="h-4 w-4 cursor-pointer rounded accent-emerald-600"
+                  @change="toggleCorrectAnswer(idx)"
                 />
                 <span>{{ ans.is_correct ? 'Đáp án đúng' : 'Đánh dấu đúng' }}</span>
               </label>
@@ -236,7 +280,7 @@
                   Câu hỏi mới sẽ được lưu vào kho cá nhân của bạn. Để đưa câu hỏi vào <strong>Ngân hàng câu hỏi chung</strong> của hệ thống, bạn có thể bấm nút <strong>"Gửi duyệt vào Ngân hàng"</strong> trong trang Kho câu hỏi của tôi sau khi tạo xong.
                 </span>
               </div>
-          </div>
+            </div>
           </div>
         </div>
 
@@ -324,6 +368,16 @@
 
         <!-- Badges -->
         <div class="flex flex-wrap items-center gap-2">
+          <!-- Question Type Badge -->
+          <span
+            class="inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-bold"
+            :class="form.type === 'multi_choice'
+              ? 'border-purple-200 bg-purple-50 text-purple-700'
+              : 'border-slate-200 bg-slate-50 text-slate-600'"
+          >
+            {{ form.type === 'multi_choice' ? 'Nhiều đáp án' : '1 đáp án' }}
+          </span>
+
           <span
             class="inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-semibold"
             :class="{
@@ -446,6 +500,7 @@ const selectedBankTopic = ref('')
 
 const form = reactive({
   content: '',
+  type: 'single_choice',
   difficulty: 'medium',
   education_level_id: '',
   grade_id: '',
@@ -505,10 +560,25 @@ const onLevelChange = () => {
   fetchTopicsList()
 }
 
+const switchQuestionType = (newType) => {
+  form.type = newType
+  if (newType === 'single_choice') {
+    const firstCorrectIdx = form.answers.findIndex((a) => a.is_correct)
+    const targetIdx = firstCorrectIdx >= 0 ? firstCorrectIdx : 0
+    form.answers.forEach((ans, idx) => {
+      ans.is_correct = idx === targetIdx
+    })
+  }
+}
+
 const setCorrectAnswer = (targetIdx) => {
   form.answers.forEach((ans, idx) => {
     ans.is_correct = idx === targetIdx
   })
+}
+
+const toggleCorrectAnswer = (targetIdx) => {
+  form.answers[targetIdx].is_correct = !form.answers[targetIdx].is_correct
 }
 
 const difficultyText = (diff) => {
@@ -598,9 +668,18 @@ const validateBeforeSubmit = () => {
       }
     }
   }
-  if (!form.answers.some((a) => a.is_correct)) {
-    return { message: 'Vui lòng đánh dấu chọn 1 đáp án đúng.', targetId: 'answers-section' }
+
+  const correctCount = form.answers.filter((a) => a.is_correct).length
+  if (form.type === 'single_choice') {
+    if (correctCount !== 1) {
+      return { message: 'Vui lòng đánh dấu chọn đúng 1 đáp án.', targetId: 'answers-section' }
+    }
+  } else if (form.type === 'multi_choice') {
+    if (correctCount < 2) {
+      return { message: 'Câu hỏi nhiều đáp án đúng cần đánh dấu ít nhất 2 đáp án đúng.', targetId: 'answers-section' }
+    }
   }
+
   return null
 }
 
@@ -616,6 +695,7 @@ const submitForm = async (createAnother = false) => {
   try {
     const payload = {
       content: form.content.trim(),
+      type: form.type,
       difficulty: form.difficulty,
       education_level_id: form.education_level_id || null,
       grade_id: form.grade_id || null,
@@ -625,7 +705,7 @@ const submitForm = async (createAnother = false) => {
       answers: form.answers.map((a) => ({
         content: a.content.trim(),
         key: a.key,
-        is_correct: a.is_correct
+        is_correct: Boolean(a.is_correct)
       }))
     }
 

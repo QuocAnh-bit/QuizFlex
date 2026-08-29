@@ -35,6 +35,12 @@
               <span class="rounded-full bg-purple-50 px-3 py-1 text-xs font-bold text-[#7C3AED]">
                 Câu {{ currentIndex + 1 }} / {{ quizQuestions.length || 1 }}
               </span>
+              <span
+                v-if="currentQuestion.type === 'multi_choice'"
+                class="rounded-full border border-purple-200 bg-purple-100/70 px-3 py-1 text-xs font-bold text-purple-800 uppercase tracking-wide"
+              >
+                Nhiều đáp án đúng
+              </span>
               <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
                 {{ quizMeta.category || "Quiz" }}
               </span>
@@ -63,22 +69,21 @@
           </h1>
         </div>
 
-
         <!-- Answers List -->
         <div class="grid gap-3 pt-2">
           <button
             v-for="answer in currentQuestion.answers"
             :key="answer.key"
             type="button"
-            class="flex items-center gap-3.5 rounded-xl border p-4 text-left transition duration-150 active:scale-[0.99]"
-            :class="selectedAnswer === answer.key
+            class="flex items-center gap-3.5 rounded-xl border p-4 text-left transition duration-150 active:scale-[0.99] cursor-pointer"
+            :class="isAnswerSelected(answer.key)
               ? 'border-[#7C3AED] bg-purple-50 text-slate-900 shadow-sm'
               : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'"
             @click="selectAnswer(answer.key)"
           >
             <span
               class="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-xs font-black transition"
-              :class="selectedAnswer === answer.key ? 'bg-[#7C3AED] text-white' : 'bg-slate-100 text-slate-700'"
+              :class="isAnswerSelected(answer.key) ? 'bg-[#7C3AED] text-white' : 'bg-slate-100 text-slate-700'"
             >
               {{ answer.key }}
             </span>
@@ -86,7 +91,7 @@
               <MathText :text="answer.text" />
             </span>
             <span
-              v-if="selectedAnswer === answer.key"
+              v-if="isAnswerSelected(answer.key)"
               class="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[#7C3AED] text-xs font-bold text-white"
             >
               ✓
@@ -177,7 +182,7 @@
       <article class="card p-5 space-y-3">
         <div class="flex items-center justify-between border-b border-slate-100 pb-2">
           <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Danh sách câu hỏi</h3>
-          <span class="text-xs font-semibold text-slate-500">{{ Object.keys(selectedAnswers).length }}/{{ quizQuestions.length }} đã chọn</span>
+          <span class="text-xs font-semibold text-slate-500">{{ answeredQuestionsCount }}/{{ quizQuestions.length }} đã chọn</span>
         </div>
 
         <div class="grid grid-cols-5 gap-1.5 pt-1">
@@ -225,6 +230,7 @@ const quizMeta = ref({
   timeLimitSeconds: 600,
 });
 const attemptId = ref(null);
+const showConfirmSubmit = ref(false);
 
 const timeLeft = ref(0);
 const isLoading = ref(false);
@@ -263,25 +269,43 @@ const currentQuestion = computed(
     },
 );
 
-const selectedAnswer = computed({
-  get: () => selectedAnswers.value[currentQuestion.value.id] || "",
-  set: (value) => {
-    if (!currentQuestion.value.id) return;
-    selectedAnswers.value = {
-      ...selectedAnswers.value,
-      [currentQuestion.value.id]: value,
-    };
-  },
-});
+const isAnswerSelected = (answerKey) => {
+  const qId = currentQuestion.value.id;
+  if (!qId) return false;
+  const current = selectedAnswers.value[qId];
+  if (Array.isArray(current)) {
+    return current.includes(answerKey);
+  }
+  return current === answerKey;
+};
 
 const selectAnswer = (answerKey) => {
   const question = currentQuestion.value;
   if (!question?.id || !attemptId.value) return;
 
-  selectedAnswers.value = {
-    ...selectedAnswers.value,
-    [question.id]: answerKey,
-  };
+  const isMulti = question.type === "multi_choice";
+  if (isMulti) {
+    const current = Array.isArray(selectedAnswers.value[question.id])
+      ? [...selectedAnswers.value[question.id]]
+      : selectedAnswers.value[question.id]
+        ? [selectedAnswers.value[question.id]]
+        : [];
+    const index = current.indexOf(answerKey);
+    if (index > -1) {
+      current.splice(index, 1);
+    } else {
+      current.push(answerKey);
+    }
+    selectedAnswers.value = {
+      ...selectedAnswers.value,
+      [question.id]: current,
+    };
+  } else {
+    selectedAnswers.value = {
+      ...selectedAnswers.value,
+      [question.id]: answerKey,
+    };
+  }
 
   try {
     sessionStorage.setItem(
@@ -303,12 +327,20 @@ const isLastQuestion = computed(
   () => currentIndex.value === quizQuestions.value.length - 1,
 );
 
+const answeredQuestionsCount = computed(() => {
+  return Object.values(selectedAnswers.value).filter((v) =>
+    Array.isArray(v) ? v.length > 0 : Boolean(v),
+  ).length;
+});
+
 const getQuestionMapClass = (i) => {
   const questionId = quizQuestions.value[i]?.id;
   if (i === currentIndex.value) {
     return ["border-[#7C3AED]", "bg-[#7C3AED]", "text-white", "shadow-sm"];
   }
-  if (selectedAnswers.value[questionId]) {
+  const ans = selectedAnswers.value[questionId];
+  const hasAnswered = Array.isArray(ans) ? ans.length > 0 : Boolean(ans);
+  if (hasAnswered) {
     return ["border-emerald-200", "bg-emerald-50", "text-emerald-700"];
   }
   return ["border-slate-200", "bg-slate-50", "text-slate-600", "hover:bg-slate-100"];
@@ -322,9 +354,12 @@ const goToQuestion = (i) => {
   currentIndex.value = i;
 };
 
-const unansweredCount = computed(() =>
-  quizQuestions.value.filter((q) => !selectedAnswers.value[q.id]).length,
-);
+const unansweredCount = computed(() => {
+  return quizQuestions.value.filter((q) => {
+    const ans = selectedAnswers.value[q.id];
+    return Array.isArray(ans) ? ans.length === 0 : !ans;
+  }).length;
+});
 
 const triggerSubmit = async () => {
   if (unansweredCount.value > 0) {

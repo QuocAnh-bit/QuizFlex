@@ -113,7 +113,7 @@
     <!-- Loaded Questions List -->
     <template v-else>
       <!-- Focused Question Banner -->
-      <!-- Focused Question Banner -->
+
       <div v-if="focusedQuestionId" class="mb-2">
         <!-- SUCCESS BANNER (When question was just updated) -->
         <div v-if="highlightedUpdatedQuestionId === focusedQuestionId" class="rounded-2xl border border-[#FDE68A] bg-[#FFFBEB] p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-2xs">
@@ -555,9 +555,9 @@ import {
   Eye,
   X,
   Lock,
-  Globe,
-  Clock,
-  XCircle,
+  Globe,       // Giữ lại 1
+  Clock,       // Giữ lại 1
+  XCircle,     // Giữ lại 1
   ShieldAlert,
   Flag,
   Check,

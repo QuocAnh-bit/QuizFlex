@@ -71,30 +71,30 @@
 
         <div
           v-if="fileName"
-          class="mt-6 rounded-[1.5rem] border border-[var(--border)] bg-[var(--surface-soft)] p-5"
+          class="mt-6 rounded-2xl border border-slate-200 bg-slate-50/80 p-5 shadow-2xs"
         >
           <div class="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <b class="text-[var(--text)]">{{ fileName }}</b>
-              <p class="mt-1 text-sm text-[var(--muted)]">
+            <div class="min-w-0">
+              <b class="text-slate-900 text-sm block truncate">{{ fileName }}</b>
+              <p class="mt-1 text-xs text-slate-500 font-medium">
                 {{ isUploading ? loadingText : "OCR đã sẵn sàng" }}
               </p>
             </div>
 
             <span
-              class="rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-black text-emerald-400"
+              class="rounded-full bg-purple-50 border border-purple-200 px-3 py-1 text-xs font-black text-[#7C3AED]"
             >
               {{ Math.floor(progress) }}%
             </span>
           </div>
 
           <div
-            class="mt-4 h-3 overflow-hidden rounded-full bg-[var(--surface)]"
+            class="mt-3.5 h-3.5 overflow-hidden rounded-full bg-slate-200 border border-slate-300/80 p-0.5"
           >
             <div
-              class="h-full rounded-full bg-gradient-to-r from-[var(--primary)] via-[var(--primary-2)] to-[var(--accent)] transition-all duration-700"
+              class="h-full rounded-full bg-gradient-to-r from-[#7C3AED] via-[#9333EA] to-[#6366F1] transition-all duration-500 shadow-xs"
               :class="{ 'animate-pulse': isUploading }"
-              :style="{ width: `${progress}%` }"
+              :style="{ width: `${Math.max(progress, 2)}%` }"
             ></div>
           </div>
         </div>

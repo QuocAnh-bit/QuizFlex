@@ -2,16 +2,23 @@
   <section class="max-w-6xl mx-auto py-4 space-y-6">
     <!-- Header -->
     <div class="card p-6 sm:p-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-      <div>
-        <p class="text-xs font-bold uppercase tracking-wider text-[#7C3AED]">Quản trị hệ thống</p>
-        <h1 class="text-3xl font-black tracking-[-0.04em] text-[var(--text)]">Quản lý người dùng</h1>
-        <p class="mt-1 text-sm text-slate-600">Thêm mới, tìm kiếm, phân quyền tài khoản, nâng cấp gói và xử lý vi phạm.</p>
+      <div class="flex items-start gap-3">
+        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-purple-500/10 text-purple-500">
+          <Users class="h-5 w-5" />
+        </div>
+        <div>
+          <p class="text-xs font-bold uppercase tracking-wider text-[#7C3AED]">Quản trị hệ thống</p>
+          <h1 class="text-3xl font-black tracking-[-0.04em] text-[var(--text)]">Quản lý người dùng</h1>
+          <p class="mt-1 text-sm font-medium text-[var(--muted)]">Thêm mới, tìm kiếm, phân quyền tài khoản, nâng cấp gói và xử lý vi phạm.</p>
+        </div>
       </div>
     </div>
 
     <!-- Create User Form Card -->
     <article class="card p-5 space-y-3">
-      <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400">Thêm người dùng mới</h2>
+      <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+        <UserPlus class="h-3.5 w-3.5 text-[#7C3AED]" /> Thêm người dùng mới
+      </h2>
       <form class="grid gap-3 sm:grid-cols-2 lg:grid-cols-[1.5fr_1.5fr_120px_120px_1.5fr_140px]" @submit.prevent="createUser">
         <input v-model="newUser.name" class="field text-xs" placeholder="Họ và tên" maxlength="100" required />
         <input v-model="newUser.email" class="field text-xs" type="email" placeholder="email@example.com" required />
@@ -26,58 +33,73 @@
           <option value="ultra">Ultra</option>
         </select>
         <input v-model="newUser.password" class="field text-xs" type="password" placeholder="Mật khẩu (>= 8 ký tự)" required />
-        <button class="btn-primary text-xs w-full py-2.5" type="submit" :disabled="isSaving">
-          {{ isSaving ? 'Đang tạo...' : '+ Tạo tài khoản' }}
+        <button class="btn-primary text-xs w-full py-2.5 inline-flex items-center justify-center gap-1.5" type="submit" :disabled="isSaving">
+          <UserPlus class="h-3.5 w-3.5" />
+          {{ isSaving ? 'Đang tạo...' : 'Tạo tài khoản' }}
         </button>
       </form>
     </article>
 
     <!-- Feedback Alerts -->
-    <div v-if="isLoading" class="card p-8 text-center text-xs text-slate-400">Đang tải danh sách người dùng...</div>
-    <div v-if="errorMessage" class="rounded-xl border border-red-200 bg-red-50 p-4 text-xs font-bold text-red-700">{{ errorMessage }}</div>
-    <div v-if="successMessage" class="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-xs font-bold text-emerald-700">{{ successMessage }}</div>
+    <div v-if="isLoading" class="card p-8 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
+      <RefreshCw class="h-4 w-4 animate-spin text-[#7C3AED]" /> Đang tải danh sách người dùng...
+    </div>
+    <div v-if="errorMessage" class="rounded-xl border border-red-200 bg-red-50 p-4 text-xs font-bold text-red-700 flex items-start gap-2">
+      <AlertCircle class="h-4 w-4 shrink-0 mt-0.5" /> <span>{{ errorMessage }}</span>
+    </div>
+    <div v-if="successMessage" class="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-xs font-bold text-emerald-700 flex items-start gap-2">
+      <CheckCircle2 class="h-4 w-4 shrink-0 mt-0.5" /> <span>{{ successMessage }}</span>
+    </div>
 
     <!-- Main Table Container -->
     <article class="card overflow-hidden">
       <!-- Tabs Navigation -->
-      <div class="flex items-center gap-2 border-b border-slate-100 bg-slate-50/70 p-3 px-5 text-xs font-bold">
+      <div class="flex items-center gap-2 border-b border-slate-100 bg-slate-50/70 p-3 px-5 text-xs font-bold overflow-x-auto">
         <button
-          class="rounded-lg px-3.5 py-1.5 transition"
+          class="rounded-lg px-3.5 py-1.5 transition inline-flex items-center gap-1.5 whitespace-nowrap"
           :class="viewMode === 'active' ? 'bg-[#7C3AED] text-white shadow-sm' : 'text-slate-600 hover:bg-slate-200/60'"
           type="button"
           @click="setViewMode('active')"
         >
-          Người dùng hoạt động
+          <Users class="h-3.5 w-3.5" />
+          <span>Người dùng hoạt động</span>
         </button>
         <button
-          class="relative rounded-lg px-3.5 py-1.5 transition flex items-center gap-1.5"
+          class="relative rounded-lg px-3.5 py-1.5 transition inline-flex items-center gap-1.5 whitespace-nowrap"
           :class="viewMode === 'locked' ? 'bg-[#7C3AED] text-white shadow-sm' : 'text-slate-600 hover:bg-slate-200/60'"
           type="button"
           @click="setViewMode('locked')"
         >
+          <Lock class="h-3.5 w-3.5" />
           <span>Tài khoản bị khóa</span>
-          <span v-if="lockedCount > 0" class="rounded-full bg-red-500 px-1.5 py-0.2 text-[10px] font-bold text-white">{{ lockedCount }}</span>
+          <span v-if="lockedCount > 0" class="rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold text-white leading-none">{{ lockedCount }}</span>
         </button>
         <button
-          class="rounded-lg px-3.5 py-1.5 transition"
+          class="rounded-lg px-3.5 py-1.5 transition inline-flex items-center gap-1.5 whitespace-nowrap"
           :class="viewMode === 'trash' ? 'bg-[#7C3AED] text-white shadow-sm' : 'text-slate-600 hover:bg-slate-200/60'"
           type="button"
           @click="setViewMode('trash')"
         >
-          Thùng rác
+          <Trash2 class="h-3.5 w-3.5" />
+          <span>Thùng rác</span>
         </button>
       </div>
 
       <!-- Tab 1: Active Users -->
       <div v-if="viewMode === 'active'" class="p-5 space-y-4">
         <div class="grid gap-3 sm:grid-cols-[1fr_160px_100px]">
-          <input v-model="search" class="field text-xs" placeholder="Tìm theo tên hoặc email..." @keyup.enter="loadUsers" />
+          <div class="relative">
+            <Search class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+            <input v-model="search" class="field text-xs pl-8 w-full" placeholder="Tìm theo tên hoặc email..." @keyup.enter="loadUsers" />
+          </div>
           <select v-model="roleFilter" class="field text-xs" @change="loadUsers">
             <option value="all">Tất cả role</option>
             <option value="admin">Admin</option>
             <option value="user">User</option>
           </select>
-          <button class="btn-secondary text-xs" type="button" @click="loadUsers">Tìm kiếm</button>
+          <button class="btn-secondary text-xs inline-flex items-center justify-center gap-1.5" type="button" @click="loadUsers">
+            <Search class="h-3.5 w-3.5" /> Tìm kiếm
+          </button>
         </div>
 
         <div class="overflow-x-auto rounded-xl border border-slate-100">
@@ -94,10 +116,16 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100 font-medium">
-              <tr v-for="user in users" :key="user.id" class="hover:bg-slate-50/70">
+              <tr v-if="!isLoading && users.length === 0">
+                <td colspan="7" class="py-10 text-center text-slate-400">
+                  <Inbox class="mx-auto mb-2 h-6 w-6 opacity-40" />
+                  Không tìm thấy người dùng nào.
+                </td>
+              </tr>
+              <tr v-for="user in users" :key="user.id" class="hover:bg-slate-50/70 transition-colors">
                 <td class="py-3.5 px-4">
                   <div class="flex items-center gap-2.5">
-                    <div class="h-8 w-8 rounded-full bg-purple-100 text-[#7C3AED] font-bold flex items-center justify-center text-xs shrink-0">
+                    <div class="h-8 w-8 rounded-full bg-purple-500/10 text-[#7C3AED] font-bold flex items-center justify-center text-xs shrink-0">
                       {{ user.name.charAt(0).toUpperCase() }}
                     </div>
                     <div>
@@ -107,7 +135,8 @@
                   </div>
                 </td>
                 <td class="py-3.5 px-4">
-                  <span class="rounded px-2 py-0.5 text-[10px] font-bold" :class="user.role === 'admin' ? 'bg-purple-100 text-[#7C3AED]' : 'bg-slate-100 text-slate-600'">
+                  <span class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold" :class="user.role === 'admin' ? 'bg-purple-100 text-[#7C3AED]' : 'bg-slate-100 text-slate-600'">
+                    <ShieldCheck v-if="user.role === 'admin'" class="h-3 w-3" />
                     {{ user.role_label || user.role }}
                   </span>
                 </td>
@@ -125,9 +154,15 @@
                 </td>
                 <td class="py-3.5 px-4 text-right">
                   <div class="flex items-center justify-end gap-1.5">
-                    <button v-if="canEditRow(user)" class="btn-secondary text-[11px] px-2.5 py-1" type="button" @click="selectUserForEdit(user)">Sửa</button>
-                    <button class="btn-secondary text-[11px] px-2.5 py-1" type="button" @click="viewUserDetail(user.id)">Xem</button>
-                    <button v-if="canDeleteRow(user)" class="rounded-lg border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 text-[11px] px-2.5 py-1 font-bold" type="button" @click="deleteUser(user.id)">Xóa</button>
+                    <button v-if="canEditRow(user)" class="btn-secondary text-[11px] px-2.5 py-1 inline-flex items-center gap-1" type="button" @click="selectUserForEdit(user)">
+                      <Pencil class="h-3 w-3" /> Sửa
+                    </button>
+                    <button class="btn-secondary text-[11px] px-2.5 py-1 inline-flex items-center gap-1" type="button" @click="viewUserDetail(user.id)">
+                      <Eye class="h-3 w-3" /> Xem
+                    </button>
+                    <button v-if="canDeleteRow(user)" class="rounded-lg border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 text-[11px] px-2.5 py-1 font-bold inline-flex items-center gap-1 transition" type="button" @click="deleteUser(user.id)">
+                      <Trash2 class="h-3 w-3" /> Xóa
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -139,8 +174,13 @@
       <!-- Tab 2: Locked Users -->
       <div v-else-if="viewMode === 'locked'" class="p-5 space-y-4">
         <div class="grid gap-3 sm:grid-cols-[1fr_100px]">
-          <input v-model="lockedSearch" class="field text-xs" placeholder="Tìm tài khoản bị khóa..." @keyup.enter="loadLockedUsers" />
-          <button class="btn-secondary text-xs" type="button" @click="loadLockedUsers">Tìm kiếm</button>
+          <div class="relative">
+            <Search class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+            <input v-model="lockedSearch" class="field text-xs pl-8 w-full" placeholder="Tìm tài khoản bị khóa..." @keyup.enter="loadLockedUsers" />
+          </div>
+          <button class="btn-secondary text-xs inline-flex items-center justify-center gap-1.5" type="button" @click="loadLockedUsers">
+            <Search class="h-3.5 w-3.5" /> Tìm kiếm
+          </button>
         </div>
 
         <div class="overflow-x-auto rounded-xl border border-slate-100">
@@ -156,12 +196,15 @@
             </thead>
             <tbody class="divide-y divide-slate-100 font-medium">
               <tr v-if="pagedLockedUsers.length === 0">
-                <td colspan="5" class="py-8 text-center text-slate-400 text-xs">Không có tài khoản nào bị khóa.</td>
+                <td colspan="5" class="py-10 text-center text-slate-400">
+                  <Inbox class="mx-auto mb-2 h-6 w-6 opacity-40" />
+                  Không có tài khoản nào bị khóa.
+                </td>
               </tr>
-              <tr v-for="user in pagedLockedUsers" :key="user.id" class="hover:bg-slate-50/70">
+              <tr v-for="user in pagedLockedUsers" :key="user.id" class="hover:bg-slate-50/70 transition-colors">
                 <td class="py-3.5 px-4">
                   <div class="flex items-center gap-2.5">
-                    <div class="h-8 w-8 rounded-full bg-red-100 text-red-600 font-bold flex items-center justify-center text-xs shrink-0">
+                    <div class="h-8 w-8 rounded-full bg-red-500/10 text-red-600 font-bold flex items-center justify-center text-xs shrink-0">
                       {{ user.name.charAt(0).toUpperCase() }}
                     </div>
                     <div>
@@ -178,7 +221,7 @@
                   {{ formatDate(user.locked_at) }}
                 </td>
                 <td class="py-3.5 px-4">
-                  <span class="rounded px-2 py-0.5 text-[10px] font-bold" :class="appealBadgeClass(lockedAppealMap[user.id])">
+                  <span class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold" :class="appealBadgeClass(lockedAppealMap[user.id])">
                     {{ appealLabel(lockedAppealMap[user.id]) }}
                   </span>
                 </td>
@@ -186,32 +229,65 @@
                   <div class="flex items-center justify-end gap-1.5">
                     <button
                       v-if="lockedAppealMap[user.id] === 'pending'"
-                      class="rounded-lg border border-amber-200 bg-amber-50 text-amber-800 text-[11px] px-2.5 py-1 font-bold hover:bg-amber-100"
+                      class="rounded-lg border border-amber-200 bg-amber-50 text-amber-800 text-[11px] px-2.5 py-1 font-bold hover:bg-amber-100 inline-flex items-center gap-1 transition"
                       type="button"
                       @click="openAppealModal(user)"
                     >
-                      Xem kháng cáo
+                      <MessageSquareWarning class="h-3 w-3" /> Xem kháng cáo
                     </button>
-                    <button class="btn-primary text-[11px] px-3 py-1" type="button" @click="unlockUser(user.id)">Mở khóa</button>
+                    <button class="btn-primary text-[11px] px-3 py-1 inline-flex items-center gap-1" type="button" @click="unlockUser(user.id)">
+                      <Unlock class="h-3 w-3" /> Mở khóa
+                    </button>
                   </div>
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
+
+        <!-- Pagination for locked users -->
+        <div v-if="lockedUsers.length > LOCKED_PAGE_SIZE" class="flex items-center justify-between pt-1 text-xs">
+          <span class="text-slate-500 text-[11px]">
+            Hiển thị {{ (lockedPage - 1) * LOCKED_PAGE_SIZE + 1 }}–{{ Math.min(lockedPage * LOCKED_PAGE_SIZE, lockedUsers.length) }} trong số {{ lockedUsers.length }}
+          </span>
+          <div class="flex items-center gap-2">
+            <button
+              class="btn-secondary text-[11px] px-2.5 py-1 disabled:opacity-40 inline-flex items-center gap-1"
+              type="button"
+              :disabled="lockedPage === 1"
+              @click="lockedPage > 1 && lockedPage--"
+            >
+              <ChevronLeft class="h-3 w-3" /> Trước
+            </button>
+            <span class="text-slate-700 font-bold">{{ lockedPage }} / {{ totalLockedPages }}</span>
+            <button
+              class="btn-secondary text-[11px] px-2.5 py-1 disabled:opacity-40 inline-flex items-center gap-1"
+              type="button"
+              :disabled="lockedPage === totalLockedPages"
+              @click="lockedPage < totalLockedPages && lockedPage++"
+            >
+              Sau <ChevronRight class="h-3 w-3" />
+            </button>
+          </div>
+        </div>
       </div>
 
       <!-- Tab 3: Trash -->
       <div v-else-if="viewMode === 'trash'" class="p-5 space-y-4">
         <div class="grid gap-3 sm:grid-cols-[1fr_160px_100px]">
-          <input v-model="trashSearch" class="field text-xs" placeholder="Tìm trong thùng rác..." @keyup.enter="loadTrash" />
+          <div class="relative">
+            <Search class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+            <input v-model="trashSearch" class="field text-xs pl-8 w-full" placeholder="Tìm trong thùng rác..." @keyup.enter="loadTrash" />
+          </div>
           <select v-model="trashRoleFilter" class="field text-xs" @change="loadTrash">
             <option value="all">Tất cả role</option>
             <option value="ADMIN">Admin</option>
             <option value="VIP">VIP</option>
             <option value="USER">User</option>
           </select>
-          <button class="btn-secondary text-xs" type="button" @click="loadTrash">Tìm kiếm</button>
+          <button class="btn-secondary text-xs inline-flex items-center justify-center gap-1.5" type="button" @click="loadTrash">
+            <Search class="h-3.5 w-3.5" /> Tìm kiếm
+          </button>
         </div>
 
         <div class="overflow-x-auto rounded-xl border border-slate-100">
@@ -226,12 +302,15 @@
             </thead>
             <tbody class="divide-y divide-slate-100 font-medium">
               <tr v-if="trashedUsers.length === 0">
-                <td colspan="4" class="py-8 text-center text-slate-400 text-xs">Thùng rác trống.</td>
+                <td colspan="4" class="py-10 text-center text-slate-400">
+                  <Inbox class="mx-auto mb-2 h-6 w-6 opacity-40" />
+                  Thùng rác trống.
+                </td>
               </tr>
-              <tr v-for="user in trashedUsers" :key="user.id" class="hover:bg-slate-50/70">
+              <tr v-for="user in trashedUsers" :key="user.id" class="hover:bg-slate-50/70 transition-colors">
                 <td class="py-3.5 px-4">
                   <div class="flex items-center gap-2.5">
-                    <div class="h-8 w-8 rounded-full bg-slate-100 text-slate-500 font-bold flex items-center justify-center text-xs shrink-0">
+                    <div class="h-8 w-8 rounded-full bg-slate-200 text-slate-500 font-bold flex items-center justify-center text-xs shrink-0">
                       {{ user.name.charAt(0).toUpperCase() }}
                     </div>
                     <div>
@@ -244,8 +323,12 @@
                 <td class="py-3.5 px-4 text-slate-400 text-[11px]">{{ formatDate(user.deleted_at) }}</td>
                 <td class="py-3.5 px-4 text-right">
                   <div class="flex items-center justify-end gap-1.5">
-                    <button class="btn-secondary text-[11px] px-2.5 py-1 text-emerald-700 font-bold" type="button" @click="restoreUser(user.id)">Khôi phục</button>
-                    <button class="rounded-lg border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 text-[11px] px-2.5 py-1 font-bold" type="button" @click="forceDeleteUser(user.id)">Xóa vĩnh viễn</button>
+                    <button class="btn-secondary text-[11px] px-2.5 py-1 text-emerald-700 font-bold inline-flex items-center gap-1" type="button" @click="restoreUser(user.id)">
+                      <RotateCcw class="h-3 w-3" /> Khôi phục
+                    </button>
+                    <button class="rounded-lg border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 text-[11px] px-2.5 py-1 font-bold inline-flex items-center gap-1 transition" type="button" @click="forceDeleteUser(user.id)">
+                      <Trash2 class="h-3 w-3" /> Xóa vĩnh viễn
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -259,14 +342,23 @@
     <div v-if="showAppealModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm" @click.self="showAppealModal = false">
       <div class="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-xl space-y-4">
         <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-          <div>
-            <span class="text-[10px] font-bold uppercase text-[#7C3AED]">Kháng cáo khóa tài khoản</span>
-            <h3 class="text-base font-bold text-slate-900">{{ selectedLockedUser?.name }}</h3>
+          <div class="flex items-center gap-3">
+            <div class="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-amber-100 text-amber-700">
+              <MessageSquareWarning class="h-5 w-5" />
+            </div>
+            <div>
+              <span class="text-[10px] font-bold uppercase text-[#7C3AED]">Kháng cáo khóa tài khoản</span>
+              <h3 class="text-base font-bold text-slate-900">{{ selectedLockedUser?.name }}</h3>
+            </div>
           </div>
-          <button type="button" class="text-slate-400 hover:text-slate-600 text-sm" @click="showAppealModal = false">✕</button>
+          <button type="button" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition" @click="showAppealModal = false">
+            <X class="h-4 w-4" />
+          </button>
         </div>
 
-        <div v-if="isLoadingAppeal" class="py-6 text-center text-xs text-slate-400">Đang tải nội dung...</div>
+        <div v-if="isLoadingAppeal" class="py-6 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
+          <RefreshCw class="h-4 w-4 animate-spin text-[#7C3AED]" /> Đang tải nội dung...
+        </div>
         <div v-else-if="modalAppealRequest" class="space-y-4 text-xs">
           <div class="rounded-xl border border-slate-100 bg-slate-50 p-4 space-y-1">
             <span class="text-[10px] font-bold uppercase text-slate-400">Nội dung kháng cáo</span>
@@ -277,12 +369,16 @@
           <div class="space-y-1.5">
             <label class="font-bold text-slate-700 block">Ghi chú của Admin</label>
             <textarea v-model="adminNote" rows="3" maxlength="1000" class="field text-xs resize-none" placeholder="Nhập lý do hoặc phản hồi (bắt buộc khi từ chối)..."></textarea>
-            <span v-if="adminNoteError" class="text-xs font-bold text-red-600 block">{{ adminNoteError }}</span>
+            <span v-if="adminNoteError" class="text-xs font-bold text-red-600 flex items-center gap-1"><AlertCircle class="h-3 w-3" /> {{ adminNoteError }}</span>
           </div>
 
           <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-            <button class="btn-secondary text-xs px-3.5 py-1.5 text-red-700 font-bold" type="button" :disabled="isActionLoading" @click="rejectRequest">Từ chối kháng cáo</button>
-            <button class="btn-primary text-xs px-4 py-1.5" type="button" :disabled="isActionLoading" @click="approveRequest">Duyệt & Mở khóa</button>
+            <button class="btn-secondary text-xs px-3.5 py-1.5 text-red-700 font-bold inline-flex items-center gap-1.5" type="button" :disabled="isActionLoading" @click="rejectRequest">
+              <X class="h-3.5 w-3.5" /> Từ chối kháng cáo
+            </button>
+            <button class="btn-primary text-xs px-4 py-1.5 inline-flex items-center gap-1.5" type="button" :disabled="isActionLoading" @click="approveRequest">
+              <Check class="h-3.5 w-3.5" /> Duyệt & Mở khóa
+            </button>
           </div>
         </div>
         <div v-else class="py-6 text-center text-xs text-slate-400">Không có kháng cáo đang chờ xử lý.</div>
@@ -293,11 +389,18 @@
     <div v-if="showEditModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
       <div class="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-xl space-y-4">
         <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-          <div>
-            <span class="text-[10px] font-bold uppercase text-[#7C3AED]">Cập nhật thông tin</span>
-            <h3 class="text-base font-bold text-slate-900">Chỉnh sửa người dùng</h3>
+          <div class="flex items-center gap-3">
+            <div class="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-purple-100 text-[#7C3AED]">
+              <Pencil class="h-5 w-5" />
+            </div>
+            <div>
+              <span class="text-[10px] font-bold uppercase text-[#7C3AED]">Cập nhật thông tin</span>
+              <h3 class="text-base font-bold text-slate-900">Chỉnh sửa người dùng</h3>
+            </div>
           </div>
-          <button type="button" class="text-slate-400 hover:text-slate-600 text-sm" @click="closeEditModal">✕</button>
+          <button type="button" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition" @click="closeEditModal">
+            <X class="h-4 w-4" />
+          </button>
         </div>
 
         <form class="space-y-3 text-xs" @submit.prevent="saveUserEdit">
@@ -338,7 +441,9 @@
 
           <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
             <button class="btn-secondary text-xs px-3.5 py-1.5" type="button" @click="closeEditModal">Hủy</button>
-            <button class="btn-primary text-xs px-4 py-1.5" type="submit" :disabled="isSaving">
+            <button class="btn-primary text-xs px-4 py-1.5 inline-flex items-center gap-1.5" type="submit" :disabled="isSaving">
+              <RefreshCw v-if="isSaving" class="h-3.5 w-3.5 animate-spin" />
+              <Check v-else class="h-3.5 w-3.5" />
               {{ isSaving ? 'Đang lưu...' : 'Lưu thay đổi' }}
             </button>
           </div>
@@ -352,6 +457,27 @@
 import { computed, onMounted, reactive, ref, inject } from 'vue'
 import { useRouter } from 'vue-router'
 import { currentUserStorage, normalizeUser, unlockRequestsApi, usersApi } from '@/services/api'
+import {
+  Users,
+  UserPlus,
+  Lock,
+  Unlock,
+  Trash2,
+  RotateCcw,
+  Search,
+  Pencil,
+  Eye,
+  ShieldCheck,
+  Check,
+  X,
+  AlertCircle,
+  CheckCircle2,
+  RefreshCw,
+  Inbox,
+  MessageSquareWarning,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-vue-next'
 
 const search = ref('')
 const roleFilter = ref('all')
@@ -634,6 +760,8 @@ const pagedLockedUsers = computed(() => {
   const start = (lockedPage.value - 1) * LOCKED_PAGE_SIZE
   return lockedUsers.value.slice(start, start + LOCKED_PAGE_SIZE)
 })
+
+const totalLockedPages = computed(() => Math.max(1, Math.ceil(lockedUsers.value.length / LOCKED_PAGE_SIZE)))
 
 const appealLabel = (status) => ({ pending: 'Đang chờ', approved: 'Đã duyệt', rejected: 'Đã từ chối' }[status] || 'Chưa gửi')
 

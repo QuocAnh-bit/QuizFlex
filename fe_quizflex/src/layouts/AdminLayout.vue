@@ -97,7 +97,7 @@
 
                   <span
                     v-if="item.badge !== undefined && item.badge !== null && item.badge > 0"
-                    class="ml-auto shrink-0 rounded-full bg-purple-100 px-2 py-0.5 text-[10px] font-bold text-purple-700"
+                    class="ml-auto shrink-0 rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-700"
                   >
                     {{ item.badge }}
                   </span>
@@ -239,7 +239,7 @@ const handleRealtimeNotification = (event) => {
   if (notification?.type === 'quiz_submitted') {
     pendingQuizzesCount.value++
   }
-  if (notification?.type === 'report_resolved' || notification?.type === 'report_action') {
+  if (notification?.type === 'report_resolved' || notification?.type === 'report_action' || notification?.type === 'question_moderated') {
     fetchPendingCounts()
   }
 }

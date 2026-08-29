@@ -27,6 +27,7 @@ use App\Http\Controllers\ReportTicketController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\QuizReviewController;
 use App\Http\Controllers\CurriculumOptionController;
+use App\Http\Controllers\AdminSettingController;
 
 Route::get('/taxonomies/tree', [TaxonomyController::class, 'tree']);
 Route::get('/curriculums/options', [CurriculumOptionController::class, 'index']);
@@ -211,10 +212,13 @@ Route::middleware('auth:api')->group(function () {
         // Quản lý kiểm duyệt quiz cho admin
         Route::get('/admin/quiz-reviews', [QuizReviewController::class, 'adminIndex']);
         Route::get('/admin/quiz-reviews/{id}', [QuizReviewController::class, 'adminShow']);
-        Route::post('/admin/quiz-reviews/bulk-approve', [QuizReviewController::class, 'adminBulkApprove']);
-        Route::post('/admin/quiz-reviews/bulk-reject', [QuizReviewController::class, 'adminBulkReject']);
         Route::post('/admin/quiz-reviews/{id}/approve', [QuizReviewController::class, 'adminApprove']);
         Route::post('/admin/quiz-reviews/{id}/reject', [QuizReviewController::class, 'adminReject']);
+        Route::post('/admin/quiz-reviews/bulk-approve', [QuizReviewController::class, 'adminBulkApprove']);
+        Route::post('/admin/quiz-reviews/bulk-reject', [QuizReviewController::class, 'adminBulkReject']);
+        // Cài đặt hệ thống cho admin
+        Route::get('/admin/settings', [AdminSettingController::class, 'index']);
+        Route::put('/admin/settings', [AdminSettingController::class, 'update']);
     });
 
     Route::middleware('role:free,plus,pro,ultra,admin')->group(function () {
@@ -351,3 +355,10 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/quiz/{id}/submit', [QuizAttemptController::class, 'submitGamified']);
     Route::get('/quiz/history', [QuizAttemptController::class, 'history']);
 });
+Route::get(
+    '/curriculum/options',
+    [
+        CurriculumOptionController::class,
+        'index',
+    ]
+);
