@@ -47,57 +47,75 @@
           </p>
         </div>
 
-        <!-- STAT SUMMARY -->
-        <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <!-- EDTECH HERO SCORE & STAT SUMMARY CARD -->
+        <div class="rounded-2xl border border-purple-100 bg-gradient-to-br from-purple-50/80 via-slate-50/50 to-white p-5 sm:p-6 shadow-xs space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-purple-100/70 pb-4">
+            <div class="flex items-center gap-4">
+              <div class="flex h-14 w-14 sm:h-16 sm:w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#7C3AED] to-indigo-600 text-white shadow-md shadow-[#7C3AED]/25">
+                <span class="text-2xl sm:text-3xl font-black tracking-tight">{{ scaledScore10 }}</span>
+              </div>
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Điểm tổng kết</span>
+                  <span
+                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border"
+                    :class="gradeEvaluation.bg"
+                  >
+                    {{ gradeEvaluation.label }}
+                  </span>
+                </div>
+                <div class="mt-0.5 flex items-baseline gap-1.5">
+                  <span class="text-2xl sm:text-3xl font-black text-slate-900">{{ scaledScore10 }}</span>
+                  <span class="text-sm font-bold text-slate-500">/ 10 điểm</span>
+                </div>
+              </div>
+            </div>
 
-          <div
-            class="rounded-xl border border-slate-100 bg-slate-50 p-4 text-center"
-          >
-            <span class="text-xs font-semibold text-slate-500">
-              Điểm số
-            </span>
-
-            <b class="mt-1 block text-2xl font-black text-slate-900">
-              {{ attempt.score }}/{{ attempt.total_points }}
-            </b>
+            <!-- Tỷ lệ thanh tiến trình chính xác -->
+            <div class="w-full sm:w-56 space-y-1.5">
+              <div class="flex justify-between text-xs font-semibold">
+                <span class="text-slate-600">Độ chính xác</span>
+                <span class="text-[#7C3AED] font-bold">{{ accuracyPercent }}%</span>
+              </div>
+              <div class="h-2.5 w-full overflow-hidden rounded-full bg-slate-200/80">
+                <div
+                  class="h-full rounded-full transition-all duration-500 bg-gradient-to-r from-[#7C3AED] to-emerald-500"
+                  :style="{ width: `${Math.min(100, Math.max(0, accuracyPercent))}%` }"
+                ></div>
+              </div>
+            </div>
           </div>
 
-          <div
-            class="rounded-xl border border-slate-100 bg-slate-50 p-4 text-center"
-          >
-            <span class="text-xs font-semibold text-slate-500">
-              Tỷ lệ chính xác
-            </span>
+          <!-- Chi tiết 4 chỉ số phụ -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
+            <div class="rounded-xl border border-slate-200/80 bg-white/90 p-3 text-center shadow-2xs">
+              <span class="text-[11px] font-semibold text-slate-500 block">Số câu đúng</span>
+              <b class="mt-0.5 block text-lg font-black text-emerald-700">
+                {{ correctCount }}/{{ totalQuestionsCount }} câu
+              </b>
+            </div>
 
-            <b class="mt-1 block text-2xl font-black text-[#7C3AED]">
-              {{ Math.round(attempt.score_percent) }}%
-            </b>
+            <div class="rounded-xl border border-slate-200/80 bg-white/90 p-3 text-center shadow-2xs">
+              <span class="text-[11px] font-semibold text-slate-500 block">Tỷ lệ đúng</span>
+              <b class="mt-0.5 block text-lg font-black text-[#7C3AED]">
+                {{ accuracyPercent }}%
+              </b>
+            </div>
+
+            <div class="rounded-xl border border-slate-200/80 bg-white/90 p-3 text-center shadow-2xs">
+              <span class="text-[11px] font-semibold text-slate-500 block">Thời gian làm</span>
+              <b class="mt-0.5 block text-lg font-black text-slate-900">
+                {{ formatSeconds(attempt.time_spent_seconds) }}
+              </b>
+            </div>
+
+            <div class="rounded-xl border border-slate-200/80 bg-white/90 p-3 text-center shadow-2xs">
+              <span class="text-[11px] font-semibold text-slate-500 block">Trạng thái</span>
+              <b class="mt-0.5 block text-base font-bold text-emerald-700 capitalize">
+                {{ formatStatus(attempt.status) }}
+              </b>
+            </div>
           </div>
-
-          <div
-            class="rounded-xl border border-slate-100 bg-slate-50 p-4 text-center"
-          >
-            <span class="text-xs font-semibold text-slate-500">
-              Thời gian làm
-            </span>
-
-            <b class="mt-1 block text-2xl font-black text-slate-900">
-              {{ formatSeconds(attempt.time_spent_seconds) }}
-            </b>
-          </div>
-
-          <div
-            class="rounded-xl border border-slate-100 bg-slate-50 p-4 text-center"
-          >
-            <span class="text-xs font-semibold text-slate-500">
-              Trạng thái
-            </span>
-
-            <b class="mt-1 block text-lg font-bold text-emerald-700 capitalize">
-              {{ formatStatus(attempt.status) }}
-            </b>
-          </div>
-
         </div>
 
         <!-- TEACHER EVALUATION -->
@@ -331,7 +349,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { Check, X, Flag } from 'lucide-vue-next'
 
@@ -354,6 +372,65 @@ const errorMessage = ref('')
 const isReportModalOpen = ref(false)
 const selectedReportQuestion = ref(null)
 const reportedQuestionIds = ref(new Set())
+
+// --- CHUẨN HÓA ĐIỂM SỐ VÀ ĐỘ CHÍNH XÁC (THANG 10 DÀNH CHO HỌC SINH) ---
+const scaledScore10 = computed(() => {
+  if (!attempt.value) return '0'
+  let raw = 0
+  if (attempt.value.scaled_score_10 !== undefined && attempt.value.scaled_score_10 !== null) {
+    raw = Number(attempt.value.scaled_score_10)
+  } else {
+    const tot = Number(attempt.value.total_points) || 0
+    const sc = Number(attempt.value.score) || 0
+    raw = tot > 0 ? (sc / tot) * 10 : 0
+  }
+  // Hiển thị gọn gàng, tự nhiên: 10, 8.5, 5.8, 7.25
+  return Number.isInteger(raw) ? raw.toString() : parseFloat(raw.toFixed(2)).toString()
+})
+
+const correctCount = computed(() => {
+  if (!attempt.value) return 0
+  if (attempt.value.correct_count !== undefined && attempt.value.correct_count !== null) {
+    return attempt.value.correct_count
+  }
+  const snap = attempt.value.answers_snapshot || []
+  return snap.filter(i => Boolean(i.is_correct)).length
+})
+
+const totalQuestionsCount = computed(() => {
+  if (!attempt.value) return 0
+  if (attempt.value.total_questions) {
+    return attempt.value.total_questions
+  }
+  const snap = attempt.value.answers_snapshot || []
+  return snap.length || 0
+})
+
+const accuracyPercent = computed(() => {
+  if (!attempt.value) return 0
+  if (attempt.value.accuracy_percentage !== undefined && attempt.value.accuracy_percentage !== null) {
+    return Math.round(attempt.value.accuracy_percentage)
+  }
+  const total = totalQuestionsCount.value
+  return total > 0 ? Math.round((correctCount.value / total) * 100) : Math.round(attempt.value.score_percent || 0)
+})
+
+const gradeEvaluation = computed(() => {
+  const score = parseFloat(scaledScore10.value) || 0
+  if (score >= 9.0) {
+    return { label: 'Xuất sắc', bg: 'bg-emerald-50 text-emerald-800 border-emerald-300' }
+  }
+  if (score >= 8.0) {
+    return { label: 'Giỏi', bg: 'bg-emerald-50 text-emerald-700 border-emerald-200' }
+  }
+  if (score >= 6.5) {
+    return { label: 'Khá', bg: 'bg-sky-50 text-sky-700 border-sky-200' }
+  }
+  if (score >= 5.0) {
+    return { label: 'Đạt', bg: 'bg-amber-50 text-amber-800 border-amber-300' }
+  }
+  return { label: 'Chưa đạt / Cần cố gắng', bg: 'bg-rose-50 text-rose-700 border-rose-200' }
+})
 
 const isAnswerSelected = (item, ans) => {
   const ansKey = ans.key || ans.answer_key

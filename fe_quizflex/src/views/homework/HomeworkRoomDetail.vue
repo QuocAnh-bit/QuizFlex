@@ -1134,7 +1134,8 @@ const exportGradebookExcel = async () => {
       gradeAssignments.forEach(assignment => {
         const scoreData = student.scores[assignment.id]
         if (scoreData) {
-          row.push(`${scoreData.score}/${scoreData.total_points}`)
+          const score10 = scoreData.total_points > 0 ? ((scoreData.score / scoreData.total_points) * 10).toFixed(1) : scoreData.score
+          row.push(score10)
         } else {
           row.push('')
         }

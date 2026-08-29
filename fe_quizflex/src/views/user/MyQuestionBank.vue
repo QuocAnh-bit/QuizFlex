@@ -1,32 +1,49 @@
 <template>
   <section id="my-question-top" class="grid gap-6 py-8">
     <!-- Header Banner -->
-    <div class="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-2xs">
-      <div class="flex flex-col justify-between gap-5 xl:flex-row xl:items-end">
-        <div>
-          <h1 class="text-3xl font-black tracking-tight text-slate-900">Kho câu hỏi của tôi</h1>
-          <p class="mt-2 max-w-3xl text-sm leading-relaxed text-slate-500">Quản lý độc lập tất cả câu hỏi trắc nghiệm do bạn tạo ra. Chỉnh sửa nội dung, sửa đáp án đúng hoặc chuyển câu hỏi lỗi vào thùng rác an toàn.</p>
+    <div class="rounded-2xl border border-slate-200/80 bg-white p-6 sm:p-7 shadow-2xs flex flex-col justify-between gap-5 lg:flex-row lg:items-center">
+      <div class="space-y-1">
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-bold uppercase tracking-wider text-[#7C3AED]">
+            Ngân hàng câu hỏi cá nhân
+          </span>
+          <span v-if="trashCount > 0" class="text-[11px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
+            {{ trashCount }} trong thùng rác
+          </span>
         </div>
+        <h1 class="text-2xl font-black text-slate-900 sm:text-3xl tracking-tight">
+          Kho câu hỏi của tôi
+        </h1>
+        <p class="text-sm text-slate-500 max-w-2xl">
+          Quản lý độc lập tất cả câu hỏi trắc nghiệm do bạn tạo ra. Chỉnh sửa nội dung, sửa đáp án đúng hoặc gửi duyệt vào Ngân hàng câu hỏi chung.
+        </p>
+      </div>
 
-        <div class="flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            class="inline-flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50/80 px-4 py-2.5 text-xs font-bold text-rose-500 hover:bg-rose-100 hover:border-rose-300 transition shadow-2xs cursor-pointer active:scale-95"
-            @click="openTrashModal"
-          >
-            <Trash2 :size="14" />
-            <span>Thùng rác câu hỏi</span>
-            <span v-if="trashCount > 0" class="rounded-full bg-rose-500 px-1.5 py-0.5 text-[10px] leading-none text-white font-bold">{{ trashCount }}</span>
-          </button>
+      <!-- Action Toolbar -->
+      <div class="flex flex-wrap items-center gap-2 sm:gap-2.5 shrink-0">
+        <!-- Nút Thùng rác -->
+        <button
+          type="button"
+          class="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-600 hover:border-rose-200 hover:bg-rose-50/50 hover:text-rose-600 transition shadow-2xs cursor-pointer active:scale-95"
+          @click="openTrashModal"
+          title="Xem các câu hỏi đã xóa trong thùng rác"
+        >
+          <Trash2 class="h-3.5 w-3.5 text-slate-400" />
+          <span>Thùng rác</span>
+          <span v-if="trashCount > 0" class="rounded-full bg-rose-500 px-1.5 py-0.2 text-[10px] leading-none text-white font-bold">{{ trashCount }}</span>
+        </button>
 
-          <router-link
-            to="/dashboard/my-questions/create"
-            class="btn-primary inline-flex items-center gap-2 bg-[#7C3AED] hover:bg-[#6D28D9] text-white px-5 py-2.5 rounded-xl font-bold text-xs shadow-md shadow-purple-500/20"
-          >
-            <Plus :size="14" />
-            <span>Tạo câu hỏi</span>
-          </router-link>
-        </div>
+        <!-- Divider -->
+        <div class="h-6 w-px bg-slate-200 hidden sm:block"></div>
+
+        <!-- Create Question Button -->
+        <router-link
+          to="/dashboard/my-questions/create"
+          class="inline-flex items-center gap-1.5 rounded-xl bg-[#7C3AED] px-4 py-2 text-xs font-bold text-white shadow-md shadow-purple-500/20 hover:bg-[#6D28D9] transition cursor-pointer active:scale-95"
+        >
+          <Plus class="h-3.5 w-3.5" />
+          <span>Tạo câu hỏi</span>
+        </router-link>
       </div>
     </div>
 
@@ -550,6 +567,8 @@ import {
   Plus,
   Search,
   RotateCcw,
+  ScanLine,
+  Sparkles,
   CheckCircle2,
   AlertTriangle,
   Eye,

@@ -28,13 +28,20 @@ class QuizStoreService
                 'status' => 'draft',
             ]);
 
+            $totalQuestions = count($data['questions']);
             foreach ($data['questions'] as $questionIndex => $questionData) {
+                $fallbackPoint = $totalQuestions > 0 ? round(10.00 / $totalQuestions, 2) : 1.0;
+                $points = isset($questionData['points']) && is_numeric($questionData['points'])
+                    ? max(0.01, (float) $questionData['points'])
+                    : $fallbackPoint;
+
                 $question = $quiz->questions()->create([
                     'content' => $questionData['content'],
                     'image_url' => $questionData['image_url'] ?? null,
                     'type' => $questionData['type'] ?? 'single_choice',
+                    'difficulty' => $questionData['difficulty'] ?? 'medium',
                     'order' => $questionIndex + 1,
-                    'points' => $questionData['points'] ?? 10,
+                    'points' => $points,
                 ]);
 
                 foreach ($questionData['answers'] as $answerIndex => $answerData) {
@@ -122,7 +129,8 @@ class QuizStoreService
         return [
             'content' => trim((string) ($item['question'] ?? $item['content'] ?? '')),
             'type' => $type,
-            'points' => $item['points'] ?? 10,
+            'difficulty' => $item['difficulty'] ?? 'medium',
+            'points' => isset($item['points']) ? (float) $item['points'] : null,
             'image_url' => $imageUrl,
             'answers' => $answers,
         ];

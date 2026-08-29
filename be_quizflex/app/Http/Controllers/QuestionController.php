@@ -266,6 +266,8 @@ class QuestionController extends Controller
             'medium_count' => ['nullable', 'integer', 'min:0', 'max:50'],
             'hard_count' => ['nullable', 'integer', 'min:0', 'max:50'],
             'time_limit_minutes' => ['nullable', 'integer', 'min:1', 'max:180'],
+            'scoring_mode' => ['nullable', 'string', Rule::in(['equal', 'difficulty', 'custom'])],
+            'question_points' => ['nullable', 'array'],
             'shuffle_questions' => ['nullable', 'boolean'],
             'is_public' => ['nullable', 'boolean'],
             'status' => ['nullable', 'string', Rule::in(['published', 'draft'])],
@@ -481,11 +483,61 @@ class QuestionController extends Controller
             ]);
 
             $syncData = [];
-            foreach ($questionIds as $index => $qId) {
-                $syncData[$qId] = [
-                    'order' => $index,
-                    'points' => 10,
-                ];
+            $n = count($questionIds);
+            $customPoints = $validated['question_points'] ?? [];
+            $scoringMode = $validated['scoring_mode'] ?? 'equal';
+
+            if (!empty($customPoints) && is_array($customPoints)) {
+                foreach ($questionIds as $index => $qId) {
+                    $pt = isset($customPoints[$qId]) ? (float)$customPoints[$qId] : (isset($customPoints[(string)$qId]) ? (float)$customPoints[(string)$qId] : null);
+                    if ($pt === null) {
+                        $pt = $n > 0 ? round(10.0 / $n, 2) : 1.0;
+                    }
+                    $syncData[$qId] = [
+                        'order' => $index,
+                        'points' => round(max(0.01, $pt), 2),
+                    ];
+                }
+            } elseif ($scoringMode === 'difficulty') {
+                $questionsMap = Question::whereIn('id', $questionIds)->get(['id', 'difficulty'])->keyBy('id');
+                $weights = [];
+                $totalWeight = 0;
+                foreach ($questionIds as $qId) {
+                    $diff = strtolower($questionsMap[$qId]->difficulty ?? 'medium');
+                    $w = $diff === 'hard' ? 3 : ($diff === 'easy' ? 1 : 2);
+                    $weights[$qId] = $w;
+                    $totalWeight += $w;
+                }
+                $allocatedSum = 0;
+                foreach ($questionIds as $index => $qId) {
+                    $w = $weights[$qId];
+                    if ($index === $n - 1) {
+                        $pt = round(10.00 - $allocatedSum, 2);
+                    } else {
+                        $pt = round(($w / $totalWeight) * 10.00, 2);
+                        $allocatedSum += $pt;
+                    }
+                    $syncData[$qId] = [
+                        'order' => $index,
+                        'points' => max(0.01, $pt),
+                    ];
+                }
+            } else {
+                // Mặc định Chia đều (Equal weight)
+                $basePoint = $n > 0 ? round(10.00 / $n, 2) : 1.0;
+                $allocatedSum = 0;
+                foreach ($questionIds as $index => $qId) {
+                    if ($index === $n - 1) {
+                        $pt = round(10.00 - $allocatedSum, 2);
+                    } else {
+                        $pt = $basePoint;
+                        $allocatedSum += $pt;
+                    }
+                    $syncData[$qId] = [
+                        'order' => $index,
+                        'points' => max(0.01, $pt),
+                    ];
+                }
             }
 
             $quiz->questions()->sync($syncData);

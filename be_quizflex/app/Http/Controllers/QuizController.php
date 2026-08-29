@@ -383,7 +383,7 @@ class QuizController extends Controller
             'questions.*.image_url' => ['nullable'],
             'questions.*.images' => ['nullable'],
             'questions.*.type' => ['nullable', Rule::in(['single_choice', 'multi_choice', 'multiple_choice', 'true_false', 'fill_blank'])],
-            'questions.*.points' => ['nullable', 'integer', 'min:1', 'max:1000'],
+            'questions.*.points' => ['nullable', 'numeric', 'min:0.01', 'max:1000'],
             'questions.*.order' => ['nullable', 'integer', 'min:0'],
             'questions.*.correct' => ['nullable'],
             'questions.*.answers' => ['required_with:questions', 'array', 'min:2'],
@@ -541,7 +541,7 @@ class QuizController extends Controller
                     'content' => $questionContent,
                     'type' => $questionData['type'] ?? 'single_choice',
                     'order' => $questionData['order'] ?? $index,
-                    'points' => $questionData['points'] ?? 10,
+                    'points' => max(0.01, (float) ($questionData['points'] ?? 1.0)),
                     'image_url' => is_string($questionData['image_url'] ?? null)
                         ? $questionData['image_url']
                         : (is_array($questionData['image_url'] ?? null)
@@ -556,7 +556,7 @@ class QuizController extends Controller
 
             $syncData[$question->id] = [
                 'order' => $questionData['order'] ?? $index,
-                'points' => $questionData['points'] ?? 10,
+                'points' => max(0.01, (float) ($questionData['points'] ?? 1.0)),
             ];
         }
 
