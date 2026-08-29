@@ -520,7 +520,7 @@ import {
   ref,
   watch,
 } from 'vue'
-
+import { ArrowRight, DoorOpen, Sparkles, Camera } from 'lucide-vue-next'
 import LandingQuickActions from '@/components/Home/LandingQuickActions.vue'
 import HomeContinueLearning from '@/components/Home/HomeContinueLearning.vue'
 import HomeNotifications from '@/components/Home/HomeNotifications.vue'

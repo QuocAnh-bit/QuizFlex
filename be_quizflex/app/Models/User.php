@@ -46,6 +46,9 @@ class User extends Authenticatable implements JWTSubject
     public function payments()        { return $this->hasMany(Payment::class); }
     public function lockedBy()        { return $this->belongsTo(User::class, 'locked_by'); }
     public function unlockRequests()  { return $this->hasMany(UnlockRequest::class); }
+    public function userBadges()      { return $this->hasMany(UserBadge::class); }
+    public function badges()          { return $this->belongsToMany(Badge::class, 'user_badges')->withPivot('earned_at'); }
+    public function userXp()          { return $this->hasOne(UserXp::class); }
 
     // ─── Helpers ─────────────────────────────────────────────────────────────
 

@@ -225,7 +225,7 @@
 <script setup>
 import { computed, onMounted, ref, inject } from 'vue'
 import { useRoute } from 'vue-router'
-import { Bot, Globe, Lock, Users } from 'lucide-vue-next'
+import { Bot, Globe, Lock, Users, LibraryBig } from 'lucide-vue-next'
 import VisibilityBadge from '@/components/common/VisibilityBadge.vue'
 import AppPagination from '@/components/common/AppPagination.vue'
 import { normalizeQuizCard, quizzesApi } from '@/services/api'

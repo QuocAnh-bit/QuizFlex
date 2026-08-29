@@ -30,11 +30,11 @@
         </span>
 
         <h1 class="text-2xl sm:text-3xl font-black text-slate-900 pt-2">
-          Nhập mã PIN phòng
+          Nhập mã phòng
         </h1>
 
         <p class="text-xs text-slate-600">
-          Nhập mã PIN hiển thị trên màn hình của chủ phòng để tham gia ngay.
+          Nhập mã hiển thị trên màn hình của chủ phòng để tham gia ngay.
         </p>
       </div>
 
@@ -46,7 +46,7 @@
         <input
           v-model.trim="code"
           class="w-full bg-transparent text-center font-mono text-3xl sm:text-4xl font-black uppercase tracking-[0.2em] text-slate-900 outline-none placeholder:text-slate-300 placeholder:tracking-normal"
-          placeholder="MÃ PIN"
+          placeholder="NHẬP MÃ"
           maxlength="12"
           required
         />

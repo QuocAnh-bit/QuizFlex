@@ -10,26 +10,33 @@
         <div>
           <button
             type="button"
-            class="mb-3 inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 transition hover:text-[#7C3AED]"
+            class="mb-3 inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 transition hover:text-indigo-600 cursor-pointer"
             @click="goBack"
           >
             <ArrowLeft class="h-4 w-4" />
             Quay lại kho câu hỏi
           </button>
 
-          <h1 class="flex items-center gap-2.5 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-            Tạo câu hỏi mới
-            <span class="inline-block h-2 w-2 rounded-full bg-[#7C3AED]"></span>
-          </h1>
-          <p class="mt-2 text-sm leading-6 text-slate-500">
-            Soạn thảo câu hỏi trắc nghiệm, các lựa chọn đáp án và thiết lập thông tin phân loại cho ngân hàng câu hỏi.
-          </p>
+          <div class="flex items-start gap-3">
+            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-purple-500/10 text-purple-500">
+              <FilePlus2 class="h-5 w-5" />
+            </div>
+            <div>
+              <h1 class="flex items-center gap-2.5 text-3xl font-black tracking-[-0.04em] text-[var(--text)]">
+                Tạo câu hỏi mới
+                <span class="inline-block h-2 w-2 rounded-full bg-indigo-500"></span>
+              </h1>
+              <p class="mt-1 text-sm font-medium leading-6 text-[var(--muted)]">
+                Soạn thảo câu hỏi trắc nghiệm, các lựa chọn đáp án và thiết lập thông tin phân loại cho ngân hàng câu hỏi.
+              </p>
+            </div>
+          </div>
         </div>
 
         <!-- 1. Nội dung câu hỏi -->
         <div class="grid gap-3 pt-1">
           <label for="question-content-input" class="flex items-center gap-2 text-base font-semibold text-slate-900">
-            <span class="h-4 w-1 rounded-full bg-[#7C3AED]"></span>
+            <span class="h-4 w-1 rounded-full bg-indigo-500"></span>
             1. Nội dung câu hỏi
           </label>
           <textarea
@@ -37,7 +44,7 @@
             v-model="form.content"
             required
             rows="5"
-            class="w-full resize-none rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium leading-relaxed text-slate-900 outline-none transition focus:border-[#7C3AED] focus:ring-2 focus:ring-[#7C3AED]/20"
+            class="w-full resize-none rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium leading-relaxed text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15"
             placeholder="Nhập nội dung câu hỏi tại đây..."
           ></textarea>
         </div>
@@ -45,7 +52,7 @@
         <!-- 2. Phân loại -->
         <div class="grid gap-4 border-t border-slate-200 pt-5">
           <h2 class="flex items-center gap-2 text-base font-semibold text-slate-900">
-            <span class="h-4 w-1 rounded-full bg-[#7C3AED]"></span>
+            <span class="h-4 w-1 rounded-full bg-indigo-500"></span>
             2. Phân loại
           </h2>
 
@@ -54,7 +61,7 @@
               Cấp học
               <select
                 v-model="form.education_level_id"
-                class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-900 outline-none focus:border-[#7C3AED] focus:ring-2 focus:ring-[#7C3AED]/20"
+                class="w-full cursor-pointer rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15"
                 @change="onLevelChange"
               >
                 <option value="">Tất cả cấp học</option>
@@ -68,7 +75,7 @@
               Khối lớp
               <select
                 v-model="form.grade_id"
-                class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-900 outline-none focus:border-[#7C3AED] focus:ring-2 focus:ring-[#7C3AED]/20"
+                class="w-full cursor-pointer rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15"
                 @change="onTaxonomyChange"
               >
                 <option value="">Tất cả khối lớp</option>
@@ -82,7 +89,7 @@
               Bộ môn
               <select
                 v-model="form.subject_id"
-                class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-900 outline-none focus:border-[#7C3AED] focus:ring-2 focus:ring-[#7C3AED]/20"
+                class="w-full cursor-pointer rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15"
                 @change="onTaxonomyChange"
               >
                 <option value="">Tất cả bộ môn</option>
@@ -96,7 +103,7 @@
               Độ khó
               <select
                 v-model="form.difficulty"
-                class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-900 outline-none focus:border-[#7C3AED] focus:ring-2 focus:ring-[#7C3AED]/20"
+                class="w-full cursor-pointer rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15"
               >
                 <option value="easy">Dễ (Nhận biết)</option>
                 <option value="medium">Vừa (Thông hiểu)</option>
@@ -110,7 +117,7 @@
               Chọn Chủ đề có sẵn (từ Ngân hàng)
               <select
                 v-model="selectedBankTopic"
-                class="w-full cursor-pointer rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-900 outline-none focus:border-[#7C3AED] focus:ring-2 focus:ring-[#7C3AED]/20"
+                class="w-full cursor-pointer rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15"
                 @change="onBankTopicSelect"
               >
                 <option value="">-- Chọn chủ đề từ kho --</option>
@@ -128,7 +135,7 @@
               Tên Chủ đề (hoặc nhập chủ đề mới)
               <input
                 v-model="form.topic_name"
-                class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-900 outline-none focus:border-[#7C3AED] focus:ring-2 focus:ring-[#7C3AED]/20"
+                class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15"
                 placeholder="VD: Hàm số, Tiếng Anh B1, Lịch sử Việt Nam..."
                 @input="onTopicInputChange"
               />
@@ -138,19 +145,55 @@
 
         <!-- 3. Đáp án -->
         <div id="answers-section" class="grid gap-4 border-t border-slate-200 pt-5">
-          <div class="flex items-center justify-between gap-4">
+          <div class="flex flex-wrap items-center justify-between gap-3">
             <h2 class="flex items-center gap-2 text-base font-semibold text-slate-900">
-              <span class="h-4 w-1 rounded-full bg-[#7C3AED]"></span>
-              3. Đáp án
+              <span class="h-4 w-1 rounded-full bg-indigo-500"></span>
+              <span>3. Đáp án</span>
             </h2>
-            <button
-              type="button"
-              class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-[#7C3AED] transition hover:bg-[#F5F3FF]"
-              @click="addAnswerChoice"
-            >
-              <Plus class="h-3.5 w-3.5" />
-              Thêm đáp án
-            </button>
+
+            <div class="flex flex-wrap items-center gap-2.5">
+              <!-- Question Type Segmented Switcher -->
+              <div class="inline-flex rounded-xl border border-slate-200 bg-slate-50 p-1 text-xs font-semibold">
+                <button
+                  type="button"
+                  class="rounded-lg px-3 py-1.5 transition cursor-pointer"
+                  :class="form.type === 'single_choice'
+                    ? 'bg-white text-indigo-600 font-bold shadow-xs border border-slate-200/80'
+                    : 'text-slate-600 hover:text-slate-900'"
+                  @click="switchQuestionType('single_choice')"
+                >
+                  1 đáp án đúng
+                </button>
+                <button
+                  type="button"
+                  class="rounded-lg px-3 py-1.5 transition cursor-pointer"
+                  :class="form.type === 'multi_choice'
+                    ? 'bg-white text-indigo-600 font-bold shadow-xs border border-slate-200/80'
+                    : 'text-slate-600 hover:text-slate-900'"
+                  @click="switchQuestionType('multi_choice')"
+                >
+                  Nhiều đáp án đúng
+                </button>
+              </div>
+
+              <button
+                type="button"
+                class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-indigo-600 transition hover:bg-indigo-50 cursor-pointer shadow-2xs"
+                @click="addAnswerChoice"
+              >
+                <Plus class="h-3.5 w-3.5" />
+                <span>Thêm đáp án</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Type Hint Callout -->
+          <div
+            v-if="form.type === 'multi_choice'"
+            class="rounded-xl border border-purple-200 bg-purple-50/70 px-3.5 py-2 text-xs text-purple-900 flex items-center gap-2"
+          >
+            <span class="font-bold uppercase tracking-wider text-[10px] bg-purple-200 text-purple-800 px-1.5 py-0.5 rounded">Nhiều đáp án</span>
+            <span>Bạn có thể đánh dấu chọn <strong>từ 2 đáp án đúng trở lên</strong> bằng cách tick vào các ô vuông bên phải.</span>
           </div>
 
           <div class="grid gap-3">
@@ -165,7 +208,7 @@
               <span
                 class="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-xs font-bold transition"
                 :class="ans.is_correct
-                  ? 'bg-emerald-500 text-white'
+                  ? 'bg-emerald-500 text-white shadow-xs'
                   : 'bg-white text-slate-700 border border-slate-200'"
               >
                 {{ ans.key }}
@@ -175,22 +218,30 @@
                 :id="'answer-input-' + idx"
                 v-model="ans.content"
                 required
-                class="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-900 outline-none focus:border-[#7C3AED] focus:ring-2 focus:ring-[#7C3AED]/20"
+                class="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15"
                 :placeholder="`Nội dung đáp án ${ans.key}...`"
               />
 
               <label
                 class="flex shrink-0 cursor-pointer select-none items-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium transition"
                 :class="ans.is_correct
-                  ? 'border-emerald-200 bg-emerald-100 text-emerald-700'
+                  ? 'border-emerald-200 bg-emerald-100 text-emerald-700 font-semibold'
                   : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'"
               >
                 <input
+                  v-if="form.type === 'single_choice'"
                   type="radio"
                   name="correct_answer_choice"
                   :checked="ans.is_correct"
                   class="h-4 w-4 cursor-pointer accent-emerald-500"
                   @change="setCorrectAnswer(idx)"
+                />
+                <input
+                  v-else
+                  type="checkbox"
+                  :checked="ans.is_correct"
+                  class="h-4 w-4 cursor-pointer rounded accent-emerald-600"
+                  @change="toggleCorrectAnswer(idx)"
                 />
                 <span>{{ ans.is_correct ? 'Đáp án đúng' : 'Đánh dấu đúng' }}</span>
               </label>
@@ -237,7 +288,7 @@
         <div class="flex flex-wrap items-center justify-between gap-4 border-t border-slate-200 pt-6">
           <button
             type="button"
-            class="rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+            class="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50 cursor-pointer"
             @click="goBack"
           >
             Hủy
@@ -246,7 +297,7 @@
           <div class="flex flex-wrap items-center gap-3">
             <button
               type="button"
-              class="rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+              class="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50 cursor-pointer"
               :disabled="isSubmitting"
               @click="submitForm(true)"
             >
@@ -255,7 +306,7 @@
 
             <button
               type="submit"
-              class="rounded-lg bg-[#7C3AED] px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-[#6D28D9] disabled:opacity-50"
+              class="rounded-xl bg-[#7C3AED] px-6 py-2.5 text-sm font-semibold text-white shadow-md shadow-[#7C3AED]/20 transition hover:bg-[#6D28D9] disabled:opacity-50 cursor-pointer"
               :disabled="isSubmitting"
             >
               {{ isSubmitting ? 'Đang lưu...' : 'Lưu câu hỏi' }}
@@ -285,7 +336,7 @@
         </button>
         <button
           type="button"
-          class="rounded-lg bg-[#7C3AED] px-4 py-2 text-xs font-semibold text-white disabled:opacity-50"
+          class="rounded-lg bg-[#7C3AED] px-4 py-2 text-xs font-semibold text-white shadow-sm disabled:opacity-50"
           :disabled="isSubmitting"
           @click="submitForm(false)"
         >
@@ -312,11 +363,21 @@
           <span v-if="selectedLevelName && (selectedGradeName || selectedSubjectName)" class="text-slate-300">•</span>
           <span v-if="selectedGradeName" class="font-semibold text-slate-800">{{ selectedGradeName }}</span>
           <span v-if="selectedGradeName && selectedSubjectName" class="text-slate-300">•</span>
-          <span v-if="selectedSubjectName" class="font-semibold text-[#7C3AED]">{{ selectedSubjectName }}</span>
+          <span v-if="selectedSubjectName" class="font-semibold text-slate-800">{{ selectedSubjectName }}</span>
         </div>
 
         <!-- Badges -->
         <div class="flex flex-wrap items-center gap-2">
+          <!-- Question Type Badge -->
+          <span
+            class="inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-bold"
+            :class="form.type === 'multi_choice'
+              ? 'border-purple-200 bg-purple-50 text-purple-700'
+              : 'border-slate-200 bg-slate-50 text-slate-600'"
+          >
+            {{ form.type === 'multi_choice' ? 'Nhiều đáp án' : '1 đáp án' }}
+          </span>
+
           <span
             class="inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-semibold"
             :class="{
@@ -339,7 +400,7 @@
           <span
             class="inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-semibold"
             :class="form.is_public
-              ? 'border-[#7C3AED]/30 bg-[#F5F3FF] text-[#7C3AED]'
+              ? 'border-slate-300 bg-slate-100 text-slate-800'
               : 'border-amber-200 bg-amber-50 text-amber-700'"
           >
             <component :is="form.is_public ? Globe : Lock" class="h-3.5 w-3.5" />
@@ -351,7 +412,7 @@
             class="inline-flex max-w-[200px] items-center gap-1 truncate rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-600"
             :title="form.topic_name"
           >
-            <span class="font-semibold text-[#7C3AED]">#</span>
+            <span class="font-semibold text-slate-400">#</span>
             <span class="truncate">{{ form.topic_name }}</span>
           </span>
         </div>
@@ -420,6 +481,7 @@ import { useRouter } from 'vue-router'
 import {
   ArrowLeft,
   Check,
+  FilePlus2,
   Globe,
   Lock,
   Plus,
@@ -438,6 +500,7 @@ const selectedBankTopic = ref('')
 
 const form = reactive({
   content: '',
+  type: 'single_choice',
   difficulty: 'medium',
   education_level_id: '',
   grade_id: '',
@@ -497,10 +560,25 @@ const onLevelChange = () => {
   fetchTopicsList()
 }
 
+const switchQuestionType = (newType) => {
+  form.type = newType
+  if (newType === 'single_choice') {
+    const firstCorrectIdx = form.answers.findIndex((a) => a.is_correct)
+    const targetIdx = firstCorrectIdx >= 0 ? firstCorrectIdx : 0
+    form.answers.forEach((ans, idx) => {
+      ans.is_correct = idx === targetIdx
+    })
+  }
+}
+
 const setCorrectAnswer = (targetIdx) => {
   form.answers.forEach((ans, idx) => {
     ans.is_correct = idx === targetIdx
   })
+}
+
+const toggleCorrectAnswer = (targetIdx) => {
+  form.answers[targetIdx].is_correct = !form.answers[targetIdx].is_correct
 }
 
 const difficultyText = (diff) => {
@@ -590,9 +668,18 @@ const validateBeforeSubmit = () => {
       }
     }
   }
-  if (!form.answers.some((a) => a.is_correct)) {
-    return { message: 'Vui lòng đánh dấu chọn 1 đáp án đúng.', targetId: 'answers-section' }
+
+  const correctCount = form.answers.filter((a) => a.is_correct).length
+  if (form.type === 'single_choice') {
+    if (correctCount !== 1) {
+      return { message: 'Vui lòng đánh dấu chọn đúng 1 đáp án.', targetId: 'answers-section' }
+    }
+  } else if (form.type === 'multi_choice') {
+    if (correctCount < 2) {
+      return { message: 'Câu hỏi nhiều đáp án đúng cần đánh dấu ít nhất 2 đáp án đúng.', targetId: 'answers-section' }
+    }
   }
+
   return null
 }
 
@@ -608,6 +695,7 @@ const submitForm = async (createAnother = false) => {
   try {
     const payload = {
       content: form.content.trim(),
+      type: form.type,
       difficulty: form.difficulty,
       education_level_id: form.education_level_id || null,
       grade_id: form.grade_id || null,
@@ -617,7 +705,7 @@ const submitForm = async (createAnother = false) => {
       answers: form.answers.map((a) => ({
         content: a.content.trim(),
         key: a.key,
-        is_correct: a.is_correct
+        is_correct: Boolean(a.is_correct)
       }))
     }
 

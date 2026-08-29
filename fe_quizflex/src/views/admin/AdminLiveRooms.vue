@@ -1,7 +1,7 @@
 <template>
-  <AdminRooms room-type="live" />
+  <AdminRooms room-type="homework" />
 </template>
 
 <script setup>
-import AdminRooms from './Rooms.vue'
+import AdminRooms from './BattleRooms.vue'
 </script>

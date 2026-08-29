@@ -392,7 +392,6 @@
       @close="isQuestionReportModalOpen = false"
       @reported="handleQuestionReported"
     />
-
   </section>
 </template>
 
@@ -450,7 +449,6 @@ const openQuestionReportModal = (question) => {
 const handleQuestionReported = () => {
   // Do nothing or refresh if needed
 }
-
 
 const currentUser = currentUserStorage.get()
 

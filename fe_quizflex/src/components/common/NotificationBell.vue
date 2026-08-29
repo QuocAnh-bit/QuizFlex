@@ -137,7 +137,11 @@ const handleReadNotification = async (item) => {
   isOpen.value = false
   
   if (item.action_link) {
-    router.push(item.action_link)
+    let link = item.action_link
+    if (link.startsWith('/admin/reports')) {
+      link = link.replace('/admin/reports', '/admin/report-tickets')
+    }
+    router.push(link)
   }
 }
 

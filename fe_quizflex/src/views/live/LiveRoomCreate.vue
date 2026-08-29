@@ -2,7 +2,7 @@
   <section class="max-w-2xl mx-auto py-4 space-y-6">
     <div class="flex items-center justify-between">
       <router-link class="btn-secondary text-xs" to="/live-rooms">← Quay lại</router-link>
-      <router-link class="btn-secondary text-xs" to="/live-rooms/join">Tham gia bằng mã PIN</router-link>
+      <router-link class="btn-secondary text-xs" to="/live-rooms/join">Tham gia bằng mã</router-link>
     </div>
 
     <!-- Header -->
@@ -11,7 +11,7 @@
         Khởi tạo phòng
       </span>
       <h1 class="text-2xl font-black text-slate-900 sm:text-3xl pt-1">Tạo phòng thi đấu trực tiếp</h1>
-      <p class="text-xs text-slate-600">Chọn bộ câu hỏi, hệ thống sẽ cấp mã PIN để bạn trình chiếu cho người chơi tham gia.</p>
+      <p class="text-xs text-slate-600">Chọn bộ câu hỏi, hệ thống sẽ cấp mã phòng để bạn trình chiếu cho người chơi tham gia.</p>
     </div>
 
     <div v-if="errorMessage" class="rounded-xl border border-red-200 bg-red-50 p-4 text-xs font-bold text-red-700">
@@ -24,7 +24,7 @@
     <form class="card p-6 sm:p-8 space-y-5" @submit.prevent="handleCreate">
       <div class="space-y-4">
         <label class="grid gap-1.5 text-xs font-bold text-slate-700">
-          Chọn quiz <span class="text-red-500">*</span>
+          Chọn quiz <span class="text-red-00"></span>
           <select v-model="form.quiz_id" class="field text-xs" required>
             <option value="">-- Chọn bộ quiz muốn thi đấu --</option>
             <option v-for="quiz in quizzes" :key="quiz.id" :value="quiz.id">

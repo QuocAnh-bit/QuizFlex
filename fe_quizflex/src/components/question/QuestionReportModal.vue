@@ -163,14 +163,21 @@ const closeModal = () => {
 
 const submitReport = async () => {
   if (!selectedReason.value) return
+
+  const parsedId = Number(props.questionId)
+  if (!parsedId || isNaN(parsedId)) {
+    errorMessage.value = 'Không tìm thấy thông tin ID câu hỏi cần báo cáo.'
+    return
+  }
+
   isSubmitting.value = true
   errorMessage.value = ''
 
   try {
     const res = await reportApi.createQuestionReport({
-      question_id: props.questionId,
+      question_id: parsedId,
       reason: selectedReason.value,
-      description: description.value.trim(),
+      description: description.value.trim() || undefined,
     })
 
     const successMsg = res?.message || 'Cảm ơn bạn! Báo cáo đã được gửi tới tác giả để đính chính.'

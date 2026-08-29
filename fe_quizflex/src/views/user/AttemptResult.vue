@@ -174,9 +174,21 @@
                   </span>
                 </div>
 
-                <span class="text-xs font-bold text-slate-600">
-                  {{ item.earned_points }}/{{ item.points }} điểm
-                </span>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-bold text-slate-600">
+                    {{ item.earned_points }}/{{ item.points }} điểm
+                  </span>
+
+                  <button
+                    v-if="item.question_id || item.id"
+                    type="button"
+                    class="inline-flex items-center gap-1 rounded-md border border-rose-200 bg-rose-50 px-2 py-0.5 text-[11px] font-bold text-rose-600 transition hover:bg-rose-100 cursor-pointer"
+                    title="Báo cáo vi phạm hoặc sai sót ở câu hỏi này"
+                    @click="openReportModal(item)"
+                  >
+                    <span>🚩 Báo cáo</span>
+                  </button>
+                </div>
               </div>
 
               <!-- Question Content -->
@@ -308,9 +320,9 @@
 
     <!-- QUESTION REPORT MODAL -->
     <QuestionReportModal
-      v-if="selectedReportQuestion"
+      v-if="selectedReportQuestion && (selectedReportQuestion.question_id || selectedReportQuestion.id)"
       :is-open="isReportModalOpen"
-      :question-id="selectedReportQuestion.question_id"
+      :question-id="selectedReportQuestion.question_id || selectedReportQuestion.id"
       :question-snippet="selectedReportQuestion.question || selectedReportQuestion.question_content"
       @close="closeReportModal"
       @reported="handleQuestionReported"
@@ -411,7 +423,22 @@ const formatStatus = (status) => {
 }
 
 const openReportModal = (questionItem) => {
-  selectedReportQuestion.value = questionItem
+  if (!questionItem) return
+  if (typeof questionItem === 'number' || typeof questionItem === 'string') {
+    const qId = Number(questionItem)
+    const found = attempt.value?.answers_snapshot?.find(
+      (it) => it.question_id === qId || it.id === qId
+    )
+    selectedReportQuestion.value = found || {
+      question_id: qId,
+      question: '',
+    }
+  } else {
+    selectedReportQuestion.value = {
+      ...questionItem,
+      question_id: questionItem.question_id || questionItem.id,
+    }
+  }
   isReportModalOpen.value = true
 }
 
@@ -421,8 +448,9 @@ const closeReportModal = () => {
 }
 
 const handleQuestionReported = () => {
-  if (selectedReportQuestion.value?.question_id) {
-    reportedQuestionIds.value.add(selectedReportQuestion.value.question_id)
+  const qId = selectedReportQuestion.value?.question_id || selectedReportQuestion.value?.id
+  if (qId) {
+    reportedQuestionIds.value.add(qId)
   }
 }
 

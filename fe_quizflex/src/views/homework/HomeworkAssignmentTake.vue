@@ -67,6 +67,12 @@
                 <span class="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
                   Câu {{ currentIndex + 1 }} / {{ questions.length || 1 }}
                 </span>
+                <span
+                  v-if="currentQuestion.type === 'multi_choice'"
+                  class="rounded-full border border-purple-200 bg-purple-100/70 px-3 py-1 text-xs font-bold text-purple-800 uppercase tracking-wide"
+                >
+                  Nhiều đáp án đúng
+                </span>
                 <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 truncate max-w-xs">
                   {{ assignment?.title || quizMeta.title || 'Homework' }}
                 </span>
@@ -229,9 +235,29 @@ const isAnswerSelected = (answer) => {
 
 const toggleAnswer = (answer) => {
   if (!currentQuestion.value.id) return
-  selectedAnswers.value = {
-    ...selectedAnswers.value,
-    [currentQuestion.value.id]: answer.id,
+  const qId = currentQuestion.value.id
+  const isMulti = currentQuestion.value.type === 'multi_choice'
+  if (isMulti) {
+    const current = Array.isArray(selectedAnswers.value[qId])
+      ? [...selectedAnswers.value[qId]]
+      : selectedAnswers.value[qId]
+        ? [selectedAnswers.value[qId]]
+        : []
+    const index = current.indexOf(answer.id)
+    if (index > -1) {
+      current.splice(index, 1)
+    } else {
+      current.push(answer.id)
+    }
+    selectedAnswers.value = {
+      ...selectedAnswers.value,
+      [qId]: current,
+    }
+  } else {
+    selectedAnswers.value = {
+      ...selectedAnswers.value,
+      [qId]: answer.id,
+    }
   }
 }
 
@@ -240,7 +266,9 @@ const getQuestionMapClass = (i) => {
   if (i === currentIndex.value) {
     return ['border-[#7C3AED]', 'bg-[#7C3AED]', 'text-white']
   }
-  if (selectedAnswers.value[questionId]) {
+  const ans = selectedAnswers.value[questionId]
+  const hasAnswered = Array.isArray(ans) ? ans.length > 0 : Boolean(ans)
+  if (hasAnswered) {
     return ['border-emerald-200', 'bg-emerald-50', 'text-emerald-700']
   }
   return ['border-slate-200', 'bg-slate-50', 'text-slate-600', 'hover:bg-slate-100']

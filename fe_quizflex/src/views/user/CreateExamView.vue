@@ -1,61 +1,55 @@
 <template>
   <section
-    class="grid gap-6 min-w-0 mx-auto w-full max-w-[1400px] xl:grid-cols-[minmax(0,1fr)_380px]"
+    class="mx-auto grid w-full max-w-[1400px] gap-6 min-w-0 xl:grid-cols-[minmax(0,1fr)_380px]"
   >
     <!-- MAIN FORM COLUMN -->
     <form
-      class="relative min-w-0 overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 sm:p-8 shadow-[var(--shadow-soft)] backdrop-blur-2xl grid gap-6"
+      class="relative min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8 grid gap-6"
       @submit.prevent="handleCreateQuizSubmit"
     >
-      <!-- Subtle Background Glows -->
-      <div
-        class="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[var(--primary)]/12 blur-3xl"
-      ></div>
-      <div
-        class="pointer-events-none absolute -left-24 top-1/2 h-64 w-64 rounded-full bg-[var(--accent)]/10 blur-3xl"
-      ></div>
-
       <div class="relative z-10 grid gap-6">
         <!-- Top Navigation & Title Header -->
         <div>
           <button
             type="button"
-            class="inline-flex items-center gap-2 text-xs font-bold text-[var(--muted)] hover:text-[var(--primary)] transition duration-200 mb-3"
+            class="mb-3 inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 transition hover:text-purple-700 cursor-pointer"
             @click="goBack"
           >
-            <ArrowLeft :size="14" />
+            <ArrowLeft class="h-4 w-4" />
             <span>Quay lại</span>
           </button>
 
           <div
             class="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
           >
-            <div>
-              <h1
-                class="text-3xl sm:text-4xl font-black tracking-[-0.06em] text-[var(--text)] flex items-center gap-3"
-              >
-                <span>Tạo Quiz</span>
-                <span
-                  class="inline-block h-2.5 w-2.5 rounded-full bg-[var(--primary)] shadow-[0_0_12px_var(--primary)]"
-                ></span>
-              </h1>
-              <p class="mt-2 text-sm leading-6 text-[var(--muted)] max-w-xl">
-                Tùy chỉnh phân bổ độ khó, phạm vi kiến thức hoặc đóng gói câu
-                hỏi từ Kho cá nhân & Ngân hàng câu hỏi.
-              </p>
+            <div class="flex items-start gap-3">
+              <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-purple-50 text-purple-600 ring-1 ring-purple-100 shadow-xs">
+                <FileQuestion class="h-5 w-5" />
+              </div>
+              <div>
+                <h1
+                  class="flex items-center gap-2.5 text-3xl font-black tracking-[-0.04em] text-slate-900"
+                >
+                  <span>Tạo Quiz</span>
+                  <span class="inline-block h-2 w-2 rounded-full bg-purple-600"></span>
+                </h1>
+                <p class="mt-0.5 text-xs text-slate-500 font-medium">
+                  Soạn thảo đề thi mới, phân bổ độ khó hoặc đóng gói câu hỏi từ kho lưu trữ
+                </p>
+              </div>
             </div>
 
             <!-- Mode Selector Switcher -->
             <div
-              class="inline-flex rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-1 shrink-0 self-start sm:self-auto"
+              class="inline-flex rounded-xl border border-slate-200 bg-slate-100/70 p-1 shrink-0 self-start sm:self-auto"
             >
               <button
                 type="button"
-                class="flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold transition duration-200 cursor-pointer"
+                class="flex items-center gap-2 rounded-lg px-4 py-2 text-xs transition duration-150 cursor-pointer"
                 :class="
                   mode === 'manual'
-                    ? 'bg-[var(--primary)] text-white font-black shadow-sm'
-                    : 'text-[var(--muted)] hover:text-[var(--text)]'
+                    ? 'bg-[#7C3AED] text-white font-bold shadow-sm shadow-[#7C3AED]/25'
+                    : 'text-slate-600 font-medium hover:text-slate-900 hover:bg-white/60'
                 "
                 @click="switchMode('manual')"
               >
@@ -64,11 +58,11 @@
               </button>
               <button
                 type="button"
-                class="flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold transition duration-200 cursor-pointer"
+                class="flex items-center gap-2 rounded-lg px-4 py-2 text-xs transition duration-150 cursor-pointer"
                 :class="
                   mode === 'random'
-                    ? 'bg-[var(--primary)] text-white font-black shadow-sm'
-                    : 'text-[var(--muted)] hover:text-[var(--text)]'
+                    ? 'bg-[#7C3AED] text-white font-bold shadow-sm shadow-[#7C3AED]/25'
+                    : 'text-slate-600 font-medium hover:text-slate-900 hover:bg-white/60'
                 "
                 @click="switchMode('random')"
               >
@@ -80,37 +74,40 @@
 
           <!-- Mode Scope Notice Alert -->
           <div
-            class="mt-4 rounded-2xl border p-3.5 flex items-start gap-3 text-xs leading-relaxed transition-all duration-200"
+            class="mt-4 rounded-xl border p-3.5 flex items-start gap-3 text-xs leading-relaxed transition-all duration-200"
             :class="
               mode === 'manual'
-                ? 'border-emerald-500/30 bg-emerald-500/10 text-[var(--text)]'
-                : 'border-sky-500/30 bg-sky-500/10 text-[var(--text)]'
+                ? 'border-emerald-200/90 bg-emerald-50/70 text-emerald-950'
+                : 'border-sky-200/90 bg-sky-50/70 text-sky-950'
             "
           >
-            <component
-              :is="mode === 'manual' ? Target : Info"
-              :size="16"
-              class="shrink-0 mt-0.5"
-              :class="mode === 'manual' ? 'text-emerald-400' : 'text-sky-400'"
-            />
+            <div
+              class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg mt-0.5"
+              :class="mode === 'manual' ? 'bg-emerald-100 text-emerald-700' : 'bg-sky-100 text-sky-700'"
+            >
+              <component
+                :is="mode === 'manual' ? Target : Info"
+                :size="15"
+              />
+            </div>
             <div class="space-y-0.5">
-              <span class="font-bold text-[var(--text)]">
+              <span class="font-bold text-slate-900">
                 {{
                   mode === "manual"
                     ? "Chế độ Chọn thủ công:"
                     : "Chế độ Tự động phân bổ độ khó:"
                 }}
               </span>
-              <p class="text-[var(--muted)]">
+              <p class="text-slate-600">
                 <template v-if="mode === 'manual'">
                   Bạn có thể chọn và kết hợp linh hoạt các câu hỏi từ
-                  <strong>Kho câu hỏi cá nhân</strong> và
-                  <strong>Ngân hàng câu hỏi công khai</strong>.
+                  <strong class="text-slate-800">Kho câu hỏi cá nhân</strong> và
+                  <strong class="text-slate-800">Ngân hàng câu hỏi công khai</strong>.
                 </template>
                 <template v-else>
                   Chế độ tự động chỉ sử dụng câu hỏi từ Ngân hàng câu hỏi đã
                   được kiểm duyệt. Muốn sử dụng câu hỏi riêng của bạn, hãy chọn
-                  chế độ <strong>Chọn thủ công</strong>.
+                  chế độ <strong class="text-slate-800">Chọn thủ công</strong>.
                 </template>
               </p>
             </div>
@@ -121,137 +118,143 @@
         <div class="grid gap-4 pt-2">
           <label
             for="exam-title-input"
-            class="text-lg font-black tracking-[-0.04em] text-[var(--text)] flex items-center"
+            class="flex items-center gap-2 text-base font-semibold text-slate-900"
           >
-            <span
-              class="h-4 w-1 rounded-full bg-[var(--primary)] inline-block mr-2.5 shadow-[0_0_8px_var(--primary)]"
-            ></span>
+            <span class="h-4 w-1 rounded-full bg-indigo-500"></span>
             <span>1. Thông tin Quiz & Phân loại kiến thức</span>
           </label>
 
           <div class="grid gap-4">
             <div class="grid md:grid-cols-2 gap-4">
-              <label class="grid gap-1.5 text-xs font-black text-[var(--text)]">
-                Tên Quiz / Đề thi *
+              <label class="grid gap-1.5 text-xs font-medium text-slate-700">
+                <span>Tên Quiz / Đề thi <span class="text-purple-600 font-bold">*</span></span>
                 <input
                   id="exam-title-input"
                   v-model="quizForm.title"
                   required
-                  class="field text-sm font-bold"
+                  class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-medium text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/10 shadow-2xs"
                   placeholder="VD: Kiểm tra 1 tiết Toán 10 - Ôn tập Hàm Số"
                 />
               </label>
 
-              <label class="grid gap-1.5 text-xs font-black text-[var(--text)]">
+              <label class="grid gap-1.5 text-xs font-medium text-slate-700">
                 Chủ đề hiển thị
                 <input
                   v-model="quizForm.topic_name"
-                  class="field text-sm font-bold"
+                  class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-medium text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/10 shadow-2xs"
                   placeholder="VD: Đại số & Hàm số, Ôn tập chương 1..."
                   @input="onTopicInputChange"
                 />
               </label>
             </div>
 
-            <label class="grid gap-1.5 text-xs font-black text-[var(--text)]">
+            <label class="grid gap-1.5 text-xs font-medium text-slate-700">
               Mô tả ngắn
               <textarea
                 v-model="quizForm.description"
-                class="field min-h-20 text-xs leading-relaxed"
+                rows="3"
+                class="w-full resize-none rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-medium leading-relaxed text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/10 shadow-2xs"
                 placeholder="Nhập ghi chú hoặc hướng dẫn làm bài..."
               ></textarea>
             </label>
 
-            <!-- Taxonomy Dropdowns -->
-            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 pt-1">
-              <label class="grid gap-1.5 text-xs font-black text-[var(--text)]">
-                Cấp học
-                <select
-                  v-model="filters.education_level_id"
-                  class="field text-xs"
-                  @change="onLevelChange"
-                >
-                  <option value="">Tất cả cấp học</option>
-                  <option
-                    v-for="level in taxonomyLevels"
-                    :key="level.id"
-                    :value="level.id"
-                  >
-                    {{ level.name }}
-                  </option>
-                </select>
-              </label>
+            <!-- Taxonomy Sub-card -->
+            <div class="rounded-xl border border-slate-200/80 bg-slate-50/60 p-4 grid gap-3">
+              <div class="flex items-center gap-1.5 text-xs font-bold text-slate-700">
+                <GraduationCap :size="15" class="text-purple-600" />
+                <span>Phân loại & Bộ môn</span>
+              </div>
 
-              <label class="grid gap-1.5 text-xs font-black text-[var(--text)]">
-                Khối lớp
-                <select
-                  v-model="filters.grade_id"
-                  class="field text-xs"
-                  @change="onGradeSubjectChange"
-                >
-                  <option value="">Tất cả khối lớp</option>
-                  <option
-                    v-for="grade in availableGrades"
-                    :key="grade.id"
-                    :value="grade.id"
+              <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <label class="grid gap-1.5 text-xs font-medium text-slate-600">
+                  Cấp học
+                  <select
+                    v-model="filters.education_level_id"
+                    class="w-full cursor-pointer rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-900 outline-none transition hover:border-slate-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/10 shadow-2xs"
+                    @change="onLevelChange"
                   >
-                    {{ grade.name }}
-                  </option>
-                </select>
-              </label>
+                    <option value="">Tất cả cấp học</option>
+                    <option
+                      v-for="level in taxonomyLevels"
+                      :key="level.id"
+                      :value="level.id"
+                    >
+                      {{ level.name }}
+                    </option>
+                  </select>
+                </label>
 
-              <label class="grid gap-1.5 text-xs font-black text-[var(--text)]">
-                Bộ môn *
-                <select
-                  v-model="filters.subject_id"
-                  class="field text-xs font-bold"
-                  @change="onGradeSubjectChange"
-                >
-                  <option value="">Chọn bộ môn *</option>
-                  <option
-                    v-for="subject in availableSubjects"
-                    :key="subject.id"
-                    :value="subject.id"
+                <label class="grid gap-1.5 text-xs font-medium text-slate-600">
+                  Khối lớp
+                  <select
+                    v-model="filters.grade_id"
+                    class="w-full cursor-pointer rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-900 outline-none transition hover:border-slate-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/10 shadow-2xs"
+                    @change="onGradeSubjectChange"
                   >
-                    {{ subject.name }}
-                  </option>
-                </select>
-              </label>
+                    <option value="">Tất cả khối lớp</option>
+                    <option
+                      v-for="grade in availableGrades"
+                      :key="grade.id"
+                      :value="grade.id"
+                    >
+                      {{ grade.name }}
+                    </option>
+                  </select>
+                </label>
 
-              <label class="grid gap-1.5 text-xs font-black text-[var(--text)]">
-                Chủ đề từ Ngân hàng
-                <select
-                  v-model="filters.topic_name"
-                  class="field text-xs cursor-pointer"
-                  @change="onTopicSelectChange"
-                >
-                  <option value="">Tất cả chủ đề trong kho</option>
-                  <option
-                    v-for="top in topicsList"
-                    :key="top.topic_name"
-                    :value="top.topic_name"
+                <label class="grid gap-1.5 text-xs font-medium text-slate-600">
+                  <span>Bộ môn <span class="text-purple-600 font-bold">*</span></span>
+                  <select
+                    v-model="filters.subject_id"
+                    class="w-full cursor-pointer rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-900 outline-none transition hover:border-slate-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/10 shadow-2xs"
+                    @change="onGradeSubjectChange"
                   >
-                    {{ top.topic_name }} ({{ top.total_questions }} câu)
-                  </option>
-                </select>
-              </label>
+                    <option value="">Chọn bộ môn</option>
+                    <option
+                      v-for="subject in availableSubjects"
+                      :key="subject.id"
+                      :value="subject.id"
+                    >
+                      {{ subject.name }}
+                    </option>
+                  </select>
+                </label>
+
+                <label class="grid gap-1.5 text-xs font-medium text-slate-600">
+                  Chủ đề từ Ngân hàng
+                  <select
+                    v-model="filters.topic_name"
+                    class="w-full cursor-pointer rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-900 outline-none transition hover:border-slate-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/10 shadow-2xs"
+                    @change="onTopicSelectChange"
+                  >
+                    <option value="">Tất cả chủ đề trong kho</option>
+                    <option
+                      v-for="top in topicsList"
+                      :key="top.topic_name"
+                      :value="top.topic_name"
+                    >
+                      {{ top.topic_name }} ({{ top.total_questions }} câu)
+                    </option>
+                  </select>
+                </label>
+              </div>
             </div>
 
             <!-- Ảnh bìa bộ đề (Cover Image Upload) -->
             <div class="grid gap-2 pt-1">
               <label
-                class="text-xs font-black text-[var(--text)] flex items-center justify-between"
+                class="text-xs font-medium text-slate-700 flex items-center justify-between"
               >
                 <span class="flex items-center gap-1.5">
-                  <ImageIcon :size="14" class="text-[var(--primary)]" />
-                  <span>Ảnh bìa Quiz</span>
-                  <span class="text-[var(--muted)] font-normal text-[11px]"
+                  <ImageIcon :size="14" class="text-purple-600" />
+                  <span class="font-semibold text-slate-800">Ảnh bìa Quiz</span>
+                  <span class="text-slate-400 font-normal text-[11px]"
                     >(Tùy chọn)</span
                   >
                 </span>
                 <span
                   v-if="formCoverFile || quizForm.cover"
-                  class="inline-flex items-center gap-1 text-emerald-400 text-[11px]"
+                  class="inline-flex items-center gap-1 text-emerald-600 text-[11px] font-semibold"
                 >
                   <Check :size="12" />
                   <span>Đã chọn ảnh</span>
@@ -259,19 +262,19 @@
               </label>
 
               <div
-                class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+                class="rounded-xl border border-slate-200/90 bg-slate-50/70 p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition hover:border-purple-200"
               >
                 <div class="flex items-center gap-3">
                   <div
-                    class="h-16 w-24 rounded-xl overflow-hidden border border-[var(--border)] shrink-0 shadow-sm transition-all duration-300"
+                    class="h-16 w-24 rounded-xl overflow-hidden border border-slate-200 shrink-0 shadow-2xs transition-all duration-300"
                     :style="{ background: coverBackground }"
                   ></div>
                   <div class="min-w-0">
-                    <p class="text-xs font-black text-[var(--text)]">
+                    <p class="text-xs font-bold text-slate-900">
                       Ảnh bìa hiển thị
                     </p>
                     <p
-                      class="text-[11px] font-bold text-[var(--muted)] mt-0.5 truncate max-w-[240px]"
+                      class="text-[11px] text-slate-500 mt-0.5 truncate max-w-[240px]"
                     >
                       {{ selectedCoverLabel }}
                     </p>
@@ -288,7 +291,7 @@
                   />
                   <button
                     type="button"
-                    class="rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3.5 py-2 text-xs font-black text-[var(--text)] hover:bg-[var(--chip-active)] transition cursor-pointer flex items-center gap-1.5"
+                    class="rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition shadow-2xs cursor-pointer flex items-center gap-1.5"
                     @click="openCoverPicker"
                   >
                     <Camera :size="13" />
@@ -301,7 +304,7 @@
                   <button
                     v-if="formCoverFile || quizForm.cover"
                     type="button"
-                    class="rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs font-black text-rose-300 hover:bg-rose-500/20 transition cursor-pointer flex items-center gap-1"
+                    class="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-100 transition shadow-2xs cursor-pointer flex items-center gap-1"
                     @click="removeCover"
                   >
                     <X :size="13" />
@@ -314,37 +317,35 @@
         </div>
 
         <!-- 2. CẤU HÌNH QUIZ & PHẠM VI HIỂN THỊ -->
-        <div class="grid gap-4 pt-5 border-t border-[var(--border)]">
+        <div class="grid gap-4 pt-5 border-t border-slate-200">
           <h2
-            class="text-lg font-black tracking-[-0.04em] text-[var(--text)] flex items-center"
+            class="flex items-center gap-2 text-base font-semibold text-slate-900"
           >
-            <span
-              class="h-4 w-1 rounded-full bg-[var(--primary)] inline-block mr-2.5 shadow-[0_0_8px_var(--primary)]"
-            ></span>
+            <span class="h-4 w-1 rounded-full bg-indigo-500"></span>
             <span>2. Cấu hình Quiz</span>
           </h2>
 
           <!-- Chế độ THỦ CÔNG: Thông báo rõ ràng là mặc định Riêng tư, cần gửi duyệt để công khai -->
           <div
             v-if="mode === 'manual'"
-            class="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 flex items-start gap-3.5 shadow-sm"
+            class="rounded-xl border border-amber-200 bg-amber-50/70 p-4 flex items-start gap-3.5 shadow-2xs"
           >
             <div
-              class="h-9 w-9 rounded-xl bg-amber-500/20 flex items-center justify-center shrink-0 text-amber-400"
+              class="h-9 w-9 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0"
             >
               <Lock :size="18" />
             </div>
             <div class="grid gap-1">
               <span
-                class="font-black text-sm text-[var(--text)] flex items-center gap-2"
+                class="font-bold text-sm text-slate-900 flex items-center gap-2"
               >
                 <span>Chế độ hiển thị: Riêng tư</span>
                 <span
-                  class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                  class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200"
                   >Mặc định</span
                 >
               </span>
-              <p class="text-xs leading-relaxed text-[var(--muted)]">
+              <p class="text-xs leading-relaxed text-slate-600">
                 Quiz thủ công có thể sử dụng câu hỏi từ Kho câu hỏi của tôi và
                 Ngân hàng câu hỏi. Vì câu hỏi trong Kho của tôi chưa được kiểm
                 duyệt, Quiz sẽ được tạo ở chế độ riêng tư. Bạn có thể gửi yêu
@@ -356,9 +357,9 @@
           <!-- Chế độ TỰ ĐỘNG: Cho phép chọn Riêng tư hoặc Công khai -->
           <div v-else class="grid gap-3">
             <div
-              class="rounded-xl border border-indigo-500/20 bg-indigo-500/5 p-3 text-xs text-[var(--muted)] flex items-center gap-2"
+              class="rounded-xl border border-purple-100 bg-purple-50/50 p-3 text-xs text-purple-900 flex items-center gap-2 shadow-2xs"
             >
-              <Sparkles :size="15" class="text-indigo-500 shrink-0" />
+              <Sparkles :size="15" class="text-purple-600 shrink-0" />
               <span
                 >Quiz tự động chỉ sử dụng câu hỏi đã được kiểm duyệt trong Ngân
                 hàng câu hỏi.</span
@@ -366,11 +367,11 @@
             </div>
             <div class="grid md:grid-cols-2 gap-4">
               <label
-                class="flex items-start gap-3 rounded-2xl border p-4 cursor-pointer transition duration-200"
+                class="flex items-start gap-3 rounded-xl border p-4 cursor-pointer transition duration-150"
                 :class="
                   quizForm.visibility === 'private'
-                    ? 'border-amber-500/60 bg-amber-500/10 text-[var(--text)] shadow-sm'
-                    : 'border-[var(--border)] bg-[var(--surface-soft)] text-[var(--muted)] hover:border-[var(--border-strong)]'
+                    ? 'border-amber-300 bg-amber-50/80 text-slate-900 shadow-xs ring-1 ring-amber-200/70'
+                    : 'border-slate-200 bg-slate-50/50 text-slate-600 hover:border-slate-300 hover:bg-slate-50'
                 "
               >
                 <input
@@ -381,39 +382,43 @@
                 />
                 <div class="grid gap-1">
                   <span
-                    class="font-black text-sm text-[var(--text)] flex items-center gap-1.5"
+                    class="font-bold text-sm text-slate-900 flex items-center gap-1.5"
                   >
-                    <Lock :size="14" class="text-amber-400" />
+                    <div class="flex h-5 w-5 items-center justify-center rounded bg-amber-100 text-amber-700">
+                      <Lock :size="12" />
+                    </div>
                     <span>Riêng tư</span>
                   </span>
-                  <span class="text-xs leading-relaxed text-[var(--muted)]"
+                  <span class="text-xs leading-relaxed text-slate-500"
                     >Chỉ lưu vào kho cá nhân của bạn.</span
                   >
                 </div>
               </label>
 
               <label
-                class="flex items-start gap-3 rounded-2xl border p-4 cursor-pointer transition duration-200"
+                class="flex items-start gap-3 rounded-xl border p-4 cursor-pointer transition duration-150"
                 :class="
                   quizForm.visibility === 'public'
-                    ? 'border-[var(--primary)] bg-[var(--primary)]/10 text-[var(--text)] shadow-sm'
-                    : 'border-[var(--border)] bg-[var(--surface-soft)] text-[var(--muted)] hover:border-[var(--border-strong)]'
+                    ? 'border-purple-300 bg-purple-50/80 text-slate-900 shadow-xs ring-1 ring-purple-200/70'
+                    : 'border-slate-200 bg-slate-50/50 text-slate-600 hover:border-slate-300 hover:bg-slate-50'
                 "
               >
                 <input
                   type="radio"
                   v-model="quizForm.visibility"
                   value="public"
-                  class="mt-1 accent-[var(--primary)] h-4 w-4 cursor-pointer"
+                  class="mt-1 accent-[#7C3AED] h-4 w-4 cursor-pointer"
                 />
                 <div class="grid gap-1">
                   <span
-                    class="font-black text-sm text-[var(--text)] flex items-center gap-1.5"
+                    class="font-bold text-sm text-slate-900 flex items-center gap-1.5"
                   >
-                    <Globe :size="14" class="text-[var(--primary)]" />
+                    <div class="flex h-5 w-5 items-center justify-center rounded bg-purple-100 text-purple-700">
+                      <Globe :size="12" />
+                    </div>
                     <span>Công khai</span>
                   </span>
-                  <span class="text-xs leading-relaxed text-[var(--muted)]"
+                  <span class="text-xs leading-relaxed text-slate-500"
                     >Chia sẻ ngay cho cộng đồng cùng làm bài.</span
                   >
                 </div>
@@ -422,7 +427,7 @@
           </div>
 
           <div class="grid md:grid-cols-2 gap-4 pt-1">
-            <label class="grid gap-1.5 text-xs font-black text-[var(--text)]">
+            <label class="grid gap-1.5 text-xs font-medium text-slate-700">
               Thời gian làm bài (phút)
               <div class="flex items-center gap-3">
                 <input
@@ -430,36 +435,34 @@
                   type="number"
                   min="1"
                   max="180"
-                  class="field text-center font-bold text-sm max-w-[120px]"
+                  class="w-32 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-center text-sm font-bold text-slate-900 outline-none transition hover:border-slate-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/10 shadow-2xs"
                 />
-                <span class="text-xs text-[var(--muted)]">phút</span>
+                <span class="text-xs font-medium text-slate-500">phút</span>
               </div>
             </label>
 
             <div class="flex items-center pt-2 sm:pt-4">
               <label
-                class="flex items-center gap-3 cursor-pointer text-xs font-bold text-[var(--text)] select-none"
+                class="flex items-center gap-3 cursor-pointer text-xs font-medium text-slate-700 select-none"
               >
                 <input
                   type="checkbox"
                   v-model="quizForm.shuffle_questions"
-                  class="h-5 w-5 rounded accent-[var(--primary)] cursor-pointer"
+                  class="h-4 w-4 rounded accent-[#7C3AED] cursor-pointer"
                 />
-                <span>Trộn thứ tự câu hỏi khi làm bài</span>
+                <span class="font-semibold text-slate-800">Trộn thứ tự câu hỏi khi làm bài</span>
               </label>
             </div>
           </div>
         </div>
 
         <!-- 3. CHỌN & QUẢN LÝ CÂU HỎI -->
-        <div class="grid gap-4 pt-5 border-t border-[var(--border)]">
+        <div class="grid gap-4 pt-5 border-t border-slate-200">
           <div class="flex flex-wrap items-center justify-between gap-3">
             <h2
-              class="text-lg font-black tracking-[-0.04em] text-[var(--text)] flex items-center"
+              class="flex items-center gap-2 text-base font-semibold text-slate-900"
             >
-              <span
-                class="h-4 w-1 rounded-full bg-[var(--primary)] inline-block mr-2.5 shadow-[0_0_8px_var(--primary)]"
-              ></span>
+              <span class="h-4 w-1 rounded-full bg-indigo-500"></span>
               <span
                 >3.
                 {{
@@ -472,10 +475,10 @@
 
             <span
               v-if="mode === 'random'"
-              class="text-xs font-bold text-[var(--muted)]"
+              class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-600"
             >
               Khả dụng trong Ngân hàng:
-              <strong class="text-[var(--text)]">{{ poolStats.total }}</strong>
+              <strong class="text-purple-700 font-bold">{{ poolStats.total }}</strong>
               câu
             </span>
           </div>
@@ -485,26 +488,26 @@
             <!-- Empty Bank State in Automatic Mode -->
             <div
               v-if="poolStats.total === 0"
-              class="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-6 text-center grid gap-3"
+              class="rounded-xl border border-amber-200 bg-amber-50/70 p-6 text-center grid gap-3 shadow-2xs"
             >
               <div class="flex justify-center">
-                <BookOpen :size="36" class="text-amber-400" />
+                <BookOpen :size="36" class="text-amber-600" />
               </div>
               <div>
-                <p class="text-sm font-bold text-[var(--text)]">
+                <p class="text-sm font-bold text-slate-900">
                   Chưa có câu hỏi khả dụng trong Ngân hàng cho tiêu chí này
                 </p>
-                <p class="text-xs text-[var(--muted)] mt-1 max-w-lg mx-auto">
+                <p class="text-xs text-slate-600 mt-1 max-w-lg mx-auto">
                   Ngân hàng câu hỏi công khai hiện chưa có câu hỏi nào khớp với
                   Bộ môn / Chủ đề đã chọn. Bạn có thể chọn Bộ môn khác hoặc
-                  chuyển sang chế độ <strong>Chọn thủ công</strong> để sử dụng
-                  các câu hỏi từ <strong>Kho cá nhân</strong> của bạn.
+                  chuyển sang chế độ <strong class="text-slate-800">Chọn thủ công</strong> để sử dụng
+                  các câu hỏi từ <strong class="text-slate-800">Kho cá nhân</strong> của bạn.
                 </p>
               </div>
               <div class="pt-2">
                 <button
                   type="button"
-                  class="btn-secondary inline-flex items-center gap-2 text-xs !py-2.5 !px-5 cursor-pointer shadow-sm"
+                  class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition shadow-2xs cursor-pointer"
                   @click="switchToManualAndOpenPicker"
                 >
                   <Target :size="14" />
@@ -514,12 +517,37 @@
             </div>
 
             <!-- Normal Matrix Cards in Automatic Mode -->
-            <div v-else class="grid gap-3">
-              <div class="flex items-center justify-between">
-                <p class="text-xs font-bold text-[var(--muted)]">
-                  Chọn số lượng câu hỏi theo từng mức độ:
-                </p>
-                <span class="text-xs font-black text-[var(--primary)]"
+            <div v-else class="grid gap-3.5">
+              <div class="flex flex-wrap items-center justify-between gap-2.5">
+                <!-- Quick Presets -->
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-medium text-slate-500">Mẫu nhanh:</span>
+                  <div class="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      class="rounded-lg border border-slate-200 bg-slate-50 hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200 px-2.5 py-1 text-[11px] font-semibold text-slate-600 transition cursor-pointer"
+                      @click="applyPreset('basic')"
+                    >
+                      10 câu cơ bản
+                    </button>
+                    <button
+                      type="button"
+                      class="rounded-lg border border-slate-200 bg-slate-50 hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200 px-2.5 py-1 text-[11px] font-semibold text-slate-600 transition cursor-pointer"
+                      @click="applyPreset('standard')"
+                    >
+                      20 câu chuẩn
+                    </button>
+                    <button
+                      type="button"
+                      class="rounded-lg border border-slate-200 bg-slate-50 hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200 px-2.5 py-1 text-[11px] font-semibold text-slate-600 transition cursor-pointer"
+                      @click="applyPreset('advanced')"
+                    >
+                      25 câu nâng cao
+                    </button>
+                  </div>
+                </div>
+
+                <span class="inline-flex items-center gap-1.5 text-xs font-bold text-purple-700 bg-purple-50 border border-purple-200/80 px-2.5 py-1 rounded-lg"
                   >Tổng chọn: {{ totalMatrixQuestions }} câu</span
                 >
               </div>
@@ -527,37 +555,35 @@
               <div class="grid md:grid-cols-3 gap-4">
                 <!-- Dễ Card -->
                 <div
-                  class="rounded-2xl border p-4 sm:p-5 grid gap-3 transition duration-200"
+                  class="rounded-xl border p-4 sm:p-5 grid gap-3 transition duration-150 shadow-2xs"
                   :class="
                     quizForm.easy_count > poolStats.easy
-                      ? 'border-rose-500/50 bg-rose-500/10'
-                      : 'border-emerald-500/30 bg-emerald-500/5 hover:border-emerald-500/50'
+                      ? 'border-rose-300 bg-rose-50/60'
+                      : 'border-emerald-200/90 bg-emerald-50/30 hover:bg-emerald-50/60 hover:border-emerald-300'
                   "
                 >
                   <div class="flex items-center justify-between gap-2">
                     <span
-                      class="text-xs font-black text-emerald-400 flex items-center gap-1.5"
+                      class="inline-flex items-center gap-1.5 rounded-md bg-emerald-100/90 px-2 py-0.5 text-xs font-bold text-emerald-800"
                     >
-                      <span class="h-2 w-2 rounded-full bg-emerald-400"></span>
+                      <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
                       <span>Dễ (Nhận biết)</span>
                     </span>
-                    <span class="text-xs font-semibold text-[var(--muted)]"
+                    <span class="text-xs font-semibold text-slate-500"
                       >Kho: {{ poolStats.easy }} câu</span
                     >
                   </div>
 
-                  <label
-                    class="grid gap-1.5 text-xs font-bold text-[var(--muted)]"
-                  >
-                    Số lượng câu hỏi
+                  <label class="grid gap-1.5 text-xs font-medium text-slate-600">
+                    <span>Số lượng câu hỏi</span>
                     <input
                       v-model.number="quizForm.easy_count"
                       type="number"
                       min="0"
                       :max="poolStats.easy"
-                      class="field text-center text-lg font-black !py-2 text-[var(--text)]"
+                      class="w-full rounded-lg border border-emerald-200 bg-white px-3 py-2 text-center text-lg font-bold text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15 shadow-2xs"
                       :class="{
-                        '!border-rose-500 !text-rose-400':
+                        '!border-rose-400 !text-rose-600':
                           quizForm.easy_count > poolStats.easy,
                       }"
                     />
@@ -566,37 +592,35 @@
 
                 <!-- Vừa Card -->
                 <div
-                  class="rounded-2xl border p-4 sm:p-5 grid gap-3 transition duration-200"
+                  class="rounded-xl border p-4 sm:p-5 grid gap-3 transition duration-150 shadow-2xs"
                   :class="
                     quizForm.medium_count > poolStats.medium
-                      ? 'border-rose-500/50 bg-rose-500/10'
-                      : 'border-amber-500/30 bg-amber-500/5 hover:border-amber-500/50'
+                      ? 'border-rose-300 bg-rose-50/60'
+                      : 'border-amber-200/90 bg-amber-50/30 hover:bg-amber-50/60 hover:border-amber-300'
                   "
                 >
                   <div class="flex items-center justify-between gap-2">
                     <span
-                      class="text-xs font-black text-amber-400 flex items-center gap-1.5"
+                      class="inline-flex items-center gap-1.5 rounded-md bg-amber-100/90 px-2 py-0.5 text-xs font-bold text-amber-800"
                     >
-                      <span class="h-2 w-2 rounded-full bg-amber-400"></span>
+                      <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
                       <span>Vừa (Thông hiểu)</span>
                     </span>
-                    <span class="text-xs font-semibold text-[var(--muted)]"
+                    <span class="text-xs font-semibold text-slate-500"
                       >Kho: {{ poolStats.medium }} câu</span
                     >
                   </div>
 
-                  <label
-                    class="grid gap-1.5 text-xs font-bold text-[var(--muted)]"
-                  >
-                    Số lượng câu hỏi
+                  <label class="grid gap-1.5 text-xs font-medium text-slate-600">
+                    <span>Số lượng câu hỏi</span>
                     <input
                       v-model.number="quizForm.medium_count"
                       type="number"
                       min="0"
                       :max="poolStats.medium"
-                      class="field text-center text-lg font-black !py-2 text-[var(--text)]"
+                      class="w-full rounded-lg border border-amber-200 bg-white px-3 py-2 text-center text-lg font-bold text-slate-900 outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-500/15 shadow-2xs"
                       :class="{
-                        '!border-rose-500 !text-rose-400':
+                        '!border-rose-400 !text-rose-600':
                           quizForm.medium_count > poolStats.medium,
                       }"
                     />
@@ -605,37 +629,35 @@
 
                 <!-- Khó Card -->
                 <div
-                  class="rounded-2xl border p-4 sm:p-5 grid gap-3 transition duration-200"
+                  class="rounded-xl border p-4 sm:p-5 grid gap-3 transition duration-150 shadow-2xs"
                   :class="
                     quizForm.hard_count > poolStats.hard
-                      ? 'border-rose-500/50 bg-rose-500/10'
-                      : 'border-rose-500/30 bg-rose-500/5 hover:border-rose-500/50'
+                      ? 'border-rose-300 bg-rose-50/60'
+                      : 'border-rose-200/90 bg-rose-50/30 hover:bg-rose-50/60 hover:border-rose-300'
                   "
                 >
                   <div class="flex items-center justify-between gap-2">
                     <span
-                      class="text-xs font-black text-rose-400 flex items-center gap-1.5"
+                      class="inline-flex items-center gap-1.5 rounded-md bg-rose-100/90 px-2 py-0.5 text-xs font-bold text-rose-800"
                     >
-                      <span class="h-2 w-2 rounded-full bg-rose-400"></span>
+                      <span class="h-1.5 w-1.5 rounded-full bg-rose-500"></span>
                       <span>Khó (Vận dụng)</span>
                     </span>
-                    <span class="text-xs font-semibold text-[var(--muted)]"
+                    <span class="text-xs font-semibold text-slate-500"
                       >Kho: {{ poolStats.hard }} câu</span
                     >
                   </div>
 
-                  <label
-                    class="grid gap-1.5 text-xs font-bold text-[var(--muted)]"
-                  >
-                    Số lượng câu hỏi
+                  <label class="grid gap-1.5 text-xs font-medium text-slate-600">
+                    <span>Số lượng câu hỏi</span>
                     <input
                       v-model.number="quizForm.hard_count"
                       type="number"
                       min="0"
                       :max="poolStats.hard"
-                      class="field text-center text-lg font-black !py-2 text-[var(--text)]"
+                      class="w-full rounded-lg border border-rose-200 bg-white px-3 py-2 text-center text-lg font-bold text-slate-900 outline-none transition focus:border-rose-500 focus:ring-2 focus:ring-rose-500/15 shadow-2xs"
                       :class="{
-                        '!border-rose-500 !text-rose-400':
+                        '!border-rose-400 !text-rose-600':
                           quizForm.hard_count > poolStats.hard,
                       }"
                     />
@@ -646,14 +668,14 @@
               <!-- Matrix Warnings -->
               <div
                 v-if="matrixWarnings.length > 0"
-                class="rounded-2xl border border-rose-500/40 bg-rose-500/10 p-3.5 grid gap-1.5"
+                class="rounded-xl border border-rose-200 bg-rose-50/80 p-3.5 grid gap-1.5 shadow-2xs"
               >
                 <div
                   v-for="(warn, idx) in matrixWarnings"
                   :key="idx"
-                  class="text-xs font-bold text-rose-400 flex items-center gap-1.5"
+                  class="text-xs font-semibold text-rose-700 flex items-center gap-1.5"
                 >
-                  <AlertTriangle :size="13" class="shrink-0" />
+                  <AlertTriangle :size="13" class="shrink-0 text-rose-600" />
                   <span>{{ warn }}</span>
                 </div>
               </div>
@@ -665,45 +687,43 @@
             <!-- Selected Questions List -->
             <div v-if="selectedIds.length > 0" class="grid gap-3">
               <div
-                class="flex flex-wrap items-center justify-between gap-3 text-xs font-bold"
+                class="flex flex-wrap items-center justify-between gap-3 text-xs font-medium"
               >
-                <div class="flex items-center gap-2 text-[var(--muted)]">
-                  <span
-                    >Đã chọn
-                    <strong class="text-[var(--text)]">{{
-                      selectedIds.length
-                    }}</strong>
-                    câu hỏi</span
+                <!-- Filter Tabs -->
+                <div class="flex items-center gap-1 bg-slate-100/80 p-1 rounded-xl border border-slate-200">
+                  <button
+                    type="button"
+                    class="px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer"
+                    :class="manualListFilter === 'all' ? 'bg-white text-purple-700 font-bold shadow-xs' : 'text-slate-600 hover:text-slate-900'"
+                    @click="manualListFilter = 'all'"
                   >
-                  <span
-                    v-if="myBankCount > 0 || publicBankCount > 0"
-                    class="inline-flex items-center gap-1.5 text-[11px] rounded-lg bg-[var(--surface-soft)] px-2.5 py-1 border border-[var(--border)]"
+                    Tất cả ({{ selectedIds.length }})
+                  </button>
+                  <button
+                    v-if="myBankCount > 0"
+                    type="button"
+                    class="px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer flex items-center gap-1"
+                    :class="manualListFilter === 'my_bank' ? 'bg-white text-emerald-700 font-bold shadow-xs' : 'text-slate-600 hover:text-slate-900'"
+                    @click="manualListFilter = 'my_bank'"
                   >
-                    <span
-                      v-if="myBankCount > 0"
-                      class="inline-flex items-center gap-1 text-emerald-400"
-                    >
-                      <User :size="12" />
-                      <span>Kho của tôi: {{ myBankCount }}</span>
-                    </span>
-                    <span
-                      v-if="myBankCount > 0 && publicBankCount > 0"
-                      class="text-[var(--border)]"
-                      >•</span
-                    >
-                    <span
-                      v-if="publicBankCount > 0"
-                      class="inline-flex items-center gap-1 text-sky-400"
-                    >
-                      <Globe :size="12" />
-                      <span>Ngân hàng: {{ publicBankCount }}</span>
-                    </span>
-                  </span>
+                    <User :size="11" />
+                    <span>Kho của tôi ({{ myBankCount }})</span>
+                  </button>
+                  <button
+                    v-if="publicBankCount > 0"
+                    type="button"
+                    class="px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer flex items-center gap-1"
+                    :class="manualListFilter === 'public_bank' ? 'bg-white text-sky-700 font-bold shadow-xs' : 'text-slate-600 hover:text-slate-900'"
+                    @click="manualListFilter = 'public_bank'"
+                  >
+                    <Globe :size="11" />
+                    <span>Ngân hàng ({{ publicBankCount }})</span>
+                  </button>
                 </div>
 
                 <button
                   type="button"
-                  class="btn-secondary inline-flex items-center gap-1.5 text-xs font-bold !py-1.5 !px-3.5 cursor-pointer shadow-sm"
+                  class="inline-flex items-center gap-1.5 rounded-xl border border-purple-200 bg-purple-50 px-3.5 py-1.5 text-xs font-bold text-purple-700 transition hover:bg-purple-100 hover:border-purple-300 cursor-pointer shadow-2xs"
                   @click="openQuestionPicker"
                 >
                   <Plus :size="13" />
@@ -714,13 +734,13 @@
               <!-- List of Selected Question Items -->
               <div class="grid gap-2.5 max-h-[460px] overflow-y-auto pr-1">
                 <div
-                  v-for="(q, idx) in selectedQuestionsDisplayList"
+                  v-for="(q, idx) in filteredSelectedQuestions"
                   :key="q.id"
-                  class="flex items-center justify-between gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-3.5 transition hover:border-[var(--border-strong)]"
+                  class="flex items-center justify-between gap-3 rounded-xl border border-slate-200/90 bg-slate-50/50 p-3.5 transition hover:border-purple-300 hover:bg-white hover:shadow-xs group"
                 >
                   <div class="flex items-center gap-3 min-w-0 flex-1">
                     <span
-                      class="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-[var(--surface)] text-xs font-black text-[var(--muted)] border border-[var(--border)]"
+                      class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white text-xs font-bold text-purple-700 border border-slate-200 group-hover:border-purple-200 group-hover:bg-purple-50 transition shadow-2xs"
                     >
                       {{ idx + 1 }}
                     </span>
@@ -728,21 +748,21 @@
                     <div class="min-w-0 flex-1">
                       <div class="flex flex-wrap items-center gap-1.5 mb-1">
                         <span
-                          class="font-mono text-xs font-bold text-[var(--primary)]"
+                          class="font-mono text-xs font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-md border border-purple-100"
                           >#{{ q.id }}</span
                         >
                         <span
-                          class="rounded-full px-2 py-0.5 text-[10px] font-black"
+                          class="rounded-md px-2 py-0.5 text-[10px] font-bold"
                           :class="getDifficultyClass(q.difficulty)"
                         >
                           {{ getDifficultyLabel(q.difficulty) }}
                         </span>
                         <span
-                          class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold"
+                          class="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-semibold"
                           :class="
                             q.source === 'my_bank'
-                              ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                              : 'bg-sky-500/10 text-sky-400 border border-sky-500/20'
+                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                              : 'bg-sky-50 text-sky-700 border border-sky-200'
                           "
                         >
                           <component
@@ -755,32 +775,23 @@
                         </span>
                         <span
                           v-if="q.subject_name"
-                          class="text-[10px] text-[var(--muted)] font-medium"
+                          class="text-[10px] text-slate-500 font-medium"
                         >
                           • {{ q.subject_name }}
                         </span>
                       </div>
 
                       <p
-                        class="text-xs sm:text-sm font-semibold text-[var(--text)] truncate"
+                        class="text-xs sm:text-sm font-medium text-slate-900 truncate"
                       >
                         {{ q.content || q.text || `Câu hỏi #${q.id}` }}
                       </p>
-
-                      <!-- Display correct answer key
-                      <div v-if="getCorrectAnswerKey(q)" class="mt-1 flex items-center gap-1.5 text-xs font-bold text-emerald-400">
-                        <span class="inline-flex items-center gap-1 rounded bg-emerald-500/10 px-1.5 py-0.5 text-[10px] text-emerald-300 border border-emerald-500/20">
-                          <Check :size="11" />
-                          <span>Đáp án đúng:</span>
-                        </span>
-                        <span class="truncate text-xs">{{ getCorrectAnswerKey(q) }}</span>
-                      </div> -->
                     </div>
                   </div>
 
                   <button
                     type="button"
-                    class="h-8 w-8 shrink-0 flex items-center justify-center rounded-xl text-[var(--muted)] hover:bg-rose-500/10 hover:text-rose-400 transition cursor-pointer"
+                    class="h-8 w-8 shrink-0 flex items-center justify-center rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition cursor-pointer"
                     aria-label="Bỏ câu hỏi này khỏi đề thi"
                     title="Bỏ câu hỏi này khỏi đề thi"
                     @click="removeSelectedQuestion(q.id)"
@@ -794,28 +805,28 @@
             <!-- Empty State for Manual Mode -->
             <div
               v-else
-              class="rounded-2xl border border-dashed border-[var(--border)] bg-[var(--surface-soft)]/50 p-8 sm:p-10 text-center grid gap-3"
+              class="rounded-xl border border-dashed border-slate-300 bg-slate-50/50 p-8 sm:p-10 text-center grid gap-3"
             >
               <div class="flex justify-center">
-                <BookOpen :size="40" class="text-[var(--muted)]" />
+                <BookOpen :size="40" class="text-slate-400" />
               </div>
               <div>
-                <p class="text-base font-black text-[var(--text)]">
+                <p class="text-base font-bold text-slate-800">
                   Chưa có câu hỏi nào được chọn
                 </p>
                 <p
-                  class="text-xs text-[var(--muted)] mt-1.5 max-w-md mx-auto leading-relaxed"
+                  class="text-xs text-slate-500 mt-1.5 max-w-md mx-auto leading-relaxed"
                 >
                   Hãy chọn các câu hỏi từ
-                  <strong>Kho câu hỏi cá nhân</strong> hoặc
-                  <strong>Ngân hàng câu hỏi công khai</strong> để đưa vào đề
+                  <strong class="text-slate-700">Kho câu hỏi cá nhân</strong> hoặc
+                  <strong class="text-slate-700">Ngân hàng câu hỏi công khai</strong> để đưa vào đề
                   thi.
                 </p>
               </div>
               <div class="pt-2">
                 <button
                   type="button"
-                  class="btn-primary inline-flex items-center gap-2 text-xs !py-3 !px-6 cursor-pointer shadow-lg shadow-[var(--primary)]/25 hover:shadow-[var(--primary)]/40 transition duration-200 hover:-translate-y-0.5"
+                  class="inline-flex items-center gap-2 rounded-xl bg-[#7C3AED] px-6 py-2.5 text-xs font-semibold text-white shadow-md shadow-[#7C3AED]/25 transition hover:bg-[#6D28D9] hover:shadow-lg hover:shadow-[#7C3AED]/30 cursor-pointer active:scale-[0.98]"
                   @click="openQuestionPicker"
                 >
                   <Plus :size="14" />
@@ -828,11 +839,11 @@
 
         <!-- 4. FOOTER ACTIONS BAR -->
         <div
-          class="flex flex-wrap items-center justify-between gap-4 pt-6 border-t border-[var(--border)]"
+          class="flex flex-wrap items-center justify-between gap-4 pt-6 border-t border-slate-200"
         >
           <button
             type="button"
-            class="btn-ghost text-xs font-bold text-[var(--muted)] hover:text-[var(--text)] cursor-pointer"
+            class="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-50 hover:border-slate-300 cursor-pointer shadow-2xs"
             @click="goBack"
           >
             Hủy
@@ -840,7 +851,7 @@
 
           <button
             type="submit"
-            class="btn-primary !px-8 !py-3 text-xs font-black shadow-lg shadow-[var(--primary)]/25 hover:shadow-[var(--primary)]/40 transition duration-200 hover:-translate-y-0.5 cursor-pointer flex items-center gap-2"
+            class="rounded-xl bg-[#7C3AED] px-8 py-2.5 text-sm font-semibold text-white shadow-md shadow-[#7C3AED]/25 transition hover:bg-[#6D28D9] hover:shadow-lg hover:shadow-[#7C3AED]/30 active:scale-[0.98] disabled:opacity-50 cursor-pointer flex items-center gap-2"
             :disabled="
               isSubmitting ||
               (mode === 'random' &&
@@ -863,43 +874,46 @@
     <!-- RIGHT ASIDE: SOFT & ELEGANT LIVE PREVIEW -->
     <aside class="grid content-start gap-5">
       <article
-        class="overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[var(--shadow-card)] backdrop-blur-2xl grid gap-5 sticky top-6"
+        class="sticky top-6 grid gap-5 overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
       >
         <!-- Header -->
         <div
-          class="flex items-center justify-between border-b border-[var(--border)] pb-3 font-black text-[var(--text)]"
+          class="flex items-center justify-between border-b border-slate-200 pb-4"
         >
-          <h3 class="text-xl tracking-[-0.04em]">Live preview</h3>
+          <div class="flex items-center gap-2">
+            <h3 class="text-base font-bold text-slate-900">Live Preview</h3>
+            <span class="inline-block h-1.5 w-1.5 rounded-full bg-purple-600"></span>
+          </div>
 
           <span
-            class="flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-bold text-emerald-400"
+            class="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700 shadow-2xs"
           >
             <span
-              class="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"
+              class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"
             ></span>
-            LIVE
+            Live
           </span>
         </div>
 
         <!-- Cover Banner Preview -->
         <div
-          class="relative h-40 overflow-hidden rounded-2xl border border-[var(--border)] shadow-md transition-all duration-300"
+          class="relative h-36 overflow-hidden rounded-xl border border-slate-200 shadow-2xs transition-all duration-300"
           :style="{ background: coverBackground }"
         >
           <div
-            class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"
+            class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent"
           ></div>
           <div class="absolute bottom-3 left-3 right-3 text-white drop-shadow">
             <span
               v-if="selectedSubjectName"
-              class="rounded-full bg-emerald-600/80 px-2 py-0.5 text-[10px] font-black backdrop-blur"
+              class="inline-block rounded-md bg-black/60 text-white backdrop-blur-md px-2.5 py-0.5 text-[10px] font-bold border border-white/20"
             >
               Môn {{ selectedSubjectName }}
             </span>
-            <h4 class="mt-1 text-sm font-black leading-tight line-clamp-2">
+            <h4 class="mt-1.5 text-sm font-bold leading-tight line-clamp-2">
               {{ quizForm.title || "Bộ đề thi chưa đặt tên" }}
             </h4>
-            <p class="mt-0.5 text-[11px] font-bold text-white/80 line-clamp-1">
+            <p class="mt-0.5 text-[11px] font-medium text-white/80 line-clamp-1">
               {{ quizForm.topic_name || "Kho câu hỏi QuizFlex" }}
             </p>
           </div>
@@ -908,20 +922,20 @@
         <!-- Status Pills -->
         <div class="flex flex-wrap items-center gap-2">
           <span
-            class="inline-flex items-center gap-1.5 rounded-full bg-[var(--surface-soft)] px-3 py-1 text-xs font-semibold text-[var(--muted)]"
+            class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-700 shadow-2xs"
           >
-            <component :is="mode === 'random' ? Sparkles : Target" :size="12" />
+            <component :is="mode === 'random' ? Sparkles : Target" :size="12" class="text-purple-600" />
             <span>{{
               mode === "random" ? "Tự động phân bổ" : "Chọn thủ công"
             }}</span>
           </span>
 
           <span
-            class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold"
+            class="inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-bold shadow-2xs"
             :class="
               quizForm.visibility === 'public'
-                ? 'bg-emerald-500/10 text-emerald-400'
-                : 'bg-amber-500/10 text-amber-300'
+                ? 'border-purple-200 bg-purple-50 text-purple-700'
+                : 'border-amber-200 bg-amber-50 text-amber-700'
             "
           >
             <component
@@ -936,18 +950,18 @@
 
         <!-- Title & Description Box -->
         <div
-          class="rounded-2xl border border-[var(--border)] bg-[var(--surface-soft)] p-4 grid gap-2"
+          class="rounded-xl border border-slate-200/90 bg-slate-50/70 p-3.5 grid gap-1.5"
         >
-          <h4 class="text-sm font-black text-[var(--text)] leading-snug">
+          <h4 class="text-sm font-bold text-slate-900 leading-snug">
             <span v-if="quizForm.title.trim()">{{ quizForm.title }}</span>
-            <span v-else class="text-[var(--muted)] italic font-normal text-xs"
+            <span v-else class="text-slate-400 italic font-normal text-xs"
               >[Tên bộ đề sẽ hiển thị ở đây]</span
             >
           </h4>
 
           <p
             v-if="quizForm.description.trim()"
-            class="text-xs text-[var(--muted)] leading-relaxed line-clamp-3"
+            class="text-xs text-slate-500 leading-relaxed line-clamp-3"
           >
             {{ quizForm.description }}
           </p>
@@ -955,39 +969,40 @@
 
         <!-- Key Metrics Grid -->
         <div class="grid grid-cols-2 gap-2 text-xs">
-          <div class="rounded-xl bg-[var(--surface-soft)] p-3">
+          <div class="rounded-xl border border-purple-200/80 bg-purple-50/50 p-3 shadow-2xs">
             <span
-              class="text-[10px] font-semibold text-[var(--muted)] block uppercase"
-              >Số lượng câu:</span
+              class="text-[10px] font-bold text-purple-600 block uppercase tracking-wider"
+              >Số lượng câu</span
             >
-            <span class="font-black text-sm text-[var(--primary)]">
+            <span class="font-black text-base text-purple-800 mt-0.5 block">
               {{
                 mode === "manual" ? selectedIds.length : totalMatrixQuestions
               }}
-              câu
+              <span class="text-xs font-semibold text-purple-600">câu</span>
             </span>
           </div>
 
-          <div class="rounded-xl bg-[var(--surface-soft)] p-3">
+          <div class="rounded-xl border border-slate-200/80 bg-slate-50 p-3 shadow-2xs">
             <span
-              class="text-[10px] font-semibold text-[var(--muted)] block uppercase"
-              >Thời gian làm:</span
+              class="text-[10px] font-bold text-slate-500 block uppercase tracking-wider"
+              >Thời gian làm</span
             >
-            <span class="font-black text-sm text-[var(--text)]">
-              {{ quizForm.time_limit_minutes }} phút
+            <span class="font-bold text-base text-slate-800 mt-0.5 block">
+              {{ quizForm.time_limit_minutes }} <span class="text-xs font-medium text-slate-500">phút</span>
             </span>
           </div>
         </div>
 
         <!-- Shuffle Setting Row -->
         <div
-          class="rounded-xl bg-[var(--surface-soft)] p-3 text-xs flex items-center justify-between font-bold text-[var(--text)]"
+          class="rounded-xl border border-slate-200/80 bg-slate-50 p-3 text-xs flex items-center justify-between font-medium text-slate-800 shadow-2xs"
         >
-          <span class="text-[var(--muted)] font-normal">Thứ tự làm bài:</span>
-          <span class="inline-flex items-center gap-1.5">
+          <span class="text-slate-500 font-normal">Thứ tự làm bài:</span>
+          <span class="inline-flex items-center gap-1.5 font-bold text-slate-800">
             <component
               :is="quizForm.shuffle_questions ? Shuffle : Lock"
               :size="13"
+              class="text-purple-600"
             />
             <span>{{
               quizForm.shuffle_questions ? "Tự động trộn câu" : "Thứ tự cố định"
@@ -998,11 +1013,11 @@
         <!-- Matrix Proportions Progress Bar (Random Mode) -->
         <div
           v-if="mode === 'random'"
-          class="grid gap-3 pt-3 border-t border-[var(--border)]"
+          class="grid gap-3 pt-3 border-t border-slate-200"
         >
-          <div class="flex items-center justify-between text-xs font-bold">
-            <span class="text-[var(--muted)]">Tỷ lệ phân bổ độ khó:</span>
-            <span class="text-[var(--text)] font-black"
+          <div class="flex items-center justify-between text-xs font-medium text-slate-600">
+            <span>Tỷ lệ phân bổ độ khó:</span>
+            <span class="text-slate-900 font-bold"
               >{{ totalMatrixQuestions }} câu</span
             >
           </div>
@@ -1010,20 +1025,20 @@
           <!-- Segmented Bar -->
           <div
             v-if="totalMatrixQuestions > 0"
-            class="h-2 w-full rounded-full bg-[var(--surface-soft)] overflow-hidden flex"
+            class="h-2.5 w-full rounded-full bg-slate-100 p-0.5 border border-slate-200/80 overflow-hidden flex shadow-inner"
           >
             <div
-              class="bg-emerald-400 h-full transition-all duration-300"
+              class="bg-emerald-500 h-full rounded-l-full transition-all duration-300"
               :style="{ width: easyPercent + '%' }"
               :title="`Dễ: ${quizForm.easy_count} câu (${easyPercent}%)`"
             ></div>
             <div
-              class="bg-amber-400 h-full transition-all duration-300"
+              class="bg-amber-500 h-full transition-all duration-300"
               :style="{ width: mediumPercent + '%' }"
               :title="`Vừa: ${quizForm.medium_count} câu (${mediumPercent}%)`"
             ></div>
             <div
-              class="bg-rose-400 h-full transition-all duration-300"
+              class="bg-rose-500 h-full rounded-r-full transition-all duration-300"
               :style="{ width: hardPercent + '%' }"
               :title="`Khó: ${quizForm.hard_count} câu (${hardPercent}%)`"
             ></div>
@@ -1031,34 +1046,34 @@
 
           <!-- Detail Rows -->
           <div class="grid gap-1.5 text-xs">
-            <div class="flex items-center justify-between text-[var(--muted)]">
+            <div class="flex items-center justify-between text-slate-500">
               <span class="flex items-center gap-1.5">
-                <span class="h-2 w-2 rounded-full bg-emerald-400"></span> Dễ
+                <span class="h-2 w-2 rounded-full bg-emerald-500"></span> Dễ
                 (Nhận biết)
               </span>
-              <span class="font-bold text-[var(--text)]"
+              <span class="font-bold text-slate-800"
                 >{{ quizForm.easy_count || 0 }} câu ({{ easyPercent }}%)</span
               >
             </div>
 
-            <div class="flex items-center justify-between text-[var(--muted)]">
+            <div class="flex items-center justify-between text-slate-500">
               <span class="flex items-center gap-1.5">
-                <span class="h-2 w-2 rounded-full bg-amber-400"></span> Vừa
+                <span class="h-2 w-2 rounded-full bg-amber-500"></span> Vừa
                 (Thông hiểu)
               </span>
-              <span class="font-bold text-[var(--text)]"
+              <span class="font-bold text-slate-800"
                 >{{ quizForm.medium_count || 0 }} câu ({{
                   mediumPercent
                 }}%)</span
               >
             </div>
 
-            <div class="flex items-center justify-between text-[var(--muted)]">
+            <div class="flex items-center justify-between text-slate-500">
               <span class="flex items-center gap-1.5">
-                <span class="h-2 w-2 rounded-full bg-rose-400"></span> Khó (Vận
+                <span class="h-2 w-2 rounded-full bg-rose-500"></span> Khó (Vận
                 dụng)
               </span>
-              <span class="font-bold text-[var(--text)]"
+              <span class="font-bold text-slate-800"
                 >{{ quizForm.hard_count || 0 }} câu ({{ hardPercent }}%)</span
               >
             </div>
@@ -1066,6 +1081,14 @@
         </div>
       </article>
     </aside>
+
+    <!-- QUESTION BANK DRAWER -->
+    <QuestionBankDrawer
+      :is-open="isBankDrawerOpen"
+      :initial-selected-ids="selectedIds"
+      @close="isBankDrawerOpen = false"
+      @confirm="onBankDrawerConfirm"
+    />
   </section>
 
   <!-- QUESTION PICKER MODAL -->
@@ -1097,6 +1120,8 @@ import {
   Plus,
   BookOpen,
   AlertTriangle,
+  FileQuestion,
+  GraduationCap,
 } from "lucide-vue-next";
 import QuestionPickerModal from "@/components/question/QuestionPickerModal.vue";
 import {
@@ -1114,7 +1139,9 @@ const mode = ref(route.query.mode === "manual" ? "manual" : "random");
 const isSubmitting = ref(false);
 
 const isPickerModalOpen = ref(false);
+const isBankDrawerOpen = ref(false);
 const selectedQuestionsMap = ref(new Map());
+const manualListFilter = ref("all");
 
 const coverInput = ref(null);
 const formCoverFile = ref(null);
@@ -1284,16 +1311,36 @@ const availableSubjects = computed(() => {
 });
 
 /* =========================================================
+   PRESETS HELPER
+========================================================= */
+const applyPreset = (presetType) => {
+  if (presetType === "basic") {
+    quizForm.easy_count = Math.min(7, poolStats.easy);
+    quizForm.medium_count = Math.min(3, poolStats.medium);
+    quizForm.hard_count = 0;
+  } else if (presetType === "standard") {
+    quizForm.easy_count = Math.min(8, poolStats.easy);
+    quizForm.medium_count = Math.min(8, poolStats.medium);
+    quizForm.hard_count = Math.min(4, poolStats.hard);
+  } else if (presetType === "advanced") {
+    quizForm.easy_count = Math.min(5, poolStats.easy);
+    quizForm.medium_count = Math.min(12, poolStats.medium);
+    quizForm.hard_count = Math.min(8, poolStats.hard);
+  }
+  updateFormTitle();
+};
+
+/* =========================================================
    DIFFICULTY HELPERS
 ========================================================= */
 const getDifficultyClass = (diff) => {
   switch (diff) {
     case "easy":
-      return "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
+      return "border border-emerald-200 bg-emerald-50 text-emerald-700";
     case "hard":
-      return "bg-rose-500/10 text-rose-400 border border-rose-500/20";
+      return "border border-rose-200 bg-rose-50 text-rose-700";
     default:
-      return "bg-amber-500/10 text-amber-400 border border-amber-500/20";
+      return "border border-amber-200 bg-amber-50 text-amber-700";
   }
 };
 
@@ -1321,6 +1368,17 @@ const switchToManualAndOpenPicker = () => {
 };
 
 const handlePickerConfirm = async ({ ids, questions }) => {
+  selectedIds.value = [...ids];
+  if (Array.isArray(questions)) {
+    questions.forEach((q) => {
+      selectedQuestionsMap.value.set(q.id, q);
+    });
+    await ensureAnswerKeysForSelectedQuestions(questions);
+  }
+  updateFormTitle();
+};
+
+const onBankDrawerConfirm = async ({ ids, questions }) => {
   selectedIds.value = [...ids];
   if (Array.isArray(questions)) {
     questions.forEach((q) => {
@@ -1360,6 +1418,13 @@ const publicBankCount = computed(() => {
   return selectedQuestionsDisplayList.value.filter(
     (q) => q.source === "public_bank",
   ).length;
+});
+
+const filteredSelectedQuestions = computed(() => {
+  if (manualListFilter.value === "all") return selectedQuestionsDisplayList.value;
+  return selectedQuestionsDisplayList.value.filter(
+    (q) => q.source === manualListFilter.value,
+  );
 });
 
 const ensureAnswerKeysForSelectedQuestions = async (questionsList) => {

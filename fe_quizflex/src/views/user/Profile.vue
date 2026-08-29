@@ -249,7 +249,7 @@
 
       <!-- Current Plan -->
       <div
-        class="card p-6 sm:p-8 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 border-l-4 border-l-[#7C3AED]"
+        class="card p-6 sm:p-8 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6"
       >
         <div class="space-y-2 max-w-3xl">
 

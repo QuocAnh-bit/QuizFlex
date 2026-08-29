@@ -15,9 +15,9 @@
       >
         <div class="flex items-center gap-3">
           <div
-            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 via-purple-600 to-indigo-700 text-white shadow-md shadow-violet-500/20"
+            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-purple-500/10 text-purple-500"
           >
-            <Layers :size="20" class="text-white" />
+            <Layers :size="20" />
           </div>
 
           <div>
