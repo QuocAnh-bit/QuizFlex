@@ -19,6 +19,7 @@ class QuestionReviewRequested extends Notification implements ShouldQueue
 
     public function __construct(Question $question, User $author, int $revisionNumber = 1, bool $isPriority = false)
     {
+        $this->afterCommit = true;
         $this->question = $question;
         $this->author = $author;
         $this->revisionNumber = $revisionNumber;
@@ -32,7 +33,7 @@ class QuestionReviewRequested extends Notification implements ShouldQueue
 
     public function broadcastType(): string
     {
-        return 'question_review_requested';
+        return 'question_review.requested';
     }
 
     public function toArray(object $notifiable): array
@@ -56,17 +57,19 @@ class QuestionReviewRequested extends Notification implements ShouldQueue
         }
 
         $category = $this->isPriority ? 'report' : 'question_review';
+        $actionLink = $this->isPriority
+            ? "/admin/reports?question_id={$this->question->id}"
+            : "/admin/question-bank?question_id={$this->question->id}";
 
         return [
-            'type' => 'question_review_requested',
+            'type' => 'question_review.requested',
             'category' => $category,
             'title' => $title,
             'message' => $message,
             'action' => 'review',
-            'action_link' => $this->isPriority
-                ? "/admin/reports?question_id={$this->question->id}"
-                : "/admin/question-bank-requests?question_id={$this->question->id}",
+            'action_link' => $actionLink,
             'metadata' => [
+                'type' => 'question_review.requested',
                 'category' => $category,
                 'action' => 'review',
                 'question_id' => $this->question->id,

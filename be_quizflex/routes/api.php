@@ -225,8 +225,10 @@ Route::middleware('auth:api')->group(function () {
     });
 
     Route::middleware('role:free,plus,pro,ultra,admin')->group(function () {
-        // Gửi báo cáo vi phạm
+        // Báo cáo vi phạm
         Route::post('/report-tickets', [ReportTicketController::class, 'store']);
+        Route::get('/user/report-tickets', [ReportTicketController::class, 'userReports']);
+        Route::get('/reports/my-reports', [ReportTicketController::class, 'userReports']);
 
         // Protected Payment Routes
         Route::get('/payments/history', [PaymentController::class, 'history']);
