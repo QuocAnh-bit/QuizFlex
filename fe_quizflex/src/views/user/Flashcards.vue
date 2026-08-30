@@ -524,9 +524,10 @@
           ></div>
         </div>
 
-        <!-- 3D CARD (Balanced Harmonious Proportion: max-w-2xl) -->
+        <!-- 3D CARD (Harmonious immersive design for both Normal and Fullscreen) -->
         <div
-          class="perspective-container mx-auto w-full max-w-2xl h-[360px] sm:h-[400px]"
+          class="perspective-container mx-auto w-full transition-all duration-300"
+          :class="isFullscreen ? 'max-w-3xl h-[400px] sm:h-[460px]' : 'max-w-2xl h-[360px] sm:h-[400px]'"
           @click="handleManualCardFlip"
         >
           <div
@@ -535,13 +536,17 @@
           >
             <!-- FRONT -->
             <div
-              class="flashcard-front absolute inset-0 rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 flex flex-col justify-between shadow-md hover:border-purple-300 hover:shadow-lg transition-all"
-              :class="{ 'bg-slate-800 border-slate-700 text-white shadow-purple-950/40': isFullscreen }"
+              class="flashcard-front absolute inset-0 rounded-3xl p-6 sm:p-9 flex flex-col justify-between shadow-xl transition-all duration-300"
+              :class="
+                isFullscreen
+                  ? 'bg-slate-900/95 border border-slate-700/80 text-white shadow-2xl backdrop-blur-2xl ring-1 ring-purple-500/20'
+                  : 'bg-white border border-slate-200/90 text-slate-900 hover:border-purple-300 hover:shadow-2xl'
+              "
             >
               <!-- Front Header -->
               <div
                 class="flex items-center justify-between text-xs font-bold uppercase tracking-wider"
-                :class="isFullscreen ? 'text-slate-400' : 'text-slate-400'"
+                :class="isFullscreen ? 'text-purple-300' : 'text-slate-400'"
               >
                 <span class="inline-flex items-center gap-1.5 font-bold">
                   {{ isSwappedSides ? 'Đáp án / Gợi ý' : 'Câu hỏi' }}
@@ -551,11 +556,15 @@
                   <!-- Star button -->
                   <button
                     type="button"
-                    class="rounded-lg p-1.5 transition active:scale-90"
+                    class="rounded-xl p-2 transition active:scale-90 cursor-pointer"
                     :class="
                       isCurrentCardStarred
-                        ? 'text-amber-500 bg-amber-50 dark:bg-amber-900/30'
-                        : 'text-slate-400 hover:text-amber-500 hover:bg-slate-100 dark:hover:bg-slate-700'
+                        ? isFullscreen
+                          ? 'text-amber-400 bg-amber-950/50 border border-amber-500/40'
+                          : 'text-amber-500 bg-amber-50 border border-amber-200'
+                        : isFullscreen
+                        ? 'text-slate-400 hover:text-amber-400 hover:bg-slate-800'
+                        : 'text-slate-400 hover:text-amber-500 hover:bg-slate-100'
                     "
                     title="Gắn sao thẻ này"
                     @click.stop="toggleCurrentStar"
@@ -569,18 +578,25 @@
                   <!-- Speak button -->
                   <button
                     type="button"
-                    class="rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100 inline-flex items-center gap-1.5 transition"
-                    :class="{ 'bg-slate-700 border-slate-600 text-slate-200 hover:bg-slate-600': isFullscreen }"
+                    class="rounded-xl border px-3 py-1.5 text-xs font-semibold inline-flex items-center gap-1.5 transition active:scale-95 cursor-pointer shadow-xs"
+                    :class="
+                      isFullscreen
+                        ? 'border-slate-700 bg-slate-800/80 text-slate-200 hover:bg-slate-700 hover:text-white'
+                        : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
+                    "
                     title="Đọc nội dung (Phím tắt: R)"
                     @click.stop="() => speakFrontText()"
                   >
-                    <Volume2 class="h-3.5 w-3.5" />
-                    Đọc
+                    <Volume2 class="h-3.5 w-3.5 text-purple-400" />
+                    <span>Đọc</span>
                   </button>
 
-                  <span class="text-slate-400 inline-flex items-center gap-1 text-[11px]">
-                    <Lightbulb class="h-3.5 w-3.5 text-amber-500" />
-                    Nhấp để lật
+                  <span
+                    class="inline-flex items-center gap-1 text-[11px] font-semibold"
+                    :class="isFullscreen ? 'text-slate-400' : 'text-slate-400'"
+                  >
+                    <Lightbulb class="h-3.5 w-3.5 text-amber-400" />
+                    <span>Nhấp để lật</span>
                   </span>
                 </div>
               </div>
@@ -590,8 +606,12 @@
                 <!-- Case Normal: Question -->
                 <h3
                   v-if="!isSwappedSides"
-                  class="text-lg sm:text-xl font-bold leading-relaxed line-clamp-6"
-                  :class="isFullscreen ? 'text-white' : 'text-slate-900'"
+                  class="font-bold leading-relaxed line-clamp-6 select-none transition-all"
+                  :class="[
+                    isFullscreen
+                      ? 'text-xl sm:text-2xl lg:text-3xl text-white font-black drop-shadow-sm'
+                      : 'text-lg sm:text-xl text-slate-900'
+                  ]"
                 >
                   {{ currentCard.question }}
                 </h3>
@@ -599,8 +619,12 @@
                 <!-- Case Swapped: Answer as prompt -->
                 <div v-else class="space-y-2 text-center">
                   <p
-                    class="text-lg sm:text-xl font-bold leading-relaxed"
-                    :class="isFullscreen ? 'text-emerald-400' : 'text-emerald-700'"
+                    class="font-bold leading-relaxed"
+                    :class="[
+                      isFullscreen
+                        ? 'text-xl sm:text-2xl text-emerald-400 font-black'
+                        : 'text-lg sm:text-xl text-emerald-700'
+                    ]"
                   >
                     {{ getCorrectAnswerText(currentCard) }}
                   </p>
@@ -608,32 +632,43 @@
               </div>
 
               <!-- Front Footer -->
-              <div class="text-center text-xs text-slate-400 font-medium pt-2 border-t border-slate-100 dark:border-slate-700/50">
+              <div
+                class="text-center text-xs font-medium pt-2 border-t"
+                :class="isFullscreen ? 'border-slate-800 text-slate-400' : 'border-slate-100 text-slate-400'"
+              >
                 {{ isSwappedSides ? 'Nhấp vào thẻ để xem câu hỏi gốc' : 'Nhấp vào thẻ để xem đáp án đúng' }}
               </div>
             </div>
 
             <!-- BACK -->
             <div
-              class="flashcard-back absolute inset-0 rounded-2xl border border-purple-200 bg-purple-50/40 p-6 sm:p-8 flex flex-col justify-between shadow-md"
-              :class="{ 'bg-slate-800 border-purple-800/70 text-white shadow-purple-950/40': isFullscreen }"
+              class="flashcard-back absolute inset-0 rounded-3xl p-6 sm:p-9 flex flex-col justify-between shadow-xl transition-all duration-300"
+              :class="
+                isFullscreen
+                  ? 'bg-slate-900/95 border border-purple-500/40 text-white shadow-2xl backdrop-blur-2xl ring-1 ring-purple-500/20'
+                  : 'bg-purple-50/50 border border-purple-200/90 text-slate-900 hover:border-purple-300 hover:shadow-2xl'
+              "
             >
               <!-- Back Header -->
               <div
                 class="flex items-center justify-between text-xs font-bold uppercase tracking-wider"
                 :class="isFullscreen ? 'text-purple-300' : 'text-slate-500'"
               >
-                <span>{{ isSwappedSides ? 'Câu hỏi gốc' : 'Đáp án chính xác' }}</span>
+                <span class="font-bold">{{ isSwappedSides ? 'Câu hỏi gốc' : 'Đáp án chính xác' }}</span>
 
                 <div class="flex items-center gap-2">
                   <!-- Star button -->
                   <button
                     type="button"
-                    class="rounded-lg p-1.5 transition active:scale-90"
+                    class="rounded-xl p-2 transition active:scale-90 cursor-pointer"
                     :class="
                       isCurrentCardStarred
-                        ? 'text-amber-500 bg-amber-100 dark:bg-amber-900/30'
-                        : 'text-slate-400 hover:text-amber-500 hover:bg-purple-100 dark:hover:bg-slate-700'
+                        ? isFullscreen
+                          ? 'text-amber-400 bg-amber-950/50 border border-amber-500/40'
+                          : 'text-amber-500 bg-amber-100 border border-amber-200'
+                        : isFullscreen
+                        ? 'text-slate-400 hover:text-amber-400 hover:bg-slate-800'
+                        : 'text-slate-400 hover:text-amber-500 hover:bg-purple-100'
                     "
                     title="Gắn sao thẻ này"
                     @click.stop="toggleCurrentStar"
@@ -647,17 +682,25 @@
                   <!-- Speak button -->
                   <button
                     type="button"
-                    class="rounded-md border border-purple-200 bg-purple-100 px-2.5 py-1 text-xs font-bold text-[#7C3AED] hover:bg-purple-200 inline-flex items-center gap-1.5 transition"
+                    class="rounded-xl border px-3 py-1.5 text-xs font-bold inline-flex items-center gap-1.5 transition active:scale-95 cursor-pointer shadow-xs"
+                    :class="
+                      isFullscreen
+                        ? 'border-purple-700/60 bg-purple-950/60 text-purple-200 hover:bg-purple-900/60 hover:text-white'
+                        : 'border-purple-200 bg-purple-100 text-[#7C3AED] hover:bg-purple-200'
+                    "
                     title="Đọc nội dung (Phím tắt: R)"
                     @click.stop="() => speakBackText()"
                   >
-                    <Volume2 class="h-3.5 w-3.5" />
-                    Đọc đáp án
+                    <Volume2 class="h-3.5 w-3.5 text-purple-400" />
+                    <span>Đọc đáp án</span>
                   </button>
 
-                  <span class="text-emerald-700 font-bold inline-flex items-center gap-1 text-[11px]">
+                  <span
+                    class="font-bold inline-flex items-center gap-1 text-[11px]"
+                    :class="isFullscreen ? 'text-emerald-400' : 'text-emerald-700'"
+                  >
                     <CheckCircle2 class="h-3.5 w-3.5" />
-                    Đã lật
+                    <span>Đã lật</span>
                   </span>
                 </div>
               </div>
@@ -667,31 +710,38 @@
                 <!-- Case Normal: Question snippet + Answer list -->
                 <template v-if="!isSwappedSides">
                   <p
-                    class="text-xs font-semibold line-clamp-2 text-center px-1"
-                    :class="isFullscreen ? 'text-slate-300' : 'text-slate-500'"
+                    class="text-xs sm:text-sm font-semibold line-clamp-2 text-center px-1"
+                    :class="isFullscreen ? 'text-slate-300' : 'text-slate-600'"
                   >
                     {{ currentCard.question }}
                   </p>
 
-                  <div class="grid gap-2 max-h-[190px] overflow-y-auto pr-1 scrollbar-soft">
+                  <div
+                    class="grid gap-2 overflow-y-auto pr-1 scrollbar-soft"
+                    :class="isFullscreen ? 'max-h-[220px]' : 'max-h-[190px]'"
+                  >
                     <div
                       v-for="answer in currentCard.answers"
                       :key="answer.key"
-                      class="flex items-center gap-2.5 rounded-xl border px-3.5 py-2 text-xs font-semibold transition"
+                      class="flex items-center gap-3 rounded-2xl border px-4 py-2.5 text-xs sm:text-sm font-semibold transition"
                       :class="
                         answer.isCorrect
-                          ? 'border-emerald-300 bg-emerald-50 text-emerald-900 shadow-sm'
+                          ? isFullscreen
+                            ? 'border-emerald-500/60 bg-emerald-950/60 text-emerald-200 shadow-md ring-1 ring-emerald-500/30 font-bold'
+                            : 'border-emerald-300 bg-emerald-50 text-emerald-900 shadow-sm font-bold'
                           : isFullscreen
-                          ? 'border-slate-700 bg-slate-800/60 text-slate-400 opacity-60'
+                          ? 'border-slate-800/80 bg-slate-800/40 text-slate-400 opacity-50'
                           : 'border-slate-200 bg-white text-slate-500 opacity-60'
                       "
                     >
                       <span
-                        class="grid h-6 w-6 shrink-0 place-items-center rounded-lg text-xs font-bold"
+                        class="grid h-6 w-6 sm:h-7 sm:w-7 shrink-0 place-items-center rounded-xl text-xs font-black shadow-xs"
                         :class="
                           answer.isCorrect
                             ? 'bg-emerald-600 text-white'
-                            : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
+                            : isFullscreen
+                            ? 'bg-slate-800 text-slate-300 border border-slate-700'
+                            : 'bg-slate-100 text-slate-600'
                         "
                       >
                         {{ answer.key }}
@@ -703,9 +753,10 @@
 
                       <span
                         v-if="answer.isCorrect"
-                        class="text-emerald-700 font-bold shrink-0 inline-flex items-center gap-1"
+                        class="font-bold shrink-0 inline-flex items-center gap-1.5 text-xs"
+                        :class="isFullscreen ? 'text-emerald-400' : 'text-emerald-700'"
                       >
-                        <CheckCircle2 class="h-3.5 w-3.5" />
+                        <CheckCircle2 class="h-4 w-4" />
                         Đúng
                       </span>
                     </div>
@@ -716,8 +767,12 @@
                 <template v-else>
                   <div class="text-center space-y-2 py-4 px-2">
                     <h3
-                      class="text-base sm:text-lg font-bold leading-relaxed"
-                      :class="isFullscreen ? 'text-white' : 'text-slate-900'"
+                      class="font-bold leading-relaxed"
+                      :class="[
+                        isFullscreen
+                          ? 'text-lg sm:text-2xl text-white font-black'
+                          : 'text-base sm:text-lg text-slate-900'
+                      ]"
                     >
                       {{ currentCard.question }}
                     </h3>
@@ -726,7 +781,10 @@
               </div>
 
               <!-- Back Footer -->
-              <div class="text-center text-xs text-slate-400 font-medium pt-2 border-t border-purple-100 dark:border-purple-900/40">
+              <div
+                class="text-center text-xs font-medium pt-2 border-t"
+                :class="isFullscreen ? 'border-purple-900/40 text-slate-400' : 'border-purple-100 text-slate-400'"
+              >
                 Đánh dấu mức độ ghi nhớ của bạn ở nút bên dưới
               </div>
             </div>

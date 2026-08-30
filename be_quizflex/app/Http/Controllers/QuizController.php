@@ -59,19 +59,31 @@ class QuizController extends Controller
             $cleanCat = preg_replace('/\s*(học|hoc)$/ui', '', $cat);
 
             $query->where(function ($q) use ($cat, $cleanCat) {
-                $q->where('category', 'like', "%{$cat}%")
-                    ->orWhere('tag', 'like', "%{$cat}%")
-                    ->orWhere('topic_name', 'like', "%{$cat}%")
-                    ->orWhere('title', 'like', "%{$cat}%")
-                    ->orWhere('title', 'like', "%{$cleanCat}%")
-                    ->orWhereHas('subject', function ($sq) use ($cat, $cleanCat) {
-                        $sq->where('name', 'like', "%{$cat}%")
-                            ->orWhere('name', 'like', "%{$cleanCat}%");
+                $q->where(function ($subQ) use ($cat, $cleanCat) {
+                    // 1. Khớp theo Môn học (Subject relationship)
+                    $subQ->whereHas('subject', function ($sq) use ($cat, $cleanCat) {
+                        $sq->where('name', $cat)
+                            ->orWhere('name', $cleanCat)
+                            ->orWhere('name', 'like', "%{$cat}%");
                     })
-                    ->orWhereHas('questions.subject', function ($sq) use ($cat, $cleanCat) {
-                        $sq->where('name', 'like', "%{$cat}%")
-                            ->orWhere('name', 'like', "%{$cleanCat}%");
-                    });
+                    // 2. Khớp theo Category / Tag / Topic_name
+                    ->orWhere('category', $cat)
+                    ->orWhere('category', $cleanCat)
+                    ->orWhere('tag', $cat)
+                    ->orWhere('tag', $cleanCat)
+                    ->orWhere('topic_name', $cat)
+                    ->orWhere('topic_name', $cleanCat)
+                    // 3. Khớp theo Tiêu đề Quiz
+                    ->orWhereRaw("BINARY title LIKE ?", ["%{$cat}%"]);
+                })
+                // 4. Nếu Quiz chưa gán subject_id thì mới fallback tìm theo câu hỏi
+                ->orWhere(function ($fallbackQ) use ($cat, $cleanCat) {
+                    $fallbackQ->whereNull('subject_id')
+                        ->whereHas('questions.subject', function ($sq) use ($cat, $cleanCat) {
+                            $sq->where('name', $cat)
+                                ->orWhere('name', $cleanCat);
+                        });
+                });
             });
         }
 

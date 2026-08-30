@@ -7,15 +7,19 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('questions', function (Blueprint $table) {
-            $table->boolean('is_public')->default(false)->after('subject_id');
-        });
+        if (!Schema::hasColumn('questions', 'is_public')) {
+            Schema::table('questions', function (Blueprint $table) {
+                $table->boolean('is_public')->default(false)->after('subject_id');
+            });
+        }
     }
 
     public function down(): void
     {
-        Schema::table('questions', function (Blueprint $table) {
-            $table->dropColumn('is_public');
-        });
+        if (Schema::hasColumn('questions', 'is_public')) {
+            Schema::table('questions', function (Blueprint $table) {
+                $table->dropColumn('is_public');
+            });
+        }
     }
 };
