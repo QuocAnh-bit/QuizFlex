@@ -16,23 +16,51 @@ use Carbon\Carbon;
 class GamificationController extends Controller
 {
     // Lấy thống kê người dùng
-    public function getUserStats(Request $request)
-    {
-        $user = $request->user();
+   // Lấy thống kê người dùng
+public function getUserStats(Request $request)
+{
+    $user = $request->user();
 
-        $xp = UserXp::firstOrCreate(['user_id' => $user->id], ['xp' => 0, 'level' => 1]);
-        $streak = UserStreak::firstOrCreate(['user_id' => $user->id], ['current_streak' => 0, 'longest_streak' => 0]);
-        $badges = UserBadge::with('badge')->where('user_id', $user->id)->get();
+    $xp = UserXp::firstOrCreate(
+        ['user_id' => $user->id],
+        ['xp' => 0, 'level' => 1]
+    );
 
-        return response()->json([
-            'xp' => $xp->xp,
-            'level' => $xp->level,
-            'xp_to_next_level' => $this->xpToNextLevel($xp->level),
-            'current_streak' => $streak->current_streak,
-            'longest_streak' => $streak->longest_streak,
-            'badges' => $badges,
-        ]);
+    $streak = UserStreak::firstOrCreate(
+        ['user_id' => $user->id],
+        [
+            'current_streak' => 0,
+            'longest_streak' => 0
+        ]
+    );
+
+    // Kiểm tra streak có bị đứt không
+    if ($streak->last_activity_date) {
+        $today = Carbon::today();
+        $lastActivity = Carbon::parse($streak->last_activity_date);
+
+        $diff = $lastActivity->diffInDays($today);
+
+        // Nếu bỏ 1 ngày trở lên thì streak đã bị đứt
+        if ($diff >= 2) {
+            $streak->current_streak = 0;
+            $streak->save();
+        }
     }
+
+    $badges = UserBadge::with('badge')
+        ->where('user_id', $user->id)
+        ->get();
+
+    return response()->json([
+        'xp' => $xp->xp,
+        'level' => $xp->level,
+        'xp_to_next_level' => $this->xpToNextLevel($xp->level),
+        'current_streak' => $streak->current_streak,
+        'longest_streak' => $streak->longest_streak,
+        'badges' => $badges,
+    ]);
+}
 
     // Cộng XP sau khi làm quiz
     public function addXp(Request $request)
@@ -129,7 +157,7 @@ class GamificationController extends Controller
     }
 
     // Helper: Cập nhật streak
-   private function updateStreak(int $userId): void
+  private function updateStreak(int $userId): void
 {
     $streak = UserStreak::firstOrCreate(
         ['user_id' => $userId],
@@ -147,22 +175,23 @@ class GamificationController extends Controller
     } else {
         $lastActivity = Carbon::parse($streak->last_activity_date);
 
-        // Đã hoạt động hôm nay
+        // Đã hoạt động hôm nay -> không cộng thêm
         if ($lastActivity->isSameDay($today)) {
             return;
         }
 
         $diff = $lastActivity->diffInDays($today);
 
-        if ($diff == 1) {
-            // Liên tục
+        if ($diff === 1) {
+            // Hoạt động liên tiếp ngày hôm trước
             $streak->current_streak++;
-        } elseif ($diff >= 2) {
-            // Nghỉ từ 2 ngày trở lên -> reset
+        } else {
+            // Bỏ ít nhất 1 ngày -> streak mới
             $streak->current_streak = 1;
         }
     }
 
+    // Cập nhật streak dài nhất
     $streak->longest_streak = max(
         $streak->longest_streak,
         $streak->current_streak
