@@ -172,6 +172,21 @@ class ReportTicket extends Model
         return in_array($targetStatus, $allowed, true);
     }
 
+    public function transitionTo(string $targetStatus): bool
+    {
+        if (!$this->canTransitionTo($targetStatus)) {
+            \Illuminate\Support\Facades\Log::warning("Invalid ReportTicket status transition from {$this->status} to {$targetStatus} for ticket #{$this->id}");
+            return false;
+        }
+
+        if ($this->status !== $targetStatus) {
+            $this->status = $targetStatus;
+            $this->save();
+        }
+
+        return true;
+    }
+
     public function isActive(): bool
     {
         return in_array($this->status, self::ACTIVE_STATUSES, true);

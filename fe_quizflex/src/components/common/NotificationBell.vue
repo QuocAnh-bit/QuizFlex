@@ -137,11 +137,7 @@ const handleReadNotification = async (item) => {
   isOpen.value = false
   
   if (item.action_link) {
-    let link = item.action_link
-    if (link.startsWith('/admin/reports')) {
-      link = link.replace('/admin/reports', '/admin/report-tickets')
-    }
-    router.push(link)
+    router.push(item.action_link)
   }
 }
 
@@ -162,10 +158,16 @@ const markAllAsRead = async () => {
 
 const getIcon = (type) => {
   const icons = {
-    // Quiz & Question
+    // Quiz & Question & Report
     'quiz_moderated': '📖',
     'question_moderated': '❓',
+    'question_review_requested': '📩',
+    'question_review': '📝',
     'report_author_updated': '🛠️',
+    'report_created': '🚨',
+    'report_resolved': '✅',
+    'report_action': '🚨',
+    'report': '🚨',
     // Room Member status
     'room_join_request': '👋',
     'room_member_approved': '✅',
@@ -187,9 +189,6 @@ const getIcon = (type) => {
     'unlock_request_rejected': '❌',
     // Others
     'payment_success': '💳',
-    'report_created': '🚨',
-    'report_resolved': '✅',
-    'report_action': '🚨',
     'achievement_unlocked': '🏆',
     'system': '🔔'
   }

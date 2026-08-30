@@ -104,12 +104,11 @@ class QuestionReviewService
                 'subject_name' => $question->subject?->name,
             ];
 
-            // Tự động nhận diện Question từng bị báo cáo để đánh dấu PRIORITY
+            // Tự động nhận diện Question đang có Báo cáo CHƯA GIẢI QUYẾT để đánh dấu PRIORITY
             $hasUnresolvedReports = \App\Models\ReportTicket::where('question_id', $question->id)
                 ->whereIn('status', \App\Models\ReportTicket::ACTIVE_STATUSES)
                 ->exists();
-            $hasAnyReports = \App\Models\ReportTicket::where('question_id', $question->id)->exists();
-            $isPriority = $hasUnresolvedReports || $hasAnyReports;
+            $isPriority = $hasUnresolvedReports;
             $reviewPriority = $isPriority ? 'high' : 'normal';
 
             $latestReport = \App\Models\ReportTicket::where('question_id', $question->id)->latest()->first();
@@ -121,9 +120,12 @@ class QuestionReviewService
             }
 
             // Chuyển các ReportTicket active (pending / admin_review_required) của câu hỏi này sang author_updated
-            \App\Models\ReportTicket::where('question_id', $question->id)
+            $activeReports = \App\Models\ReportTicket::where('question_id', $question->id)
                 ->whereIn('status', [\App\Models\ReportTicket::STATUS_PENDING, \App\Models\ReportTicket::STATUS_ADMIN_REVIEW_REQUIRED])
-                ->update(['status' => \App\Models\ReportTicket::STATUS_AUTHOR_UPDATED]);
+                ->get();
+            foreach ($activeReports as $rep) {
+                $rep->transitionTo(\App\Models\ReportTicket::STATUS_AUTHOR_UPDATED);
+            }
 
             $reviewRequest = QuestionReviewRequest::create([
                 'question_id' => $question->id,
@@ -260,7 +262,7 @@ class QuestionReviewService
                 ->get();
 
             foreach ($unresolvedReports as $rep) {
-                $rep->update(['status' => \App\Models\ReportTicket::STATUS_RESOLVED]);
+                $rep->transitionTo(\App\Models\ReportTicket::STATUS_RESOLVED);
                 if ($rep->user) {
                     try {
                         $rep->user->notify(new \App\Notifications\ReportResolved($rep, 'resolved', 'approved'));
@@ -329,6 +331,22 @@ class QuestionReviewService
                 'bank_submission_note' => $trimmedReason,
             ]);
 
+            // Chuyển các ReportTicket active của câu hỏi này sang admin_review_required
+            $targetQuestionIds = array_filter(array_unique([
+                $question->id,
+                $question->origin_question_id,
+            ]));
+            $snapshotIds = Question::where('origin_question_id', $question->id)->pluck('id')->all();
+            $allRelatedIds = array_values(array_unique(array_merge($targetQuestionIds, $snapshotIds)));
+
+            $activeReports = \App\Models\ReportTicket::whereIn('question_id', $allRelatedIds)
+                ->whereIn('status', [\App\Models\ReportTicket::STATUS_PENDING, \App\Models\ReportTicket::STATUS_AUTHOR_UPDATED])
+                ->get();
+
+            foreach ($activeReports as $rep) {
+                $rep->transitionTo(\App\Models\ReportTicket::STATUS_ADMIN_REVIEW_REQUIRED);
+            }
+
             $author = $question->user ?? $question->quiz?->user;
             if ($author) {
                 $author->notify(new QuestionModerated($question, 'rejected', $trimmedReason));
@@ -379,7 +397,10 @@ class QuestionReviewService
                 'created_at' => $r->created_at ? $r->created_at->toIso8601String() : null,
             ]);
 
-        $isPriority = (bool)($currentRequest->is_priority || $currentRequest->review_priority === 'high' || $reports->isNotEmpty());
+        $hasActiveReports = \App\Models\ReportTicket::where('question_id', $question->id)
+            ->whereIn('status', \App\Models\ReportTicket::ACTIVE_STATUSES)
+            ->exists();
+        $isPriority = (bool)($currentRequest->is_priority || $currentRequest->review_priority === 'high' || $hasActiveReports);
 
         return [
             'current_revision' => $this->formatRevision($currentRequest),

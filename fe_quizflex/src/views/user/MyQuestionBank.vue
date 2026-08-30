@@ -167,7 +167,7 @@
               <h4 class="font-bold text-rose-700 text-sm sm:text-base flex items-center gap-2">
                 <span>Đang tập trung xử lý câu hỏi</span>
                 <span class="rounded-md bg-rose-200 px-2 py-0.5 text-xs font-black text-rose-900">#{{ focusedQuestionId }}</span>
-                <span v-if="focusedQuestionItem?.is_locked_by_admin" class="text-xs text-rose-600 font-semibold">(Admin đã khóa: "{{ focusedQuestionItem.report_reason || 'Vi phạm quy định' }}")</span>
+                <span v-if="focusedQuestionItem?.is_locked_by_admin" class="text-xs text-rose-600 font-semibold">(Câu hỏi bị báo cáo: "{{ focusedQuestionItem.report_reason || 'Vi phạm quy định' }}")</span>
               </h4>
               <p class="text-xs text-slate-600 mt-1 leading-relaxed">
                 Vui lòng nhấp nút <strong class="font-bold text-slate-800">"Sửa câu hỏi"</strong> ở thẻ bên dưới để đính chính đáp án hoặc nội dung.
@@ -302,7 +302,7 @@
                   </span>
                   <span v-else-if="q.is_locked_by_admin" class="inline-flex items-center gap-1 rounded-md bg-rose-100 text-rose-900 border border-rose-300 px-2.5 py-0.5 text-[11px] font-bold" :title="q.report_reason ? `Lý do: ${q.report_reason}` : ''">
                     <Lock :size="12" class="text-rose-700" />
-                    <span>Đã bị Admin khóa / Gỡ công khai {{ q.report_reason ? `(Lý do: ${q.report_reason})` : '' }}</span>
+                    <span> {{ q.report_reason ? `(Lý do: ${q.report_reason})` : '' }}</span>
                   </span>
                   <span v-else-if="q.has_report" class="inline-flex items-center gap-1 rounded-md bg-amber-50 text-amber-800 border border-amber-200 px-2.5 py-0.5 text-[11px] font-bold">
                     <Flag :size="12" class="text-amber-600" />

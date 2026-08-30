@@ -94,16 +94,26 @@ class QuestionModerated extends Notification implements ShouldQueue
             $message = "Câu hỏi #{$this->question->id} của bạn đã bị gỡ bỏ vĩnh viễn do vi phạm nghiêm trọng quy định.";
         }
 
+        $category = in_array($this->action, ['reported', 'reminder', 'warning', 'auto_privatized', 'hidden', 'shown', 'resolved', 'dismissed', 'deleted'], true)
+            ? 'report'
+            : (in_array($this->action, ['approved', 'rejected'], true) ? 'question_review' : 'question_moderated');
+
+        $actionLink = $this->action === 'deleted'
+            ? '/dashboard/my-questions'
+            : "/dashboard/my-questions?question_id={$this->question->id}";
+
         return [
             'type' => 'question_moderated',
+            'category' => $category,
             'title' => $title,
             'message' => $message,
             'action' => 'view',
-            'action_link' => "/dashboard/my-questions?question_id={$this->question->id}",
+            'action_link' => $actionLink,
             'metadata' => [
+                'category' => $category,
+                'action' => $this->action,
                 'question_id' => $this->question->id,
                 'quiz_id' => $this->question->quiz_id,
-                'action' => $this->action,
                 'reason' => $this->reason,
                 'report_reason' => $this->reason,
                 'description' => $this->description,
