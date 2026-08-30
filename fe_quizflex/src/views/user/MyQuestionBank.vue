@@ -131,16 +131,49 @@
     <template v-else>
       <!-- Focused Question Banner -->
 
-      <div v-if="focusedQuestionId" class="mb-2">
-        <!-- SUCCESS BANNER (When question was just updated) -->
-        <div v-if="highlightedUpdatedQuestionId === focusedQuestionId" class="rounded-2xl border border-[#FDE68A] bg-[#FFFBEB] p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-2xs">
+      <div v-if="focusedQuestionId" class="mb-4">
+        <!-- 1. APPROVED BANNER: When question is approved into public bank -->
+        <div
+          v-if="focusedQuestionItem?.bank_submission_status === 'approved' || focusedQuestionItem?.is_public"
+          class="rounded-2xl border border-emerald-200 bg-emerald-50/90 p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-2xs"
+        >
           <div class="flex items-start sm:items-center gap-3.5">
-            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#F59E0B] text-white shadow-xs">
-              <Check :size="18" class="stroke-[3]" />
+            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white shadow-xs">
+              <CheckCircle2 :size="20" />
             </div>
             <div>
-              <h4 class="font-bold text-[#D97706] text-sm sm:text-base">
-                Đã lưu thay đổi cho câu hỏi #{{ focusedQuestionId }}
+              <h4 class="font-bold text-emerald-800 text-sm sm:text-base flex items-center gap-2">
+                <span>🎉 Câu hỏi của bạn đã được duyệt vào Ngân hàng!</span>
+                <span class="rounded-md bg-emerald-200 px-2 py-0.5 text-xs font-black text-emerald-900">#{{ focusedQuestionId }}</span>
+              </h4>
+              <p class="text-xs text-slate-600 mt-1 leading-relaxed">
+                Câu hỏi của bạn đã được Quản trị viên phê duyệt thành công và đã xuất hiện trên Ngân hàng câu hỏi dùng chung để cộng đồng sử dụng.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            class="shrink-0 inline-flex items-center gap-1.5 rounded-xl border border-emerald-300 bg-white px-4 py-2 text-xs font-bold text-emerald-700 shadow-2xs hover:bg-emerald-50 hover:border-emerald-400 transition active:scale-95 cursor-pointer"
+            @click="clearQuestionFocus"
+          >
+            <Eye :size="14" />
+            <span>Xem tất cả câu hỏi trong kho</span>
+          </button>
+        </div>
+
+        <!-- 2. UPDATED BANNER: When user just saved edits -->
+        <div
+          v-else-if="highlightedUpdatedQuestionId === focusedQuestionId || route.query.updated === '1'"
+          class="rounded-2xl border border-[#FDE68A] bg-[#FFFBEB] p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-2xs"
+        >
+          <div class="flex items-start sm:items-center gap-3.5">
+            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#F59E0B] text-white shadow-xs">
+              <Check :size="20" class="stroke-[3]" />
+            </div>
+            <div>
+              <h4 class="font-bold text-[#D97706] text-sm sm:text-base flex items-center gap-2">
+                <span>Đã lưu thay đổi cho câu hỏi</span>
+                <span class="rounded-md bg-amber-200 px-2 py-0.5 text-xs font-black text-amber-900">#{{ focusedQuestionId }}</span>
               </h4>
               <p class="text-xs text-slate-600 mt-1 leading-relaxed">
                 Nội dung đã được cập nhật thành công. Câu hỏi <strong>chưa được gửi lại cho Admin</strong>. Vui lòng bấm <strong>“Gửi duyệt”</strong> ở thẻ bên dưới để gửi yêu cầu kiểm duyệt lại.
@@ -149,7 +182,7 @@
           </div>
           <button
             type="button"
-            class="shrink-0 inline-flex items-center gap-1.5 rounded-xl border border-[#FDE68A] bg-[#FEF3C7]/70 px-4 py-2 text-xs font-bold text-[#D97706] hover:bg-[#FEF3C7] transition active:scale-95 cursor-pointer shadow-2xs"
+            class="shrink-0 inline-flex items-center gap-1.5 rounded-xl border border-[#FDE68A] bg-white px-4 py-2 text-xs font-bold text-[#D97706] hover:bg-[#FEF3C7] transition active:scale-95 cursor-pointer shadow-2xs"
             @click="clearQuestionFocus"
           >
             <Eye :size="14" class="text-[#D97706]" />
@@ -157,26 +190,116 @@
           </button>
         </div>
 
-        <!-- WARNING BANNER (When user needs to edit reported question) -->
-        <div v-else class="rounded-2xl border border-rose-200 bg-rose-50/80 p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-2xs">
+        <!-- 3. REJECTED BANNER: When question submission was rejected by Admin -->
+        <div
+          v-else-if="focusedQuestionItem?.bank_submission_status === 'rejected'"
+          class="rounded-2xl border border-rose-200 bg-rose-50/90 p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-2xs"
+        >
           <div class="flex items-start sm:items-center gap-3.5">
-            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-rose-500 text-white shadow-xs">
-              <AlertTriangle :size="18" />
+            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-rose-500 text-white shadow-xs">
+              <XCircle :size="20" />
             </div>
             <div>
-              <h4 class="font-bold text-rose-700 text-sm sm:text-base flex items-center gap-2">
-                <span>Đang tập trung xử lý câu hỏi</span>
+              <h4 class="font-bold text-rose-800 text-sm sm:text-base flex items-center gap-2">
+                <span>Yêu cầu duyệt câu hỏi bị từ chối</span>
                 <span class="rounded-md bg-rose-200 px-2 py-0.5 text-xs font-black text-rose-900">#{{ focusedQuestionId }}</span>
-                <span v-if="focusedQuestionItem?.is_locked_by_admin" class="text-xs text-rose-600 font-semibold">(Câu hỏi bị báo cáo: "{{ focusedQuestionItem.report_reason || 'Vi phạm quy định' }}")</span>
               </h4>
               <p class="text-xs text-slate-600 mt-1 leading-relaxed">
-                Vui lòng nhấp nút <strong class="font-bold text-slate-800">"Sửa câu hỏi"</strong> ở thẻ bên dưới để đính chính đáp án hoặc nội dung.
+                Lý do từ chối: <strong class="text-rose-700">"{{ focusedQuestionItem.bank_submission_note || 'Nội dung chưa đạt tiêu chuẩn Ngân hàng' }}"</strong>. Bạn có thể nhấn <strong>"Sửa câu hỏi"</strong> bên dưới để hoàn thiện và gửi duyệt lại.
               </p>
             </div>
           </div>
           <button
             type="button"
             class="shrink-0 inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-white px-4 py-2 text-xs font-bold text-rose-700 shadow-2xs hover:bg-rose-50 hover:border-rose-300 transition active:scale-95 cursor-pointer"
+            @click="clearQuestionFocus"
+          >
+            <Eye :size="14" />
+            <span>Xem tất cả câu hỏi trong kho</span>
+          </button>
+        </div>
+
+        <!-- 4. REPORTED / LOCKED BANNER: When question was reported by users or locked by Admin -->
+        <div
+          v-else-if="focusedQuestionItem?.is_locked_by_admin || focusedQuestionItem?.has_report"
+          class="rounded-2xl border border-rose-200 bg-rose-50/90 p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-2xs"
+        >
+          <div class="flex items-start sm:items-center gap-3.5">
+            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-rose-500 text-white shadow-xs">
+              <AlertTriangle :size="20" />
+            </div>
+            <div>
+              <h4 class="font-bold text-rose-800 text-sm sm:text-base flex items-center gap-2">
+                <span>Đang tập trung xử lý câu hỏi bị báo cáo</span>
+                <span class="rounded-md bg-rose-200 px-2 py-0.5 text-xs font-black text-rose-900">#{{ focusedQuestionId }}</span>
+                <span v-if="focusedQuestionItem?.is_locked_by_admin" class="text-xs text-rose-600 font-semibold">(Lý do: "{{ focusedQuestionItem.report_reason || 'Vi phạm quy định' }}")</span>
+              </h4>
+              <p class="text-xs text-slate-600 mt-1 leading-relaxed">
+                Vui lòng nhấp nút <strong class="font-bold text-slate-800">"Sửa câu hỏi"</strong> ở thẻ bên dưới để đính chính đáp án hoặc nội dung câu hỏi.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            class="shrink-0 inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-white px-4 py-2 text-xs font-bold text-rose-700 shadow-2xs hover:bg-rose-50 hover:border-rose-300 transition active:scale-95 cursor-pointer"
+            @click="clearQuestionFocus"
+          >
+            <Eye :size="14" />
+            <span>Xem tất cả câu hỏi trong kho</span>
+          </button>
+        </div>
+
+        <!-- 5. PENDING REVIEW BANNER -->
+        <div
+          v-else-if="focusedQuestionItem?.bank_submission_status === 'pending'"
+          class="rounded-2xl border border-sky-200 bg-sky-50/90 p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-2xs"
+        >
+          <div class="flex items-start sm:items-center gap-3.5">
+            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sky-500 text-white shadow-xs">
+              <Clock :size="20" />
+            </div>
+            <div>
+              <h4 class="font-bold text-sky-800 text-sm sm:text-base flex items-center gap-2">
+                <span>Câu hỏi đang chờ kiểm duyệt</span>
+                <span class="rounded-md bg-sky-200 px-2 py-0.5 text-xs font-black text-sky-900">#{{ focusedQuestionId }}</span>
+              </h4>
+              <p class="text-xs text-slate-600 mt-1 leading-relaxed">
+                Yêu cầu đưa câu hỏi vào Ngân hàng dùng chung đang trong hàng đợi kiểm duyệt của Quản trị viên.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            class="shrink-0 inline-flex items-center gap-1.5 rounded-xl border border-sky-200 bg-white px-4 py-2 text-xs font-bold text-sky-700 shadow-2xs hover:bg-sky-50 hover:border-sky-300 transition active:scale-95 cursor-pointer"
+            @click="clearQuestionFocus"
+          >
+            <Eye :size="14" />
+            <span>Xem tất cả câu hỏi trong kho</span>
+          </button>
+        </div>
+
+        <!-- 6. DEFAULT FOCUS BANNER -->
+        <div
+          v-else
+          class="rounded-2xl border border-purple-200 bg-purple-50/80 p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-2xs"
+        >
+          <div class="flex items-start sm:items-center gap-3.5">
+            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#7C3AED] text-white shadow-xs">
+              <Eye :size="20" />
+            </div>
+            <div>
+              <h4 class="font-bold text-purple-900 text-sm sm:text-base flex items-center gap-2">
+                <span>Đang xem chi tiết câu hỏi</span>
+                <span class="rounded-md bg-purple-200 px-2 py-0.5 text-xs font-black text-purple-900">#{{ focusedQuestionId }}</span>
+              </h4>
+              <p class="text-xs text-slate-600 mt-1 leading-relaxed">
+                Đang làm nổi bật vị trí câu hỏi trong kho lưu trữ cá nhân của bạn.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            class="shrink-0 inline-flex items-center gap-1.5 rounded-xl border border-purple-200 bg-white px-4 py-2 text-xs font-bold text-purple-700 shadow-2xs hover:bg-purple-50 hover:border-purple-300 transition active:scale-95 cursor-pointer"
             @click="clearQuestionFocus"
           >
             <Eye :size="14" />
@@ -222,12 +345,15 @@
           :id="`question-card-${q.id}`"
           class="rounded-2xl border p-5 transition-all duration-200 relative shadow-2xs"
           :class="[
-            highlightedUpdatedQuestionId === q.id
-              ? 'border border-[#A7F3D0] bg-white'
-              : (highlightedQuestionId === q.id
-                  ? 'border border-rose-300 bg-white'
-                  : 'border border-slate-200 bg-white hover:border-slate-300'),
-            q.is_locked_by_admin && highlightedUpdatedQuestionId !== q.id ? 'border-rose-400 bg-rose-50/20' : ''
+            focusedQuestionId === q.id
+              ? (q.bank_submission_status === 'approved' || q.is_public
+                  ? 'border-emerald-400 bg-white ring-2 ring-emerald-400/30'
+                  : (q.is_locked_by_admin || q.has_report
+                      ? 'border-rose-400 bg-white ring-2 ring-rose-400/30'
+                      : (highlightedUpdatedQuestionId === q.id
+                          ? 'border-amber-400 bg-white ring-2 ring-amber-400/30'
+                          : 'border-purple-400 bg-white ring-2 ring-purple-400/30')))
+              : (q.is_locked_by_admin ? 'border-rose-300 bg-rose-50/20' : 'border-slate-200 bg-white hover:border-slate-300')
           ]"
         >
           <!-- Success Banner if updated (Green Bar) -->

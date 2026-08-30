@@ -55,7 +55,24 @@ class QuizController extends Controller
         }
 
         if ($request->filled('category')) {
-            $query->where('category', $request->query('category'));
+            $cat = trim((string) $request->query('category'));
+            $cleanCat = preg_replace('/\s*(học|hoc)$/ui', '', $cat);
+
+            $query->where(function ($q) use ($cat, $cleanCat) {
+                $q->where('category', 'like', "%{$cat}%")
+                    ->orWhere('tag', 'like', "%{$cat}%")
+                    ->orWhere('topic_name', 'like', "%{$cat}%")
+                    ->orWhere('title', 'like', "%{$cat}%")
+                    ->orWhere('title', 'like', "%{$cleanCat}%")
+                    ->orWhereHas('subject', function ($sq) use ($cat, $cleanCat) {
+                        $sq->where('name', 'like', "%{$cat}%")
+                            ->orWhere('name', 'like', "%{$cleanCat}%");
+                    })
+                    ->orWhereHas('questions.subject', function ($sq) use ($cat, $cleanCat) {
+                        $sq->where('name', 'like', "%{$cat}%")
+                            ->orWhere('name', 'like', "%{$cleanCat}%");
+                    });
+            });
         }
 
         if ($request->filled('education_level_id')) {

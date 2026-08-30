@@ -111,7 +111,7 @@
           data-points-input
           v-model.number="question.points"
           type="number"
-          step="0.05"
+          step="any"
           min="0.01"
           max="10"
           @input="onPointsInput"
