@@ -37,11 +37,14 @@ class ReportCreated extends Notification implements ShouldQueue
     {
         return [
             'type' => 'report_created',
+            'category' => 'report',
             'title' => 'Có báo cáo câu hỏi mới',
             'message' => "{$this->reporterName} đã gửi báo cáo vi phạm câu hỏi #{$this->questionId}.",
             'action' => 'view',
-            'action_link' => "/admin/question-bank-requests?question_id={$this->questionId}",
+            'action_link' => "/admin/reports?question_id={$this->questionId}",
             'metadata' => [
+                'category' => 'report',
+                'action' => 'view',
                 'report_id' => $this->reportId,
                 'question_id' => $this->questionId,
             ],

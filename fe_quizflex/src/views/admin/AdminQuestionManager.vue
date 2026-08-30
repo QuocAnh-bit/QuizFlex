@@ -426,10 +426,19 @@
               <!-- Visibility (Separate Column) -->
               <td class="p-3.5 align-top text-center">
                 <span
+                  v-if="item.deleted_at || currentTab === 'trash'"
+                  class="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-rose-50 text-rose-700 border border-rose-200"
+                  title="Câu hỏi đang ở trong Thùng rác"
+                >
+                  <Trash2 class="h-3 w-3" />
+                  <span>Trong thùng rác</span>
+                </span>
+                <span
+                  v-else
                   class="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-bold uppercase tracking-wider"
                   :class="item.is_public
                     ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                    : 'bg-slate-100 text-slate-600'"
+                    : 'bg-slate-100 text-slate-600 border border-slate-200'"
                 >
                   <component :is="item.is_public ? Globe : Lock" class="h-3 w-3" />
                   <span>{{ item.is_public ? 'Công khai' : 'Riêng tư' }}</span>
@@ -459,7 +468,15 @@
               <td class="p-3.5 align-top text-right whitespace-nowrap">
                 <div class="flex items-center justify-end gap-1.5">
                   <!-- 1. TRASH ACTIONS -->
-                  <template v-if="currentTab === 'trash'">
+                  <template v-if="currentTab === 'trash' || item.deleted_at">
+                    <router-link
+                      :to="`/admin/questions/${item.id}`"
+                      class="inline-flex items-center rounded-lg border border-slate-200 bg-white p-1.5 text-slate-600 hover:bg-slate-50 transition cursor-pointer"
+                      title="Xem chi tiết câu hỏi trong thùng rác"
+                    >
+                      <Eye class="h-3.5 w-3.5" />
+                    </router-link>
+
                     <!-- Restore from Trash -->
                     <button
                       type="button"

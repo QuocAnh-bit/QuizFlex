@@ -200,6 +200,15 @@
               </td>
 
               <td class="space-x-1.5 p-4 text-center whitespace-nowrap">
+                <router-link
+                  :to="`/admin/questions/${q.id}`"
+                  class="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
+                  title="Xem chi tiết câu hỏi"
+                >
+                  <Eye class="h-3.5 w-3.5" />
+                  <span>Xem</span>
+                </router-link>
+
                 <button
                   type="button"
                   class="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 transition hover:bg-emerald-100"
@@ -310,6 +319,7 @@ import {
   RotateCcw,
   Flame,
   User,
+  Eye,
   ChevronLeft,
   ChevronsLeft,
   ChevronsRight,

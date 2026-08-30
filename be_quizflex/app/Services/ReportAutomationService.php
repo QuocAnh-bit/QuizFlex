@@ -291,10 +291,13 @@ class ReportAutomationService
             // TRƯỜNG HỢP FAIL HOẶC UNCERTAIN: Chuyển sang ADMIN_REVIEW_REQUIRED
             // =========================================================
             return DB::transaction(function () use ($question, $req, $evalResult, $allRelatedIds) {
-                // Chuyển toàn bộ ReportTicket active sang admin_review_required
-                ReportTicket::whereIn('question_id', $allRelatedIds)
+                // Chuyển toàn bộ ReportTicket active sang admin_review_required qua transitionTo
+                $activeTickets = ReportTicket::whereIn('question_id', $allRelatedIds)
                     ->whereIn('status', ReportTicket::ACTIVE_STATUSES)
-                    ->update(['status' => ReportTicket::STATUS_ADMIN_REVIEW_REQUIRED]);
+                    ->get();
+                foreach ($activeTickets as $ticket) {
+                    $ticket->transitionTo(ReportTicket::STATUS_ADMIN_REVIEW_REQUIRED);
+                }
 
                 // Đánh dấu ReviewRequest là Priority cho Admin
                 $metadata = $req->snapshot_metadata ?? [];
@@ -352,6 +355,7 @@ class ReportAutomationService
         return $lock->get(function () use ($now) {
             $results = [
                 'total_active_reports' => 0,
+                'total_question_cases' => 0,
                 'reminders_sent' => 0,
                 'warnings_sent' => 0,
                 'auto_privatized' => 0,
@@ -359,32 +363,49 @@ class ReportAutomationService
                 'details' => [],
             ];
 
-            // Lấy tất cả các báo cáo đang ở trạng thái active (pending / author_updated)
-            // Loại trừ các báo cáo đã resolved, dismissed hoặc admin_review_required (Admin đang chủ động xử lý ngoại lệ)
+            // 1. Lấy tất cả các báo cáo đang ở trạng thái active (pending / author_updated)
             $activeReports = ReportTicket::with(['question.user', 'question.quiz.user'])
                 ->whereIn('status', [ReportTicket::STATUS_PENDING, ReportTicket::STATUS_AUTHOR_UPDATED])
                 ->get();
 
             $results['total_active_reports'] = $activeReports->count();
 
-            foreach ($activeReports as $report) {
-                $question = $report->question;
+            // 2. Nhóm theo Question Case (question_id) để xử lý ở cấp Case
+            $groupedCases = $activeReports->groupBy('question_id');
+            $results['total_question_cases'] = $groupedCases->count();
 
-                // Kiểm tra điều kiện loại trừ không xử lý:
+            foreach ($groupedCases as $questionId => $tickets) {
+                $earliestReport = $tickets->sortBy('created_at')->first();
+                $question = $earliestReport->question;
+
+                // Loại trừ câu hỏi không tồn tại hoặc đã ở trong Thùng rác
                 if (!$question || $question->trashed()) {
                     $results['skipped']++;
                     continue;
                 }
 
-                // Nếu câu hỏi có yêu cầu xét duyệt mới được tạo SAU thời điểm báo cáo và đã được approve -> Đã sửa & duyệt
+                // Nếu câu hỏi có review request đã được approve tạo sau thời điểm report đầu tiên -> Tự động resolve
                 $hasApprovedRevisionAfterReport = QuestionReviewRequest::where('question_id', $question->id)
                     ->where('status', 'approved')
-                    ->where('created_at', '>', $report->created_at)
+                    ->where('created_at', '>', $earliestReport->created_at)
                     ->exists();
 
                 if ($hasApprovedRevisionAfterReport) {
-                    // Tự động resolve report nếu còn sót
-                    $report->update(['status' => ReportTicket::STATUS_RESOLVED]);
+                    foreach ($tickets as $t) {
+                        $t->update(['status' => ReportTicket::STATUS_RESOLVED]);
+                    }
+                    $results['skipped']++;
+                    continue;
+                }
+
+                // Nếu tác giả vừa submit revision và đang pending (đang chờ duyệt) -> Tạm hoãn auto-private / reminder
+                $hasPendingRevisionUnderReview = QuestionReviewRequest::where('question_id', $question->id)
+                    ->where('status', 'pending')
+                    ->where('created_at', '>', $earliestReport->created_at)
+                    ->exists();
+
+                if ($hasPendingRevisionUnderReview) {
+                    // Đang chờ Admin / Auto Review thẩm định, tạm hoãn xử lý tự động
                     $results['skipped']++;
                     continue;
                 }
@@ -395,12 +416,16 @@ class ReportAutomationService
                     continue;
                 }
 
-                $days = (int) round($report->created_at->diffInDays($now, false));
+                // Tính số ngày trôi qua từ report đầu tiên của case
+                $days = (int) round($earliestReport->created_at->diffInDays($now, false));
 
-                // 1. DAY 7: AUTO PRIVATE (Nếu đã >= 7 ngày)
+                // 1. DAY 7: AUTO PRIVATE (>= 7 ngày)
                 if ($days >= 7) {
-                    if ($report->auto_privatized_at === null) {
-                        DB::transaction(function () use ($question, $report, $author, $now, $days, &$results) {
+                    // Kiểm tra xem đã có ticket nào trong case được đánh dấu auto_privatized_at chưa
+                    $alreadyPrivatized = $tickets->contains(fn($t) => $t->auto_privatized_at !== null);
+
+                    if (!$alreadyPrivatized) {
+                        DB::transaction(function () use ($question, $tickets, $earliestReport, $author, $now, $days, &$results) {
                             $bankSnapshot = $this->snapshotService->findBankSnapshotByOriginId($question->id);
 
                             if ($bankSnapshot && $bankSnapshot->is_public) {
@@ -410,60 +435,80 @@ class ReportAutomationService
                                 $question->update(['is_public' => false]);
                             }
 
-                            // Gửi thông báo Auto Private cho Author
-                            $author->notify(new QuestionModerated($question, 'auto_privatized', $report->reason, $report->description));
+                            // Gửi thông báo Auto Private cho Author DUY NHẤT 1 LẦN cho toàn bộ Question Case
+                            $author->notify(new QuestionModerated($question, 'auto_privatized', $earliestReport->reason, $earliestReport->description));
 
-                            // Đánh dấu marker để đảm bảo Idempotent
-                            $report->update(['auto_privatized_at' => $now]);
+                            // Đánh dấu marker cho TẤT CẢ các tickets trong case để đảm bảo Idempotent
+                            foreach ($tickets as $t) {
+                                $t->update(['auto_privatized_at' => $now]);
+                            }
 
-                            Log::info("Câu hỏi #{$question->id} đã bị AUTO PRIVATE sau {$days} ngày không chỉnh sửa báo cáo #{$report->id}.");
+                            Log::info("Question Case #{$question->id} ({$tickets->count()} tickets) đã bị AUTO PRIVATE sau {$days} ngày.");
 
                             $results['auto_privatized']++;
                             $results['details'][] = [
-                                'report_id' => $report->id,
                                 'question_id' => $question->id,
+                                'tickets_count' => $tickets->count(),
                                 'action' => 'auto_privatized',
                                 'days' => $days,
                             ];
                         });
+                    } else {
+                        $results['skipped']++;
                     }
                     continue;
                 }
 
-                // 2. DAY 5: WARNING (Nếu đã >= 5 ngày và < 7 ngày)
+                // 2. DAY 5: WARNING (>= 5 ngày và < 7 ngày)
                 if ($days >= 5) {
-                    if ($report->warning_sent_at === null) {
-                        $author->notify(new QuestionModerated($question, 'warning', $report->reason, $report->description));
-                        $report->update(['warning_sent_at' => $now]);
+                    $alreadyWarned = $tickets->contains(fn($t) => $t->warning_sent_at !== null);
 
-                        Log::info("Đã gửi WARNING cho Author câu hỏi #{$question->id} sau {$days} ngày báo cáo #{$report->id}.");
+                    if (!$alreadyWarned) {
+                        // Gửi thông báo WARNING cho Author DUY NHẤT 1 LẦN cho toàn bộ Question Case
+                        $author->notify(new QuestionModerated($question, 'warning', $earliestReport->reason, $earliestReport->description));
+
+                        foreach ($tickets as $t) {
+                            $t->update(['warning_sent_at' => $now]);
+                        }
+
+                        Log::info("Đã gửi WARNING cho Author Question Case #{$question->id} ({$tickets->count()} tickets) sau {$days} ngày.");
 
                         $results['warnings_sent']++;
                         $results['details'][] = [
-                            'report_id' => $report->id,
                             'question_id' => $question->id,
+                            'tickets_count' => $tickets->count(),
                             'action' => 'warning',
                             'days' => $days,
                         ];
+                    } else {
+                        $results['skipped']++;
                     }
                     continue;
                 }
 
-                // 3. DAY 3: REMINDER (Nếu đã >= 3 ngày và < 5 ngày)
+                // 3. DAY 3: REMINDER (>= 3 ngày và < 5 ngày)
                 if ($days >= 3) {
-                    if ($report->reminder_sent_at === null) {
-                        $author->notify(new QuestionModerated($question, 'reminder', $report->reason, $report->description));
-                        $report->update(['reminder_sent_at' => $now]);
+                    $alreadyReminded = $tickets->contains(fn($t) => $t->reminder_sent_at !== null);
 
-                        Log::info("Đã gửi REMINDER cho Author câu hỏi #{$question->id} sau {$days} ngày báo cáo #{$report->id}.");
+                    if (!$alreadyReminded) {
+                        // Gửi thông báo REMINDER cho Author DUY NHẤT 1 LẦN cho toàn bộ Question Case
+                        $author->notify(new QuestionModerated($question, 'reminder', $earliestReport->reason, $earliestReport->description));
+
+                        foreach ($tickets as $t) {
+                            $t->update(['reminder_sent_at' => $now]);
+                        }
+
+                        Log::info("Đã gửi REMINDER cho Author Question Case #{$question->id} ({$tickets->count()} tickets) sau {$days} ngày.");
 
                         $results['reminders_sent']++;
                         $results['details'][] = [
-                            'report_id' => $report->id,
                             'question_id' => $question->id,
+                            'tickets_count' => $tickets->count(),
                             'action' => 'reminder',
                             'days' => $days,
                         ];
+                    } else {
+                        $results['skipped']++;
                     }
                     continue;
                 }
@@ -474,6 +519,7 @@ class ReportAutomationService
             return $results;
         }) ?: [
             'total_active_reports' => 0,
+            'total_question_cases' => 0,
             'reminders_sent' => 0,
             'warnings_sent' => 0,
             'auto_privatized' => 0,

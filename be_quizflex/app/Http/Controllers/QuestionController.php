@@ -9,7 +9,6 @@ use App\Models\Quiz;
 use App\Models\User;
 use App\Models\ReportTicket;
 use App\Notifications\QuestionModerated;
-use App\Notifications\ReportAuthorUpdated;
 use App\Services\QuestionReviewService;
 use App\Services\QuestionSnapshotService;
 use Illuminate\Http\Request;
@@ -732,7 +731,7 @@ class QuestionController extends Controller
         });
 
         if ($user) {
-            $this->notifyAdminsIfAuthorUpdatedContent($question, $user);
+            $this->markReportsAsAuthorUpdatedOnSave($question, $user);
         }
 
         return response()->json([
@@ -887,6 +886,7 @@ class QuestionController extends Controller
             'created_at' => $question->created_at ? $question->created_at->toIso8601String() : null,
             'updated_at' => $question->updated_at ? $question->updated_at->toIso8601String() : null,
             'deleted_at' => $question->deleted_at ? $question->deleted_at->toIso8601String() : null,
+            'is_trashed' => $question->trashed(),
             'answers' => $question->answers->map(function (Answer $answer, int $index) use ($includeAnswerKey) {
                 $ans = [
                     'id' => $answer->id,
@@ -935,21 +935,17 @@ class QuestionController extends Controller
             ]);
 
             if ($isApprove) {
-                \App\Models\ReportTicket::where('question_id', $question->id)
-                    ->update(['status' => 'resolved', 'has_author_updated' => false]);
+                $activeTickets = \App\Models\ReportTicket::where('question_id', $question->id)
+                    ->whereIn('status', \App\Models\ReportTicket::ACTIVE_STATUSES)
+                    ->get();
+                foreach ($activeTickets as $ticket) {
+                    $ticket->transitionTo(\App\Models\ReportTicket::STATUS_RESOLVED);
+                }
             } else {
-                \App\Models\ReportTicket::updateOrCreate(
-                    [
-                        'question_id' => $question->id,
-                        'status' => 'pending',
-                    ],
-                    [
-                        'user_id' => $admin->id,
-                        'reason' => 'Admin từ chối duyệt công khai',
-                        'description' => $note ?: 'Nội dung chưa đạt yêu cầu duyệt công khai',
-                        'has_author_updated' => false,
-                    ]
-                );
+                $question->update([
+                    'bank_submission_status' => 'rejected',
+                    'bank_submission_note' => $note ?: 'Nội dung chưa đạt yêu cầu duyệt công khai',
+                ]);
             }
 
             if ($question->user) {
@@ -1168,17 +1164,12 @@ class QuestionController extends Controller
 
             $question->update($updateData);
 
-            // Đánh dấu cho tất cả các vé báo cáo vi phạm liên quan là tác giả đã đính chính
-            \App\Models\ReportTicket::where('question_id', $question->id)
-                ->where('status', 'pending')
-                ->update(['has_author_updated' => true]);
-
             if (isset($validated['answers'])) {
                 $this->syncAnswers($question, $validated['answers'], null);
             }
         });
 
-        $this->notifyAdminsIfAuthorUpdatedContent($question, $user);
+        $this->markReportsAsAuthorUpdatedOnSave($question, $user);
 
         return response()->json([
             'success' => true,
@@ -1187,12 +1178,8 @@ class QuestionController extends Controller
         ]);
     }
 
-    private function notifyAdminsIfAuthorUpdatedContent(Question $question, User $user): void
+    private function markReportsAsAuthorUpdatedOnSave(Question $question, User $user): void
     {
-        if (strtolower($user->role ?? '') === 'admin') {
-            return;
-        }
-
         $targetQuestionIds = array_filter(array_unique([
             $question->id,
             $question->origin_question_id,
@@ -1200,21 +1187,17 @@ class QuestionController extends Controller
         $snapshotIds = Question::where('origin_question_id', $question->id)->pluck('id')->all();
         $allRelatedIds = array_values(array_unique(array_merge($targetQuestionIds, $snapshotIds)));
 
-        // Cập nhật các ReportTicket pending / admin_review_required sang author_updated
-        ReportTicket::whereIn('question_id', $allRelatedIds)
+        // Cập nhật các ReportTicket pending / admin_review_required sang author_updated qua transitionTo
+        $tickets = ReportTicket::whereIn('question_id', $allRelatedIds)
             ->whereIn('status', [ReportTicket::STATUS_PENDING, ReportTicket::STATUS_ADMIN_REVIEW_REQUIRED])
-            ->update(['status' => ReportTicket::STATUS_AUTHOR_UPDATED]);
+            ->get();
 
-        $hasAuthorUpdatedReport = ReportTicket::whereIn('question_id', $allRelatedIds)
-            ->where('status', ReportTicket::STATUS_AUTHOR_UPDATED)
-            ->exists();
-
-        if ($hasAuthorUpdatedReport) {
-            $admins = User::whereIn('role', ['admin', 'ADMIN'])->get();
-            if ($admins->isNotEmpty()) {
-                Notification::send($admins, new ReportAuthorUpdated($question, 'question', $user));
-            }
+        foreach ($tickets as $ticket) {
+            $ticket->transitionTo(ReportTicket::STATUS_AUTHOR_UPDATED);
         }
+
+        // TUYỆT ĐỐI KHÔNG gửi notification cho Admin khi tác giả chỉ mới SAVE nháp/bản vá cục bộ.
+        // Chỉ khi tác giả chủ động bấm "Gửi duyệt lại" (submit-to-bank) thì mới kích hoạt review workflow.
     }
 
     /**
@@ -1450,7 +1433,9 @@ class QuestionController extends Controller
             $query->where(function ($q) {
                 $q->whereHas('reviewRequests', function ($rq) {
                     $rq->where('review_priority', 'high')->orWhere('is_priority', true);
-                })->orWhereHas('reports');
+                })->orWhereHas('reports', function ($rep) {
+                    $rep->whereIn('status', \App\Models\ReportTicket::ACTIVE_STATUSES);
+                });
             });
         }
 
@@ -1459,15 +1444,15 @@ class QuestionController extends Controller
         $rejectedCount = Question::where('bank_submission_status', 'rejected')->count();
         $priorityCount = Question::where('bank_submission_status', 'pending')
             ->where(function ($q) {
-                $q->whereHas('reviewRequests', fn($rq) => $rq->where('is_priority', true)->orWhere('review_priority', 'high'))
-                  ->orWhereHas('reports');
+                $q->whereHas('reviewRequests', fn($rq) => $rq->where('status', 'pending')->where(fn($sub) => $sub->where('is_priority', true)->orWhere('review_priority', 'high')))
+                  ->orWhereHas('reports', fn($rep) => $rep->whereIn('status', \App\Models\ReportTicket::ACTIVE_STATUSES));
             })->count();
 
         // Ưu tiên các câu hỏi có cờ PRIORITY hoặc có Báo cáo vi phạm lên đầu danh sách
         $query->orderByRaw("(
             SELECT CASE WHEN is_priority = 1 OR review_priority = 'high' THEN 1 ELSE 0 END 
             FROM question_review_requests 
-            WHERE question_review_requests.question_id = questions.id 
+            WHERE question_review_requests.question_id = questions.id AND question_review_requests.status = 'pending'
             ORDER BY id DESC LIMIT 1
         ) DESC")
         ->latest('bank_submission_at')
@@ -1483,8 +1468,8 @@ class QuestionController extends Controller
             $formatted['author_avatar'] = $q->user?->avatar ?? $q->quiz?->user?->avatar;
 
             $latestReq = $q->latestReviewRequest;
-            $hasReportTickets = \App\Models\ReportTicket::where('question_id', $q->id)->exists();
-            $isPriority = ($latestReq && ($latestReq->is_priority || $latestReq->review_priority === 'high')) || $hasReportTickets;
+            $hasActiveReports = \App\Models\ReportTicket::where('question_id', $q->id)->whereIn('status', \App\Models\ReportTicket::ACTIVE_STATUSES)->exists();
+            $isPriority = ($latestReq && $latestReq->status === 'pending' && ($latestReq->is_priority || $latestReq->review_priority === 'high')) || $hasActiveReports;
 
             $formatted['is_priority'] = $isPriority;
             $formatted['review_priority'] = $isPriority ? 'high' : 'normal';
@@ -1884,7 +1869,14 @@ class QuestionController extends Controller
      */
     public function adminToggleVisibility($id)
     {
-        $question = Question::with(['answers', 'educationLevel', 'grade', 'subject', 'user', 'quiz.user'])->findOrFail($id);
+        $question = Question::withTrashed()->with(['answers', 'educationLevel', 'grade', 'subject', 'user', 'quiz.user'])->findOrFail($id);
+        if ($question->trashed()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không thể thay đổi trạng thái hiển thị của câu hỏi trong Thùng rác. Vui lòng khôi phục câu hỏi trước.',
+            ], 422);
+        }
+
         $question->is_public = !$question->is_public;
 
         $targetQuestionIds = array_filter(array_unique([
@@ -1895,9 +1887,12 @@ class QuestionController extends Controller
         $allRelatedIds = array_values(array_unique(array_merge($targetQuestionIds, $snapshotIds)));
 
         if ($question->is_public) {
-            \App\Models\ReportTicket::whereIn('question_id', $allRelatedIds)
-                ->where('status', 'pending')
-                ->update(['status' => 'resolved']);
+            $activeTickets = \App\Models\ReportTicket::whereIn('question_id', $allRelatedIds)
+                ->whereIn('status', \App\Models\ReportTicket::ACTIVE_STATUSES)
+                ->get();
+            foreach ($activeTickets as $ticket) {
+                $ticket->transitionTo(\App\Models\ReportTicket::STATUS_RESOLVED);
+            }
         }
 
         $question->save();
@@ -1928,12 +1923,20 @@ class QuestionController extends Controller
     {
         $request->validate([
             'question_ids' => 'required|array|min:1',
-            'question_ids.*' => 'integer|exists:questions,id',
+            'question_ids.*' => 'integer',
             'is_public' => 'required|boolean',
         ]);
 
         $ids = $request->input('question_ids');
         $isPublic = (bool) $request->input('is_public');
+
+        $trashedCount = Question::onlyTrashed()->whereIn('id', $ids)->count();
+        if ($trashedCount > 0) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không thể thay đổi trạng thái hiển thị cho câu hỏi đang nằm trong Thùng rác. Vui lòng bỏ chọn hoặc khôi phục trước.',
+            ], 422);
+        }
 
         $questions = Question::with(['user', 'quiz.user'])->whereIn('id', $ids)->get();
         Question::whereIn('id', $ids)->update(['is_public' => $isPublic]);
@@ -1943,9 +1946,12 @@ class QuestionController extends Controller
         $allTargetIds = array_values(array_unique(array_merge($ids, $originIds, $snapshotIds)));
 
         if ($isPublic) {
-            \App\Models\ReportTicket::whereIn('question_id', $allTargetIds)
-                ->where('status', 'pending')
-                ->update(['status' => 'resolved']);
+            $activeTickets = \App\Models\ReportTicket::whereIn('question_id', $allTargetIds)
+                ->whereIn('status', \App\Models\ReportTicket::ACTIVE_STATUSES)
+                ->get();
+            foreach ($activeTickets as $ticket) {
+                $ticket->transitionTo(\App\Models\ReportTicket::STATUS_RESOLVED);
+            }
         }
 
         $action = $isPublic ? 'shown' : 'hidden';
@@ -2052,7 +2058,7 @@ class QuestionController extends Controller
      */
     public function adminShow($id)
     {
-        $question = Question::with([
+        $question = Question::withTrashed()->with([
             'answers',
             'user:id,name,email,avatar',
             'quiz.user:id,name,email,avatar',
@@ -2123,7 +2129,7 @@ class QuestionController extends Controller
 
         // Review diff & history details (lấy từ câu hỏi gốc hoặc chính câu hỏi)
         $originQuestion = $question->origin_question_id 
-            ? (Question::find($question->origin_question_id) ?? $question) 
+            ? (Question::withTrashed()->find($question->origin_question_id) ?? $question) 
             : $question;
 
         $diffData = $this->reviewService->getReviewDetailsWithDiff($originQuestion);
@@ -2157,8 +2163,6 @@ class QuestionController extends Controller
     public function adminTrash(Request $request)
     {
         $query = Question::onlyTrashed()
-            ->whereNotNull('origin_question_id')
-            ->where('bank_submission_status', 'approved')
             ->with(['answers', 'quiz.user:id,name,email,avatar', 'user:id,name,email,avatar', 'educationLevel', 'grade', 'subject']);
 
         if ($request->filled('search')) {
@@ -2183,7 +2187,7 @@ class QuestionController extends Controller
         $perPage = min(max((int) $request->query('per_page', 15), 1), 100);
         $paginator = $query->paginate($perPage)->through(fn(Question $q) => $this->formatQuestion($q, true));
 
-        $trashCount = (clone $query)->count();
+        $trashCount = Question::onlyTrashed()->count();
 
         return response()->json([
             'success' => true,

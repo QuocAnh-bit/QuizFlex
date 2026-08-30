@@ -145,6 +145,7 @@ Route::middleware('auth:api')->group(function () {
         Route::put('/admin/report-tickets/{id}', [ReportTicketController::class, 'updateStatus']);
         Route::post('/admin/report-tickets/resolve-question-reports', [ReportTicketController::class, 'resolveQuestionReports']);
         Route::post('/admin/report-tickets/resolve', [ReportTicketController::class, 'resolveQuestionReports']);
+        Route::post('/admin/reports/resolve-question', [ReportTicketController::class, 'resolveQuestionReports']);
 
         // Quản lý ngân hàng câu hỏi toàn hệ thống cho admin
         Route::get('/admin/question-bank-requests', [QuestionController::class, 'adminBankRequests']);
@@ -164,6 +165,7 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/admin/questions/bulk-force-delete', [QuestionController::class, 'adminBulkForceDelete']);
         Route::get('/admin/questions/{id}', [QuestionController::class, 'adminShow']);
         Route::put('/admin/questions/{id}', [QuestionController::class, 'adminUpdate']);
+        Route::delete('/admin/questions/{question}', [QuestionController::class, 'destroy']);
         Route::patch('/admin/questions/{id}/toggle-visibility', [QuestionController::class, 'adminToggleVisibility']);
         Route::post('/admin/questions/bulk-visibility', [QuestionController::class, 'adminBulkToggleVisibility']);
         Route::post('/admin/questions/bulk-delete', [QuestionController::class, 'adminBulkDelete']);
@@ -211,6 +213,7 @@ Route::middleware('auth:api')->group(function () {
 
         // Quản lý kiểm duyệt quiz cho admin
         Route::get('/admin/quiz-reviews', [QuizReviewController::class, 'adminIndex']);
+        Route::get('/admin/quiz-review-requests', [QuizReviewController::class, 'adminIndex']);
         Route::get('/admin/quiz-reviews/{id}', [QuizReviewController::class, 'adminShow']);
         Route::post('/admin/quiz-reviews/{id}/approve', [QuizReviewController::class, 'adminApprove']);
         Route::post('/admin/quiz-reviews/{id}/reject', [QuizReviewController::class, 'adminReject']);

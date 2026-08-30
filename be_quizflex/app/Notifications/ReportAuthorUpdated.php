@@ -51,14 +51,20 @@ class ReportAuthorUpdated extends Notification implements ShouldQueue
 
         return [
             'type' => 'report_author_updated',
+            'category' => 'report',
             'title' => $title,
             'message' => $message,
             'action' => 'view',
-            'action_link' => '/admin/report-tickets?tab=question&question_id=' . $this->item->id,
+            'action_link' => $this->itemType === 'question' 
+                ? "/admin/reports?question_id={$this->item->id}" 
+                : "/admin/quizzes?quiz_id={$this->item->id}",
             'metadata' => [
+                'category' => 'report',
+                'action' => 'view',
                 'item_type' => $this->itemType,
                 'item_id' => $this->item->id,
-                'question_id' => $this->item->id,
+                'question_id' => $this->itemType === 'question' ? $this->item->id : null,
+                'quiz_id' => $this->itemType === 'quiz' ? $this->item->id : null,
                 'author_id' => $this->author->id,
             ],
         ];

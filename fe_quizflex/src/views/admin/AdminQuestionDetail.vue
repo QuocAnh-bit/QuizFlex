@@ -43,8 +43,16 @@
                 <span>{{ getReviewStatusLabel(question.bank_submission_status) }}</span>
               </span>
 
-              <!-- Visibility Badge -->
+              <!-- Visibility / Trash Badge (Trash has highest priority) -->
               <span
+                v-if="question.deleted_at"
+                class="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-bold uppercase tracking-wider bg-rose-100 text-rose-800 border border-rose-200"
+              >
+                <Trash2 class="h-3.5 w-3.5 text-rose-600" />
+                <span>Trong thùng rác</span>
+              </span>
+              <span
+                v-else
                 class="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-bold uppercase tracking-wider"
                 :class="Boolean(question.is_public)
                   ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
@@ -73,8 +81,31 @@
 
         <!-- Header Actions based on Status -->
         <div class="flex flex-wrap items-center gap-2">
-          <!-- PENDING ACTIONS: Approve / Reject -->
-          <template v-if="question.bank_submission_status === 'pending'">
+          <!-- 1. TRASH ACTIONS (HIGHEST PRIORITY) -->
+          <template v-if="question.deleted_at">
+            <button
+              type="button"
+              class="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-5 py-2 text-xs font-bold text-white hover:bg-emerald-700 transition cursor-pointer shadow-xs disabled:opacity-50"
+              :disabled="isProcessing"
+              @click="handleRestore"
+            >
+              <RotateCcw class="h-4 w-4" />
+              <span>Khôi phục câu hỏi</span>
+            </button>
+
+            <button
+              type="button"
+              class="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-white px-4 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 transition cursor-pointer shadow-xs disabled:opacity-50"
+              :disabled="isProcessing"
+              @click="handleForceDelete"
+            >
+              <Flame class="h-4 w-4" />
+              <span>Xóa vĩnh viễn</span>
+            </button>
+          </template>
+
+          <!-- 2. PENDING ACTIONS: Approve / Reject (Only when not in trash) -->
+          <template v-else-if="question.bank_submission_status === 'pending'">
             <button
               type="button"
               class="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-white px-4 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 transition cursor-pointer shadow-xs"
@@ -96,7 +127,7 @@
             </button>
           </template>
 
-          <!-- APPROVED ACTIONS: Toggle Visibility & Delete to Trash -->
+          <!-- 3. APPROVED ACTIONS: Toggle Visibility & Delete to Trash (Only when not in trash) -->
           <template v-else-if="question.bank_submission_status === 'approved'">
             <button
               type="button"
@@ -123,9 +154,25 @@
       </div>
     </div>
 
+    <!-- CONTEXT BANNER 0: TRASHED ALERT (HIGHEST PRIORITY) -->
+    <div
+      v-if="question.deleted_at"
+      class="flex items-start gap-3 rounded-2xl border border-rose-300 bg-rose-50 p-4 text-xs text-rose-900 shadow-xs"
+    >
+      <Trash2 class="h-5 w-5 text-rose-600 shrink-0 mt-0.5" />
+      <div class="space-y-1">
+        <p class="font-black uppercase tracking-wider text-rose-950">
+          Câu hỏi này đang nằm trong Thùng rác (Xóa lúc {{ formatDate(question.deleted_at) }})
+        </p>
+        <p class="text-rose-800 leading-relaxed font-medium">
+          Câu hỏi đã bị xóa mềm và không hiển thị trong Ngân hàng câu hỏi cũng như các bài thi công khai. Mọi thao tác đổi hiển thị hoặc duyệt bị khóa cho đến khi được khôi phục.
+        </p>
+      </div>
+    </div>
+
     <!-- CONTEXT BANNER 1: PENDING REVIEW ALERT -->
     <div
-      v-if="question.bank_submission_status === 'pending'"
+      v-else-if="question.bank_submission_status === 'pending'"
       class="flex items-start gap-3 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-xs text-amber-900 shadow-xs"
     >
       <Clock class="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
@@ -790,6 +837,8 @@ import {
   History,
   ListChecks,
   Lock,
+  RotateCcw,
+  Flame,
   Settings,
   Trash2,
   User,
@@ -969,6 +1018,41 @@ const deleteQuestion = async () => {
 
   if (showConfirm) {
     showConfirm('Xóa câu hỏi', msg, executeAction)
+  } else if (confirm(msg)) {
+    executeAction()
+  }
+}
+
+const handleRestore = async () => {
+  isProcessing.value = true
+  try {
+    await adminQuestionsApi.restore(questionId)
+    if (showToast) showToast('Khôi phục câu hỏi thành công!', 'success')
+    await fetchQuestionDetail()
+  } catch (err) {
+    if (showToast) showToast(`Khôi phục thất bại: ${err.message}`, 'error')
+  } finally {
+    isProcessing.value = false
+  }
+}
+
+const handleForceDelete = () => {
+  const msg = `Bạn có chắc chắn muốn xóa vĩnh viễn câu hỏi #${questionId}? Dữ liệu sẽ không thể phục hồi.`
+  const executeAction = async () => {
+    isProcessing.value = true
+    try {
+      await adminQuestionsApi.forceDelete(questionId)
+      if (showToast) showToast('Đã xóa vĩnh viễn câu hỏi.', 'success')
+      router.push('/admin/questions-trash')
+    } catch (err) {
+      if (showToast) showToast(`Xóa thất bại: ${err.message}`, 'error')
+    } finally {
+      isProcessing.value = false
+    }
+  }
+
+  if (showConfirm) {
+    showConfirm('Xóa vĩnh viễn', msg, executeAction)
   } else if (confirm(msg)) {
     executeAction()
   }
