@@ -24,6 +24,46 @@ class LiveRoomController extends Controller
 {
     public function __construct(private readonly QuestionOrderService $questionOrderService) {}
 
+    public function index(Request $request)
+    {
+        $user = $request->user();
+        $rooms = LiveRoom::query()
+            ->with(['quiz:id,title', 'host:id,name'])
+            ->withCount('players')
+            ->where(function ($q) use ($user) {
+                $q->where('host_id', $user->id)
+                    ->orWhereHas('players', function ($pq) use ($user) {
+                        $pq->where('user_id', $user->id);
+                    });
+            })
+            ->orderByDesc('id')
+            ->limit(30)
+            ->get()
+            ->map(function ($room) use ($user) {
+                $isHost = (int) $room->host_id === (int) $user->id;
+                return [
+                    'id' => $room->id,
+                    'name' => $room->title ?: ($room->quiz?->title ? 'Thi đấu: ' . $room->quiz->title : 'Phòng thi đấu #' . $room->id),
+                    'pin' => $room->pin,
+                    'code' => $room->pin,
+                    'description' => $room->quiz?->title ? 'Bộ quiz: ' . $room->quiz->title : 'Phòng thi đấu thời gian thực',
+                    'quiz_title' => $room->quiz?->title,
+                    'host_name' => $room->host?->name,
+                    'host_id' => $room->host_id,
+                    'is_host' => $isHost,
+                    'role' => $isHost ? 'Chủ phòng' : 'Người chơi',
+                    'members_count' => $room->players_count,
+                    'status' => $room->status,
+                    'created_at' => $room->created_at?->toISOString(),
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'data' => $rooms,
+        ]);
+    }
+
     public function store(Request $request)
     {
         $user = $request->user();

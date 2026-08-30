@@ -362,8 +362,6 @@ const handleLogout = async () => {
     currentUser.value ||
     currentUserStorage.get()
 
-  const email = user?.email || ''
-
   if (user) {
     localStorage.setItem(
       'quizflex_last_user',
@@ -392,29 +390,12 @@ const handleLogout = async () => {
   isUserDropdownOpen.value = false
   isMenuOpen.value = false
 
-  const requiresAuth =
-    route.meta.requiresAuth
-
-  if (requiresAuth) {
-    router.push({
-      path: '/login',
-      query: email
-        ? {
-            email,
-            logout: 'success',
-          }
-        : {
-            logout: 'success',
-          },
-    })
-  } else {
-    router.push({
-      path: route.path,
-      query: {
-        _refresh: Date.now(),
-      },
-    })
-  }
+  router.push({
+    path: '/login',
+    query: {
+      logout: 'success',
+    },
+  })
 }
 
 const handleLogoutClick = async () => {

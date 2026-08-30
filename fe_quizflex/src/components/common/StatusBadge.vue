@@ -51,6 +51,8 @@ const statusMap = {
   in_progress: { text: 'Đang làm', className: 'border-blue-200 bg-blue-50 text-blue-700', dotClass: 'bg-blue-500' },
   host: { text: 'Chủ phòng', className: 'border-purple-200 bg-purple-50 text-purple-700', dotClass: 'bg-purple-600' },
   member: { text: 'Thành viên', className: 'border-blue-200 bg-blue-50 text-blue-700', dotClass: 'bg-blue-500' },
+  trashed: { text: 'Trong thùng rác', className: 'border-rose-200 bg-rose-50 text-rose-700', dotClass: 'bg-rose-500' },
+  deleted: { text: 'Đã xóa', className: 'border-rose-200 bg-rose-50 text-rose-700', dotClass: 'bg-rose-500' },
 }
 
 const meta = computed(() => {

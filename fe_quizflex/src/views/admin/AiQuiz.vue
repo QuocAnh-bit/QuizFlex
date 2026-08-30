@@ -174,92 +174,151 @@
 
               <div
                 v-else-if="!curriculumAvailable || curriculumOptions.length === 0"
-                class="rounded-2xl border border-amber-200 bg-amber-50 p-5"
+                class="rounded-2xl border border-purple-200 bg-purple-50/50 p-5 space-y-4"
               >
                 <div class="flex gap-3">
-                  <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-100 text-sm">!</span>
+                  <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-purple-100 text-sm font-black text-[#7C3AED]">✎</span>
                   <div>
-                    <p class="text-xs font-black text-amber-900">Môn học này chưa có chủ đề RAG</p>
-                    <p class="mt-1 text-[11px] leading-5 text-amber-700">
-                      Hiện chưa có dữ liệu chương trình đã nhúng cho {{ selectedSubject?.name }} - {{ selectedGrade?.name }}.
-                      Bạn có thể quay lại chọn bộ môn khác.
+                    <p class="text-xs font-black text-slate-800">Nhập chủ đề theo yêu cầu</p>
+                    <p class="mt-1 text-[11px] leading-5 text-slate-600">
+                      Môn {{ selectedSubject?.name }} - {{ selectedGrade?.name }} chưa có chủ đề RAG định sẵn. Bạn hãy nhập tên chủ đề bài học để AI tạo câu hỏi:
                     </p>
                   </div>
                 </div>
-                <button type="button" class="btn-secondary mt-4 px-4 py-2 text-[11px]" @click="goToTaxonomyStep(3)">
-                  ← Chọn lại bộ môn
-                </button>
+
+                <div class="rounded-xl border border-purple-200 bg-white p-3.5 space-y-2.5">
+                  <label class="block text-xs font-bold text-slate-800">
+                    Tên chủ đề / Bài học *
+                  </label>
+                  <div class="flex flex-col sm:flex-row gap-2">
+                    <input
+                      v-model="customTopicInput"
+                      type="text"
+                      class="field text-xs flex-1"
+                      placeholder="Ví dụ: Các số trong phạm vi 10, Phép cộng, Hình học..."
+                      @keyup.enter="confirmCustomTaxonomy"
+                    />
+                    <button
+                      type="button"
+                      class="btn-primary px-4 py-2 text-xs shrink-0 whitespace-nowrap"
+                      :disabled="!customTopicInput.trim()"
+                      @click="confirmCustomTaxonomy"
+                    >
+                      Dùng chủ đề này →
+                    </button>
+                  </div>
+                </div>
+
+                <div class="flex items-center justify-between pt-1 border-t border-purple-100">
+                  <button type="button" class="btn-secondary px-3 py-1.5 text-[11px]" @click="goToTaxonomyStep(3)">
+                    ← Chọn lại bộ môn
+                  </button>
+                </div>
               </div>
 
               <template v-else>
-                <div class="relative">
-                  <svg class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="11" cy="11" r="7"></circle>
-                    <path d="m20 20-3.5-3.5"></path>
-                  </svg>
-                  <input
-                    v-model="curriculumSearch"
-                    class="field pl-9 text-xs"
-                    type="search"
-                    placeholder="Tìm chủ đề..."
-                  />
-                </div>
-
-                <div class="flex items-center justify-between gap-3">
-                  <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                    {{ filteredCurriculumOptions.length }} chủ đề phù hợp
-                  </p>
-                  <p v-if="selectedCurriculumOption" class="text-[10px] font-black text-emerald-600">Đã chọn 1 chủ đề</p>
-                </div>
-
-                <div v-if="filteredCurriculumOptions.length" class="max-h-80 space-y-2 overflow-y-auto pr-1">
-                  <label
-                    v-for="option in filteredCurriculumOptions"
-                    :key="option._key"
-                    class="block cursor-pointer rounded-2xl border p-4 transition"
-                    :class="selectedCurriculumKey === option._key
-                      ? 'border-[#7C3AED] bg-purple-50 shadow-sm'
-                      : 'border-slate-200 bg-white hover:border-purple-200 hover:bg-slate-50'"
-                  >
+                <div class="flex items-center justify-between gap-2">
+                  <div class="relative flex-1">
+                    <svg class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="11" cy="11" r="7"></circle>
+                      <path d="m20 20-3.5-3.5"></path>
+                    </svg>
                     <input
-                      v-model="selectedCurriculumKey"
-                      class="sr-only"
-                      type="radio"
-                      name="curriculum-option"
-                      :value="option._key"
-                      :disabled="isGenerating || isPolling"
+                      v-model="curriculumSearch"
+                      class="field pl-9 text-xs"
+                      type="search"
+                      placeholder="Tìm chủ đề..."
                     />
-                    <span class="flex items-start gap-3">
-                      <span
-                        class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border"
-                        :class="selectedCurriculumKey === option._key ? 'border-[#7C3AED] bg-[#7C3AED]' : 'border-slate-300 bg-white'"
-                      >
-                        <span v-if="selectedCurriculumKey === option._key" class="h-1.5 w-1.5 rounded-full bg-white"></span>
-                      </span>
-                      <span class="min-w-0 flex-1">
-                        <span class="block text-xs font-black leading-5 text-slate-800">{{ option.label }}</span>
-                      </span>
-                    </span>
-                  </label>
-                </div>
-
-                <div v-else class="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-5 text-center">
-                  <p class="text-xs font-black text-slate-700">Không tìm thấy chủ đề khớp từ khóa</p>
-                  <button type="button" class="mt-2 text-[11px] font-black text-[#7C3AED] underline" @click="curriculumSearch = ''">
-                    Xóa từ khóa tìm kiếm
-                  </button>
-                </div>
-
-                <div class="flex justify-end border-t border-slate-100 pt-4">
+                  </div>
                   <button
                     type="button"
-                    class="btn-primary px-5 py-2.5 text-xs"
-                    :disabled="!selectedCurriculumOption"
-                    @click="confirmTaxonomy"
+                    class="text-[11px] font-bold text-[#7C3AED] hover:underline px-2 py-1 shrink-0"
+                    @click="isCustomTopicMode = !isCustomTopicMode"
                   >
-                    Dùng chủ đề này →
+                    {{ isCustomTopicMode ? '← Chọn theo danh mục RAG' : '✎ Tự nhập chủ đề khác' }}
                   </button>
                 </div>
+
+                <div v-if="isCustomTopicMode" class="rounded-xl border border-purple-200 bg-white p-3.5 space-y-2.5">
+                  <label class="block text-xs font-bold text-slate-800">
+                    Nhập tên chủ đề bài học tùy chọn:
+                  </label>
+                  <div class="flex flex-col sm:flex-row gap-2">
+                    <input
+                      v-model="customTopicInput"
+                      type="text"
+                      class="field text-xs flex-1"
+                      placeholder="Ví dụ: Luyện tập phép cộng trừ, Ôn thi học kỳ..."
+                      @keyup.enter="confirmCustomTaxonomy"
+                    />
+                    <button
+                      type="button"
+                      class="btn-primary px-4 py-2 text-xs shrink-0 whitespace-nowrap"
+                      :disabled="!customTopicInput.trim()"
+                      @click="confirmCustomTaxonomy"
+                    >
+                      Dùng chủ đề này →
+                    </button>
+                  </div>
+                </div>
+
+                <template v-else>
+                  <div class="flex items-center justify-between gap-3">
+                    <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                      {{ filteredCurriculumOptions.length }} chủ đề phù hợp
+                    </p>
+                    <p v-if="selectedCurriculumOption" class="text-[10px] font-black text-emerald-600">Đã chọn 1 chủ đề</p>
+                  </div>
+
+                  <div v-if="filteredCurriculumOptions.length" class="max-h-80 space-y-2 overflow-y-auto pr-1">
+                    <label
+                      v-for="option in filteredCurriculumOptions"
+                      :key="option._key"
+                      class="block cursor-pointer rounded-2xl border p-4 transition"
+                      :class="selectedCurriculumKey === option._key
+                        ? 'border-[#7C3AED] bg-purple-50 shadow-sm'
+                        : 'border-slate-200 bg-white hover:border-purple-200 hover:bg-slate-50'"
+                    >
+                      <input
+                        v-model="selectedCurriculumKey"
+                        class="sr-only"
+                        type="radio"
+                        name="curriculum-option"
+                        :value="option._key"
+                        :disabled="isGenerating || isPolling"
+                      />
+                      <span class="flex items-start gap-3">
+                        <span
+                          class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border"
+                          :class="selectedCurriculumKey === option._key ? 'border-[#7C3AED] bg-[#7C3AED]' : 'border-slate-300 bg-white'"
+                        >
+                          <span v-if="selectedCurriculumKey === option._key" class="h-1.5 w-1.5 rounded-full bg-white"></span>
+                        </span>
+                        <span class="min-w-0 flex-1">
+                          <span class="block text-xs font-black leading-5 text-slate-800">{{ option.label }}</span>
+                        </span>
+                      </span>
+                    </label>
+                  </div>
+
+                  <div v-else class="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-5 text-center">
+                    <p class="text-xs font-black text-slate-700">Không tìm thấy chủ đề khớp từ khóa</p>
+                    <button type="button" class="mt-2 text-[11px] font-black text-[#7C3AED] underline" @click="curriculumSearch = ''">
+                      Xóa từ khóa tìm kiếm
+                    </button>
+                  </div>
+
+                  <div class="flex justify-end border-t border-slate-100 pt-4">
+                    <button
+                      type="button"
+                      class="btn-primary px-5 py-2.5 text-xs"
+                      :disabled="!selectedCurriculumOption"
+                      @click="confirmTaxonomy"
+                    >
+                      Dùng chủ đề này →
+                    </button>
+                  </div>
+                </template>
               </template>
             </div>
 
@@ -439,7 +498,11 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { aiApi, authApi, currentUserStorage, curriculumApi, taxonomyApi } from '@/services/api'
-
+import {
+  Sparkles,
+  FileText,
+  // các icon khác đang có sẵn...
+} from 'lucide-vue-next'
 const route = useRoute()
 const router = useRouter()
 const questionBase = computed(() => route.path.startsWith('/dashboard') ? '/dashboard/questions' : '/admin/questions')
@@ -533,8 +596,18 @@ const isTaxonomyComplete = computed(() => Boolean(
   && taxonomyForm.value.grade_id
   && taxonomyForm.value.subject_id
   && taxonomyForm.value.topic_name.trim()
-  && taxonomyForm.value.curriculum_unit_ids.length > 0
 ))
+
+const customTopicInput = ref('')
+const isCustomTopicMode = ref(false)
+
+const confirmCustomTaxonomy = () => {
+  const topic = customTopicInput.value.trim()
+  if (!topic) return
+  taxonomyForm.value.topic_name = topic
+  taxonomyForm.value.curriculum_unit_ids = []
+  taxonomyConfirmed.value = true
+}
 
 const promptPlaceholder = computed(() => (
   isTaxonomyComplete.value

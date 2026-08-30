@@ -10,7 +10,7 @@
     <form class="card p-6 sm:p-8 space-y-5" @submit.prevent="submitForm">
       <div class="space-y-4">
         <label class="grid gap-1.5 text-xs font-bold text-slate-700">
-          Tên phòng học <span class="text-red-500">*</span>
+          Tên phòng học <span class="text-red-500"></span>
           <input v-model.trim="form.name" class="field text-xs" maxlength="255" placeholder="VD: Lớp Toán 12A1 - Ôn thi THPT" required />
         </label>
 

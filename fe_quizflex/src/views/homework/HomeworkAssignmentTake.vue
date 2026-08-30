@@ -35,17 +35,21 @@
           </div>
 
           <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <div class="rounded-xl border border-slate-100 bg-slate-50 p-4 text-center">
-              <span class="text-xs font-semibold text-slate-500">Điểm số</span>
-              <b class="mt-1 block text-2xl font-black text-slate-900">{{ result.score ?? 0 }}/{{ result.total_points ?? 0 }}</b>
-            </div>
-            <div class="rounded-xl border border-slate-100 bg-slate-50 p-4 text-center">
-              <span class="text-xs font-semibold text-slate-500">Tỷ lệ chính xác</span>
-              <b class="mt-1 block text-2xl font-black text-[#7C3AED]">{{ Math.round(result.score_percent ?? 0) }}%</b>
+            <div class="rounded-xl border border-purple-200 bg-purple-50/60 p-4 text-center">
+              <span class="text-xs font-semibold text-slate-500">Điểm số (Thang 10)</span>
+              <b class="mt-1 block text-2xl font-black text-[#7C3AED]">
+                {{ formatDisplayScore(result) }} <span class="text-xs font-bold text-slate-500">/ 10</span>
+              </b>
             </div>
             <div class="rounded-xl border border-slate-100 bg-slate-50 p-4 text-center">
               <span class="text-xs font-semibold text-slate-500">Số câu đúng</span>
-              <b class="mt-1 block text-2xl font-black text-emerald-700">{{ result.correct_count ?? '-' }}/{{ result.total_questions ?? '-' }}</b>
+              <b class="mt-1 block text-2xl font-black text-emerald-700">
+                {{ result.correct_count ?? result.result?.correct_count ?? '-' }}/{{ result.total_questions ?? result.result?.total_questions ?? questions.length }} câu
+              </b>
+            </div>
+            <div class="rounded-xl border border-slate-100 bg-slate-50 p-4 text-center">
+              <span class="text-xs font-semibold text-slate-500">Độ chính xác</span>
+              <b class="mt-1 block text-2xl font-black text-slate-900">{{ Math.round(result.accuracy_percentage ?? result.score_percent ?? 0) }}%</b>
             </div>
             <div class="rounded-xl border border-slate-100 bg-slate-50 p-4 text-center">
               <span class="text-xs font-semibold text-slate-500">Trạng thái</span>
@@ -66,6 +70,12 @@
               <div class="flex items-center gap-2">
                 <span class="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
                   Câu {{ currentIndex + 1 }} / {{ questions.length || 1 }}
+                </span>
+                <span
+                  v-if="currentQuestion.type === 'multi_choice'"
+                  class="rounded-full border border-purple-200 bg-purple-100/70 px-3 py-1 text-xs font-bold text-purple-800 uppercase tracking-wide"
+                >
+                  Nhiều đáp án đúng
                 </span>
                 <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 truncate max-w-xs">
                   {{ assignment?.title || quizMeta.title || 'Homework' }}
@@ -227,11 +237,44 @@ const isAnswerSelected = (answer) => {
   return current === answer.id
 }
 
+const formatDisplayScore = (res) => {
+  if (!res) return '0'
+  let raw = 0
+  if (res.scaled_score_10 !== undefined && res.scaled_score_10 !== null) {
+    raw = Number(res.scaled_score_10)
+  } else {
+    const tot = Number(res.total_points) || 0
+    const sc = Number(res.score) || 0
+    raw = tot > 0 ? (sc / tot) * 10 : 0
+  }
+  return Number.isInteger(raw) ? raw.toString() : parseFloat(raw.toFixed(2)).toString()
+}
+
 const toggleAnswer = (answer) => {
   if (!currentQuestion.value.id) return
-  selectedAnswers.value = {
-    ...selectedAnswers.value,
-    [currentQuestion.value.id]: answer.id,
+  const qId = currentQuestion.value.id
+  const isMulti = currentQuestion.value.type === 'multi_choice'
+  if (isMulti) {
+    const current = Array.isArray(selectedAnswers.value[qId])
+      ? [...selectedAnswers.value[qId]]
+      : selectedAnswers.value[qId]
+        ? [selectedAnswers.value[qId]]
+        : []
+    const index = current.indexOf(answer.id)
+    if (index > -1) {
+      current.splice(index, 1)
+    } else {
+      current.push(answer.id)
+    }
+    selectedAnswers.value = {
+      ...selectedAnswers.value,
+      [qId]: current,
+    }
+  } else {
+    selectedAnswers.value = {
+      ...selectedAnswers.value,
+      [qId]: answer.id,
+    }
   }
 }
 
@@ -240,7 +283,9 @@ const getQuestionMapClass = (i) => {
   if (i === currentIndex.value) {
     return ['border-[#7C3AED]', 'bg-[#7C3AED]', 'text-white']
   }
-  if (selectedAnswers.value[questionId]) {
+  const ans = selectedAnswers.value[questionId]
+  const hasAnswered = Array.isArray(ans) ? ans.length > 0 : Boolean(ans)
+  if (hasAnswered) {
     return ['border-emerald-200', 'bg-emerald-50', 'text-emerald-700']
   }
   return ['border-slate-200', 'bg-slate-50', 'text-slate-600', 'hover:bg-slate-100']

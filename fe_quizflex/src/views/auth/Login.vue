@@ -34,7 +34,31 @@
           <span class="text-xs text-slate-500">{{ lastUser.email }}</span>
         </div>
 
-        <form v-if="lastLoginMethod === 'password'" class="space-y-4" @submit.prevent="handleQuickLoginPassword" novalidate>
+        <!-- Google SSO Quick Login -->
+        <button 
+          type="button" 
+          class="flex items-center justify-center gap-2.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition active:scale-[0.99] shadow-sm"
+          @click="loginWithGoogle"
+        >
+          <svg class="h-4 w-4" viewBox="0 0 24 24">
+            <path fill="#EA4335" d="M12 5.04c1.66 0 3.2.57 4.38 1.69l3.27-3.27C17.67 1.47 15 0 12 0 7.35 0 3.4 2.67 1.48 6.56l3.86 3c.9-2.69 3.4-4.52 6.66-4.52z"/>
+            <path fill="#4285F4" d="M23.49 12.27c0-.81-.07-1.59-.2-2.34H12v4.44h6.46c-.28 1.46-1.1 2.69-2.34 3.52l3.62 2.81c2.12-1.95 3.75-4.83 3.75-8.43z"/>
+            <path fill="#FBBC05" d="M5.34 9.56c-.23-.69-.36-1.43-.36-2.2s.13-1.51.36-2.2l-3.86-3C.53 3.96 0 5.48 0 7.36c0 1.88.53 3.4 1.48 5.16l3.86-3z"/>
+            <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.62-2.81c-1.01.68-2.3 1.09-4.31 1.09-3.26 0-5.76-1.83-6.66-4.52l-3.86 3C3.4 21.33 7.35 24 12 24z"/>
+          </svg>
+          <span>Đăng nhập nhanh bằng Google</span>
+        </button>
+
+        <!-- Divider -->
+        <div class="relative flex items-center justify-center my-3">
+          <div class="absolute inset-0 flex items-center">
+            <div class="w-full border-t border-slate-200"></div>
+          </div>
+          <span class="relative bg-white px-2.5 text-[11px] font-bold text-slate-400 uppercase">Hoặc nhập mật khẩu</span>
+        </div>
+
+        <!-- Password Quick Login -->
+        <form class="space-y-4" @submit.prevent="handleQuickLoginPassword" novalidate>
           <label class="grid gap-1.5 text-xs font-bold text-slate-700 text-left">
             Mật khẩu tài khoản
             <div class="relative">
@@ -57,15 +81,6 @@
             {{ isSubmitting ? 'Đang đăng nhập...' : 'Đăng nhập tiếp tục' }}
           </button>
         </form>
-
-        <div v-else class="space-y-3">
-          <button type="button" class="btn-primary w-full py-2.5 text-xs" @click="loginWithGoogle">
-            Tiếp tục với Google
-          </button>
-          <button type="button" class="text-xs font-bold text-[#7C3AED] hover:underline" @click="lastLoginMethod = 'password'">
-            Đăng nhập bằng mật khẩu
-          </button>
-        </div>
 
         <div class="flex items-center justify-center gap-3 pt-2 text-xs text-slate-500 border-t border-slate-100">
           <button type="button" class="font-bold text-[#7C3AED] hover:underline" @click="switchToStandardLogin">Dùng tài khoản khác</button>
@@ -190,6 +205,9 @@ const quickPassword = ref('')
 
 const switchToStandardLogin = () => {
   showQuickLogin.value = false
+  if (lastUser.value?.email) {
+    form.email = lastUser.value.email
+  }
   localStorage.removeItem('quizflex_last_user')
 }
 
@@ -299,8 +317,15 @@ const handleQuickLoginPassword = async () => {
 onMounted(async () => {
   const state = history.state
   const savedUser = localStorage.getItem('quizflex_last_user')
-  const hasAuthParams = route.query.token || route.query.error_message || route.query.email || route.query.reset || (state && state.email)
-  
+  const hasAuthParams = Boolean(
+    route.query.token ||
+    route.query.error_message ||
+    route.query.reset ||
+    route.query.verified ||
+    route.query.email ||
+    (state && (state.email || state.password))
+  )
+
   if (savedUser && !hasAuthParams) {
     try {
       lastUser.value = JSON.parse(savedUser)
@@ -357,8 +382,10 @@ onMounted(async () => {
       form.email = state.email
     }
   }
-  if (state && state.password) {
-    form.password = state.password
+  if (route.query.verified === 'true' || (state && state.password)) {
+    if (state && state.password) {
+      form.password = state.password
+    }
     if (route.query.reset === 'success') {
       successMessage.value = 'Đặt lại mật khẩu thành công! Mật khẩu mới đã được điền sẵn.'
     } else {

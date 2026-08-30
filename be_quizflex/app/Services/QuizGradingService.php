@@ -10,7 +10,9 @@ class QuizGradingService
 {
     public function grade(Quiz $quiz, array $answers): array
     {
-        $quiz->loadMissing('questions.answers');
+        if ($quiz->exists && !$quiz->relationLoaded('questions')) {
+            $quiz->loadMissing('questions.answers');
+        }
 
         $snapshot = [];
         $score = 0;
@@ -18,7 +20,10 @@ class QuizGradingService
         $correctCount = 0;
 
         foreach ($quiz->questions as $question) {
-            $points = max(0, (int) ($question->points ?? 0));
+            $rawPoints = (isset($question->pivot) && isset($question->pivot->points) && $question->pivot->points !== null && $question->pivot->points !== '')
+                ? $question->pivot->points
+                : ($question->points ?? 0);
+            $points = max(0, (float) $rawPoints);
             $totalPoints += $points;
 
             $selectedRaw = $answers[$question->id] ?? $answers[(string) $question->id] ?? [];
@@ -32,7 +37,7 @@ class QuizGradingService
                 ->all();
 
             $isCorrect = $selectedIds === $correctIds && count($correctIds) > 0;
-            $earnedPoints = $isCorrect ? $points : 0;
+            $earnedPoints = $isCorrect ? $points : 0.0;
 
             if ($isCorrect) {
                 $score += $earnedPoints;
@@ -62,16 +67,24 @@ class QuizGradingService
                 'correct_answer_keys' => $this->answerKeysFromIds($question, $correctIds),
                 'answers' => $allAnswers,
                 'is_correct' => $isCorrect,
-                'points' => $points,
-                'earned_points' => $earnedPoints,
+                'points' => round($points, 2),
+                'earned_points' => round($earnedPoints, 2),
             ];
         }
 
+        $totalQuestions = $quiz->questions->count();
+        $roundedScore = round($score, 2);
+        $roundedTotalPoints = round($totalPoints, 2);
+        $scaledScore10 = $roundedTotalPoints > 0 ? round(($score / $totalPoints) * 10, 2) : 0.0;
+        $accuracyPercentage = $totalQuestions > 0 ? round(($correctCount / $totalQuestions) * 100, 1) : 0.0;
+
         return [
-            'score' => $score,
-            'total_points' => $totalPoints,
+            'score' => $roundedScore,
+            'total_points' => $roundedTotalPoints,
+            'scaled_score_10' => $scaledScore10,
+            'accuracy_percentage' => $accuracyPercentage,
             'correct_count' => $correctCount,
-            'total_questions' => $quiz->questions->count(),
+            'total_questions' => $totalQuestions,
             'answers_snapshot' => $snapshot,
         ];
     }

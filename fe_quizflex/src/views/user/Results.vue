@@ -91,12 +91,15 @@
           </div>
 
           <div class="flex items-center justify-between text-xs font-bold">
-            <span class="text-slate-500">
-              Điểm: {{ item.score }}/{{ item.total_points }}
+            <span class="text-slate-900 font-extrabold flex items-center gap-1">
+              <span>Điểm:</span>
+              <span class="text-[#7C3AED] text-sm">{{ formatDisplayScore(item) }}</span>
+              <span class="text-slate-400 font-normal">/ 10</span>
             </span>
 
-            <span class="text-[#7C3AED]">
-              {{ Math.round(item.score_percent) }}%
+            <span class="text-slate-600 font-semibold">
+              <span v-if="item.correct_count !== undefined && item.total_questions">{{ item.correct_count }}/{{ item.total_questions }} câu · </span>
+              <span class="text-[#7C3AED] font-bold">{{ Math.round(item.accuracy_percentage ?? item.score_percent ?? 0) }}%</span>
             </span>
           </div>
         </div>
@@ -172,6 +175,18 @@ const stats = computed(() => {
 const formatDate = (value) => {
   if (!value) return 'Chưa có thời gian'
   return new Date(value).toLocaleString('vi-VN')
+}
+
+const formatDisplayScore = (item) => {
+  let raw = 0
+  if (item.scaled_score_10 !== undefined && item.scaled_score_10 !== null) {
+    raw = Number(item.scaled_score_10)
+  } else {
+    const tot = Number(item.total_points) || 0
+    const sc = Number(item.score) || 0
+    raw = tot > 0 ? (sc / tot) * 10 : 0
+  }
+  return Number.isInteger(raw) ? raw.toString() : parseFloat(raw.toFixed(2)).toString()
 }
 
 const loadAttempts = async () => {

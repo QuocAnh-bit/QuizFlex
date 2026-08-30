@@ -66,17 +66,22 @@
             </div>
             <div>
               <p class="text-[11px] font-semibold text-slate-500">Cần Admin xử lý</p>
-              <p class="text-xl font-black text-rose-600">{{ stats.admin_review_required || stats.needs_admin_review || 0 }}</p>
+              <p class="text-xl font-black text-rose-600">
+                {{ stats.admin_review_required_cases || stats.exception_cases_count || stats.needs_admin_review || 0 }}
+                <span class="text-[11px] font-normal text-slate-500">case</span>
+              </p>
             </div>
           </div>
-          <p class="mt-1.5 text-[11px] text-rose-700 font-bold">Ngoại lệ ưu tiên</p>
+          <p class="mt-1.5 text-[11px] text-rose-700 font-bold">
+            {{ stats.admin_review_required_tickets || 0 }} lượt báo cáo
+          </p>
         </div>
 
         <!-- 2. TỰ ĐỘNG GIẢI QUYẾT (Auto Resolved) -->
         <div
           class="rounded-xl border p-3.5 transition cursor-pointer shadow-xs"
           :class="selectedStatus === 'auto_resolved' ? 'border-teal-500 bg-teal-50/60 ring-2 ring-teal-500/20' : 'border-slate-200 bg-slate-50 hover:bg-slate-100/80'"
-          title="Các báo cáo đã được hệ thống tự động giải quyết khi tác giả sửa hợp lệ"
+          title="Các case đã được hệ thống tự động giải quyết khi tác giả sửa hợp lệ"
           @click="selectedStatus = 'auto_resolved'"
         >
           <div class="flex items-center gap-2.5">
@@ -85,10 +90,15 @@
             </div>
             <div>
               <p class="text-[11px] font-semibold text-slate-500">Tự động duyệt</p>
-              <p class="text-xl font-black text-teal-600">{{ stats.resolved || 0 }}</p>
+              <p class="text-xl font-black text-teal-600">
+                {{ stats.auto_resolved_cases || stats.resolved || 0 }}
+                <span class="text-[11px] font-normal text-slate-500">case</span>
+              </p>
             </div>
           </div>
-          <p class="mt-1.5 text-[11px] text-teal-700 font-bold">Auto Approved</p>
+          <p class="mt-1.5 text-[11px] text-teal-700 font-bold">
+            {{ stats.auto_resolved_tickets || stats.resolved_tickets || 0 }} lượt báo cáo
+          </p>
         </div>
 
         <!-- 3. TỰ ĐỘNG GỠ (Auto Private 7 ngày) -->
@@ -104,7 +114,10 @@
             </div>
             <div>
               <p class="text-[11px] font-semibold text-slate-500">Tự động gỡ (Day 7)</p>
-              <p class="text-xl font-black text-orange-600">{{ stats.auto_privatized || 0 }}</p>
+              <p class="text-xl font-black text-orange-600">
+                {{ stats.auto_privatized_cases || stats.auto_privatized || 0 }}
+                <span class="text-[11px] font-normal text-slate-500">case</span>
+              </p>
             </div>
           </div>
           <p class="mt-1.5 text-[11px] text-orange-700 font-bold">Riêng tư</p>
@@ -123,7 +136,10 @@
             </div>
             <div>
               <p class="text-[11px] font-semibold text-slate-500">Đã bỏ qua</p>
-              <p class="text-xl font-black text-slate-800">{{ stats.dismissed || 0 }}</p>
+              <p class="text-xl font-black text-slate-800">
+                {{ stats.dismissed_cases || stats.dismissed || 0 }}
+                <span class="text-[11px] font-normal text-slate-500">case</span>
+              </p>
             </div>
           </div>
           <p class="mt-1.5 text-[11px] text-slate-500 font-medium">Báo cáo sai / Spam</p>
@@ -141,11 +157,16 @@
               <Flag class="h-4 w-4" />
             </div>
             <div>
-              <p class="text-[11px] font-semibold text-slate-500">Tổng báo cáo</p>
-              <p class="text-xl font-black text-purple-700">{{ stats.total || 0 }}</p>
+              <p class="text-[11px] font-semibold text-slate-500">Tổng Case</p>
+              <p class="text-xl font-black text-purple-700">
+                {{ stats.total_cases || stats.total || 0 }}
+                <span class="text-[11px] font-normal text-slate-500">case</span>
+              </p>
             </div>
           </div>
-          <p class="mt-1.5 text-[11px] text-purple-700 font-medium">Lịch sử hệ thống</p>
+          <p class="mt-1.5 text-[11px] text-purple-700 font-medium">
+            {{ stats.total || 0 }} lượt báo cáo
+          </p>
         </div>
       </div>
     </div>
@@ -792,13 +813,29 @@ const viewMode = ref('grouped')
 
 const stats = reactive({
   total: 0,
+  total_cases: 0,
   needs_admin_review: 0,
   admin_review_required: 0,
+  admin_review_required_cases: 0,
+  admin_review_required_tickets: 0,
   author_updated: 0,
+  author_updated_cases: 0,
+  author_updated_tickets: 0,
   pending: 0,
+  pending_cases: 0,
+  pending_tickets: 0,
   auto_privatized: 0,
+  auto_privatized_cases: 0,
+  auto_privatized_tickets: 0,
   resolved: 0,
+  resolved_cases: 0,
+  resolved_tickets: 0,
+  auto_resolved: 0,
+  auto_resolved_cases: 0,
+  auto_resolved_tickets: 0,
   dismissed: 0,
+  dismissed_cases: 0,
+  dismissed_tickets: 0,
   exception_cases_count: 0,
   questions_count: 0,
 })
@@ -841,11 +878,13 @@ const activeGroupResolutionType = computed(() => {
 })
 
 const statusTabs = computed(() => [
-  { key: 'needs_admin_review', label: '🔴 Cần Admin xử lý', count: stats.admin_review_required || stats.needs_admin_review || 0 },
-  { key: 'auto_resolved', label: '🟢 Tự động duyệt', count: stats.resolved || 0 },
-  { key: 'auto_privatized', label: '🔒 Tự động gỡ (7 ngày)', count: stats.auto_privatized || 0 },
-  { key: 'dismissed', label: '⚪ Đã bỏ qua', count: stats.dismissed || 0 },
-  { key: 'all', label: '📋 Tất cả', count: stats.total || 0 },
+  { key: 'needs_admin_review', label: '🔴 Cần Admin xử lý', count: stats.admin_review_required_cases || stats.exception_cases_count || stats.needs_admin_review || stats.admin_review_required || 0 },
+  { key: 'author_updated', label: '✏️ Tác giả đã sửa', count: stats.author_updated_cases || stats.author_updated || 0 },
+  { key: 'pending', label: '⏳ Chờ tác giả', count: stats.pending_cases || stats.pending || 0 },
+  { key: 'auto_resolved', label: '🟢 Tự động duyệt', count: stats.auto_resolved_cases || stats.auto_resolved || 0 },
+  { key: 'auto_privatized', label: '🔒 Tự động gỡ (7 ngày)', count: stats.auto_privatized_cases || stats.auto_privatized || 0 },
+  { key: 'dismissed', label: '⚪ Đã bỏ qua', count: stats.dismissed_cases || stats.dismissed || 0 },
+  { key: 'all', label: '📋 Tất cả', count: stats.total_cases || stats.total || 0 },
 ])
 
 const isTabActive = (tabKey) => {
@@ -859,10 +898,16 @@ const filteredReports = computed(() => {
   return reports.value.filter((rep) => {
     if (selectedStatus.value === 'needs_admin_review' || selectedStatus.value === 'admin_review_required') {
       if (rep.status !== 'admin_review_required') return false
+    } else if (selectedStatus.value === 'author_updated') {
+      if (rep.status !== 'author_updated') return false
+    } else if (selectedStatus.value === 'pending') {
+      if (rep.status !== 'pending') return false
     } else if (selectedStatus.value === 'auto_privatized') {
       if (!rep.auto_privatized_at) return false
     } else if (selectedStatus.value === 'auto_resolved') {
       if (rep.status !== 'resolved') return false
+    } else if (selectedStatus.value === 'dismissed') {
+      if (rep.status !== 'dismissed') return false
     } else if (selectedStatus.value !== 'all' && rep.status !== selectedStatus.value) {
       return false
     }
@@ -895,6 +940,7 @@ const groupedQuestions = computed(() => {
         hasAdminReviewRequired: false,
         isAutoPrivatized: false,
         latestReportAt: ticket.created_at,
+        caseStatus: 'pending',
       })
     }
 
@@ -920,7 +966,28 @@ const groupedQuestions = computed(() => {
     }
   })
 
-  const result = Array.from(map.values())
+  const result = Array.from(map.values()).map((entry) => {
+    if (entry.hasAdminReviewRequired) {
+      entry.caseStatus = 'admin_review_required'
+    } else if (entry.hasAuthorUpdated) {
+      entry.caseStatus = 'author_updated'
+    } else if (entry.hasPending) {
+      entry.caseStatus = 'pending'
+    } else if (entry.tickets.every(t => t.status === 'dismissed')) {
+      entry.caseStatus = 'dismissed'
+    } else if (entry.tickets.every(t => t.status === 'resolved')) {
+      const latestReq = entry.question?.latestReviewRequest
+      if (latestReq?.snapshot_metadata?.auto_approved) {
+        entry.caseStatus = 'auto_resolved'
+      } else {
+        entry.caseStatus = 'resolved'
+      }
+    } else {
+      entry.caseStatus = 'other'
+    }
+    return entry
+  })
+
   result.sort((a, b) => {
     if (a.hasAdminReviewRequired && !b.hasAdminReviewRequired) return -1
     if (!a.hasAdminReviewRequired && b.hasAdminReviewRequired) return 1
@@ -937,13 +1004,19 @@ const filteredGroupedQuestions = computed(() => {
   return groupedQuestions.value.filter((g) => {
     // Status filter
     if (selectedStatus.value === 'needs_admin_review' || selectedStatus.value === 'admin_review_required') {
-      if (!g.hasAdminReviewRequired) return false
+      if (g.caseStatus !== 'admin_review_required') return false
+    } else if (selectedStatus.value === 'author_updated') {
+      if (g.caseStatus !== 'author_updated') return false
+    } else if (selectedStatus.value === 'pending') {
+      if (g.caseStatus !== 'pending') return false
     } else if (selectedStatus.value === 'auto_privatized') {
-      if (!g.isAutoPrivatized) return false
-    } else if (selectedStatus.value === 'auto_resolved' || selectedStatus.value === 'resolved') {
-      if (g.tickets.some(t => ['pending', 'author_updated', 'admin_review_required'].includes(t.status))) return false
+      if (!g.isAutoPrivatized || !['pending', 'author_updated', 'admin_review_required'].includes(g.caseStatus)) return false
+    } else if (selectedStatus.value === 'auto_resolved') {
+      if (g.caseStatus !== 'auto_resolved') return false
+    } else if (selectedStatus.value === 'resolved') {
+      if (g.caseStatus !== 'resolved' && g.caseStatus !== 'auto_resolved') return false
     } else if (selectedStatus.value === 'dismissed') {
-      if (g.tickets.some(t => t.status !== 'dismissed')) return false
+      if (g.caseStatus !== 'dismissed') return false
     }
 
     if (!searchQuery.value.trim()) return true
@@ -962,16 +1035,7 @@ const fetchReports = async () => {
     const res = await reportApi.listAdmin()
     reports.value = res.items || []
     if (res.stats) {
-      stats.total = res.stats.total || 0
-      stats.needs_admin_review = res.stats.needs_admin_review || res.stats.admin_review_required || 0
-      stats.admin_review_required = res.stats.admin_review_required || 0
-      stats.author_updated = res.stats.author_updated || 0
-      stats.pending = res.stats.pending || 0
-      stats.auto_privatized = res.stats.auto_privatized || 0
-      stats.resolved = res.stats.resolved || 0
-      stats.dismissed = res.stats.dismissed || 0
-      stats.exception_cases_count = res.stats.exception_cases_count || 0
-      stats.questions_count = res.stats.questions_count || 0
+      Object.assign(stats, res.stats)
     }
 
     if (route.query.question_id) {

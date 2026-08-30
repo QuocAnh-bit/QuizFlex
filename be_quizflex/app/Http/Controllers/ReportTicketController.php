@@ -134,6 +134,54 @@ class ReportTicketController extends Controller
      */
     public function index(Request $request)
     {
+        // 1. Phân loại Question Case theo thứ bậc ưu tiên nghiệp vụ
+        // Exception Case: Có ít nhất 1 ticket đang ở trạng thái admin_review_required
+        $adminReviewQuestionIds = ReportTicket::where('status', ReportTicket::STATUS_ADMIN_REVIEW_REQUIRED)
+            ->distinct()->pluck('question_id')->all();
+
+        // Author Updated Case: Có ticket ở author_updated và không có ticket ở admin_review_required
+        $authorUpdatedQuestionIds = ReportTicket::where('status', ReportTicket::STATUS_AUTHOR_UPDATED)
+            ->whereNotIn('question_id', $adminReviewQuestionIds)
+            ->distinct()->pluck('question_id')->all();
+
+        // Pending Only Case: Tất cả active tickets đều ở trạng thái pending (chờ tác giả sửa)
+        $pendingOnlyQuestionIds = ReportTicket::where('status', ReportTicket::STATUS_PENDING)
+            ->whereNotIn('question_id', array_merge($adminReviewQuestionIds, $authorUpdatedQuestionIds))
+            ->distinct()->pluck('question_id')->all();
+
+        $activeQuestionIds = array_values(array_unique(array_merge($adminReviewQuestionIds, $authorUpdatedQuestionIds, $pendingOnlyQuestionIds)));
+
+        // Auto Privatized Cases: Có ticket bị auto privatized và thuộc active cases
+        $autoPrivatizedQuestionIds = ReportTicket::whereNotNull('auto_privatized_at')
+            ->whereIn('status', ReportTicket::ACTIVE_STATUSES)
+            ->distinct()->pluck('question_id')->all();
+
+        // Resolved Cases: Toàn bộ ticket của câu hỏi đã được giải quyết (không còn active ticket nào)
+        $resolvedQuestionIds = ReportTicket::where('status', ReportTicket::STATUS_RESOLVED)
+            ->whereNotIn('question_id', $activeQuestionIds)
+            ->distinct()->pluck('question_id')->all();
+
+        // Dismissed Cases: Toàn bộ ticket của câu hỏi đã bị bác bỏ/bỏ qua
+        $dismissedQuestionIds = ReportTicket::where('status', ReportTicket::STATUS_DISMISSED)
+            ->whereNotIn('question_id', array_merge($activeQuestionIds, $resolvedQuestionIds))
+            ->distinct()->pluck('question_id')->all();
+
+        // Auto Resolved Cases vs Manual Resolved Cases trong nhóm Resolved Cases
+        $autoResolvedQuestionIds = [];
+        $manualResolvedQuestionIds = [];
+        if (!empty($resolvedQuestionIds)) {
+            $questionsWithReview = \App\Models\Question::with('latestReviewRequest')
+                ->whereIn('id', $resolvedQuestionIds)
+                ->get();
+            foreach ($questionsWithReview as $q) {
+                if ($q->latestReviewRequest?->snapshot_metadata['auto_approved'] ?? false) {
+                    $autoResolvedQuestionIds[] = $q->id;
+                } else {
+                    $manualResolvedQuestionIds[] = $q->id;
+                }
+            }
+        }
+
         $query = ReportTicket::with([
             'user:id,name,email,avatar',
             'question.user:id,name,email,avatar',
@@ -151,11 +199,19 @@ class ReportTicketController extends Controller
         if ($request->filled('status') && $request->query('status') !== 'all') {
             $statusFilter = $request->query('status');
             if ($statusFilter === 'needs_admin_review' || $statusFilter === 'admin_review_required') {
-                $query->where('status', ReportTicket::STATUS_ADMIN_REVIEW_REQUIRED);
+                $query->whereIn('question_id', $adminReviewQuestionIds);
+            } elseif ($statusFilter === 'author_updated') {
+                $query->whereIn('question_id', $authorUpdatedQuestionIds);
+            } elseif ($statusFilter === 'pending') {
+                $query->whereIn('question_id', $pendingOnlyQuestionIds);
             } elseif ($statusFilter === 'auto_privatized') {
-                $query->whereNotNull('auto_privatized_at');
+                $query->whereIn('question_id', $autoPrivatizedQuestionIds);
             } elseif ($statusFilter === 'auto_resolved') {
-                $query->where('status', ReportTicket::STATUS_RESOLVED);
+                $query->whereIn('question_id', $autoResolvedQuestionIds);
+            } elseif ($statusFilter === 'resolved') {
+                $query->whereIn('question_id', $resolvedQuestionIds);
+            } elseif ($statusFilter === 'dismissed') {
+                $query->whereIn('question_id', $dismissedQuestionIds);
             } else {
                 $query->where('status', $statusFilter);
             }
@@ -200,18 +256,38 @@ class ReportTicketController extends Controller
 
         $reports = $query->get();
 
-        // Calculate KPI stats cho Exception Queue
+        // Calculate KPI stats cho Exception Queue và Case Management
         $stats = [
             'total' => ReportTicket::count(),
-            'needs_admin_review' => ReportTicket::where('status', ReportTicket::STATUS_ADMIN_REVIEW_REQUIRED)->count(),
-            'admin_review_required' => ReportTicket::where('status', ReportTicket::STATUS_ADMIN_REVIEW_REQUIRED)->count(),
-            'author_updated' => ReportTicket::where('status', ReportTicket::STATUS_AUTHOR_UPDATED)->count(),
-            'pending' => ReportTicket::where('status', ReportTicket::STATUS_PENDING)->count(),
-            'auto_privatized' => ReportTicket::whereNotNull('auto_privatized_at')->count(),
-            'resolved' => ReportTicket::where('status', ReportTicket::STATUS_RESOLVED)->count(),
-            'dismissed' => ReportTicket::where('status', ReportTicket::STATUS_DISMISSED)->count(),
-            'exception_cases_count' => ReportTicket::where('status', ReportTicket::STATUS_ADMIN_REVIEW_REQUIRED)->distinct('question_id')->count('question_id'),
-            'questions_count' => ReportTicket::whereIn('status', ReportTicket::ACTIVE_STATUSES)->distinct('question_id')->count('question_id'),
+            'total_cases' => ReportTicket::distinct('question_id')->count('question_id'),
+            
+            // Case-based counts (chỉ số chính cho giao diện Quản lý Case)
+            'needs_admin_review' => count($adminReviewQuestionIds),
+            'admin_review_required' => count($adminReviewQuestionIds),
+            'admin_review_required_cases' => count($adminReviewQuestionIds),
+            'author_updated' => count($authorUpdatedQuestionIds),
+            'author_updated_cases' => count($authorUpdatedQuestionIds),
+            'pending' => count($pendingOnlyQuestionIds),
+            'pending_cases' => count($pendingOnlyQuestionIds),
+            'auto_privatized' => count($autoPrivatizedQuestionIds),
+            'auto_privatized_cases' => count($autoPrivatizedQuestionIds),
+            'resolved' => count($resolvedQuestionIds),
+            'resolved_cases' => count($resolvedQuestionIds),
+            'auto_resolved' => count($autoResolvedQuestionIds),
+            'auto_resolved_cases' => count($autoResolvedQuestionIds),
+            'manual_resolved_cases' => count($manualResolvedQuestionIds),
+            'dismissed' => count($dismissedQuestionIds),
+            'dismissed_cases' => count($dismissedQuestionIds),
+            'exception_cases_count' => count($adminReviewQuestionIds),
+            'questions_count' => count($activeQuestionIds),
+
+            // Ticket-based counts (chỉ số phụ cho Log view)
+            'admin_review_required_tickets' => ReportTicket::where('status', ReportTicket::STATUS_ADMIN_REVIEW_REQUIRED)->count(),
+            'author_updated_tickets' => ReportTicket::where('status', ReportTicket::STATUS_AUTHOR_UPDATED)->count(),
+            'pending_tickets' => ReportTicket::where('status', ReportTicket::STATUS_PENDING)->count(),
+            'auto_privatized_tickets' => ReportTicket::whereNotNull('auto_privatized_at')->count(),
+            'resolved_tickets' => ReportTicket::where('status', ReportTicket::STATUS_RESOLVED)->count(),
+            'dismissed_tickets' => ReportTicket::where('status', ReportTicket::STATUS_DISMISSED)->count(),
         ];
 
         return response()->json([
@@ -311,28 +387,44 @@ class ReportTicketController extends Controller
         $status = $request->status;
         $action = $request->action ?? 'keep';
 
-        // 1. Cập nhật tất cả các ticket chưa giải quyết của câu hỏi này
-        ReportTicket::where('question_id', $questionId)
+        // 1. Cập nhật tất cả các ticket chưa giải quyết của câu hỏi này và gửi thông báo cho Reporter
+        $activeTickets = ReportTicket::with('user')
+            ->where('question_id', $questionId)
             ->whereIn('status', ReportTicket::ACTIVE_STATUSES)
-            ->update(['status' => $status]);
+            ->get();
 
-        // 2. Thực hiện hành động nếu có
-        $question = Question::find($questionId);
+        foreach ($activeTickets as $ticket) {
+            $ticket->transitionTo($status);
+
+            // Gửi thông báo cho Reporter khi vé báo cáo được giải quyết hoặc bác bỏ
+            if (in_array($status, [ReportTicket::STATUS_RESOLVED, ReportTicket::STATUS_DISMISSED], true) && $ticket->user) {
+                try {
+                    $ticket->user->notify(new \App\Notifications\ReportResolved($ticket, $status, $action));
+                } catch (\Throwable $e) {
+                    Log::warning('Không thể gửi thông báo ReportResolved cho reporter: ' . $e->getMessage());
+                }
+            }
+        }
+
+        // 2. Thực hiện hành động nếu có trên Question
+        $question = Question::withTrashed()->find($questionId);
         if ($question) {
             if ($action === 'hide') {
                 $question->is_public = false;
                 $question->save();
             } elseif ($action === 'delete') {
-                $question->delete();
+                if (!$question->trashed()) {
+                    $question->delete();
+                }
             }
 
-            // Thông báo cho tác giả nếu được giải quyết / xử lý
-            if ($status === ReportTicket::STATUS_RESOLVED && $question->user) {
+            // Thông báo cho tác giả nếu được giải quyết / bác bỏ
+            if (in_array($status, [ReportTicket::STATUS_RESOLVED, ReportTicket::STATUS_DISMISSED], true) && $question->user) {
                 try {
                     $question->user->notify(new QuestionModerated(
                         $question,
-                        $action === 'delete' ? 'deleted' : ($action === 'hide' ? 'hidden' : 'resolved'),
-                        $request->admin_note ?? 'Báo cáo vi phạm đã được quản trị viên xử lý.'
+                        $action === 'delete' ? 'deleted' : ($action === 'hide' ? 'hidden' : ($status === ReportTicket::STATUS_DISMISSED ? 'dismissed' : 'resolved')),
+                        $request->admin_note ?? ($status === ReportTicket::STATUS_DISMISSED ? 'Báo cáo vi phạm đã được quản trị viên kiểm tra và bỏ qua (không có vi phạm).' : 'Báo cáo vi phạm đã được quản trị viên xử lý.')
                     ));
                 } catch (\Throwable $e) {
                     Log::warning('Không thể gửi thông báo xử lý report cho tác giả: ' . $e->getMessage());

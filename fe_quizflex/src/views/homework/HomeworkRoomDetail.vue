@@ -68,7 +68,7 @@
           </div>
           <div class="flex flex-col items-start sm:items-end gap-2">
             <span class="font-mono text-sm font-bold text-blue-700 bg-blue-50 px-3 py-1 rounded-lg border border-blue-200">
-              Mã: {{ room.code || 'NO CODE' }}
+              Mã phòng: {{ room.code || 'NO CODE' }}
             </span>
             <StatusBadge :value="room.status || 'active'" />
           </div>
@@ -315,112 +315,227 @@
           </div>
         </div>
 
-        <!-- Tab 3: Thành viên -->
+        <!-- Tab 3: Thành viên (Dạng Bảng hiện đại) -->
         <div v-if="activeSettingsTab === 'members'" class="space-y-4">
-          <div class="flex flex-wrap items-center justify-between gap-3">
-            <div class="flex gap-2">
+          <!-- Toolbar & Tabs -->
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/70 p-3 rounded-2xl border border-slate-100">
+            <div class="flex items-center gap-2">
               <button
                 type="button"
-                class="rounded-lg px-3 py-1.5 text-xs font-bold transition"
-                :class="memberTab === 'active' ? 'bg-[#7C3AED] text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+                class="rounded-xl px-3.5 py-1.5 text-xs font-bold transition inline-flex items-center gap-1.5 cursor-pointer"
+                :class="memberTab === 'active' ? 'bg-[#7C3AED] text-white shadow-xs' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'"
                 @click="setMemberTab('active')"
               >
-                Chính thức ({{ filteredMembers.length }})
+                <Users class="h-3.5 w-3.5" />
+                <span>Chính thức</span>
+                <span class="rounded-full px-1.5 py-0.2 text-[10px]" :class="memberTab === 'active' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'">
+                  {{ filteredMembers.length }}
+                </span>
               </button>
               <button
                 type="button"
-                class="rounded-lg px-3 py-1.5 text-xs font-bold transition"
-                :class="memberTab === 'pending' ? 'bg-[#7C3AED] text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+                class="rounded-xl px-3.5 py-1.5 text-xs font-bold transition inline-flex items-center gap-1.5 cursor-pointer"
+                :class="memberTab === 'pending' ? 'bg-amber-500 text-white shadow-xs' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'"
                 @click="setMemberTab('pending')"
               >
-                Chờ duyệt ({{ pendingMembers.length }})
+                <Clock class="h-3.5 w-3.5" />
+                <span>Chờ duyệt</span>
+                <span class="rounded-full px-1.5 py-0.2 text-[10px]" :class="memberTab === 'pending' ? 'bg-white/25 text-white font-black' : 'bg-amber-100 text-amber-800 font-bold'">
+                  {{ pendingMembers.length }}
+                </span>
               </button>
             </div>
 
-            <input
-              v-model="memberSearchQuery"
-              type="text"
-              class="field text-xs max-w-xs"
-              placeholder="Tìm kiếm thành viên theo tên/email..."
-            />
-          </div>
+            <div class="flex items-center gap-2">
+              <button
+                v-if="memberTab === 'pending' && isHost && !isBanned && filteredPendingMembers.length > 0"
+                type="button"
+                class="btn-success text-xs py-1.5 px-3 inline-flex items-center gap-1.5 font-bold cursor-pointer shadow-2xs whitespace-nowrap"
+                :disabled="isApprovingAll"
+                @click="approveAllPendingMembers"
+              >
+                <Check class="h-3.5 w-3.5 stroke-[3]" />
+                <span>{{ isApprovingAll ? 'Đang duyệt tất cả...' : `Duyệt tất cả (${filteredPendingMembers.length})` }}</span>
+              </button>
 
-          <!-- Active Members List -->
-          <div v-if="memberTab === 'active'">
-            <div v-if="filteredMembers.length" class="grid gap-3 sm:grid-cols-2 max-h-96 overflow-y-auto pr-1">
-              <article v-for="member in filteredMembers" :key="member.id || `${member.room_id}-${member.user_id}`" class="rounded-xl border border-slate-200 p-4 space-y-3">
-                <div class="flex items-start justify-between gap-2">
-                  <div class="min-w-0">
-                    <h3 class="font-bold text-xs text-slate-900 truncate">{{ member.user?.name || `User #${member.user_id}` }}</h3>
-                    <p class="text-[11px] text-slate-400 truncate">{{ member.user?.email || 'Chưa có email' }}</p>
-                  </div>
-                  <StatusBadge :value="member.role || 'member'" />
-                </div>
-                <div class="flex items-center justify-between pt-2 border-t border-slate-100">
-                  <StatusBadge :value="member.status || 'active'" />
-                  <div class="flex gap-1.5">
-                    <button
-                      class="btn-secondary text-[11px] px-2.5 py-1"
-                      type="button"
-                      @click="openMemberDetail(member)"
-                    >
-                      Chi tiết
-                    </button>
-                    <button
-                      v-if="isHost && !isBanned"
-                      class="btn-danger text-[11px] px-2.5 py-1"
-                      type="button"
-                      @click="removeMember(member)"
-                    >
-                      Xóa
-                    </button>
-                  </div>
-                </div>
-              </article>
-            </div>
-            <div v-else class="rounded-xl border border-slate-100 bg-slate-50 p-6 text-center text-xs text-slate-500">
-              {{ memberSearchQuery ? 'Không tìm thấy thành viên nào khớp.' : 'Chưa có thành viên chính thức nào trong phòng.' }}
+              <div class="relative w-full sm:w-64">
+                <input
+                  v-model="memberSearchQuery"
+                  type="text"
+                  class="field text-xs w-full bg-white pr-8"
+                  placeholder="Tìm kiếm học viên / email..."
+                />
+                <Search class="h-3.5 w-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
             </div>
           </div>
 
-          <!-- Pending Members List -->
-          <div v-else-if="memberTab === 'pending'">
-            <div v-if="filteredPendingMembers.length" class="grid gap-3 sm:grid-cols-2 max-h-96 overflow-y-auto pr-1">
-              <article v-for="member in filteredPendingMembers" :key="member.id || `${member.room_id}-${member.user_id}`" class="rounded-xl border border-slate-200 p-4 space-y-3">
-                <div class="flex items-start justify-between gap-2">
-                  <div class="min-w-0">
-                    <h3 class="font-bold text-xs text-slate-900 truncate">{{ member.user?.name || `User #${member.user_id}` }}</h3>
-                    <p class="text-[11px] text-slate-400 truncate">{{ member.user?.email || 'Chưa có email' }}</p>
-                  </div>
-                  <span class="rounded bg-amber-50 text-amber-700 px-2 py-0.5 text-[10px] font-bold">Chờ duyệt</span>
-                </div>
-                <div class="flex items-center justify-between pt-2 border-t border-slate-100">
-                  <span class="text-[10px] text-slate-400">{{ formatDate(member.joined_at) }}</span>
-                  <div class="flex gap-1.5">
-                    <button
-                      v-if="isHost && !isBanned"
-                      class="btn-success text-[11px] px-2.5 py-1"
-                      type="button"
-                      :disabled="isApproving === member.id"
-                      @click="approveMemberRequest(member)"
+          <!-- 1. Danh sách Chờ duyệt (Dạng Bảng) -->
+          <div v-if="memberTab === 'pending'">
+            <div v-if="filteredPendingMembers.length" class="rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-2xs">
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs text-slate-700">
+                  <thead class="bg-slate-50/80 border-b border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                    <tr>
+                      <th scope="col" class="py-3 px-4 font-bold">Học viên</th>
+                      <th scope="col" class="py-3 px-4 font-bold hidden sm:table-cell">Email</th>
+                      <th scope="col" class="py-3 px-4 font-bold hidden md:table-cell">Thời gian xin vào</th>
+                      <th scope="col" class="py-3 px-4 font-bold text-center">Trạng thái</th>
+                      <th scope="col" class="py-3 px-4 font-bold text-right">Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-100">
+                    <tr
+                      v-for="member in filteredPendingMembers"
+                      :key="member.id || `${member.room_id}-${member.user_id}`"
+                      class="hover:bg-amber-50/20 transition group"
                     >
-                      {{ isApproving === member.id ? 'Đang duyệt...' : 'Duyệt' }}
-                    </button>
-                    <button
-                      v-if="isHost && !isBanned"
-                      class="btn-danger text-[11px] px-2.5 py-1"
-                      type="button"
-                      :disabled="isRejecting === member.id"
-                      @click="rejectMemberRequest(member)"
-                    >
-                      {{ isRejecting === member.id ? '...' : 'Từ chối' }}
-                    </button>
-                  </div>
-                </div>
-              </article>
+                      <!-- Cột 1: Compact User Avatar + Họ Tên -->
+                      <td class="py-3 px-4">
+                        <div class="flex items-center gap-3">
+                          <div class="h-8 w-8 shrink-0 rounded-full bg-amber-100 text-amber-800 font-bold text-xs flex items-center justify-center border border-amber-200 shadow-2xs">
+                            {{ getInitials(member.user?.name || `User #${member.user_id}`) }}
+                          </div>
+                          <div class="min-w-0">
+                            <p class="font-bold text-slate-900 truncate">{{ member.user?.name || `User #${member.user_id}` }}</p>
+                            <p class="text-[11px] text-slate-400 sm:hidden truncate font-mono">{{ member.user?.email || 'Chưa có email' }}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <!-- Cột 2: Email -->
+                      <td class="py-3 px-4 text-slate-600 font-mono text-[11px] hidden sm:table-cell">
+                        {{ member.user?.email || 'Chưa có email' }}
+                      </td>
+                      <!-- Cột 3: Thời gian xin vào -->
+                      <td class="py-3 px-4 text-slate-500 text-[11px] hidden md:table-cell whitespace-nowrap">
+                        <span class="inline-flex items-center gap-1.5">
+                          <Clock class="h-3.5 w-3.5 text-slate-400" />
+                          {{ formatDateTime(member.joined_at) }}
+                        </span>
+                      </td>
+                      <!-- Cột 4: Trạng thái -->
+                      <td class="py-3 px-4 text-center whitespace-nowrap">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                          Chờ duyệt
+                        </span>
+                      </td>
+                      <!-- Cột 5: Nút Duyệt / Từ chối -->
+                      <td class="py-3 px-4 text-right whitespace-nowrap">
+                        <div v-if="isHost && !isBanned" class="inline-flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            class="btn-success text-xs px-3 py-1.5 inline-flex items-center gap-1 font-bold cursor-pointer transition shadow-2xs"
+                            :disabled="isApproving === member.id"
+                            @click="approveMemberRequest(member)"
+                          >
+                            <Check class="h-3.5 w-3.5 stroke-[2.5]" />
+                            <span>{{ isApproving === member.id ? 'Đang duyệt...' : 'Duyệt' }}</span>
+                          </button>
+                          <button
+                            type="button"
+                            class="btn-danger text-xs px-3 py-1.5 inline-flex items-center gap-1 font-bold cursor-pointer transition"
+                            :disabled="isRejecting === member.id"
+                            @click="rejectMemberRequest(member)"
+                          >
+                            <X class="h-3.5 w-3.5 stroke-[2.5]" />
+                            <span>{{ isRejecting === member.id ? '...' : 'Từ chối' }}</span>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
-            <div v-else class="rounded-xl border border-slate-100 bg-slate-50 p-6 text-center text-xs text-slate-500">
-              {{ memberSearchQuery ? 'Không tìm thấy yêu cầu nào khớp.' : 'Chưa có yêu cầu xin tham gia nào.' }}
+            <div v-else class="rounded-2xl border border-slate-100 bg-slate-50 p-8 text-center text-xs text-slate-500 space-y-1">
+              <p class="font-bold text-slate-700 text-sm">Không có yêu cầu chờ duyệt</p>
+              <p class="text-[11px] text-slate-400">
+                {{ memberSearchQuery ? 'Không tìm thấy yêu cầu nào khớp với từ khóa.' : 'Hiện tại tất cả học sinh đã được phê duyệt tham gia phòng.' }}
+              </p>
+            </div>
+          </div>
+
+          <!-- 2. Danh sách Thành viên chính thức (Dạng Bảng) -->
+          <div v-else-if="memberTab === 'active'">
+            <div v-if="filteredMembers.length" class="rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-2xs">
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs text-slate-700">
+                  <thead class="bg-slate-50/80 border-b border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                    <tr>
+                      <th scope="col" class="py-3 px-4 font-bold">Học viên</th>
+                      <th scope="col" class="py-3 px-4 font-bold hidden sm:table-cell">Email</th>
+                      <th scope="col" class="py-3 px-4 font-bold hidden md:table-cell">Ngày tham gia</th>
+                      <th scope="col" class="py-3 px-4 font-bold text-center">Vai trò</th>
+                      <th scope="col" class="py-3 px-4 font-bold text-center">Trạng thái</th>
+                      <th scope="col" class="py-3 px-4 font-bold text-right">Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-100">
+                    <tr
+                      v-for="member in filteredMembers"
+                      :key="member.id || `${member.room_id}-${member.user_id}`"
+                      class="hover:bg-purple-50/20 transition group"
+                    >
+                      <!-- Cột 1: Compact User Avatar + Họ Tên -->
+                      <td class="py-3 px-4">
+                        <div class="flex items-center gap-3">
+                          <div class="h-8 w-8 shrink-0 rounded-full bg-purple-100 text-[#7C3AED] font-bold text-xs flex items-center justify-center border border-purple-200 shadow-2xs">
+                            {{ getInitials(member.user?.name || `User #${member.user_id}`) }}
+                          </div>
+                          <div class="min-w-0">
+                            <p class="font-bold text-slate-900 truncate">{{ member.user?.name || `User #${member.user_id}` }}</p>
+                            <p class="text-[11px] text-slate-400 sm:hidden truncate font-mono">{{ member.user?.email || 'Chưa có email' }}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <!-- Cột 2: Email -->
+                      <td class="py-3 px-4 text-slate-600 font-mono text-[11px] hidden sm:table-cell">
+                        {{ member.user?.email || 'Chưa có email' }}
+                      </td>
+                      <!-- Cột 3: Ngày tham gia -->
+                      <td class="py-3 px-4 text-slate-500 text-[11px] hidden md:table-cell whitespace-nowrap">
+                        {{ formatDate(member.joined_at || member.created_at) }}
+                      </td>
+                      <!-- Cột 4: Vai trò -->
+                      <td class="py-3 px-4 text-center whitespace-nowrap">
+                        <StatusBadge :value="member.role || 'member'" />
+                      </td>
+                      <!-- Cột 5: Trạng thái -->
+                      <td class="py-3 px-4 text-center whitespace-nowrap">
+                        <StatusBadge :value="member.status || 'active'" />
+                      </td>
+                      <!-- Cột 6: Thao tác -->
+                      <td class="py-3 px-4 text-right whitespace-nowrap">
+                        <div class="inline-flex items-center gap-1.5">
+                          <button
+                            class="btn-secondary text-xs px-2.5 py-1.5 inline-flex items-center gap-1 cursor-pointer"
+                            type="button"
+                            @click="openMemberDetail(member)"
+                          >
+                            <Eye class="h-3.5 w-3.5" />
+                            <span>Chi tiết</span>
+                          </button>
+                          <button
+                            v-if="isHost && !isBanned && member.role !== 'host'"
+                            class="btn-danger text-xs px-2.5 py-1.5 inline-flex items-center gap-1 cursor-pointer"
+                            type="button"
+                            @click="removeMember(member)"
+                          >
+                            <Trash2 class="h-3.5 w-3.5" />
+                            <span>Xóa</span>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div v-else class="rounded-2xl border border-slate-100 bg-slate-50 p-8 text-center text-xs text-slate-500 space-y-1">
+              <p class="font-bold text-slate-700 text-sm">Chưa có thành viên chính thức</p>
+              <p class="text-[11px] text-slate-400">
+                {{ memberSearchQuery ? 'Không tìm thấy thành viên nào khớp.' : 'Chưa có thành viên chính thức nào trong phòng học này.' }}
+              </p>
             </div>
           </div>
         </div>
@@ -608,6 +723,7 @@ import AppLoadingState from '@/components/common/AppLoadingState.vue'
 import AppErrorState from '@/components/common/AppErrorState.vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import { currentUserStorage, homeworkApi } from '@/services/api'
+import { Users, Clock, Check, X, Search, Eye, Trash2 } from 'lucide-vue-next'
 
 const showConfirm = inject('showConfirm')
 const showToast = inject('showToast')
@@ -1018,7 +1134,8 @@ const exportGradebookExcel = async () => {
       gradeAssignments.forEach(assignment => {
         const scoreData = student.scores[assignment.id]
         if (scoreData) {
-          row.push(`${scoreData.score}/${scoreData.total_points}`)
+          const score10 = scoreData.total_points > 0 ? ((scoreData.score / scoreData.total_points) * 10).toFixed(1) : scoreData.score
+          row.push(score10)
         } else {
           row.push('')
         }
@@ -1192,6 +1309,33 @@ const loadPendingMembers = async () => {
     pendingMembers.value = data
   } catch (error) {
     console.error('Không tải được danh sách chờ duyệt:', error)
+  }
+}
+
+const isApprovingAll = ref(false)
+
+const getInitials = (name) => {
+  if (!name) return 'U'
+  const parts = name.trim().split(' ').filter(Boolean)
+  if (parts.length === 1) return parts[0].charAt(0).toUpperCase()
+  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase()
+}
+
+const approveAllPendingMembers = async () => {
+  if (!pendingMembers.value.length || isApprovingAll.value) return
+  isApprovingAll.value = true
+  try {
+    for (const member of pendingMembers.value) {
+      await homeworkApi.approveRoomMember(roomId.value, member.id)
+    }
+    pendingMembers.value = []
+    const membersData = await homeworkApi.getRoomMembers(roomId.value, { status: 'active' })
+    members.value = membersData
+    if (showToast) showToast('Đã phê duyệt toàn bộ thành viên thành công!', 'success')
+  } catch (error) {
+    if (showToast) showToast(`Lỗi khi duyệt: ${error.message}`, 'error')
+  } finally {
+    isApprovingAll.value = false
   }
 }
 

@@ -55,13 +55,20 @@ class QuestionReviewRequested extends Notification implements ShouldQueue
                 : "Tác giả {$this->author->name} đã gửi yêu cầu duyệt câu hỏi #{$this->question->id} (\"{$snippet}\") vào Ngân hàng.";
         }
 
+        $category = $this->isPriority ? 'report' : 'question_review';
+
         return [
             'type' => 'question_review_requested',
+            'category' => $category,
             'title' => $title,
             'message' => $message,
             'action' => 'review',
-            'action_link' => "/admin/question-bank-requests?question_id={$this->question->id}",
+            'action_link' => $this->isPriority
+                ? "/admin/reports?question_id={$this->question->id}"
+                : "/admin/question-bank-requests?question_id={$this->question->id}",
             'metadata' => [
+                'category' => $category,
+                'action' => 'review',
                 'question_id' => $this->question->id,
                 'author_id' => $this->author->id,
                 'author_name' => $this->author->name,

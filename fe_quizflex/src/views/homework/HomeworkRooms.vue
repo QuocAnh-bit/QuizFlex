@@ -46,8 +46,8 @@
         <div class="space-y-2">
           <div class="flex items-start justify-between gap-2">
             <h2 class="text-base font-bold text-slate-900 line-clamp-1">{{ room.name || 'Phòng bài tập' }}</h2>
-            <span class="font-mono text-xs font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 shrink-0">
-              {{ room.code || 'NO CODE' }}
+            <span v-if="room.code" class="font-mono text-xs font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 shrink-0">
+              {{ room.code }}
             </span>
           </div>
           <p class="text-xs text-slate-500 line-clamp-2 leading-relaxed">

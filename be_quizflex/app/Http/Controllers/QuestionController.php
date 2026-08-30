@@ -9,7 +9,6 @@ use App\Models\Quiz;
 use App\Models\User;
 use App\Models\ReportTicket;
 use App\Notifications\QuestionModerated;
-use App\Notifications\ReportAuthorUpdated;
 use App\Services\QuestionReviewService;
 use App\Services\QuestionSnapshotService;
 use Illuminate\Http\Request;
@@ -40,11 +39,12 @@ class QuestionController extends Controller
     }
 
     /**
-     * Scope lọc chỉ lấy các câu hỏi công khai thuộc ngân hàng chung hoặc bài thi công khai đã xuất bản
+     * Scope lọc chỉ lấy các câu hỏi công khai ĐÃ ĐƯỢC ADMIN DUYỆT thuộc ngân hàng chung
      */
     private function applyPublicQuestionScope($query)
     {
         return $query->where('is_public', true)
+            ->where('status', 'approved')
             ->where(function ($q) {
                 $q->whereNull('quiz_id')
                     ->orWhereHas('quiz', fn($sq) => $sq->where('is_public', true)->where('status', 'published'))
@@ -265,6 +265,8 @@ class QuestionController extends Controller
             'medium_count' => ['nullable', 'integer', 'min:0', 'max:50'],
             'hard_count' => ['nullable', 'integer', 'min:0', 'max:50'],
             'time_limit_minutes' => ['nullable', 'integer', 'min:1', 'max:180'],
+            'scoring_mode' => ['nullable', 'string', Rule::in(['equal', 'difficulty', 'custom'])],
+            'question_points' => ['nullable', 'array'],
             'shuffle_questions' => ['nullable', 'boolean'],
             'is_public' => ['nullable', 'boolean'],
             'status' => ['nullable', 'string', Rule::in(['published', 'draft'])],
@@ -480,11 +482,61 @@ class QuestionController extends Controller
             ]);
 
             $syncData = [];
-            foreach ($questionIds as $index => $qId) {
-                $syncData[$qId] = [
-                    'order' => $index,
-                    'points' => 10,
-                ];
+            $n = count($questionIds);
+            $customPoints = $validated['question_points'] ?? [];
+            $scoringMode = $validated['scoring_mode'] ?? 'equal';
+
+            if (!empty($customPoints) && is_array($customPoints)) {
+                foreach ($questionIds as $index => $qId) {
+                    $pt = isset($customPoints[$qId]) ? (float)$customPoints[$qId] : (isset($customPoints[(string)$qId]) ? (float)$customPoints[(string)$qId] : null);
+                    if ($pt === null) {
+                        $pt = $n > 0 ? round(10.0 / $n, 2) : 1.0;
+                    }
+                    $syncData[$qId] = [
+                        'order' => $index,
+                        'points' => round(max(0.01, $pt), 2),
+                    ];
+                }
+            } elseif ($scoringMode === 'difficulty') {
+                $questionsMap = Question::whereIn('id', $questionIds)->get(['id', 'difficulty'])->keyBy('id');
+                $weights = [];
+                $totalWeight = 0;
+                foreach ($questionIds as $qId) {
+                    $diff = strtolower($questionsMap[$qId]->difficulty ?? 'medium');
+                    $w = $diff === 'hard' ? 3 : ($diff === 'easy' ? 1 : 2);
+                    $weights[$qId] = $w;
+                    $totalWeight += $w;
+                }
+                $allocatedSum = 0;
+                foreach ($questionIds as $index => $qId) {
+                    $w = $weights[$qId];
+                    if ($index === $n - 1) {
+                        $pt = round(10.00 - $allocatedSum, 2);
+                    } else {
+                        $pt = round(($w / $totalWeight) * 10.00, 2);
+                        $allocatedSum += $pt;
+                    }
+                    $syncData[$qId] = [
+                        'order' => $index,
+                        'points' => max(0.01, $pt),
+                    ];
+                }
+            } else {
+                // Mặc định Chia đều (Equal weight)
+                $basePoint = $n > 0 ? round(10.00 / $n, 2) : 1.0;
+                $allocatedSum = 0;
+                foreach ($questionIds as $index => $qId) {
+                    if ($index === $n - 1) {
+                        $pt = round(10.00 - $allocatedSum, 2);
+                    } else {
+                        $pt = $basePoint;
+                        $allocatedSum += $pt;
+                    }
+                    $syncData[$qId] = [
+                        'order' => $index,
+                        'points' => max(0.01, $pt),
+                    ];
+                }
             }
 
             $quiz->questions()->sync($syncData);
@@ -679,7 +731,7 @@ class QuestionController extends Controller
         });
 
         if ($user) {
-            $this->notifyAdminsIfAuthorUpdatedContent($question, $user);
+            $this->markReportsAsAuthorUpdatedOnSave($question, $user);
         }
 
         return response()->json([
@@ -771,6 +823,11 @@ class QuestionController extends Controller
         if (!empty($keptAnswerIds)) {
             $question->answers()->whereNotIn('id', $keptAnswerIds)->delete();
         }
+
+        $snapshotService = app(\App\Services\QuestionSnapshotService::class);
+        $question->updateQuietly([
+            'fingerprint' => $snapshotService->computeFingerprint($question->fresh('answers'))
+        ]);
     }
 
     private function formatQuestion(Question $question, bool $includeAnswerKey = false): array
@@ -793,6 +850,8 @@ class QuestionController extends Controller
 
         $latestReport = $unresolvedReport ?? ReportTicket::whereIn('question_id', $reportQuestionIds)->latest()->first();
         $hasPendingReport = $unresolvedReport !== null;
+        $hasAuthorUpdated = $unresolvedReport?->status === ReportTicket::STATUS_AUTHOR_UPDATED;
+        $pendingReport = $unresolvedReport;
         $isLockedByAdmin = $hasPendingReport;
 
         return [
@@ -818,14 +877,16 @@ class QuestionController extends Controller
             'bank_submission_note' => $question->bank_submission_note,
             'bank_submission_at' => $question->bank_submission_at ? $question->bank_submission_at->toIso8601String() : null,
             'has_report' => $hasPendingReport,
+            'has_author_updated' => $hasAuthorUpdated,
             'is_locked_by_admin' => $isLockedByAdmin,
-            'report_reason' => $pendingReport?->reason ?? $pendingReport?->description ?? ($isLockedByAdmin ? ($latestReport?->reason ?? $latestReport?->description) : null),
+            'report_reason' => $pendingReport?->description ?? $pendingReport?->reason ?? $latestReport?->description ?? $latestReport?->reason ?? null,
             'order' => $question->order,
             'points' => $question->points ?? 10,
             'author_name' => $question->user?->name ?? $question->quiz?->user?->name ?? 'Vô danh',
             'created_at' => $question->created_at ? $question->created_at->toIso8601String() : null,
             'updated_at' => $question->updated_at ? $question->updated_at->toIso8601String() : null,
             'deleted_at' => $question->deleted_at ? $question->deleted_at->toIso8601String() : null,
+            'is_trashed' => $question->trashed(),
             'answers' => $question->answers->map(function (Answer $answer, int $index) use ($includeAnswerKey) {
                 $ans = [
                     'id' => $answer->id,
@@ -844,6 +905,65 @@ class QuestionController extends Controller
                 return $ans;
             })->values(),
         ];
+    }
+
+    /**
+     * Admin duyệt hoặc từ chối hàng loạt câu hỏi
+     */
+    public function bulkModerateQuestions(Request $request)
+    {
+        $admin = auth('api')->user();
+        if (!$admin || strtolower($admin->role ?? '') !== 'admin') {
+            return response()->json(['success' => false, 'message' => 'Bạn không có quyền thực hiện chức năng này.'], 403);
+        }
+
+        $validated = $request->validate([
+            'question_ids' => ['required', 'array', 'min:1'],
+            'question_ids.*' => ['integer', 'exists:questions,id'],
+            'action' => ['required', Rule::in(['approve', 'reject'])],
+            'note' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $isApprove = $validated['action'] === 'approve';
+        $note = $validated['note'] ?? null;
+        $questions = Question::with('user')->whereIn('id', $validated['question_ids'])->get();
+
+        foreach ($questions as $question) {
+            $question->update([
+                'is_public' => $isApprove ? true : false,
+                'status' => $isApprove ? 'approved' : 'rejected',
+            ]);
+
+            if ($isApprove) {
+                $activeTickets = \App\Models\ReportTicket::where('question_id', $question->id)
+                    ->whereIn('status', \App\Models\ReportTicket::ACTIVE_STATUSES)
+                    ->get();
+                foreach ($activeTickets as $ticket) {
+                    $ticket->transitionTo(\App\Models\ReportTicket::STATUS_RESOLVED);
+                }
+            } else {
+                $question->update([
+                    'bank_submission_status' => 'rejected',
+                    'bank_submission_note' => $note ?: 'Nội dung chưa đạt yêu cầu duyệt công khai',
+                ]);
+            }
+
+            if ($question->user) {
+                try {
+                    $question->user->notify(new \App\Notifications\QuestionModerated($question, $validated['action'], $note));
+                } catch (\Exception $e) {
+                    // Ignore broadcast error
+                }
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => $isApprove 
+                ? "Đã duyệt công khai {$questions->count()} câu hỏi thành công!" 
+                : "Đã từ chối {$questions->count()} câu hỏi thành công!",
+            'count' => $questions->count(),
+        ]);
     }
 
     /**
@@ -971,6 +1091,7 @@ class QuestionController extends Controller
 
         $validated = $request->validate([
             'content' => ['required', 'string'],
+            'type' => ['nullable', Rule::in(['single_choice', 'multi_choice', 'true_false', 'fill_blank'])],
             'difficulty' => ['nullable', Rule::in(['easy', 'medium', 'hard'])],
             'points' => ['nullable', 'integer', 'min:1', 'max:1000'],
             'education_level_id' => ['nullable', 'integer'],
@@ -991,7 +1112,7 @@ class QuestionController extends Controller
 
         $isAdmin = strtolower($user->role ?? '') === 'admin';
 
-        $type = $question->type ?? 'single_choice';
+        $type = $validated['type'] ?? $question->type ?? 'single_choice';
         $fingerprint = $this->snapshotService->computeFingerprintFromSnapshot(
             $validated['content'],
             $type,
@@ -1010,9 +1131,10 @@ class QuestionController extends Controller
             ]);
         }
 
-        DB::transaction(function () use ($question, $validated, $isAdmin, $fingerprint) {
+        DB::transaction(function () use ($question, $validated, $isAdmin, $type, $fingerprint) {
             $updateData = [
                 'content' => trim($validated['content']),
+                'type' => $type,
                 'difficulty' => $validated['difficulty'] ?? $question->difficulty ?? 'medium',
                 'points' => $validated['points'] ?? $question->points ?? 10,
                 'education_level_id' => array_key_exists('education_level_id', $validated) ? $validated['education_level_id'] : $question->education_level_id,
@@ -1047,7 +1169,7 @@ class QuestionController extends Controller
             }
         });
 
-        $this->notifyAdminsIfAuthorUpdatedContent($question, $user);
+        $this->markReportsAsAuthorUpdatedOnSave($question, $user);
 
         return response()->json([
             'success' => true,
@@ -1056,12 +1178,8 @@ class QuestionController extends Controller
         ]);
     }
 
-    private function notifyAdminsIfAuthorUpdatedContent(Question $question, User $user): void
+    private function markReportsAsAuthorUpdatedOnSave(Question $question, User $user): void
     {
-        if (strtolower($user->role ?? '') === 'admin') {
-            return;
-        }
-
         $targetQuestionIds = array_filter(array_unique([
             $question->id,
             $question->origin_question_id,
@@ -1069,21 +1187,17 @@ class QuestionController extends Controller
         $snapshotIds = Question::where('origin_question_id', $question->id)->pluck('id')->all();
         $allRelatedIds = array_values(array_unique(array_merge($targetQuestionIds, $snapshotIds)));
 
-        // Cập nhật các ReportTicket pending / admin_review_required sang author_updated
-        ReportTicket::whereIn('question_id', $allRelatedIds)
+        // Cập nhật các ReportTicket pending / admin_review_required sang author_updated qua transitionTo
+        $tickets = ReportTicket::whereIn('question_id', $allRelatedIds)
             ->whereIn('status', [ReportTicket::STATUS_PENDING, ReportTicket::STATUS_ADMIN_REVIEW_REQUIRED])
-            ->update(['status' => ReportTicket::STATUS_AUTHOR_UPDATED]);
+            ->get();
 
-        $hasAuthorUpdatedReport = ReportTicket::whereIn('question_id', $allRelatedIds)
-            ->where('status', ReportTicket::STATUS_AUTHOR_UPDATED)
-            ->exists();
-
-        if ($hasAuthorUpdatedReport) {
-            $admins = User::whereIn('role', ['admin', 'ADMIN'])->get();
-            if ($admins->isNotEmpty()) {
-                Notification::send($admins, new ReportAuthorUpdated($question, 'question', $user));
-            }
+        foreach ($tickets as $ticket) {
+            $ticket->transitionTo(ReportTicket::STATUS_AUTHOR_UPDATED);
         }
+
+        // TUYỆT ĐỐI KHÔNG gửi notification cho Admin khi tác giả chỉ mới SAVE nháp/bản vá cục bộ.
+        // Chỉ khi tác giả chủ động bấm "Gửi duyệt lại" (submit-to-bank) thì mới kích hoạt review workflow.
     }
 
     /**
@@ -1164,9 +1278,13 @@ class QuestionController extends Controller
             return $q;
         });
 
+        $msg = $bankSubmissionStatus === 'pending'
+            ? 'Tạo câu hỏi mới thành công! Đã gửi thông báo chờ Admin duyệt công khai lên Ngân hàng.'
+            : 'Tạo câu hỏi mới thành công!';
+
         return response()->json([
             'success' => true,
-            'message' => 'Tạo câu hỏi mới thành công!',
+            'message' => $msg,
             'data' => $this->formatQuestion($question->fresh(['answers', 'educationLevel', 'grade', 'subject']), true),
         ], 201);
     }
@@ -1315,7 +1433,9 @@ class QuestionController extends Controller
             $query->where(function ($q) {
                 $q->whereHas('reviewRequests', function ($rq) {
                     $rq->where('review_priority', 'high')->orWhere('is_priority', true);
-                })->orWhereHas('reports');
+                })->orWhereHas('reports', function ($rep) {
+                    $rep->whereIn('status', \App\Models\ReportTicket::ACTIVE_STATUSES);
+                });
             });
         }
 
@@ -1324,15 +1444,15 @@ class QuestionController extends Controller
         $rejectedCount = Question::where('bank_submission_status', 'rejected')->count();
         $priorityCount = Question::where('bank_submission_status', 'pending')
             ->where(function ($q) {
-                $q->whereHas('reviewRequests', fn($rq) => $rq->where('is_priority', true)->orWhere('review_priority', 'high'))
-                  ->orWhereHas('reports');
+                $q->whereHas('reviewRequests', fn($rq) => $rq->where('status', 'pending')->where(fn($sub) => $sub->where('is_priority', true)->orWhere('review_priority', 'high')))
+                  ->orWhereHas('reports', fn($rep) => $rep->whereIn('status', \App\Models\ReportTicket::ACTIVE_STATUSES));
             })->count();
 
         // Ưu tiên các câu hỏi có cờ PRIORITY hoặc có Báo cáo vi phạm lên đầu danh sách
         $query->orderByRaw("(
             SELECT CASE WHEN is_priority = 1 OR review_priority = 'high' THEN 1 ELSE 0 END 
             FROM question_review_requests 
-            WHERE question_review_requests.question_id = questions.id 
+            WHERE question_review_requests.question_id = questions.id AND question_review_requests.status = 'pending'
             ORDER BY id DESC LIMIT 1
         ) DESC")
         ->latest('bank_submission_at')
@@ -1348,8 +1468,8 @@ class QuestionController extends Controller
             $formatted['author_avatar'] = $q->user?->avatar ?? $q->quiz?->user?->avatar;
 
             $latestReq = $q->latestReviewRequest;
-            $hasReportTickets = \App\Models\ReportTicket::where('question_id', $q->id)->exists();
-            $isPriority = ($latestReq && ($latestReq->is_priority || $latestReq->review_priority === 'high')) || $hasReportTickets;
+            $hasActiveReports = \App\Models\ReportTicket::where('question_id', $q->id)->whereIn('status', \App\Models\ReportTicket::ACTIVE_STATUSES)->exists();
+            $isPriority = ($latestReq && $latestReq->status === 'pending' && ($latestReq->is_priority || $latestReq->review_priority === 'high')) || $hasActiveReports;
 
             $formatted['is_priority'] = $isPriority;
             $formatted['review_priority'] = $isPriority ? 'high' : 'normal';
@@ -1749,9 +1869,15 @@ class QuestionController extends Controller
      */
     public function adminToggleVisibility($id)
     {
-        $question = Question::with(['answers', 'educationLevel', 'grade', 'subject', 'user', 'quiz.user'])->findOrFail($id);
+        $question = Question::withTrashed()->with(['answers', 'educationLevel', 'grade', 'subject', 'user', 'quiz.user'])->findOrFail($id);
+        if ($question->trashed()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không thể thay đổi trạng thái hiển thị của câu hỏi trong Thùng rác. Vui lòng khôi phục câu hỏi trước.',
+            ], 422);
+        }
+
         $question->is_public = !$question->is_public;
-        $question->save();
 
         $targetQuestionIds = array_filter(array_unique([
             $question->id,
@@ -1761,10 +1887,15 @@ class QuestionController extends Controller
         $allRelatedIds = array_values(array_unique(array_merge($targetQuestionIds, $snapshotIds)));
 
         if ($question->is_public) {
-            \App\Models\ReportTicket::whereIn('question_id', $allRelatedIds)
-                ->where('status', 'pending')
-                ->update(['status' => 'resolved']);
+            $activeTickets = \App\Models\ReportTicket::whereIn('question_id', $allRelatedIds)
+                ->whereIn('status', \App\Models\ReportTicket::ACTIVE_STATUSES)
+                ->get();
+            foreach ($activeTickets as $ticket) {
+                $ticket->transitionTo(\App\Models\ReportTicket::STATUS_RESOLVED);
+            }
         }
+
+        $question->save();
 
         // Gửi thông báo cho tác giả của câu hỏi kèm lý do vi phạm (nếu có)
         $author = $question->user ?? $question->quiz?->user;
@@ -1792,12 +1923,20 @@ class QuestionController extends Controller
     {
         $request->validate([
             'question_ids' => 'required|array|min:1',
-            'question_ids.*' => 'integer|exists:questions,id',
+            'question_ids.*' => 'integer',
             'is_public' => 'required|boolean',
         ]);
 
         $ids = $request->input('question_ids');
         $isPublic = (bool) $request->input('is_public');
+
+        $trashedCount = Question::onlyTrashed()->whereIn('id', $ids)->count();
+        if ($trashedCount > 0) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không thể thay đổi trạng thái hiển thị cho câu hỏi đang nằm trong Thùng rác. Vui lòng bỏ chọn hoặc khôi phục trước.',
+            ], 422);
+        }
 
         $questions = Question::with(['user', 'quiz.user'])->whereIn('id', $ids)->get();
         Question::whereIn('id', $ids)->update(['is_public' => $isPublic]);
@@ -1807,9 +1946,12 @@ class QuestionController extends Controller
         $allTargetIds = array_values(array_unique(array_merge($ids, $originIds, $snapshotIds)));
 
         if ($isPublic) {
-            \App\Models\ReportTicket::whereIn('question_id', $allTargetIds)
-                ->where('status', 'pending')
-                ->update(['status' => 'resolved']);
+            $activeTickets = \App\Models\ReportTicket::whereIn('question_id', $allTargetIds)
+                ->whereIn('status', \App\Models\ReportTicket::ACTIVE_STATUSES)
+                ->get();
+            foreach ($activeTickets as $ticket) {
+                $ticket->transitionTo(\App\Models\ReportTicket::STATUS_RESOLVED);
+            }
         }
 
         $action = $isPublic ? 'shown' : 'hidden';
@@ -1916,7 +2058,7 @@ class QuestionController extends Controller
      */
     public function adminShow($id)
     {
-        $question = Question::with([
+        $question = Question::withTrashed()->with([
             'answers',
             'user:id,name,email,avatar',
             'quiz.user:id,name,email,avatar',
@@ -1987,7 +2129,7 @@ class QuestionController extends Controller
 
         // Review diff & history details (lấy từ câu hỏi gốc hoặc chính câu hỏi)
         $originQuestion = $question->origin_question_id 
-            ? (Question::find($question->origin_question_id) ?? $question) 
+            ? (Question::withTrashed()->find($question->origin_question_id) ?? $question) 
             : $question;
 
         $diffData = $this->reviewService->getReviewDetailsWithDiff($originQuestion);
@@ -2021,8 +2163,6 @@ class QuestionController extends Controller
     public function adminTrash(Request $request)
     {
         $query = Question::onlyTrashed()
-            ->whereNotNull('origin_question_id')
-            ->where('bank_submission_status', 'approved')
             ->with(['answers', 'quiz.user:id,name,email,avatar', 'user:id,name,email,avatar', 'educationLevel', 'grade', 'subject']);
 
         if ($request->filled('search')) {
@@ -2047,7 +2187,7 @@ class QuestionController extends Controller
         $perPage = min(max((int) $request->query('per_page', 15), 1), 100);
         $paginator = $query->paginate($perPage)->through(fn(Question $q) => $this->formatQuestion($q, true));
 
-        $trashCount = (clone $query)->count();
+        $trashCount = Question::onlyTrashed()->count();
 
         return response()->json([
             'success' => true,
@@ -2176,7 +2316,6 @@ class QuestionController extends Controller
         ]);
     }
 }
-
 
 
 

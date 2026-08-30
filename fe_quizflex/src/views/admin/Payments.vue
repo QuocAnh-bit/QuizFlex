@@ -2,91 +2,139 @@
   <section class="max-w-6xl mx-auto py-4 space-y-6">
     <!-- Header -->
     <div class="card p-6 sm:p-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-      <div>
-        <p class="text-xs font-bold uppercase tracking-wider text-[#7C3AED]">Quản trị tài chính</p>
-        <h1 class="mt-1 text-2xl font-black text-slate-900 sm:text-3xl">Quản lý giao dịch & VIP</h1>
-        <p class="mt-1 text-sm text-slate-600">Theo dõi doanh thu, lịch sử nạp VIP, đối soát cổng thanh toán và phân tích khách hàng.</p>
+      <div class="flex items-start gap-3">
+        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-purple-500/10 text-purple-500">
+          <Wallet class="h-5 w-5" />
+        </div>
+        <div>
+          <p class="text-xs font-bold uppercase tracking-wider text-[#7C3AED]">Quản trị tài chính</p>
+          <h1 class="text-3xl font-black tracking-[-0.04em] text-[var(--text)]">Quản lý giao dịch & VIP</h1>
+          <p class="mt-1 text-sm font-medium text-[var(--muted)]">Theo dõi doanh thu, lịch sử nạp VIP, đối soát cổng thanh toán và phân tích khách hàng.</p>
+        </div>
       </div>
       <div class="flex items-center gap-2.5">
-        <button class="btn-secondary text-xs px-3.5 py-1.5" type="button" @click="exportCsv">
-          ⤓ Xuất CSV
+        <button class="btn-secondary text-xs px-3.5 py-1.5 inline-flex items-center gap-1.5" type="button" @click="exportCsv">
+          <Download class="h-3.5 w-3.5" /> Xuất CSV
         </button>
-        <button class="btn-primary text-xs px-3.5 py-1.5" type="button" :disabled="isLoading" @click="loadPayments">
-          {{ isLoading ? 'Đang tải...' : '🔄 Làm mới' }}
+        <button class="btn-primary text-xs px-3.5 py-1.5 inline-flex items-center gap-1.5" type="button" :disabled="isLoading" @click="loadPayments">
+          <RefreshCw class="h-3.5 w-3.5" :class="{ 'animate-spin': isLoading }" />
+          {{ isLoading ? 'Đang tải...' : 'Làm mới' }}
         </button>
       </div>
     </div>
 
-    <!-- Stats Row 1: Key Metrics -->
-    <div class="grid gap-4 sm:grid-cols-3">
-      <div class="card p-5 space-y-1">
-        <span class="text-[10px] font-bold uppercase text-slate-400 block">Tổng doanh thu</span>
-        <strong class="text-2xl font-black text-emerald-600 block">{{ formatPrice(totalRevenue) }}</strong>
-        <span class="text-[11px] text-slate-500 font-medium block">Từ các giao dịch thành công</span>
-      </div>
-
-      <div class="card p-5 space-y-1">
-        <span class="text-[10px] font-bold uppercase text-slate-400 block">Giao dịch thành công</span>
-        <strong class="text-2xl font-black text-slate-900 block">{{ totalTransactionsCount }}</strong>
-        <span class="text-[11px] text-slate-500 font-medium block">Hóa đơn đã xác nhận</span>
-      </div>
-
-      <div class="card p-5 space-y-1">
-        <span class="text-[10px] font-bold uppercase text-slate-400 block">Khách hàng thanh toán</span>
-        <strong class="text-2xl font-black text-[#7C3AED] block">{{ totalCustomersCount }}</strong>
-        <span class="text-[11px] text-slate-500 font-medium block">Số tài khoản đã mua VIP</span>
+    <!-- KPI Strip: 6 chỉ số gọn trong một dải -->
+    <div class="card p-2 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-y divide-slate-100 sm:divide-y-0 sm:divide-x">
+      <div v-for="kpi in kpiStrip" :key="kpi.label" class="flex items-center gap-2.5 p-3.5">
+        <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg" :class="kpi.iconBg">
+          <component :is="kpi.icon" class="h-4 w-4" :class="kpi.iconColor" />
+        </div>
+        <div class="min-w-0">
+          <span class="text-[9px] font-bold uppercase tracking-wide text-slate-400 block truncate">{{ kpi.label }}</span>
+          <strong class="text-sm font-black block truncate" :class="kpi.valueColor || 'text-slate-900'">{{ kpi.value }}</strong>
+        </div>
       </div>
     </div>
 
-    <!-- Stats Row 2: Secondary Analysis -->
-    <div class="grid gap-4 sm:grid-cols-3">
-      <div class="card p-5 space-y-1">
-        <span class="text-[10px] font-bold uppercase text-slate-400 block">Doanh thu tháng này</span>
-        <strong class="text-2xl font-black text-slate-900 block">{{ formatPrice(monthRevenue) }}</strong>
-        <span class="text-[11px] font-bold" :class="monthGrowth >= 0 ? 'text-emerald-600' : 'text-red-600'">
-          {{ monthGrowth >= 0 ? '▲' : '▼' }} {{ Math.abs(monthGrowth).toFixed(1) }}% so với tháng trước
-        </span>
-      </div>
-
-      <div class="card p-5 space-y-1">
-        <span class="text-[10px] font-bold uppercase text-slate-400 block">Giá trị đơn TB (AOV)</span>
-        <strong class="text-2xl font-black text-slate-900 block">{{ formatPrice(averageOrderValue) }}</strong>
-        <span class="text-[11px] text-slate-500 font-medium block">Trung bình / đơn thành công</span>
-      </div>
-
-      <div class="card p-5 space-y-1">
-        <span class="text-[10px] font-bold uppercase text-slate-400 block">Tỷ lệ hủy / thất bại</span>
-        <strong class="text-2xl font-black text-red-600 block">{{ failureRate.toFixed(1) }}%</strong>
-        <span class="text-[11px] text-slate-500 font-medium block">{{ failedCount }} thất bại · {{ refundedCount }} hoàn tiền</span>
-      </div>
-    </div>
-
-    <!-- Daily Revenue Trend (14 Days) -->
-    <div class="card p-6 space-y-4">
-      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-        <div>
-          <h2 class="text-sm font-bold text-slate-900">Xu hướng doanh thu 14 ngày gần nhất</h2>
-          <p class="text-xs text-slate-500">Chỉ tính giao dịch thành công</p>
+    <!-- Revenue Chart + Top Customers -->
+    <div class="grid gap-6 lg:grid-cols-[1.4fr_0.6fr]">
+      <!-- Daily Revenue Trend -->
+      <article class="card p-6 space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div>
+            <h2 class="text-base font-bold text-slate-900">Xu hướng doanh thu 14 ngày</h2>
+            <p class="text-xs text-slate-500">Chỉ tính giao dịch thành công</p>
+          </div>
+          <div class="text-right">
+            <span class="text-[10px] font-bold uppercase text-slate-400 block">Cao nhất trong kỳ</span>
+            <b class="text-sm font-black text-[#7C3AED]">{{ formatPrice(maxDailyRevenue) }}</b>
+          </div>
         </div>
-        <div class="text-right">
-          <span class="text-[10px] font-bold uppercase text-slate-400 block">Cao nhất trong kỳ</span>
-          <b class="text-xs font-bold text-[#7C3AED]">{{ formatPrice(maxDailyRevenue) }}</b>
-        </div>
-      </div>
 
-      <div v-if="dailyRevenue.length" class="flex items-end gap-2 h-36 pt-4">
-        <div
-          v-for="day in dailyRevenue"
-          :key="day.date"
-          class="group relative flex-1 flex flex-col items-center justify-end h-full"
-        >
-          <div class="w-full rounded-t bg-purple-100 group-hover:bg-[#7C3AED] transition-colors" :style="{ height: barHeight(day.amount) }"></div>
-          <span class="mt-1.5 text-[9px] font-semibold text-slate-400">{{ day.label }}</span>
+        <div class="rounded-xl border border-slate-100 bg-slate-50/50 p-4">
+          <div v-if="dailyRevenue.length" class="flex items-end gap-1.5 sm:gap-2 h-48">
+            <div
+              v-for="day in dailyRevenue"
+              :key="day.date"
+              class="group relative flex-1 flex flex-col items-center justify-end h-full"
+            >
+              <span class="mb-1 text-[9px] font-bold text-[#7C3AED] opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                {{ formatPrice(day.amount) }}
+              </span>
+              <div class="w-full rounded-t bg-purple-100 group-hover:bg-[#7C3AED] transition-colors" :style="{ height: barHeight(day.amount) }"></div>
+              <span class="mt-1.5 text-[9px] font-semibold text-slate-400">{{ day.label }}</span>
+            </div>
+          </div>
+          <div v-else class="py-8 text-center text-xs text-slate-400">
+            Chưa có dữ liệu doanh thu gần đây.
+          </div>
         </div>
-      </div>
-      <div v-else class="py-8 text-center text-xs text-slate-400">
-        Chưa có dữ liệu doanh thu gần đây.
-      </div>
+
+        <div class="grid grid-cols-3 gap-3">
+          <div class="rounded-xl border border-slate-100 bg-slate-50 p-3 space-y-0.5">
+            <span class="text-[10px] font-bold uppercase text-slate-400 block">Doanh thu tháng này</span>
+            <strong class="text-sm font-black text-slate-900 block">{{ formatPrice(monthRevenue) }}</strong>
+            <span class="inline-flex items-center gap-1 text-[10px] font-bold" :class="monthGrowth >= 0 ? 'text-emerald-600' : 'text-red-600'">
+              <ArrowUpRight v-if="monthGrowth >= 0" class="h-3 w-3" />
+              <ArrowDownRight v-else class="h-3 w-3" />
+              {{ Math.abs(monthGrowth).toFixed(1) }}%
+            </span>
+          </div>
+          <div class="rounded-xl border border-slate-100 bg-slate-50 p-3 space-y-0.5">
+            <span class="text-[10px] font-bold uppercase text-slate-400 block">Giá trị đơn TB</span>
+            <strong class="text-sm font-black text-slate-900 block">{{ formatPrice(averageOrderValue) }}</strong>
+            <span class="text-[10px] text-slate-500 font-medium block">Mỗi đơn thành công</span>
+          </div>
+          <div class="rounded-xl border border-slate-100 bg-slate-50 p-3 space-y-0.5">
+            <span class="text-[10px] font-bold uppercase text-slate-400 block">Tỷ lệ hủy / thất bại</span>
+            <strong class="text-sm font-black text-red-600 block">{{ failureRate.toFixed(1) }}%</strong>
+            <span class="text-[10px] text-slate-500 font-medium block">{{ failedCount }} lỗi · {{ refundedCount }} hoàn</span>
+          </div>
+        </div>
+      </article>
+
+      <!-- Top Customers Panel -->
+      <article class="card p-6 space-y-5">
+        <div class="border-b border-slate-100 pb-3">
+          <h2 class="text-base font-bold text-slate-900">Khách hàng nổi bật</h2>
+          <p class="text-xs text-slate-500">Đóng góp doanh thu lớn nhất</p>
+        </div>
+
+        <div class="grid gap-3 text-xs">
+          <div class="rounded-xl border border-purple-100 bg-purple-50/40 p-3.5 space-y-1">
+            <span class="text-slate-400 font-bold uppercase text-[10px] flex items-center gap-1"><Crown class="h-3 w-3 text-amber-500" /> Nạp nhiều nhất</span>
+            <b class="text-slate-900 font-bold text-sm block truncate">{{ topPayingUser ? (topPayingUser.user_name || 'Anonymous') : 'Chưa có dữ liệu' }}</b>
+            <span class="text-[#7C3AED] font-black text-sm block">{{ formatPrice(topPayingUser?.total_amount) }}</span>
+          </div>
+
+          <div class="rounded-xl border border-slate-100 bg-slate-50 p-3.5 space-y-1">
+            <span class="text-slate-400 font-bold uppercase text-[10px]">Nạp ít nhất</span>
+            <b class="text-slate-900 font-bold text-sm block truncate">{{ lowestPayingUser ? (lowestPayingUser.user_name || 'Anonymous') : 'Chưa có dữ liệu' }}</b>
+            <span class="text-slate-700 font-black text-sm block">{{ formatPrice(lowestPayingUser?.total_amount) }}</span>
+          </div>
+
+          <div class="rounded-xl border border-slate-100 bg-slate-50 p-3.5 space-y-2">
+            <span class="text-slate-400 font-bold uppercase text-[10px] block">Top 5 khách hàng</span>
+            <div class="space-y-1.5 divide-y divide-slate-100">
+              <button
+                v-for="(user, idx) in topFiveUsers"
+                :key="user.user_email"
+                @click="selectedUser = user; historyStatusFilter = 'all'"
+                class="w-full flex items-center justify-between gap-2 pt-1.5 first:pt-0 text-left hover:text-[#7C3AED] transition-colors"
+              >
+                <span class="flex items-center gap-2 min-w-0">
+                  <span class="shrink-0 h-4 w-4 rounded-full bg-purple-100 text-[#7C3AED] text-[9px] font-black flex items-center justify-center">{{ idx + 1 }}</span>
+                  <span class="truncate font-semibold text-slate-800">{{ user.user_name || 'Anonymous' }}</span>
+                </span>
+                <b class="shrink-0 text-[#7C3AED] font-bold">{{ formatPrice(user.total_amount) }}</b>
+              </button>
+              <div v-if="!topFiveUsers.length" class="text-slate-400 text-[11px] pt-1">
+                Chưa có giao dịch thành công nào.
+              </div>
+            </div>
+          </div>
+        </div>
+      </article>
     </div>
 
     <!-- Main Customers / Transaction History -->
@@ -97,19 +145,22 @@
           <button
             v-if="selectedUser"
             @click="selectedUser = null"
-            class="btn-secondary text-xs px-3 py-1.5"
+            class="btn-secondary text-xs px-3 py-1.5 inline-flex items-center gap-1.5"
           >
-            ← Quay lại danh sách
+            <ArrowLeft class="h-3.5 w-3.5" /> Quay lại danh sách
           </button>
-          <h2 v-else class="text-sm font-bold text-slate-900">Danh sách khách hàng</h2>
+          <h2 v-else class="text-base font-bold text-slate-900">Danh sách khách hàng</h2>
         </div>
 
         <div v-if="!selectedUser" class="flex flex-wrap items-center gap-2.5">
-          <input
-            v-model="searchQuery"
-            class="field text-xs min-w-[200px]"
-            placeholder="Tìm tên hoặc email..."
-          />
+          <div class="relative">
+            <Search class="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+            <input
+              v-model="searchQuery"
+              class="field text-xs min-w-[200px] pl-8"
+              placeholder="Tìm tên hoặc email..."
+            />
+          </div>
           <select v-model="sortBy" class="field text-xs">
             <option value="amount_desc">Chi tiêu cao nhất</option>
             <option value="amount_asc">Chi tiêu thấp nhất</option>
@@ -124,7 +175,7 @@
       <div v-if="selectedUser" class="rounded-xl border border-purple-100 bg-purple-50/40 p-4 space-y-4">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-3">
-            <div class="h-10 w-10 rounded-full bg-purple-200 text-[#7C3AED] font-bold flex items-center justify-center text-sm">
+            <div class="h-10 w-10 rounded-full bg-purple-100 text-[#7C3AED] font-bold flex items-center justify-center text-sm">
               {{ (selectedUser.user_name || 'A').charAt(0).toUpperCase() }}
             </div>
             <div>
@@ -132,38 +183,38 @@
               <p class="text-xs text-slate-500 font-mono">{{ selectedUser.user_email }}</p>
             </div>
           </div>
-          <span class="rounded bg-purple-100 text-[#7C3AED] font-bold text-[10px] uppercase px-2 py-0.5">
+          <span class="rounded-full bg-purple-100 text-[#7C3AED] font-bold text-[10px] uppercase px-3 py-1">
             {{ selectedUser.role || 'free' }}
           </span>
         </div>
 
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
           <div class="rounded-lg bg-white p-2.5 border border-purple-100">
-            <span class="text-[10px] text-slate-400 font-bold uppercase block">Tổng chi tiêu</span>
+            <span class="flex items-center gap-1 text-[10px] text-slate-400 font-bold uppercase"><Wallet class="h-3 w-3" /> Tổng chi tiêu</span>
             <b class="text-emerald-700 font-black text-sm block mt-0.5">{{ formatPrice(selectedUser.total_amount) }}</b>
           </div>
           <div class="rounded-lg bg-white p-2.5 border border-purple-100">
-            <span class="text-[10px] text-slate-400 font-bold uppercase block">Giao dịch</span>
+            <span class="flex items-center gap-1 text-[10px] text-slate-400 font-bold uppercase"><Receipt class="h-3 w-3" /> Giao dịch</span>
             <b class="text-slate-900 font-bold text-sm block mt-0.5">{{ selectedUser.total_transactions }} đơn</b>
           </div>
           <div class="rounded-lg bg-white p-2.5 border border-purple-100">
-            <span class="text-[10px] text-slate-400 font-bold uppercase block">TB / Đơn</span>
+            <span class="flex items-center gap-1 text-[10px] text-slate-400 font-bold uppercase"><TrendingUp class="h-3 w-3" /> TB / Đơn</span>
             <b class="text-slate-900 font-bold text-sm block mt-0.5">{{ formatPrice(selectedUserAvgOrder) }}</b>
           </div>
           <div class="rounded-lg bg-white p-2.5 border border-purple-100">
-            <span class="text-[10px] text-slate-400 font-bold uppercase block">Kênh hay dùng</span>
+            <span class="flex items-center gap-1 text-[10px] text-slate-400 font-bold uppercase"><CreditCard class="h-3 w-3" /> Kênh hay dùng</span>
             <b class="text-slate-900 font-bold text-sm block mt-0.5">{{ selectedUserFavoriteChannel }}</b>
           </div>
         </div>
 
         <!-- Status Filter for user history -->
-        <div class="flex items-center gap-1.5 pt-1">
+        <div class="flex rounded-lg border border-purple-200 bg-white p-1 text-[10px] font-bold w-fit">
           <button
             v-for="tab in statusTabs"
             :key="tab.value"
             @click="historyStatusFilter = tab.value"
-            class="px-2.5 py-1 rounded text-[10px] font-bold transition"
-            :class="historyStatusFilter === tab.value ? 'bg-[#7C3AED] text-white' : 'bg-white text-slate-600 border border-slate-200'"
+            class="rounded-md px-2.5 py-1 transition"
+            :class="historyStatusFilter === tab.value ? 'bg-[#7C3AED] text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'"
           >
             {{ tab.label }}
           </button>
@@ -184,10 +235,10 @@
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 font-medium">
-            <tr v-for="user in paginatedUsers" :key="user.user_email" class="hover:bg-slate-50">
+            <tr v-for="user in paginatedUsers" :key="user.user_email" class="hover:bg-slate-50 transition-colors">
               <td class="py-3 px-3">
                 <div class="flex items-center gap-2.5">
-                  <div class="h-7 w-7 rounded-full bg-slate-100 text-slate-600 font-bold flex items-center justify-center text-xs shrink-0">
+                  <div class="h-7 w-7 rounded-full bg-purple-500/10 text-[#7C3AED] font-bold flex items-center justify-center text-xs shrink-0">
                     {{ (user.user_name || 'A').charAt(0).toUpperCase() }}
                   </div>
                   <div>
@@ -202,9 +253,9 @@
               <td class="py-3 px-3 text-right">
                 <button
                   @click="selectedUser = user; historyStatusFilter = 'all'"
-                  class="btn-secondary text-[11px] px-2.5 py-1"
+                  class="btn-secondary text-[11px] px-2.5 py-1 inline-flex items-center gap-1"
                 >
-                  Lịch sử →
+                  Lịch sử <ChevronRight class="h-3 w-3" />
                 </button>
               </td>
             </tr>
@@ -227,14 +278,14 @@
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 font-medium">
-            <tr v-for="item in filteredHistory" :key="item.id" class="hover:bg-slate-50">
+            <tr v-for="item in filteredHistory" :key="item.id" class="hover:bg-slate-50 transition-colors">
               <td class="py-3 px-3 font-mono text-[11px] text-slate-700">{{ item.order_code }}</td>
               <td class="py-3 px-3 font-bold text-slate-900">{{ item.plan_name }}</td>
               <td class="py-3 px-3 uppercase text-[10px] font-bold text-slate-500">{{ item.provider }}</td>
               <td class="py-3 px-3 font-bold text-slate-900">{{ formatPrice(item.amount) }}</td>
               <td class="py-3 px-3 text-slate-400 text-[11px]">{{ formatDateTime(item.created_at) }}</td>
               <td class="py-3 px-3 text-right">
-                <span class="rounded px-2 py-0.5 text-[10px] font-bold" :class="getStatusBadgeClass(item.status)">
+                <span class="rounded-full px-2.5 py-0.5 text-[10px] font-bold" :class="getStatusBadgeClass(item.status)">
                   {{ getStatusText(item.status) }}
                 </span>
               </td>
@@ -255,17 +306,17 @@
           <button
             @click="currentPage > 1 && currentPage--"
             :disabled="currentPage === 1"
-            class="btn-secondary text-[11px] px-2.5 py-1 disabled:opacity-40"
+            class="btn-secondary text-[11px] px-2.5 py-1 disabled:opacity-40 inline-flex items-center gap-1"
           >
-            ← Trước
+            <ChevronLeft class="h-3 w-3" /> Trước
           </button>
           <span class="text-slate-700 font-bold">{{ currentPage }} / {{ totalPages }}</span>
           <button
             @click="currentPage < totalPages && currentPage++"
             :disabled="currentPage === totalPages"
-            class="btn-secondary text-[11px] px-2.5 py-1 disabled:opacity-40"
+            class="btn-secondary text-[11px] px-2.5 py-1 disabled:opacity-40 inline-flex items-center gap-1"
           >
-            Sau →
+            Sau <ChevronRight class="h-3 w-3" />
           </button>
         </div>
       </div>
@@ -276,6 +327,23 @@
 <script setup>
 import { onMounted, ref, computed, watch } from 'vue'
 import { paymentsApi } from '@/services/api'
+import {
+  Wallet,
+  Receipt,
+  Users,
+  TrendingUp,
+  CreditCard,
+  AlertTriangle,
+  ArrowUpRight,
+  ArrowDownRight,
+  ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
+  Search,
+  RefreshCw,
+  Download,
+  Crown,
+} from 'lucide-vue-next'
 
 const usersList = ref([])
 const rawTransactions = ref([])
@@ -421,6 +489,60 @@ const barHeight = (amount) => {
   const pct = Math.max(6, (amount / maxDailyRevenue.value) * 100)
   return `${pct}%`
 }
+
+// KPI strip: gộp 6 chỉ số vào một dải gọn ở đầu trang
+const kpiStrip = computed(() => [
+  {
+    label: 'Tổng doanh thu',
+    value: formatPrice(totalRevenue.value),
+    icon: Wallet,
+    iconBg: 'bg-emerald-500/10',
+    iconColor: 'text-emerald-600',
+    valueColor: 'text-emerald-600',
+  },
+  {
+    label: 'Giao dịch thành công',
+    value: totalTransactionsCount.value,
+    icon: Receipt,
+    iconBg: 'bg-slate-500/10',
+    iconColor: 'text-slate-600',
+  },
+  {
+    label: 'Khách hàng thanh toán',
+    value: totalCustomersCount.value,
+    icon: Users,
+    iconBg: 'bg-purple-500/10',
+    iconColor: 'text-[#7C3AED]',
+    valueColor: 'text-[#7C3AED]',
+  },
+  {
+    label: 'Doanh thu tháng này',
+    value: formatPrice(monthRevenue.value),
+    icon: TrendingUp,
+    iconBg: 'bg-purple-500/10',
+    iconColor: 'text-[#7C3AED]',
+  },
+  {
+    label: 'AOV / đơn',
+    value: formatPrice(averageOrderValue.value),
+    icon: CreditCard,
+    iconBg: 'bg-slate-500/10',
+    iconColor: 'text-slate-600',
+  },
+  {
+    label: 'Tỷ lệ hủy / thất bại',
+    value: `${failureRate.value.toFixed(1)}%`,
+    icon: AlertTriangle,
+    iconBg: 'bg-red-500/10',
+    iconColor: 'text-red-600',
+    valueColor: 'text-red-600',
+  },
+])
+
+const payingUsers = computed(() => usersList.value.filter(u => u.total_amount > 0))
+const topPayingUser = computed(() => payingUsers.value[0] || null)
+const lowestPayingUser = computed(() => payingUsers.value.length ? payingUsers.value[payingUsers.value.length - 1] : null)
+const topFiveUsers = computed(() => payingUsers.value.slice(0, 5))
 
 const filteredUsers = computed(() => {
   let list = usersList.value

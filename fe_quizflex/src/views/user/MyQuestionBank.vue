@@ -1,32 +1,49 @@
 <template>
   <section id="my-question-top" class="grid gap-6 py-8">
     <!-- Header Banner -->
-    <div class="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-2xs">
-      <div class="flex flex-col justify-between gap-5 xl:flex-row xl:items-end">
-        <div>
-          <h1 class="text-3xl font-black tracking-tight text-slate-900">Kho câu hỏi của tôi</h1>
-          <p class="mt-2 max-w-3xl text-sm leading-relaxed text-slate-500">Quản lý độc lập tất cả câu hỏi trắc nghiệm do bạn tạo ra. Chỉnh sửa nội dung, sửa đáp án đúng hoặc chuyển câu hỏi lỗi vào thùng rác an toàn.</p>
+    <div class="rounded-2xl border border-slate-200/80 bg-white p-6 sm:p-7 shadow-2xs flex flex-col justify-between gap-5 lg:flex-row lg:items-center">
+      <div class="space-y-1">
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-bold uppercase tracking-wider text-[#7C3AED]">
+            Ngân hàng câu hỏi cá nhân
+          </span>
+          <span v-if="trashCount > 0" class="text-[11px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
+            {{ trashCount }} trong thùng rác
+          </span>
         </div>
+        <h1 class="text-2xl font-black text-slate-900 sm:text-3xl tracking-tight">
+          Kho câu hỏi của tôi
+        </h1>
+        <p class="text-sm text-slate-500 max-w-2xl">
+          Quản lý độc lập tất cả câu hỏi trắc nghiệm do bạn tạo ra. Chỉnh sửa nội dung, sửa đáp án đúng hoặc gửi duyệt vào Ngân hàng câu hỏi chung.
+        </p>
+      </div>
 
-        <div class="flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            class="inline-flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50/80 px-4 py-2.5 text-xs font-bold text-rose-500 hover:bg-rose-100 hover:border-rose-300 transition shadow-2xs cursor-pointer active:scale-95"
-            @click="openTrashModal"
-          >
-            <Trash2 :size="14" />
-            <span>Thùng rác câu hỏi</span>
-            <span v-if="trashCount > 0" class="rounded-full bg-rose-500 px-1.5 py-0.5 text-[10px] leading-none text-white font-bold">{{ trashCount }}</span>
-          </button>
+      <!-- Action Toolbar -->
+      <div class="flex flex-wrap items-center gap-2 sm:gap-2.5 shrink-0">
+        <!-- Nút Thùng rác -->
+        <button
+          type="button"
+          class="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-600 hover:border-rose-200 hover:bg-rose-50/50 hover:text-rose-600 transition shadow-2xs cursor-pointer active:scale-95"
+          @click="openTrashModal"
+          title="Xem các câu hỏi đã xóa trong thùng rác"
+        >
+          <Trash2 class="h-3.5 w-3.5 text-slate-400" />
+          <span>Thùng rác</span>
+          <span v-if="trashCount > 0" class="rounded-full bg-rose-500 px-1.5 py-0.2 text-[10px] leading-none text-white font-bold">{{ trashCount }}</span>
+        </button>
 
-          <router-link
-            to="/dashboard/my-questions/create"
-            class="btn-primary inline-flex items-center gap-2 bg-[#7C3AED] hover:bg-[#6D28D9] text-white px-5 py-2.5 rounded-xl font-bold text-xs shadow-md shadow-purple-500/20"
-          >
-            <Plus :size="14" />
-            <span>Tạo câu hỏi</span>
-          </router-link>
-        </div>
+        <!-- Divider -->
+        <div class="h-6 w-px bg-slate-200 hidden sm:block"></div>
+
+        <!-- Create Question Button -->
+        <router-link
+          to="/dashboard/my-questions/create"
+          class="inline-flex items-center gap-1.5 rounded-xl bg-[#7C3AED] px-4 py-2 text-xs font-bold text-white shadow-md shadow-purple-500/20 hover:bg-[#6D28D9] transition cursor-pointer active:scale-95"
+        >
+          <Plus class="h-3.5 w-3.5" />
+          <span>Tạo câu hỏi</span>
+        </router-link>
       </div>
     </div>
 
@@ -113,6 +130,7 @@
     <!-- Loaded Questions List -->
     <template v-else>
       <!-- Focused Question Banner -->
+
       <div v-if="focusedQuestionId" class="mb-2">
         <!-- SUCCESS BANNER (When question was just updated) -->
         <div v-if="highlightedUpdatedQuestionId === focusedQuestionId" class="rounded-2xl border border-[#FDE68A] bg-[#FFFBEB] p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-2xs">
@@ -149,7 +167,7 @@
               <h4 class="font-bold text-rose-700 text-sm sm:text-base flex items-center gap-2">
                 <span>Đang tập trung xử lý câu hỏi</span>
                 <span class="rounded-md bg-rose-200 px-2 py-0.5 text-xs font-black text-rose-900">#{{ focusedQuestionId }}</span>
-                <span v-if="focusedQuestionItem?.is_locked_by_admin" class="text-xs text-rose-600 font-semibold">(Admin đã khóa: "{{ focusedQuestionItem.report_reason || 'Vi phạm quy định' }}")</span>
+                <span v-if="focusedQuestionItem?.is_locked_by_admin" class="text-xs text-rose-600 font-semibold">(Câu hỏi bị báo cáo: "{{ focusedQuestionItem.report_reason || 'Vi phạm quy định' }}")</span>
               </h4>
               <p class="text-xs text-slate-600 mt-1 leading-relaxed">
                 Vui lòng nhấp nút <strong class="font-bold text-slate-800">"Sửa câu hỏi"</strong> ở thẻ bên dưới để đính chính đáp án hoặc nội dung.
@@ -284,7 +302,7 @@
                   </span>
                   <span v-else-if="q.is_locked_by_admin" class="inline-flex items-center gap-1 rounded-md bg-rose-100 text-rose-900 border border-rose-300 px-2.5 py-0.5 text-[11px] font-bold" :title="q.report_reason ? `Lý do: ${q.report_reason}` : ''">
                     <Lock :size="12" class="text-rose-700" />
-                    <span>Đã bị Admin khóa / Gỡ công khai {{ q.report_reason ? `(Lý do: ${q.report_reason})` : '' }}</span>
+                    <span> {{ q.report_reason ? `(Lý do: ${q.report_reason})` : '' }}</span>
                   </span>
                   <span v-else-if="q.has_report" class="inline-flex items-center gap-1 rounded-md bg-amber-50 text-amber-800 border border-amber-200 px-2.5 py-0.5 text-[11px] font-bold">
                     <Flag :size="12" class="text-amber-600" />
@@ -341,7 +359,7 @@
                 :to="`/dashboard/my-questions/${q.id}/edit`"
                 class="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 transition cursor-pointer active:scale-95"
               >
-                <Pencil :size="13" />
+                <Pencil :size="13" class="text-slate-500" />
                 <span>Sửa câu hỏi</span>
               </router-link>
 
@@ -549,20 +567,23 @@ import {
   Plus,
   Search,
   RotateCcw,
+  ScanLine,
+  Sparkles,
   CheckCircle2,
   AlertTriangle,
   Eye,
   X,
   Lock,
+  Globe,       // Giữ lại 1
+  Clock,       // Giữ lại 1
+  XCircle,     // Giữ lại 1
+  ShieldAlert,
   Flag,
   Check,
   Pencil,
   ChevronLeft,
   ChevronRight,
   Send,
-  Clock,
-  Globe,
-  XCircle,
   GraduationCap,
   Users,
   BookOpen,
@@ -575,6 +596,7 @@ const route = useRoute()
 const router = useRouter()
 const highlightedQuestionId = ref(null)
 const highlightedUpdatedQuestionId = ref(null)
+const highlightedApprovedQuestionId = ref(null)
 const hasAutoOpenedModal = ref(false)
 
 const focusedQuestionId = computed(() => {
@@ -625,6 +647,7 @@ const editForm = reactive({
   content: '',
   difficulty: 'medium',
   topic_name: '',
+  report_reason: '',
   answers: [],
 })
 
@@ -810,7 +833,9 @@ const loadQuestions = async () => {
   errorMessage.value = ''
 
   try {
-    const targetQId = route.query.question_id || route.query.id || undefined
+    const targetQId = (route.query.question_id || route.query.id) && !route.query.highlight
+      ? (route.query.question_id || route.query.id)
+      : undefined
 
     const res = await myQuestionsApi.fetchBank({
       search: filters.search || undefined,
@@ -829,6 +854,19 @@ const loadQuestions = async () => {
     pagination.current_page = res.currentPage ?? 1
     pagination.last_page = res.lastPage ?? 1
 
+    const highlightId = route.query.highlight ? Number(route.query.highlight) : null
+    if (pagination.current_page === 1 && highlightId && !questions.value.some(q => q.id === highlightId)) {
+      try {
+        const singleRes = await myQuestionsApi.fetchBank({ question_id: highlightId })
+        const singleItem = singleRes?.items && singleRes.items[0]
+        if (singleItem) {
+          questions.value.unshift(singleItem)
+        }
+      } catch (e) {
+        console.error('Không tải được câu hỏi highlight:', e)
+      }
+    }
+
     handleHighlightFromQuery()
   } catch (err) {
     errorMessage.value = `Không tải được kho câu hỏi: ${err.message}`
@@ -842,6 +880,7 @@ const openEditModal = (q) => {
   editForm.content = q.content || q.text || ''
   editForm.difficulty = q.difficulty || 'medium'
   editForm.topic_name = q.topic_name || ''
+  editForm.report_reason = q.report_reason || ''
   editForm.answers = (q.answers || []).map((ans, idx) => ({
     id: ans.id,
     key: ans.key || chrKey(idx),
@@ -895,6 +934,38 @@ const saveEditQuestion = async () => {
     if (showToast) showToast(`Cập nhật thất bại: ${err.message}`, 'error')
   } finally {
     isSavingEdit.value = false
+  }
+}
+
+const toggleQuestionVisibility = async (q) => {
+  try {
+    const newIsPublic = !q.is_public
+    const res = await myQuestionsApi.update(q.id, {
+      content: q.content || q.text,
+      difficulty: q.difficulty || 'medium',
+      topic_name: q.topic_name || '',
+      is_public: newIsPublic,
+      answers: (q.answers || []).map((ans) => ({
+        id: ans.id,
+        content: ans.content || ans.text,
+        key: ans.key,
+        is_correct: Boolean(ans.is_correct)
+      }))
+    })
+    const updatedData = res?.data ?? res
+    q.is_public = Boolean(updatedData?.is_public ?? newIsPublic)
+    q.status = updatedData?.status ?? (q.is_public ? 'pending' : 'approved')
+
+    if (showToast) {
+      showToast(
+        q.is_public
+          ? 'Đã đăng ký công khai thành công! Câu hỏi đang ở trạng thái ⏳ Chờ Admin duyệt.'
+          : 'Đã chuyển câu hỏi về trạng thái 🔒 Riêng tư trong Kho cá nhân.',
+        'success'
+      )
+    }
+  } catch (err) {
+    if (showToast) showToast(`Đổi trạng thái thất bại: ${err.message}`, 'error')
   }
 }
 
@@ -975,15 +1046,38 @@ const clearQuestionFocus = () => {
   hasAutoOpenedModal.value = false
   highlightedQuestionId.value = null
   highlightedUpdatedQuestionId.value = null
+  highlightedApprovedQuestionId.value = null
   router.push({ path: '/dashboard/my-questions' })
 }
 
 const handleHighlightFromQuery = () => {
   const targetId = route.query.question_id || route.query.id
+  const highlightId = route.query.highlight ? Number(route.query.highlight) : null
   const isUpdated = route.query.updated === '1' || route.query.updated === 'true'
 
-  if (targetId) {
+  if (highlightId) {
+    highlightedApprovedQuestionId.value = highlightId
+    highlightedQuestionId.value = null
+    highlightedUpdatedQuestionId.value = null
+
+    // Chỉ ghim câu hỏi vừa duyệt công khai lên ĐẦU DANH SÁCH ở Trang 1
+    if (pagination.current_page === 1) {
+      const idx = questions.value.findIndex(q => q.id === highlightId)
+      if (idx > 0) {
+        const [matchedItem] = questions.value.splice(idx, 1)
+        questions.value.unshift(matchedItem)
+      }
+
+      setTimeout(() => {
+        const cardEl = document.getElementById(`question-card-${highlightId}`)
+        if (cardEl) {
+          cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
+      }, 250)
+    }
+  } else if (targetId) {
     const qId = Number(targetId)
+    highlightedApprovedQuestionId.value = null
     if (isUpdated) {
       highlightedUpdatedQuestionId.value = qId
       highlightedQuestionId.value = null
@@ -1004,12 +1098,13 @@ const handleHighlightFromQuery = () => {
   } else {
     highlightedQuestionId.value = null
     highlightedUpdatedQuestionId.value = null
+    highlightedApprovedQuestionId.value = null
     hasAutoOpenedModal.value = false
   }
 }
 
 watch(
-  () => route.query.question_id,
+  () => [route.query.question_id, route.query.highlight],
   () => {
     loadQuestions()
   }

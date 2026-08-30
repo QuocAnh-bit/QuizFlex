@@ -62,14 +62,12 @@ class QuestionPolicy
 
     /**
      * Determine whether the user can delete the model.
-     * Admin chỉ được xóa Question là bản ghi Question Bank snapshot đã approved.
      */
     public function delete(User $user, Question $question): bool
     {
         $role = strtolower($user->role ?? 'user');
         if ($role === 'admin') {
-            return $question->bank_submission_status === 'approved'
-                && !empty($question->origin_question_id);
+            return true;
         }
 
         return (int) $user->id === (int) $question->user_id || ($question->quiz && (int) $user->id === (int) $question->quiz->user_id);
@@ -82,8 +80,7 @@ class QuestionPolicy
     {
         $role = strtolower($user->role ?? 'user');
         if ($role === 'admin') {
-            return $question->bank_submission_status === 'approved'
-                && !empty($question->origin_question_id);
+            return true;
         }
 
         return (int) $user->id === (int) $question->user_id;
@@ -96,8 +93,7 @@ class QuestionPolicy
     {
         $role = strtolower($user->role ?? 'user');
         if ($role === 'admin') {
-            return $question->bank_submission_status === 'approved'
-                && !empty($question->origin_question_id);
+            return true;
         }
 
         return (int) $user->id === (int) $question->user_id;

@@ -45,13 +45,24 @@ final class CurriculumOptionService
                 'grade_max',
                 '>=',
                 $grade
-            )
+            );
 
-            /*
-             * Chỉ lấy unit đã được embedding
-             * và đã đưa lên Qdrant.
-             */
-            ->whereHas(
+        $hasEmbeddedChunks = (clone $query)->whereHas(
+            'chunks',
+            function ($query): void {
+                $query
+                    ->where(
+                        'embedding_status',
+                        'embedded'
+                    )
+                    ->whereNotNull(
+                        'qdrant_point_id'
+                    );
+            }
+        )->exists();
+
+        if ($hasEmbeddedChunks) {
+            $query->whereHas(
                 'chunks',
                 function ($query): void {
                     $query
@@ -64,6 +75,7 @@ final class CurriculumOptionService
                         );
                 }
             );
+        }
 
         /*
          * Domain được dùng cho những môn
