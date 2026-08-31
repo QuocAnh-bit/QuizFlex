@@ -99,7 +99,7 @@
               :disabled="isProcessing"
               @click="handleForceDelete"
             >
-              <Flame class="h-4 w-4" />
+              <Trash2 class="h-4 w-4" />
               <span>Xóa vĩnh viễn</span>
             </button>
           </template>
@@ -838,7 +838,6 @@ import {
   ListChecks,
   Lock,
   RotateCcw,
-  Flame,
   Settings,
   Trash2,
   User,

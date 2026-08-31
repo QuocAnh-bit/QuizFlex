@@ -129,6 +129,7 @@
           : 'border-transparent text-slate-500 hover:text-slate-900 hover:border-slate-300'"
         @click="selectTab(tab.key)"
       >
+        <component v-if="tab.icon" :is="tab.icon" class="h-4 w-4 shrink-0" />
         <span>{{ tab.label }}</span>
         <span
           v-if="tab.badge !== undefined && tab.badge !== null && tab.badge > 0"
@@ -448,9 +449,9 @@
               <!-- Report / Priority Badge -->
               <td class="p-3.5 align-top text-center">
                 <div v-if="item.is_priority || item.review_priority === 'high' || item.reports_count > 0 || item.has_report" class="space-y-1">
-                  <span class="inline-flex items-center gap-1 rounded-md bg-rose-100 text-rose-800 border border-rose-300 px-2 py-0.5 text-[10px] font-black shadow-2xs">
+                  <span class="inline-flex items-center gap-1 rounded-md bg-rose-100 text-rose-800 border border-rose-300 px-2 py-0.5 text-[10px] font-bold shadow-2xs">
                     <AlertTriangle class="h-3 w-3 text-rose-600" />
-                    <span>🔴 ƯU TIÊN</span>
+                    <span>Ưu tiên</span>
                   </span>
                   <p v-if="item.reports_count > 0" class="text-[10px] text-rose-600 font-bold">
                     {{ item.reports_count }} báo cáo
@@ -601,20 +602,22 @@
         <div class="flex items-center gap-1.5">
           <button
             type="button"
-            class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 hover:bg-slate-50 disabled:opacity-40 cursor-pointer"
+            class="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 hover:bg-slate-50 disabled:opacity-40 cursor-pointer"
             :disabled="pagination.currentPage <= 1"
             @click="changePage(pagination.currentPage - 1)"
           >
-            ← Trước
+            <ChevronLeft class="h-3.5 w-3.5" />
+            <span>Trước</span>
           </button>
 
           <button
             type="button"
-            class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 hover:bg-slate-50 disabled:opacity-40 cursor-pointer"
+            class="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 hover:bg-slate-50 disabled:opacity-40 cursor-pointer"
             :disabled="pagination.currentPage >= pagination.lastPage"
             @click="changePage(pagination.currentPage + 1)"
           >
-            Sau →
+            <span>Sau</span>
+            <ChevronRight class="h-3.5 w-3.5" />
           </button>
         </div>
       </div>
@@ -848,7 +851,10 @@
                         {{ ans.key }}
                       </span>
                       <span class="flex-1 truncate">{{ ans.content || ans.text }}</span>
-                      <span v-if="ans.is_correct" class="text-[10px] font-bold text-emerald-600 shrink-0">✓ Đúng</span>
+                      <span v-if="ans.is_correct" class="text-[10px] font-bold text-emerald-600 shrink-0 flex items-center gap-1">
+                        <Check class="h-3 w-3" :stroke-width="3" />
+                        <span>Đúng</span>
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -1093,10 +1099,10 @@
           </h3>
           <button
             type="button"
-            class="text-slate-400 hover:text-slate-600 text-xs font-bold cursor-pointer"
+            class="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition cursor-pointer"
             @click="isRejectModalOpen = false"
           >
-            ✕
+            <X class="h-4 w-4" />
           </button>
         </div>
 
@@ -1145,6 +1151,7 @@ import {
   AlertTriangle,
   Check,
   CheckCircle,
+  ChevronLeft,
   ChevronRight,
   Clock,
   Eye,
@@ -1220,12 +1227,12 @@ const isSubmittingReject = ref(false)
 const isBulkReject = ref(false)
 
 const tabs = computed(() => [
-  { key: 'all', label: 'Tất cả' },
-  { key: 'pending', label: 'Chờ duyệt', badge: stats.pending, badgeClass: 'bg-amber-100 text-amber-800' },
-  { key: 'approved', label: 'Đã duyệt', badge: stats.public, badgeClass: 'bg-emerald-100 text-emerald-800' },
-  { key: 'rejected', label: 'Từ chối', badge: stats.rejected, badgeClass: 'bg-rose-100 text-rose-800' },
-  { key: 'reported', label: '⚠️ Có báo cáo', badge: stats.reported, badgeClass: 'bg-rose-100 text-rose-800' },
-  { key: 'trash', label: 'Thùng rác', badge: stats.trash, badgeClass: 'bg-slate-100 text-slate-700' },
+  { key: 'all', label: 'Tất cả', icon: FileText },
+  { key: 'pending', label: 'Chờ duyệt', icon: Clock, badge: stats.pending, badgeClass: 'bg-amber-100 text-amber-800' },
+  { key: 'approved', label: 'Đã duyệt', icon: CheckCircle, badge: stats.public, badgeClass: 'bg-emerald-100 text-emerald-800' },
+  { key: 'rejected', label: 'Từ chối', icon: XCircle, badge: stats.rejected, badgeClass: 'bg-rose-100 text-rose-800' },
+  { key: 'reported', label: 'Có báo cáo', icon: AlertTriangle, badge: stats.reported, badgeClass: 'bg-rose-100 text-rose-800' },
+  { key: 'trash', label: 'Thùng rác', icon: Trash2, badge: stats.trash, badgeClass: 'bg-slate-100 text-slate-700' },
 ])
 
 const publicPercent = computed(() => {

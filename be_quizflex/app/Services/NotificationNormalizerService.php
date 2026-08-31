@@ -165,18 +165,16 @@ class NotificationNormalizerService
         }
 
         // 4. Report/Question Author Notifications -> trỏ về kho câu hỏi của tác giả (/dashboard/my-questions)
-        if (in_array($type, [
-            'question.reported',
-            'report.reminder',
-            'report.warning',
-            'report.auto_privatized',
-            'report.hidden',
-            'report.shown',
-            'report.resolved',
-            'report.dismissed',
-            'question_review.approved',
-            'question_review.rejected',
-        ], true)) {
+        if ($type === 'question_review.approved' || $type === 'report.shown') {
+            return $questionId ? "/dashboard/my-questions?question_id={$questionId}&status=approved" : "/dashboard/my-questions";
+        }
+        if ($type === 'question_review.rejected') {
+            return $questionId ? "/dashboard/my-questions?question_id={$questionId}&status=rejected" : "/dashboard/my-questions";
+        }
+        if (in_array($type, ['question.reported', 'report.reminder', 'report.warning', 'report.hidden'], true)) {
+            return $questionId ? "/dashboard/my-questions?question_id={$questionId}&status=action_required" : "/dashboard/my-questions";
+        }
+        if (in_array($type, ['report.auto_privatized', 'report.resolved', 'report.dismissed'], true)) {
             return $questionId ? "/dashboard/my-questions?question_id={$questionId}" : "/dashboard/my-questions";
         }
 

@@ -118,9 +118,16 @@ class QuestionModerated extends Notification implements ShouldQueue
             ? 'report'
             : (in_array($this->action, ['approved', 'rejected'], true) ? 'question_review' : 'question');
 
+        $statusParam = match ($this->action) {
+            'approved' => '&status=approved',
+            'rejected' => '&status=rejected',
+            'reported', 'reminder', 'warning', 'hidden' => '&status=action_required',
+            default => '',
+        };
+
         $actionLink = $this->action === 'deleted'
             ? '/dashboard/my-questions'
-            : "/dashboard/my-questions?question_id={$this->question->id}";
+            : "/dashboard/my-questions?question_id={$this->question->id}{$statusParam}";
 
         return [
             'type' => $type,

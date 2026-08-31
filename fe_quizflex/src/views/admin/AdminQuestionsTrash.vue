@@ -104,7 +104,7 @@
           class="inline-flex items-center gap-1.5 rounded-lg border border-rose-300 bg-rose-100 px-3.5 py-2 text-sm font-medium text-rose-700 transition hover:bg-rose-200"
           @click="handleBulkForceDelete"
         >
-          <Flame class="h-4 w-4" />
+          <Trash2 class="h-4 w-4" />
           Xóa vĩnh viễn hàng loạt
         </button>
 
@@ -223,7 +223,7 @@
                   class="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-700 transition hover:bg-rose-100"
                   @click="forceDeleteSingle(q.id)"
                 >
-                  <Flame class="h-3.5 w-3.5" />
+                  <Trash2 class="h-3.5 w-3.5" />
                   Xóa vĩnh viễn
                 </button>
               </td>
@@ -317,7 +317,6 @@ import {
   Trash2,
   Search,
   RotateCcw,
-  Flame,
   User,
   Eye,
   ChevronLeft,
