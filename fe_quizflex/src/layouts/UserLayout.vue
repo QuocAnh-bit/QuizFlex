@@ -138,6 +138,16 @@
                     <span>Kho Quiz của tôi</span>
                   </router-link>
 
+                  <!-- Báo cáo của tôi -->
+                  <router-link
+                    to="/my-reports"
+                    @click="isUserDropdownOpen = false"
+                    class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-50 hover:text-slate-900"
+                  >
+                    <Flag class="h-4 w-4 shrink-0 text-slate-500" />
+                    <span>Báo cáo của tôi</span>
+                  </router-link>
+
                   <!-- Subscription -->
                   <router-link
                     to="/profile?tab=subscription"
@@ -318,6 +328,7 @@ import {
   X,
   ChevronDown,
   LayoutDashboard,
+  Flag,
 } from 'lucide-vue-next'
 
 import BrandLogo from '@/components/common/BrandLogo.vue'

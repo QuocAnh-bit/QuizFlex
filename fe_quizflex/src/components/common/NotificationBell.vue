@@ -94,6 +94,7 @@ const bellContainer = ref(null)
 // State thông báo
 const notifications = ref([])
 const unreadCount = ref(0)
+const processedRealtimeIds = new Set()
 
 const toggleDropdown = () => {
   isOpen.value = !isOpen.value
@@ -113,8 +114,14 @@ const fetchNotifications = async () => {
   try {
     isLoading.value = true
     const { items, unreadCount: count } = await notificationApi.list()
-    notifications.value = items
-    unreadCount.value = count
+    notifications.value = items || []
+    unreadCount.value = count || 0
+    // Đồng bộ ID vào Set deduplication
+    if (Array.isArray(items)) {
+      items.forEach(item => {
+        if (item.id) processedRealtimeIds.add(item.id)
+      })
+    }
   } catch (error) {
     console.error('Lỗi khi tải thông báo', error)
   } finally {
@@ -158,7 +165,27 @@ const markAllAsRead = async () => {
 
 const getIcon = (type) => {
   const icons = {
-    // Quiz & Question & Report
+    // Standard Dot-Notation Types
+    'report.created': '🚨',
+    'report.admin_review_required': '🚨',
+    'report.author_updated': '🛠️',
+    'report.reminder': '⏰',
+    'report.warning': '⚠️',
+    'report.auto_privatized': '🔒',
+    'report.resolved': '✅',
+    'report.dismissed': 'ℹ️',
+    'report.hidden': '🔒',
+    'report.shown': '🎉',
+    'question.reported': '🚩',
+    'question.deleted': '🗑️',
+    'question.moderated': '❓',
+    'question_review.requested': '📩',
+    'question_review.approved': '🎉',
+    'question_review.rejected': '❌',
+    'quiz.moderated': '📖',
+    'quiz_review.requested': '📩',
+
+    // Quiz & Question & Report (Legacy)
     'quiz_moderated': '📖',
     'question_moderated': '❓',
     'question_review_requested': '📩',
@@ -169,6 +196,13 @@ const getIcon = (type) => {
     'report_action': '🚨',
     'report': '🚨',
     // Room Member status
+    'room.join_request': '👋',
+    'room.member_approved': '✅',
+    'room.member_rejected': '❌',
+    'room.member_kicked': '🚷',
+    'room.dissolved': '🏚️',
+    'room.banned': '🚫',
+    'room.unbanned': '🔓',
     'room_join_request': '👋',
     'room_member_approved': '✅',
     'room_member_rejected': '❌',
@@ -177,18 +211,29 @@ const getIcon = (type) => {
     'room_banned': '🚫',
     'room_unbanned': '🔓',
     // Homework
+    'homework.assigned': '📚',
+    'homework.submitted': '📤',
+    'homework.evaluated': '💯',
+    'homework.attempt_reset': '🔄',
     'homework_assigned': '📚',
     'homework_submitted': '📤',
     'homework_evaluated': '💯',
     'homework_attempt_reset': '🔄',
     // Account / Security
+    'account.locked': '🔒',
+    'account.unlocked': '🔓',
+    'unlock_request.created': '🔑',
+    'unlock_request.approved': '✔️',
+    'unlock_request.rejected': '❌',
     'account_locked': '🔒',
     'account_unlocked': '🔓',
     'unlock_request_created': '🔑',
     'unlock_request_approved': '✔️',
     'unlock_request_rejected': '❌',
     // Others
+    'payment.success': '💳',
     'payment_success': '💳',
+    'achievement.unlocked': '🏆',
     'achievement_unlocked': '🏆',
     'system': '🔔'
   }
@@ -208,8 +253,18 @@ const formatTime = (isoString) => {
 
 const handleRealtimeNotification = (e) => {
   const notification = e.detail
+  if (!notification) return
+
+  const nId = notification.id || `rt-${Date.now()}-${Math.random()}`
+
+  // Tránh duplicate hoàn toàn cho cùng 1 ID
+  if (processedRealtimeIds.has(nId) || notifications.value.some(n => n.id === nId)) {
+    return
+  }
+  processedRealtimeIds.add(nId)
+
   const newNotification = {
-    id: notification.id,
+    id: nId,
     type: notification.type || 'system',
     title: notification.title || '',
     message: notification.message || '',
@@ -218,11 +273,6 @@ const handleRealtimeNotification = (e) => {
     metadata: notification.metadata || {},
     is_read: false,
     created_at: new Date().toISOString()
-  }
-
-  // Tránh duplicate thông báo
-  if (notifications.value.some(n => n.id === newNotification.id)) {
-    return
   }
 
   notifications.value.unshift(newNotification)

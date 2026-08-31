@@ -1711,12 +1711,29 @@ export const reportApi = {
     return unwrap(data);
   },
 
-  // Dành cho Admin: Lấy danh sách
+  // Dành cho Người dùng (Reporter): Lấy lịch sử báo cáo của chính mình
+  async myReports(params = {}) {
+    const { data } = await api.get("/user/report-tickets", { params });
+    const payload = unwrap(data);
+    const items = payload?.reports ?? (Array.isArray(payload) ? payload : (Array.isArray(payload?.data) ? payload.data : []));
+    const stats = payload?.stats ?? data?.stats ?? null;
+    return { items, stats, raw: data };
+  },
+
+  // Dành cho Admin: Lấy danh sách Report Cases và Tickets
   async listAdmin(params = {}) {
     const { data } = await api.get("/admin/report-tickets", { params });
-    const items = unwrapCollection(data);
-    const stats = data?.stats ?? data?.data?.stats ?? null;
-    return { items, stats, raw: data };
+    const payload = unwrap(data);
+    const cases = payload?.cases ?? data?.cases ?? (Array.isArray(payload) ? payload : []);
+    const items = payload?.reports ?? data?.reports ?? (Array.isArray(payload) ? payload : []);
+    const stats = payload?.stats ?? data?.stats ?? null;
+    const pagination = payload?.pagination ?? data?.pagination ?? {
+      current_page: payload?.current_page ?? data?.current_page ?? 1,
+      last_page: payload?.last_page ?? data?.last_page ?? 1,
+      per_page: payload?.per_page ?? data?.per_page ?? 10,
+      total: payload?.total ?? data?.total ?? (cases?.length || 0),
+    };
+    return { cases, items, stats, pagination, raw: data };
   },
 
   // Dành cho Admin: Cập nhật trạng thái ticket đơn

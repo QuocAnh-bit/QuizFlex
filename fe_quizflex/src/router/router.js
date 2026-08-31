@@ -279,6 +279,21 @@ const routes = [
       roles: workspaceRoles,
     },
   },
+  {
+    path: "/my-reports",
+    name: "my-reports",
+    component: () => import("@/views/user/MyReports.vue"),
+    meta: {
+      layout: "user",
+      title: "Báo cáo của tôi",
+      requiresAuth: true,
+      roles: workspaceRoles,
+    },
+  },
+  {
+    path: "/dashboard/my-reports",
+    redirect: "/my-reports",
+  },
 
   {
     path: "/login",

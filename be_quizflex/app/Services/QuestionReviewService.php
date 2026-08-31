@@ -14,10 +14,14 @@ use Illuminate\Validation\ValidationException;
 class QuestionReviewService
 {
     protected QuestionSnapshotService $snapshotService;
+    protected ReportService $reportService;
 
-    public function __construct(?QuestionSnapshotService $snapshotService = null)
-    {
+    public function __construct(
+        ?QuestionSnapshotService $snapshotService = null,
+        ?ReportService $reportService = null
+    ) {
         $this->snapshotService = $snapshotService ?? app(QuestionSnapshotService::class);
+        $this->reportService = $reportService ?? app(ReportService::class);
     }
 
     /**
@@ -119,13 +123,8 @@ class QuestionReviewService
                 $snapshotMetadata['has_pending_report'] = $hasUnresolvedReports;
             }
 
-            // Chuyển các ReportTicket active (pending / admin_review_required) của câu hỏi này sang author_updated
-            $activeReports = \App\Models\ReportTicket::where('question_id', $question->id)
-                ->whereIn('status', [\App\Models\ReportTicket::STATUS_PENDING, \App\Models\ReportTicket::STATUS_ADMIN_REVIEW_REQUIRED])
-                ->get();
-            foreach ($activeReports as $rep) {
-                $rep->transitionTo(\App\Models\ReportTicket::STATUS_AUTHOR_UPDATED);
-            }
+            // Đồng bộ trạng thái Report Lifecycle qua ReportService
+            $this->reportService->onAuthorRevisionSubmitted($question, $user);
 
             $reviewRequest = QuestionReviewRequest::create([
                 'question_id' => $question->id,
@@ -249,28 +248,9 @@ class QuestionReviewService
                 'bank_submission_note' => null,
             ]);
 
-            // 4. Tự động chuyển các ReportTicket active (pending, author_updated, admin_review_required) của câu hỏi này sang 'resolved'
-            $targetQuestionIds = array_filter(array_unique([
-                $lockedQuestion->id,
-                $lockedQuestion->origin_question_id,
-            ]));
-            $snapshotIds = Question::where('origin_question_id', $lockedQuestion->id)->pluck('id')->all();
-            $allRelatedIds = array_values(array_unique(array_merge($targetQuestionIds, $snapshotIds)));
-
-            $unresolvedReports = \App\Models\ReportTicket::whereIn('question_id', $allRelatedIds)
-                ->whereIn('status', \App\Models\ReportTicket::ACTIVE_STATUSES)
-                ->get();
-
-            foreach ($unresolvedReports as $rep) {
-                $rep->transitionTo(\App\Models\ReportTicket::STATUS_RESOLVED);
-                if ($rep->user) {
-                    try {
-                        $rep->user->notify(new \App\Notifications\ReportResolved($rep, 'resolved', 'approved'));
-                    } catch (\Throwable $e) {
-                        \Illuminate\Support\Facades\Log::warning('Không thể gửi thông báo ReportResolved: ' . $e->getMessage());
-                    }
-                }
-            }
+            // 4. Đồng bộ giải quyết các ReportTicket liên quan qua ReportService
+            $reviewer = $reviewerId ? User::find($reviewerId) : null;
+            $this->reportService->onQuestionReviewApproved($lockedQuestion, $reviewer, $isAutoApproved);
 
             $author = $lockedQuestion->user ?? $lockedQuestion->quiz?->user;
             if ($author) {
@@ -331,21 +311,8 @@ class QuestionReviewService
                 'bank_submission_note' => $trimmedReason,
             ]);
 
-            // Chuyển các ReportTicket active của câu hỏi này sang admin_review_required
-            $targetQuestionIds = array_filter(array_unique([
-                $question->id,
-                $question->origin_question_id,
-            ]));
-            $snapshotIds = Question::where('origin_question_id', $question->id)->pluck('id')->all();
-            $allRelatedIds = array_values(array_unique(array_merge($targetQuestionIds, $snapshotIds)));
-
-            $activeReports = \App\Models\ReportTicket::whereIn('question_id', $allRelatedIds)
-                ->whereIn('status', [\App\Models\ReportTicket::STATUS_PENDING, \App\Models\ReportTicket::STATUS_AUTHOR_UPDATED])
-                ->get();
-
-            foreach ($activeReports as $rep) {
-                $rep->transitionTo(\App\Models\ReportTicket::STATUS_ADMIN_REVIEW_REQUIRED);
-            }
+            // Chuyển các ReportTicket active của câu hỏi này sang admin_review_required qua ReportService
+            $this->reportService->onQuestionReviewRejected($question, $admin, $trimmedReason);
 
             $author = $question->user ?? $question->quiz?->user;
             if ($author) {
@@ -394,6 +361,9 @@ class QuestionReviewService
                 'reason' => $r->reason,
                 'description' => $r->description,
                 'status' => $r->status,
+                'resolution_source' => $r->resolution_source,
+                'resolution_action' => $r->resolution_action,
+                'resolved_at' => $r->resolved_at ? $r->resolved_at->toIso8601String() : null,
                 'created_at' => $r->created_at ? $r->created_at->toIso8601String() : null,
             ]);
 

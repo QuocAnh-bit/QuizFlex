@@ -22,6 +22,7 @@ class ReportResolved extends Notification implements ShouldQueue
      */
     public function __construct(ReportTicket $report, string $status = 'resolved', ?string $action = null)
     {
+        $this->afterCommit = true;
         $this->report = $report;
         $this->status = $status;
         $this->action = $action ?? ($status === 'dismissed' ? 'dismissed' : 'approved');
@@ -40,7 +41,7 @@ class ReportResolved extends Notification implements ShouldQueue
      */
     public function broadcastType(): string
     {
-        return 'report_resolved';
+        return $this->status === 'dismissed' ? 'report.dismissed' : 'report.resolved';
     }
 
     /**
@@ -54,7 +55,7 @@ class ReportResolved extends Notification implements ShouldQueue
             $snippet .= '...';
         }
         $itemTitle = "câu hỏi \"{$snippet}\"";
-        $actionLink = null;
+        $eventType = $this->status === 'dismissed' ? 'report.dismissed' : 'report.resolved';
 
         if ($this->action === 'keep') {
             $title = 'ℹ️ Báo cáo của bạn đã được kiểm duyệt — Nội dung hợp lệ';
@@ -77,20 +78,24 @@ class ReportResolved extends Notification implements ShouldQueue
         }
 
         return [
-            'type' => 'report_resolved',
+            'type' => $eventType,
             'category' => 'report',
             'title' => $title,
             'message' => $message,
             'action' => 'view',
-            'action_link' => $actionLink,
+            'action_link' => '/my-reports',
             'metadata' => [
+                'type' => $eventType,
                 'category' => 'report',
                 'action' => $this->action,
                 'status' => $this->status,
+                'recipient_role' => 'reporter',
                 'report_id' => $this->report->id,
                 'question_id' => $this->report->question_id,
+                'resolution_source' => $this->report->resolution_source,
+                'resolution_action' => $this->report->resolution_action,
+                'resolved_at' => $this->report->resolved_at?->toIso8601String(),
             ],
         ];
-
     }
 }

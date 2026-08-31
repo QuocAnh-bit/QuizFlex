@@ -17,10 +17,12 @@ class ReportAutomationService
 {
     public function __construct(
         protected ?QuestionSnapshotService $snapshotService = null,
-        protected ?QuestionReviewService $reviewService = null
+        protected ?QuestionReviewService $reviewService = null,
+        protected ?ReportService $reportService = null
     ) {
         $this->snapshotService = $snapshotService ?? app(QuestionSnapshotService::class);
         $this->reviewService = $reviewService ?? app(QuestionReviewService::class);
+        $this->reportService = $reportService ?? app(ReportService::class);
     }
 
     /**
@@ -291,13 +293,8 @@ class ReportAutomationService
             // TRƯỜNG HỢP FAIL HOẶC UNCERTAIN: Chuyển sang ADMIN_REVIEW_REQUIRED
             // =========================================================
             return DB::transaction(function () use ($question, $req, $evalResult, $allRelatedIds) {
-                // Chuyển toàn bộ ReportTicket active sang admin_review_required qua transitionTo
-                $activeTickets = ReportTicket::whereIn('question_id', $allRelatedIds)
-                    ->whereIn('status', ReportTicket::ACTIVE_STATUSES)
-                    ->get();
-                foreach ($activeTickets as $ticket) {
-                    $ticket->transitionTo(ReportTicket::STATUS_ADMIN_REVIEW_REQUIRED);
-                }
+                // Chuyển toàn bộ ReportTicket active sang admin_review_required qua ReportService
+                $this->reportService->onAutoReviewFailed($question, $evalResult['reason']);
 
                 // Đánh dấu ReviewRequest là Priority cho Admin
                 $metadata = $req->snapshot_metadata ?? [];
@@ -391,9 +388,7 @@ class ReportAutomationService
                     ->exists();
 
                 if ($hasApprovedRevisionAfterReport) {
-                    foreach ($tickets as $t) {
-                        $t->update(['status' => ReportTicket::STATUS_RESOLVED]);
-                    }
+                    $this->reportService->onQuestionReviewApproved($question, null, true);
                     $results['skipped']++;
                     continue;
                 }
@@ -421,38 +416,20 @@ class ReportAutomationService
 
                 // 1. DAY 7: AUTO PRIVATE (>= 7 ngày)
                 if ($days >= 7) {
-                    // Kiểm tra xem đã có ticket nào trong case được đánh dấu auto_privatized_at chưa
                     $alreadyPrivatized = $tickets->contains(fn($t) => $t->auto_privatized_at !== null);
 
                     if (!$alreadyPrivatized) {
-                        DB::transaction(function () use ($question, $tickets, $earliestReport, $author, $now, $days, &$results) {
-                            $bankSnapshot = $this->snapshotService->findBankSnapshotByOriginId($question->id);
+                        $this->reportService->autoPrivatizeCase($question, $tickets, $days, $now);
 
-                            if ($bankSnapshot && $bankSnapshot->is_public) {
-                                $bankSnapshot->update(['is_public' => false]);
-                            }
-                            if ($question->is_public) {
-                                $question->update(['is_public' => false]);
-                            }
+                        Log::info("Question Case #{$question->id} ({$tickets->count()} tickets) đã bị AUTO PRIVATE sau {$days} ngày.");
 
-                            // Gửi thông báo Auto Private cho Author DUY NHẤT 1 LẦN cho toàn bộ Question Case
-                            $author->notify(new QuestionModerated($question, 'auto_privatized', $earliestReport->reason, $earliestReport->description));
-
-                            // Đánh dấu marker cho TẤT CẢ các tickets trong case để đảm bảo Idempotent
-                            foreach ($tickets as $t) {
-                                $t->update(['auto_privatized_at' => $now]);
-                            }
-
-                            Log::info("Question Case #{$question->id} ({$tickets->count()} tickets) đã bị AUTO PRIVATE sau {$days} ngày.");
-
-                            $results['auto_privatized']++;
-                            $results['details'][] = [
-                                'question_id' => $question->id,
-                                'tickets_count' => $tickets->count(),
-                                'action' => 'auto_privatized',
-                                'days' => $days,
-                            ];
-                        });
+                        $results['auto_privatized']++;
+                        $results['details'][] = [
+                            'question_id' => $question->id,
+                            'tickets_count' => $tickets->count(),
+                            'action' => 'auto_privatized',
+                            'days' => $days,
+                        ];
                     } else {
                         $results['skipped']++;
                     }
@@ -464,12 +441,7 @@ class ReportAutomationService
                     $alreadyWarned = $tickets->contains(fn($t) => $t->warning_sent_at !== null);
 
                     if (!$alreadyWarned) {
-                        // Gửi thông báo WARNING cho Author DUY NHẤT 1 LẦN cho toàn bộ Question Case
-                        $author->notify(new QuestionModerated($question, 'warning', $earliestReport->reason, $earliestReport->description));
-
-                        foreach ($tickets as $t) {
-                            $t->update(['warning_sent_at' => $now]);
-                        }
+                        $this->reportService->sendLifecycleNotification($question, $tickets, 'warning', $days, $now);
 
                         Log::info("Đã gửi WARNING cho Author Question Case #{$question->id} ({$tickets->count()} tickets) sau {$days} ngày.");
 
@@ -491,12 +463,7 @@ class ReportAutomationService
                     $alreadyReminded = $tickets->contains(fn($t) => $t->reminder_sent_at !== null);
 
                     if (!$alreadyReminded) {
-                        // Gửi thông báo REMINDER cho Author DUY NHẤT 1 LẦN cho toàn bộ Question Case
-                        $author->notify(new QuestionModerated($question, 'reminder', $earliestReport->reason, $earliestReport->description));
-
-                        foreach ($tickets as $t) {
-                            $t->update(['reminder_sent_at' => $now]);
-                        }
+                        $this->reportService->sendLifecycleNotification($question, $tickets, 'reminder', $days, $now);
 
                         Log::info("Đã gửi REMINDER cho Author Question Case #{$question->id} ({$tickets->count()} tickets) sau {$days} ngày.");
 

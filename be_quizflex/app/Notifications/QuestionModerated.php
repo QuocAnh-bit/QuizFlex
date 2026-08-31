@@ -21,6 +21,7 @@ class QuestionModerated extends Notification implements ShouldQueue
      */
     public function __construct($question, string $action, ?string $reason = null, ?string $description = null)
     {
+        $this->afterCommit = true;
         $this->question = $question;
         $this->action = $action;
         $this->reason = $reason;
@@ -40,7 +41,25 @@ class QuestionModerated extends Notification implements ShouldQueue
      */
     public function broadcastType(): string
     {
-        return 'question_moderated';
+        return $this->resolveType();
+    }
+
+    protected function resolveType(): string
+    {
+        return match ($this->action) {
+            'reported' => 'question.reported',
+            'reminder' => 'report.reminder',
+            'warning' => 'report.warning',
+            'auto_privatized' => 'report.auto_privatized',
+            'hidden' => 'report.hidden',
+            'shown' => 'report.shown',
+            'resolved' => 'report.resolved',
+            'dismissed' => 'report.dismissed',
+            'approved' => 'question_review.approved',
+            'rejected' => 'question_review.rejected',
+            'deleted' => 'question.deleted',
+            default => 'question.moderated',
+        };
     }
 
     /**
@@ -94,22 +113,31 @@ class QuestionModerated extends Notification implements ShouldQueue
             $message = "Câu hỏi #{$this->question->id} của bạn đã bị gỡ bỏ vĩnh viễn do vi phạm nghiêm trọng quy định.";
         }
 
+        $type = $this->resolveType();
         $category = in_array($this->action, ['reported', 'reminder', 'warning', 'auto_privatized', 'hidden', 'shown', 'resolved', 'dismissed', 'deleted'], true)
             ? 'report'
-            : (in_array($this->action, ['approved', 'rejected'], true) ? 'question_review' : 'question_moderated');
+            : (in_array($this->action, ['approved', 'rejected'], true) ? 'question_review' : 'question');
+
+        $statusParam = match ($this->action) {
+            'approved' => '&status=approved',
+            'rejected' => '&status=rejected',
+            'reported', 'reminder', 'warning', 'hidden' => '&status=action_required',
+            default => '',
+        };
 
         $actionLink = $this->action === 'deleted'
             ? '/dashboard/my-questions'
-            : "/dashboard/my-questions?question_id={$this->question->id}";
+            : "/dashboard/my-questions?question_id={$this->question->id}{$statusParam}";
 
         return [
-            'type' => 'question_moderated',
+            'type' => $type,
             'category' => $category,
             'title' => $title,
             'message' => $message,
             'action' => 'view',
             'action_link' => $actionLink,
             'metadata' => [
+                'type' => $type,
                 'category' => $category,
                 'action' => $this->action,
                 'question_id' => $this->question->id,

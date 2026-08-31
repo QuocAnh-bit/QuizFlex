@@ -18,6 +18,7 @@ class ReportCreated extends Notification implements ShouldQueue
 
     public function __construct(ReportTicket $report, User $reporter)
     {
+        $this->afterCommit = true;
         $this->reportId = $report->id;
         $this->reporterName = $reporter->name;
         $this->questionId = $report->question_id;
@@ -30,19 +31,20 @@ class ReportCreated extends Notification implements ShouldQueue
 
     public function broadcastType(): string
     {
-        return 'report_created';
+        return 'report.created';
     }
 
     public function toArray(object $notifiable): array
     {
         return [
-            'type' => 'report_created',
+            'type' => 'report.created',
             'category' => 'report',
             'title' => 'Có báo cáo câu hỏi mới',
             'message' => "{$this->reporterName} đã gửi báo cáo vi phạm câu hỏi #{$this->questionId}.",
             'action' => 'view',
             'action_link' => "/admin/reports?question_id={$this->questionId}",
             'metadata' => [
+                'type' => 'report.created',
                 'category' => 'report',
                 'action' => 'view',
                 'report_id' => $this->reportId,

@@ -58,6 +58,7 @@ import AuthLayout from "@/layouts/AuthLayout.vue";
 import AppLoading from "@/components/common/AppLoading.vue";
 import { authApi, currentUserStorage } from "@/services/api";
 import { getEcho, disconnectEcho } from "@/echo.js";
+import { getNotificationPresentation, NOTIFICATION_DELIVERY } from "@/utils/notificationPriority";
 
 const route = useRoute();
 const router = useRouter();
@@ -121,9 +122,19 @@ const subscribeAccountChannel = () => {
     })
 
     accountChannel.notification((notification) => {
+      // 1. Luôn phát event cho NotificationBell & Notifications lưu vào inbox và cập nhật badge
       window.dispatchEvent(new CustomEvent('realtime-notification', { detail: notification }))
-      if (notification?.title || notification?.message) {
-        showToast(notification.title ? `${notification.title}: ${notification.message}` : notification.message, 'info')
+
+      // 2. Phân loại Toast Delivery Strategy để không spam popup vô tội vạ
+      const presentation = getNotificationPresentation(notification)
+      if (
+        presentation.delivery === NOTIFICATION_DELIVERY.URGENT ||
+        presentation.delivery === NOTIFICATION_DELIVERY.TOAST
+      ) {
+        if (notification?.title || notification?.message) {
+          const toastMsg = notification.title ? `${notification.title}: ${notification.message}` : notification.message
+          showToast(toastMsg, presentation.toastType || 'info')
+        }
       }
     })
   } catch {
