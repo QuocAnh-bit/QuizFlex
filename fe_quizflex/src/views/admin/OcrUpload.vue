@@ -854,7 +854,7 @@
                 <input
                   v-model.number="q.points"
                   type="number"
-                  step="0.05"
+                  step="any"
                   min="0.01"
                   max="10"
                   class="w-12 text-center font-mono text-xs font-black text-[var(--text)] bg-transparent outline-none"

@@ -178,8 +178,8 @@
           class="rounded-2xl border border-[#FDE68A] bg-[#FFFBEB] p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-2xs"
         >
           <div class="flex items-start sm:items-center gap-3.5">
-            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#F59E0B] text-white shadow-xs">
-              <Check :size="18" class="stroke-[3]" />
+            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#F59E0B] text-white shadow-xs">
+              <Check :size="20" class="stroke-[3]" />
             </div>
             <div>
               <h4 class="font-bold text-[#D97706] text-sm sm:text-base flex items-center gap-2">
@@ -193,7 +193,7 @@
           </div>
           <button
             type="button"
-            class="shrink-0 inline-flex items-center gap-1.5 rounded-xl border border-[#FDE68A] bg-[#FEF3C7]/70 px-4 py-2 text-xs font-bold text-[#D97706] hover:bg-[#FEF3C7] transition active:scale-95 cursor-pointer shadow-2xs"
+            class="shrink-0 inline-flex items-center gap-1.5 rounded-xl border border-[#FDE68A] bg-white px-4 py-2 text-xs font-bold text-[#D97706] hover:bg-[#FEF3C7] transition active:scale-95 cursor-pointer shadow-2xs"
             @click="clearQuestionFocus"
           >
             <Eye :size="14" class="text-[#D97706]" />

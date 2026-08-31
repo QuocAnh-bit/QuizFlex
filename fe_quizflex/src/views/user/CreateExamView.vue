@@ -4,6 +4,7 @@
   >
     <!-- MAIN FORM COLUMN -->
     <form
+      novalidate
       class="relative min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8 grid gap-6"
       @submit.prevent="handleCreateQuizSubmit"
     >
@@ -127,10 +128,22 @@
           <div class="grid gap-4">
             <div class="grid md:grid-cols-2 gap-4">
               <label class="grid gap-1.5 text-xs font-medium text-slate-700">
-                <span>Tên Quiz / Đề thi <span class="text-purple-600 font-bold">*</span></span>
+                <div class="flex items-center justify-between">
+                  <span>Tên Quiz / Đề thi <span class="text-purple-600 font-bold">*</span></span>
+                  <button
+                    type="button"
+                    @click="applySuggestedTitle"
+                    class="text-[11px] font-semibold text-purple-600 hover:text-purple-800 hover:underline inline-flex items-center gap-1 cursor-pointer transition active:scale-95"
+                    title="Tự động tạo gợi ý tên theo môn học, chủ đề và số câu hỏi đã chọn"
+                  >
+                    <Sparkles :size="12" />
+                    <span>Gợi ý tên</span>
+                  </button>
+                </div>
                 <input
                   id="exam-title-input"
                   v-model="quizForm.title"
+                  @input="isTitleManuallyEdited = true"
                   required
                   class="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-medium text-slate-900 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/10 shadow-2xs"
                   placeholder="VD: Kiểm tra 1 tiết Toán 10 - Ôn tập Hàm Số"
@@ -879,7 +892,7 @@
                       <span class="text-[11px] text-slate-500 font-medium">Điểm:</span>
                       <input
                         type="number"
-                        step="0.05"
+                        step="any"
                         min="0.01"
                         max="10"
                         :value="questionPointsMap[q.id]"
@@ -1309,6 +1322,8 @@ const quizForm = reactive({
   cover: "",
 });
 
+const isTitleManuallyEdited = ref(false);
+
 watch(
   mode,
   (newMode) => {
@@ -1673,7 +1688,7 @@ const resetQuestionToAuto = (id) => {
   reallocatePoints(false);
 };
 
-// Theo dõi khi danh sách câu hỏi thay đổi để phân bổ lại điểm
+// Theo dõi khi danh sách câu hỏi thay đổi để phân bổ lại điểm và cập nhật gợi ý tiêu đề
 watch(
   () => selectedIds.value,
   (newIds) => {
@@ -1685,6 +1700,7 @@ watch(
         }
       }
       reallocatePoints(false);
+      updateFormTitle();
     }
   },
   { deep: true },
@@ -1792,22 +1808,90 @@ const goBack = () => {
 
 const switchMode = (newMode) => {
   mode.value = newMode;
-  updateFormTitle();
+  updateFormTitle(true);
 };
 
-const updateFormTitle = () => {
-  if (!quizForm.title) {
-    if (mode.value === "manual") {
-      quizForm.title = `Quiz đóng gói từ ${selectedIds.value.length} câu đã chọn`;
-      quizForm.time_limit_minutes = Math.max(selectedIds.value.length, 10);
-    } else {
-      quizForm.title = filters.topic_name
-        ? `Quiz ôn tập tự động - Chủ đề: ${filters.topic_name}`
-        : `Quiz ôn tập tự động ${totalMatrixQuestions.value} câu`;
-      quizForm.time_limit_minutes = Math.max(totalMatrixQuestions.value, 10);
+const getSuggestedTitle = () => {
+  const count =
+    mode.value === "manual"
+      ? selectedIds.value.length
+      : totalMatrixQuestions.value;
+
+  const countSuffix = count > 0 ? ` (${count} câu)` : "";
+  const subName = selectedSubjectName.value;
+  const gradeObj = availableGrades.value.find(
+    (g) => g.id === Number(filters.grade_id),
+  );
+  const gradeName = gradeObj ? ` ${gradeObj.name}` : "";
+  const topicName = (quizForm.topic_name || "").trim() || (filters.topic_name || "").trim();
+
+  if (mode.value === "manual") {
+    if (count > 0) {
+      if (topicName && subName) {
+        return `Đề ôn tập ${subName}${gradeName} - ${topicName}${countSuffix}`;
+      }
+      if (topicName) {
+        return `Đề ôn tập - Chủ đề: ${topicName}${countSuffix}`;
+      }
+      if (subName) {
+        return `Đề ôn tập ${subName}${gradeName}${countSuffix}`;
+      }
+      return `Quiz tổng hợp (${count} câu đã chọn)`;
     }
+    if (subName) {
+      return `Đề ôn tập ${subName}${gradeName}`;
+    }
+    return "Quiz đóng gói câu hỏi";
+  } else {
+    // Mode random
+    if (topicName && subName) {
+      return `Đề ôn tập ${subName}${gradeName} - ${topicName}${countSuffix}`;
+    }
+    if (topicName) {
+      return `Đề ôn tập tự động - Chủ đề: ${topicName}${countSuffix}`;
+    }
+    if (subName) {
+      return `Đề ôn tập ${subName}${gradeName}${countSuffix}`;
+    }
+    return `Quiz ôn tập tự động${countSuffix || " (10 câu)"}`;
   }
 };
+
+const updateFormTitle = (force = false) => {
+  if (force || !isTitleManuallyEdited.value || !quizForm.title.trim()) {
+    quizForm.title = getSuggestedTitle();
+  }
+  if (mode.value === "manual") {
+    quizForm.time_limit_minutes = Math.max(
+      Math.round((selectedIds.value.length || 10) * 1.5),
+      10,
+    );
+  } else {
+    quizForm.time_limit_minutes = Math.max(
+      Math.round((totalMatrixQuestions.value || 10) * 1.5),
+      10,
+    );
+  }
+};
+
+const applySuggestedTitle = () => {
+  isTitleManuallyEdited.value = false;
+  updateFormTitle(true);
+};
+
+// Tự động cập nhật tiêu đề gợi ý khi thay đổi các tiêu chí bộ lọc (nếu người dùng chưa tự gõ tiêu đề riêng)
+watch(
+  [
+    () => filters.subject_id,
+    () => filters.grade_id,
+    () => filters.education_level_id,
+    () => filters.topic_name,
+    () => totalMatrixQuestions.value,
+  ],
+  () => {
+    updateFormTitle();
+  },
+);
 
 const fetchTaxonomy = async () => {
   try {

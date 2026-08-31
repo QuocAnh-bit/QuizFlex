@@ -23,7 +23,7 @@ const VI_UNACCENTED_WORDS = new Set([
   'bo', 'boc', 'buoc', 'ca', 'cac', 'cai', 'cam', 'can', 'cao', 'cay', 'cha', 'chay', 'che', 'chi', 
   'chia', 'cho', 'chot', 'chu', 'chua', 'chuc', 'chuyen', 'co', 'con', 'coc', 'coi', 'com', 'cu', 
   'cua', 'cuc', 'cung', 'cuoi', 'cuoc', 'da', 'dai', 'dang', 'dao', 'dat', 'dau', 'de', 'den', 'dep', 
-  'di', 'diem', 'dinh', 'do', 'doc', 'doi', 'dong', 'du', 'dua', 'duoc', 'duoi', 'em', 'gia', 'giai', 
+  'di', 'diem', 'dinh','doc', 'doi', 'dong', 'du', 'dua', 'duoc', 'duoi', 'em', 'gia', 'giai', 
   'giao', 'giu', 'giua', 'ha', 'hai', 'hang', 'hay', 'he', 'hien', 'hieu', 'hinh', 'ho', 'hoa', 'hoc', 
   'hoi', 'hon', 'hop', 'huong', 'khi', 'kho', 'khong', 'khu', 'kiem', 'la', 'lai', 'lam', 'lan', 'lau', 
   'le', 'len', 'lo', 'loai', 'loi', 'lon', 'luong', 'luu', 'ma', 'mai', 'mang', 'mau', 'me', 'mo', 
@@ -34,7 +34,7 @@ const VI_UNACCENTED_WORDS = new Set([
   'thoi', 'thong', 'thu', 'thua', 'thuc', 'thuoc', 'thuong', 'tinh', 'toa', 'toan', 'toi', 
   'ton', 'tong', 'tot', 'tra', 'trai', 'trang', 'tren', 'trong', 'tru', 'trung', 'truoc', 'truong', 
   'tu', 'tua', 'tuc', 'tuoi', 'tuong', 'tuy', 'va', 'van', 've', 'vi', 'viec', 'viet', 'vo', 'voi', 
-  'vu', 'xa', 'xem', 'xin', 'xuat', 'y', 'yeu', 'ai', 'xinh','quen','thay','dang','đang','nhay','nhau'
+  'vu', 'xa', 'xem', 'xin', 'xuat', 'y', 'yeu', 'ai', 'xinh','quen','thay','dang','đang','nhay','nhau','vui'
 ])
 
 class SpeechService {
