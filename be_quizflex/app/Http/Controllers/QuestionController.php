@@ -34,7 +34,7 @@ class QuestionController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Danh sách câu hỏi',
-            'data' => $quiz->questions->map(fn(Question $question) => $this->formatQuestion($question, true))->values(),
+            'data' => $this->formatQuestionCollection($quiz->questions, true)->values(),
         ]);
     }
 
@@ -123,7 +123,8 @@ class QuestionController extends Controller
         // Bốc ngẫu nhiên nếu có cờ random
         if ($request->boolean('random')) {
             $limit = min(max((int) $request->query('limit', 10), 1), 100);
-            $questions = $query->inRandomOrder()->take($limit)->get()->map(fn(Question $q) => $this->formatQuestion($q, $includeAnswerKey));
+            $rawQuestions = $query->inRandomOrder()->take($limit)->get();
+            $questions = $this->formatQuestionCollection($rawQuestions, $includeAnswerKey);
 
             return response()->json([
                 'success' => true,
@@ -135,12 +136,13 @@ class QuestionController extends Controller
         $query->latest();
         $defaultPerPage = $request->filled('ids') ? 100 : 20;
         $perPage = min(max((int) $request->query('per_page', $defaultPerPage), 1), 500);
-        $questions = $query->paginate($perPage)->through(fn(Question $q) => $this->formatQuestion($q, $includeAnswerKey));
+        $paginated = $query->paginate($perPage);
+        $paginated->setCollection($this->formatQuestionCollection($paginated->items(), $includeAnswerKey));
 
         return response()->json([
             'success' => true,
             'message' => 'Ngân hàng câu hỏi',
-            'data' => $questions,
+            'data' => $paginated,
         ]);
     }
 
@@ -830,7 +832,50 @@ class QuestionController extends Controller
         ]);
     }
 
-    private function formatQuestion(Question $question, bool $includeAnswerKey = false): array
+    /**
+     * Helper tối ưu batch formatting cho tập danh sách câu hỏi (Khắc phục triệt để N+1 query)
+     */
+    private function formatQuestionCollection($questions, bool $includeAnswerKey = false)
+    {
+        $questionsColl = collect($questions);
+        if ($questionsColl->isEmpty()) {
+            return $questionsColl;
+        }
+
+        // Lấy toàn bộ ID và origin_question_id liên quan trong 1 tập hợp duy nhất
+        $allQids = [];
+        foreach ($questionsColl as $q) {
+            $allQids[] = $q->id;
+            if (!empty($q->origin_question_id)) {
+                $allQids[] = $q->origin_question_id;
+            }
+        }
+        $allQids = array_values(array_unique(array_filter($allQids)));
+
+        // 1 query duy nhất lấy tất cả tickets liên quan của toàn bộ danh sách câu hỏi
+        $allTickets = ReportTicket::whereIn('question_id', $allQids)
+            ->latest('id')
+            ->get();
+
+        $ticketsByQid = $allTickets->groupBy('question_id');
+
+        return $questionsColl->map(function (Question $q) use ($ticketsByQid, $includeAnswerKey) {
+            $relatedQids = array_filter(array_unique([$q->id, $q->origin_question_id]));
+            $relatedTickets = collect();
+            foreach ($relatedQids as $qid) {
+                if (isset($ticketsByQid[$qid])) {
+                    $relatedTickets = $relatedTickets->merge($ticketsByQid[$qid]);
+                }
+            }
+
+            $unresolved = $relatedTickets->first(fn($t) => in_array($t->status, ReportTicket::ACTIVE_STATUSES, true) && empty($t->auto_privatized_at));
+            $latest = $unresolved ?? $relatedTickets->first();
+
+            return $this->formatQuestion($q, $includeAnswerKey, $unresolved, $latest);
+        });
+    }
+
+    private function formatQuestion(Question $question, bool $includeAnswerKey = false, mixed $unresolvedReport = 'auto', mixed $latestReport = 'auto'): array
     {
         $user = auth('api')->user();
         if (!$includeAnswerKey && $user) {
@@ -842,17 +887,32 @@ class QuestionController extends Controller
             }
         }
 
-        $reportQuestionIds = array_filter(array_unique([$question->id, $question->origin_question_id]));
-        $unresolvedReport = ReportTicket::whereIn('question_id', $reportQuestionIds)
-            ->whereIn('status', ['pending', 'author_updated', 'admin_review_required'])
-            ->latest()
-            ->first();
+        if ($unresolvedReport === 'auto') {
+            $reportQuestionIds = array_filter(array_unique([$question->id, $question->origin_question_id]));
+            $unresolvedReport = ReportTicket::whereIn('question_id', $reportQuestionIds)
+                ->whereIn('status', ReportTicket::ACTIVE_STATUSES)
+                ->whereNull('auto_privatized_at')
+                ->latest('id')
+                ->first();
+            $latestReport = $unresolvedReport ?? ReportTicket::whereIn('question_id', $reportQuestionIds)->latest('id')->first();
+        }
 
-        $latestReport = $unresolvedReport ?? ReportTicket::whereIn('question_id', $reportQuestionIds)->latest()->first();
         $hasPendingReport = $unresolvedReport !== null;
         $hasAuthorUpdated = $unresolvedReport?->status === ReportTicket::STATUS_AUTHOR_UPDATED;
+        $isUnderAdminReview = $unresolvedReport?->status === ReportTicket::STATUS_ADMIN_REVIEW_REQUIRED;
+
+        // Author Action Required: CHỈ KHI có report pending, chưa sửa và câu hỏi chưa công khai/duyệt ngân hàng
+        $authorActionRequired = $unresolvedReport !== null
+            && $unresolvedReport->status === ReportTicket::STATUS_PENDING
+            && !$question->is_public
+            && $question->bank_submission_status !== 'approved';
+
+        $reportWorkflowStage = $unresolvedReport
+            ? $unresolvedReport->derived_workflow_stage
+            : ($latestReport ? ReportTicket::STAGE_COMPLETED : 'none');
+
         $pendingReport = $unresolvedReport;
-        $isLockedByAdmin = $hasPendingReport;
+        $isLockedByAdmin = $hasPendingReport && !$question->is_public && $question->bank_submission_status !== 'approved';
 
         return [
             'id' => $question->id,
@@ -878,6 +938,9 @@ class QuestionController extends Controller
             'bank_submission_at' => $question->bank_submission_at ? $question->bank_submission_at->toIso8601String() : null,
             'has_report' => $hasPendingReport,
             'has_author_updated' => $hasAuthorUpdated,
+            'is_under_admin_review' => $isUnderAdminReview,
+            'author_action_required' => $authorActionRequired,
+            'report_workflow_stage' => $reportWorkflowStage,
             'is_locked_by_admin' => $isLockedByAdmin,
             'report_reason' => $pendingReport?->description ?? $pendingReport?->reason ?? $latestReport?->description ?? $latestReport?->reason ?? null,
             'order' => $question->order,
@@ -1037,12 +1100,13 @@ class QuestionController extends Controller
         $query->latest();
         $defaultPerPage = $request->filled('ids') ? 100 : 20;
         $perPage = min(max((int) $request->query('per_page', $defaultPerPage), 1), 500);
-        $questions = $query->paginate($perPage)->through(fn(Question $q) => $this->formatQuestion($q, true));
+        $paginated = $query->paginate($perPage);
+        $paginated->setCollection($this->formatQuestionCollection($paginated->items(), true));
 
         return response()->json([
             'success' => true,
             'message' => 'Kho câu hỏi cá nhân',
-            'data' => $questions,
+            'data' => $paginated,
         ]);
     }
 
@@ -1056,12 +1120,13 @@ class QuestionController extends Controller
             return response()->json(['success' => false, 'message' => 'Unauthenticated.'], 401);
         }
 
-        $questions = Question::onlyTrashed()
+        $rawQuestions = Question::onlyTrashed()
             ->with(['answers', 'educationLevel', 'grade', 'subject'])
             ->where('user_id', $user->id)
             ->latest()
-            ->get()
-            ->map(fn(Question $q) => $this->formatQuestion($q, true));
+            ->get();
+
+        $questions = $this->formatQuestionCollection($rawQuestions, true)->values();
 
         return response()->json([
             'success' => true,
@@ -1180,24 +1245,7 @@ class QuestionController extends Controller
 
     private function markReportsAsAuthorUpdatedOnSave(Question $question, User $user): void
     {
-        $targetQuestionIds = array_filter(array_unique([
-            $question->id,
-            $question->origin_question_id,
-        ]));
-        $snapshotIds = Question::where('origin_question_id', $question->id)->pluck('id')->all();
-        $allRelatedIds = array_values(array_unique(array_merge($targetQuestionIds, $snapshotIds)));
-
-        // Cập nhật các ReportTicket pending / admin_review_required sang author_updated qua transitionTo
-        $tickets = ReportTicket::whereIn('question_id', $allRelatedIds)
-            ->whereIn('status', [ReportTicket::STATUS_PENDING, ReportTicket::STATUS_ADMIN_REVIEW_REQUIRED])
-            ->get();
-
-        foreach ($tickets as $ticket) {
-            $ticket->transitionTo(ReportTicket::STATUS_AUTHOR_UPDATED);
-        }
-
-        // TUYỆT ĐỐI KHÔNG gửi notification cho Admin khi tác giả chỉ mới SAVE nháp/bản vá cục bộ.
-        // Chỉ khi tác giả chủ động bấm "Gửi duyệt lại" (submit-to-bank) thì mới kích hoạt review workflow.
+        app(\App\Services\ReportService::class)->onAuthorRevisionSubmitted($question, $user);
     }
 
     /**

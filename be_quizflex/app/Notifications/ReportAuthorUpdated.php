@@ -17,6 +17,7 @@ class ReportAuthorUpdated extends Notification implements ShouldQueue
 
     public function __construct($item, string $itemType, User $author)
     {
+        $this->afterCommit = true;
         $this->item = $item;
         $this->itemType = $itemType;
         $this->author = $author;
@@ -29,7 +30,7 @@ class ReportAuthorUpdated extends Notification implements ShouldQueue
 
     public function broadcastType(): string
     {
-        return 'report_author_updated';
+        return 'report.author_updated';
     }
 
     public function toArray(object $notifiable): array
@@ -50,15 +51,16 @@ class ReportAuthorUpdated extends Notification implements ShouldQueue
         }
 
         return [
-            'type' => 'report_author_updated',
+            'type' => 'report.author_updated',
             'category' => 'report',
             'title' => $title,
             'message' => $message,
             'action' => 'view',
             'action_link' => $this->itemType === 'question' 
                 ? "/admin/reports?question_id={$this->item->id}" 
-                : "/admin/quizzes?quiz_id={$this->item->id}",
+                : "/admin/quizzes/{$this->item->id}",
             'metadata' => [
+                'type' => 'report.author_updated',
                 'category' => 'report',
                 'action' => 'view',
                 'item_type' => $this->itemType,

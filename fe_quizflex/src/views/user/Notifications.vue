@@ -382,51 +382,81 @@ const handleNotificationClick = async (item) => {
   }
 
   if (item.action_link) {
-    let link = item.action_link
-    if (link.startsWith('/admin/reports')) {
-      link = link.replace('/admin/reports', '/admin/report-tickets')
-    }
-    router.push(link)
+    router.push(item.action_link)
   }
 }
 
 const getIcon = (type) => {
   const icons = {
+    // Standard Dot-Notation Types
+    'report.created': ShieldAlert,
+    'report.admin_review_required': ShieldAlert,
+    'report.author_updated': ShieldAlert,
+    'report.reminder': Bell,
+    'report.warning': TriangleAlert,
+    'report.auto_privatized': Lock,
+    'report.resolved': CheckCircle2,
+    'report.dismissed': CheckCircle2,
+    'report.hidden': Lock,
+    'report.shown': CheckCircle2,
+    'question.reported': TriangleAlert,
+    'question.deleted': Trash2,
+    'question.moderated': FileCheck2,
+    'question_review.requested': FileCheck2,
+    'question_review.approved': CheckCircle2,
+    'question_review.rejected': XCircle,
+    'quiz.moderated': FileCheck2,
+    'quiz_review.requested': FileCheck2,
+
+    // Legacy Types (Backward Compatibility)
     quiz_moderated: FileCheck2,
     question_moderated: FileCheck2,
     question_review_requested: FileCheck2,
     quiz_review_requested: FileCheck2,
     report_author_updated: ShieldAlert,
+    report_created: ShieldAlert,
+    report_resolved: CheckCircle2,
+    report_action: Megaphone,
 
+    'room.join_request': UserPlus,
+    'room.member_approved': UserCheck,
+    'room.member_rejected': XCircle,
+    'room.member_kicked': UserMinus,
+    'room.dissolved': LogOut,
+    'room.banned': ShieldAlert,
+    'room.unbanned': ShieldCheck,
     room_join_request: UserPlus,
     room_member_approved: UserCheck,
     room_member_rejected: XCircle,
     room_member_kicked: UserMinus,
-
     room_dissolved: LogOut,
     room_banned: ShieldAlert,
     room_unbanned: ShieldCheck,
 
+    'homework.assigned': BookOpen,
+    'homework.submitted': FileText,
+    'homework.evaluated': GraduationCap,
+    'homework.attempt_reset': RefreshCw,
     homework_assigned: BookOpen,
     homework_submitted: FileText,
     homework_evaluated: GraduationCap,
     homework_attempt_reset: RefreshCw,
 
+    'account.locked': Lock,
+    'account.unlocked': LockOpen,
+    'unlock_request.created': KeyRound,
+    'unlock_request.approved': CheckCircle2,
+    'unlock_request.rejected': XCircle,
     account_locked: Lock,
     account_unlocked: LockOpen,
-
     unlock_request_created: KeyRound,
     unlock_request_approved: CheckCircle2,
     unlock_request_rejected: XCircle,
 
+    'payment.success': CheckCircle2,
     payment_success: CheckCircle2,
-
-    report_created: ShieldAlert,
-    report_resolved: CheckCircle2,
-    report_action: Megaphone,
-
+    'achievement.unlocked': CheckCircle2,
     achievement_unlocked: CheckCircle2,
-
     system: Bell,
   }
 
@@ -466,33 +496,27 @@ const formatTime = (isoString) => {
 
 const handleRealtimeNotification = (e) => {
   const notification = e.detail
+  if (!notification) return
+
+  const nId = notification.id || `rt-${Date.now()}-${Math.random()}`
+
+  if (notifications.value.some((n) => n.id === nId)) {
+    return
+  }
 
   const newNotification = {
-    id: notification.id,
+    id: nId,
     type: notification.type || 'system',
     title: notification.title || '',
     message: notification.message || '',
     action: notification.action || 'view',
-    action_link:
-      notification.action_link || null,
-    metadata:
-      notification.metadata || {},
+    action_link: notification.action_link || null,
+    metadata: notification.metadata || {},
     is_read: false,
-    created_at:
-      new Date().toISOString(),
+    created_at: new Date().toISOString(),
   }
 
-  if (
-    notifications.value.some(
-      (n) => n.id === newNotification.id
-    )
-  ) {
-    return
-  }
-
-  notifications.value.unshift(
-    newNotification
-  )
+  notifications.value.unshift(newNotification)
 }
 
 onMounted(() => {
