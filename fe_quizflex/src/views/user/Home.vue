@@ -401,7 +401,7 @@
                   <div
                     class="absolute left-2.5 top-2.5 rounded-md bg-white/90 px-2 py-0.5 text-[10px] font-bold text-slate-800 shadow-sm"
                   >
-                    {{ quiz.category || quiz.badge || 'Quiz' }}
+                    {{ quiz.subject_name || quiz.category || quiz.badge || 'Quiz' }}
                   </div>
 
                   <div
@@ -531,6 +531,7 @@ import {
   currentUserStorage,
   normalizeQuizCard,
   quizzesApi,
+  taxonomyApi,
 } from '@/services/api'
 
 import userImage from '@/assets/user.png'
@@ -548,17 +549,45 @@ const lastPage = ref(1)
 const perPage = ref(6)
 const isLoadingQuizzes = ref(false)
 
-const categoryTabs = [
+const categoryTabs = ref([
   'Tất cả',
   'Toán học',
   'Tiếng Anh',
+  'Ngữ văn',
   'Vật lý',
   'Hóa học',
   'Sinh học',
   'Lịch sử',
   'Địa lý',
   'Tin học',
-]
+  'GDCD',
+])
+
+const loadTaxonomySubjects = async () => {
+  try {
+    const tree = await taxonomyApi.tree()
+    const levels = tree?.education_levels || (Array.isArray(tree) ? tree : [])
+    if (Array.isArray(levels) && levels.length > 0) {
+      const subjectSet = new Set()
+      levels.forEach((level) => {
+        if (Array.isArray(level.grades)) {
+          level.grades.forEach((grade) => {
+            if (Array.isArray(grade.subjects)) {
+              grade.subjects.forEach((sub) => {
+                if (sub.name) subjectSet.add(sub.name.trim())
+              })
+            }
+          })
+        }
+      })
+      if (subjectSet.size > 0) {
+        categoryTabs.value = ['Tất cả', ...Array.from(subjectSet)]
+      }
+    }
+  } catch (e) {
+    console.warn('Không tải được danh mục môn học:', e)
+  }
+}
 
 const displayedQuizzes = computed(() => rawQuizzes.value)
 
@@ -580,7 +609,7 @@ const formatNumber = (num) => {
 const totalAttemptsDisplay = computed(() => {
   const count = totalAttempts.value
   return count > 0 ? formatNumber(count) : '0'
-})
+} )
 
 const roomCountDisplay = computed(() => {
   return totalQuizzes.value > 0
@@ -653,6 +682,7 @@ const difficultyClass = (difficulty) => ({
 }[difficulty] || 'bg-purple-50 text-purple-700')
 
 onMounted(() => {
+  loadTaxonomySubjects()
   loadQuizzes(1)
   window.addEventListener('quizflex-user-updated', syncCurrentUser)
   window.addEventListener('storage', syncCurrentUser)

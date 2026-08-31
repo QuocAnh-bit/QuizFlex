@@ -55,7 +55,36 @@ class QuizController extends Controller
         }
 
         if ($request->filled('category')) {
-            $query->where('category', $request->query('category'));
+            $cat = trim((string) $request->query('category'));
+            $cleanCat = preg_replace('/\s*(học|hoc)$/ui', '', $cat);
+
+            $query->where(function ($q) use ($cat, $cleanCat) {
+                $q->where(function ($subQ) use ($cat, $cleanCat) {
+                    // 1. Khớp theo Môn học (Subject relationship)
+                    $subQ->whereHas('subject', function ($sq) use ($cat, $cleanCat) {
+                        $sq->where('name', $cat)
+                            ->orWhere('name', $cleanCat)
+                            ->orWhere('name', 'like', "%{$cat}%");
+                    })
+                    // 2. Khớp theo Category / Tag / Topic_name
+                    ->orWhere('category', $cat)
+                    ->orWhere('category', $cleanCat)
+                    ->orWhere('tag', $cat)
+                    ->orWhere('tag', $cleanCat)
+                    ->orWhere('topic_name', $cat)
+                    ->orWhere('topic_name', $cleanCat)
+                    // 3. Khớp theo Tiêu đề Quiz
+                    ->orWhereRaw("BINARY title LIKE ?", ["%{$cat}%"]);
+                })
+                // 4. Nếu Quiz chưa gán subject_id thì mới fallback tìm theo câu hỏi
+                ->orWhere(function ($fallbackQ) use ($cat, $cleanCat) {
+                    $fallbackQ->whereNull('subject_id')
+                        ->whereHas('questions.subject', function ($sq) use ($cat, $cleanCat) {
+                            $sq->where('name', $cat)
+                                ->orWhere('name', $cleanCat);
+                        });
+                });
+            });
         }
 
         if ($request->filled('education_level_id')) {
