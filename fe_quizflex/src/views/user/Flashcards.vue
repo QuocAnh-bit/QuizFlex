@@ -492,6 +492,16 @@
               {{ isReviewingMode === 'weak' ? 'Chế độ: Thẻ chưa thuộc' : 'Chế độ: Thẻ gắn sao' }}
             </span>
 
+            <!-- Guest Preview Badge -->
+            <span
+              v-if="!isLoggedIn"
+              class="rounded-full bg-amber-50 px-2.5 py-0.5 text-[11px] font-bold text-amber-700 border border-amber-200 inline-flex items-center gap-1 cursor-pointer hover:bg-amber-100 transition"
+              title="Tài khoản khách: Dùng thử 5 thẻ. Nhấp để đăng nhập!"
+              @click="goToLogin"
+            >
+              <span>🔒 Dùng thử: 5 thẻ</span>
+            </span>
+
             <!-- Slideshow Status Indicator -->
             <span
               v-if="isAutoSlideshow"
@@ -897,6 +907,56 @@
         </div>
       </div>
     </div>
+
+    <!-- Guest Limit Modal (Hiển thị khi tài khoản Khách dùng quá 5 thẻ) -->
+    <div
+      v-if="showGuestLimitModal"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm"
+      @click.self="showGuestLimitModal = false"
+    >
+      <div
+        class="max-w-md w-full p-6 sm:p-8 space-y-6 text-center rounded-3xl shadow-2xl animate-in fade-in zoom-in duration-200 border"
+        :class="isFullscreen ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-900'"
+      >
+        <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-purple-100 dark:bg-purple-950/60 text-3xl text-[#7C3AED] shadow-inner">
+          🔒
+        </div>
+
+        <div class="space-y-2">
+          <h3
+            class="text-xl font-black"
+            :class="isFullscreen ? 'text-white' : 'text-slate-900'"
+          >
+            Bạn đã xem hết 5 thẻ dùng thử!
+          </h3>
+          <p
+            class="text-xs leading-relaxed"
+            :class="isFullscreen ? 'text-slate-300' : 'text-slate-600'"
+          >
+            Để tiếp tục ôn tập toàn bộ <b>{{ questions.length }} thẻ</b> của bộ câu hỏi này với đầy đủ tính năng: Tự động chạy, Trộn ngẫu nhiên, Phát âm AI và Lưu tiến độ học tập, vui lòng đăng nhập hoặc đăng ký tài khoản QuizFlex.
+          </p>
+        </div>
+
+        <div class="space-y-3 pt-2">
+          <button
+            type="button"
+            class="btn-primary w-full py-3 text-xs font-bold inline-flex items-center justify-center gap-2 shadow-md cursor-pointer"
+            @click="goToLogin"
+          >
+            <span>Đăng nhập / Đăng ký ngay (Miễn phí)</span>
+            <ArrowRight class="h-4 w-4" />
+          </button>
+
+          <button
+            type="button"
+            class="btn-secondary w-full py-2.5 text-xs font-semibold cursor-pointer"
+            @click="restartGuestPreview"
+          >
+            Ôn lại 5 thẻ vừa rồi
+          </button>
+        </div>
+      </div>
+    </div>
   </section>
 </template>
 
@@ -907,6 +967,7 @@ import { useRoute, useRouter } from 'vue-router'
 import {
   ArrowLeft,
   ArrowLeftRight,
+  ArrowRight,
   Bell,
   BellOff,
   CheckCircle2,
@@ -933,6 +994,7 @@ import {
 import AppLoadingState from '@/components/common/AppLoadingState.vue'
 import AppErrorState from '@/components/common/AppErrorState.vue'
 import {
+  currentUserStorage,
   normalizeQuestion,
   normalizeQuizCard,
   quizzesApi,
@@ -951,6 +1013,31 @@ const isFlipped = ref(false)
 const currentIndex = ref(0)
 const isFinished = ref(false)
 
+// Guest Preview Limit State (Tài khoản khách xem tối đa 5 thẻ)
+const isLoggedIn = computed(() => !!tokenStorage.get() || !!currentUserStorage.get())
+const GUEST_PREVIEW_LIMIT = 5
+const showGuestLimitModal = ref(false)
+
+const goToLogin = () => {
+  speechService.stop()
+  clearAutoSlideshow()
+  router.push({ path: '/login', query: { redirect: route.fullPath } })
+}
+
+const goToRegister = () => {
+  speechService.stop()
+  clearAutoSlideshow()
+  router.push({ path: '/register', query: { redirect: route.fullPath } })
+}
+
+const restartGuestPreview = () => {
+  speechService.stop()
+  clearAutoSlideshow()
+  showGuestLimitModal.value = false
+  currentIndex.value = 0
+  isFlipped.value = false
+}
+
 // Tools state
 const isShuffled = ref(false)
 const isSwappedSides = ref(false)
@@ -964,7 +1051,6 @@ const slideshowStatusText = ref('')
 let slideshowTimeout = null
 
 // Audio Settings
-const isLoggedIn = computed(() => !!tokenStorage.get())
 const isAutoPlayAudio = ref(
   localStorage.getItem('flashcard_autoplay_audio') === 'true'
 )
@@ -1322,6 +1408,15 @@ const runSmartSlideshowBack = () => {
 
     slideshowTimeout = setTimeout(() => {
       if (!isAutoSlideshow.value || isFinished.value) return
+
+      // Giới hạn tài khoản khách tối đa 5 thẻ
+      if (!isLoggedIn.value && currentIndex.value >= GUEST_PREVIEW_LIMIT - 1) {
+        isAutoSlideshow.value = false
+        clearAutoSlideshow()
+        showGuestLimitModal.value = true
+        return
+      }
+
       markAnswer(true, true)
 
       if (!isFinished.value) {
@@ -1437,6 +1532,15 @@ const markAnswer = (isMastered, isFromSlideshow = false) => {
 
   const originalQuestion = currentCard.value
   if (!originalQuestion || !originalQuestion.id) return
+
+  // Giới hạn tài khoản khách tối đa 5 thẻ
+  if (!isLoggedIn.value && currentIndex.value >= GUEST_PREVIEW_LIMIT - 1) {
+    speechService.stop()
+    clearAutoSlideshow()
+    isAutoSlideshow.value = false
+    showGuestLimitModal.value = true
+    return
+  }
 
   if (isMastered) {
     if (!masteredQuestions.value.includes(originalQuestion.id)) {
