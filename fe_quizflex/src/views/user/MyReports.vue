@@ -105,6 +105,7 @@
             : 'text-slate-600 hover:bg-slate-100'"
           @click="selectedStatus = tab.key"
         >
+          <component :is="tab.icon" :size="14" class="shrink-0" />
           <span>{{ tab.label }}</span>
           <span
             v-if="tab.count > 0"
@@ -252,6 +253,7 @@ import {
   Clock,
   FileText,
   Flag,
+  Layers,
   RefreshCw,
   Search,
 } from 'lucide-vue-next'
@@ -272,9 +274,9 @@ const stats = reactive({
 })
 
 const filterTabs = computed(() => [
-  { key: 'all', label: '📋 Tất cả', count: stats.total },
-  { key: 'in_progress', label: '⏳ Đang xử lý', count: stats.in_progress },
-  { key: 'completed', label: '🟢 Đã có kết quả', count: stats.completed ?? ((stats.resolved || 0) + (stats.dismissed || 0)) },
+  { key: 'all', label: 'Tất cả', icon: Layers, count: stats.total },
+  { key: 'in_progress', label: 'Đang xử lý', icon: Clock, count: stats.in_progress },
+  { key: 'completed', label: 'Đã có kết quả', icon: CheckCircle2, count: stats.completed ?? ((stats.resolved || 0) + (stats.dismissed || 0)) },
 ])
 
 const isCompletedReport = (rep) => {

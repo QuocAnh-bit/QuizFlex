@@ -524,7 +524,10 @@
                         {{ ans.key }}
                       </span>
                       <span class="flex-1 truncate">{{ ans.content || ans.text }}</span>
-                      <span v-if="ans.is_correct" class="text-[10px] font-bold text-emerald-600 shrink-0">Đúng</span>
+                      <span v-if="ans.is_correct" class="text-[10px] font-bold text-emerald-600 shrink-0 flex items-center gap-1">
+                        <Check class="h-3 w-3" :stroke-width="3" />
+                        <span>Đúng</span>
+                      </span>
                     </div>
                   </div>
                 </div>

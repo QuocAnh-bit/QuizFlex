@@ -150,7 +150,8 @@
           :class="selectedStage === 'needs_admin' ? 'bg-rose-600 text-white shadow-xs font-black' : 'bg-rose-50 text-rose-800 hover:bg-rose-100'"
           @click="selectedStage = 'needs_admin'"
         >
-          <span>🔴 Cần tôi xử lý</span>
+          <AlertTriangle class="h-3.5 w-3.5 shrink-0" />
+          <span>Cần tôi xử lý</span>
           <span class="rounded-full px-2 py-0.5 text-[10px]" :class="selectedStage === 'needs_admin' ? 'bg-white text-rose-700 font-black' : 'bg-rose-600 text-white font-bold'">
             {{ stats.needs_admin_cases ?? stats.admin_review_required_cases ?? 0 }}
           </span>
@@ -162,7 +163,8 @@
           :class="selectedStage === 'processing' ? 'bg-amber-600 text-white shadow-xs font-black' : 'bg-amber-50 text-amber-800 hover:bg-amber-100'"
           @click="selectedStage = 'processing'"
         >
-          <span>🟡 Đang xử lý</span>
+          <Clock class="h-3.5 w-3.5 shrink-0" />
+          <span>Đang xử lý</span>
           <span class="rounded-full px-2 py-0.5 text-[10px]" :class="selectedStage === 'processing' ? 'bg-white text-amber-700 font-black' : 'bg-amber-600 text-white font-bold'">
             {{ stats.processing_cases ?? ((stats.pending_cases || 0) + (stats.author_updated_cases || 0)) ?? 0 }}
           </span>
@@ -174,7 +176,8 @@
           :class="selectedStage === 'completed' ? 'bg-emerald-600 text-white shadow-xs font-black' : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100'"
           @click="selectedStage = 'completed'"
         >
-          <span>🟢 Đã hoàn tất</span>
+          <CheckCircle2 class="h-3.5 w-3.5 shrink-0" />
+          <span>Đã hoàn tất</span>
           <span class="rounded-full px-2 py-0.5 text-[10px]" :class="selectedStage === 'completed' ? 'bg-white text-emerald-700 font-black' : 'bg-emerald-600 text-white font-bold'">
             {{ stats.completed_cases ?? ((stats.resolved_cases || 0) + (stats.dismissed_cases || 0)) ?? 0 }}
           </span>
@@ -186,7 +189,8 @@
           :class="selectedStage === 'all' ? 'bg-purple-600 text-white shadow-xs font-black' : 'bg-purple-50 text-purple-800 hover:bg-purple-100'"
           @click="selectedStage = 'all'"
         >
-          <span>📋 Tất cả</span>
+          <Layers class="h-3.5 w-3.5 shrink-0" />
+          <span>Tất cả</span>
           <span class="rounded-full px-2 py-0.5 text-[10px]" :class="selectedStage === 'all' ? 'bg-white text-purple-700 font-black' : 'bg-purple-600 text-white font-bold'">
             {{ stats.total_cases || 0 }}
           </span>
@@ -277,32 +281,33 @@
                 <!-- 1. MAIN WORKFLOW STAGE BADGE -->
                 <span
                   v-if="group.workflow_stage === 'needs_admin'"
-                  class="rounded-full bg-rose-100 px-2.5 py-0.5 text-[11px] font-black text-rose-800 border border-rose-200 flex items-center gap-1"
+                  class="rounded-full bg-rose-100 px-2.5 py-0.5 text-[11px] font-black text-rose-800 border border-rose-200 flex items-center gap-1.5"
                 >
                   <AlertTriangle class="h-3 w-3" />
-                  <span>🔴 CẦN TÔI XỬ LÝ</span>
+                  <span>Cần tôi xử lý</span>
                 </span>
                 <span
                   v-else-if="group.workflow_stage === 'processing'"
-                  class="rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-black text-amber-800 border border-amber-200 flex items-center gap-1"
+                  class="rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-black text-amber-800 border border-amber-200 flex items-center gap-1.5"
                 >
                   <Clock class="h-3 w-3" />
-                  <span>🟡 ĐANG XỬ LÝ</span>
+                  <span>Đang xử lý</span>
                 </span>
                 <span
                   v-else
-                  class="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-black text-emerald-800 border border-emerald-200 flex items-center gap-1"
+                  class="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-black text-emerald-800 border border-emerald-200 flex items-center gap-1.5"
                 >
                   <CheckCircle2 class="h-3 w-3" />
-                  <span>🟢 ĐÃ HOÀN TẤT</span>
+                  <span>Đã hoàn tất</span>
                 </span>
 
                 <!-- 2. AUTOMATION & RESOLUTION METADATA (Auxiliary Badges) -->
                 <span
                   v-if="group.workflow_stage === 'processing' && (group.has_author_updated || group.case_status === 'author_updated')"
-                  class="rounded-md bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-700 border border-blue-200"
+                  class="rounded-md bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-700 border border-blue-200 flex items-center gap-1"
                 >
-                  ✏️ Tác giả đã sửa
+                  <Pencil class="h-3 w-3" />
+                  <span>Tác giả đã sửa</span>
                 </span>
 
                 <span
@@ -310,28 +315,31 @@
                   class="rounded-md bg-orange-50 px-2 py-0.5 text-[10px] font-bold text-orange-700 border border-orange-200 flex items-center gap-1"
                 >
                   <Lock class="h-2.5 w-2.5" />
-                  <span>🔒 Đã tự động chuyển riêng tư</span>
+                  <span>Đã tự động ẩn</span>
                 </span>
 
                 <span
                   v-if="group.workflow_stage === 'completed' && (group.is_auto_resolved || group.resolution_source === 'auto_review')"
-                  class="rounded-md bg-teal-50 px-2 py-0.5 text-[10px] font-bold text-teal-700 border border-teal-200"
+                  class="rounded-md bg-teal-50 px-2 py-0.5 text-[10px] font-bold text-teal-700 border border-teal-200 flex items-center gap-1"
                 >
-                  🤖 Tự động duyệt
+                  <Sparkles class="h-3 w-3" />
+                  <span>Tự động duyệt</span>
                 </span>
 
                 <span
                   v-else-if="group.workflow_stage === 'completed' && group.case_status === 'dismissed'"
-                  class="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-700 border border-slate-200"
+                  class="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-700 border border-slate-200 flex items-center gap-1"
                 >
-                  ⚪ Đã bỏ qua
+                  <Slash class="h-3 w-3" />
+                  <span>Đã bỏ qua</span>
                 </span>
 
                 <span
                   v-else-if="group.workflow_stage === 'completed' && group.case_status === 'resolved'"
-                  class="rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200"
+                  class="rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200 flex items-center gap-1"
                 >
-                  👤 Admin xử lý
+                  <UserCheck class="h-3 w-3" />
+                  <span>Admin xử lý</span>
                 </span>
 
                 <!-- Reports Count Badge -->
@@ -455,8 +463,9 @@
 
               <td class="p-3.5 align-top text-slate-500 text-[11px] space-y-1">
                 <div>{{ formatDate(report.created_at) }}</div>
-                <div v-if="report.auto_privatized_at" class="text-orange-600 font-bold text-[10px]">
-                  🔒 Auto-Private: {{ formatDate(report.auto_privatized_at) }}
+                <div v-if="report.auto_privatized_at" class="text-orange-600 font-bold text-[10px] flex items-center gap-1">
+                  <Lock class="h-3 w-3 shrink-0" />
+                  <span>Tự động ẩn: {{ formatDate(report.auto_privatized_at) }}</span>
                 </div>
               </td>
 
@@ -626,7 +635,10 @@
                     :class="ans.is_correct ? 'border-emerald-300 bg-emerald-50 text-emerald-900 font-bold' : 'border-slate-200 bg-white text-slate-700'"
                   >
                     <span>{{ ans.key || ans.answer_key }}. {{ ans.content || ans.text }}</span>
-                    <span v-if="ans.is_correct" class="text-[10px] font-bold text-emerald-600">✓ Đáp án đúng</span>
+                    <span v-if="ans.is_correct" class="text-[10px] font-bold text-emerald-600 flex items-center gap-1">
+                      <Check class="h-3 w-3 stroke-[3]" />
+                      <span>Đáp án đúng</span>
+                    </span>
                   </div>
                 </div>
 
@@ -804,12 +816,17 @@ import {
   Eye,
   Flag,
   HelpCircle,
+  Layers,
   Lock,
+  Pencil,
   RefreshCw,
   Search,
   Shield,
   ShieldAlert,
+  Slash,
+  Sparkles,
   Trash2,
+  UserCheck,
   X,
 } from 'lucide-vue-next'
 import StatusBadge from '@/components/common/StatusBadge.vue'

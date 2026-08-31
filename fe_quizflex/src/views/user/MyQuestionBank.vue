@@ -122,7 +122,7 @@
     </div>
 
     <!-- Loading State -->
-    <AppLoadingState v-if="isLoading" title="Đang tải kho câu hỏi cá nhân..." message="Vui lòng chờ trong giây lát..." icon="📚" />
+    <AppLoadingState v-if="isLoading" title="Đang tải kho câu hỏi cá nhân..." message="Vui lòng chờ trong giây lát..." />
 
     <!-- Error State -->
     <AppErrorState v-else-if="errorMessage" title="Không thể tải kho câu hỏi" :message="errorMessage" @retry="loadQuestions" />
@@ -183,7 +183,7 @@
             </div>
             <div>
               <h4 class="font-bold text-emerald-800 text-sm sm:text-base flex items-center gap-2">
-                <span>🎉 Câu hỏi của bạn đã được duyệt vào Ngân hàng!</span>
+                <span>Câu hỏi của bạn đã được duyệt vào Ngân hàng!</span>
                 <span class="rounded-md bg-emerald-200 px-2 py-0.5 text-xs font-black text-emerald-900">#{{ focusedQuestionId }}</span>
               </h4>
               <p class="text-xs text-slate-600 mt-1 leading-relaxed">
@@ -205,7 +205,7 @@
 
         <!-- 3. REVISION SUBMITTED / UPDATED BANNER: Đã cập nhật bản chỉnh sửa hoặc lưu thay đổi -->
         <div
-          v-else-if="route.query.status === 'updated' || highlightedUpdatedQuestionId === focusedQuestionId || route.query.updated === '1' || focusedQuestionItem?.has_author_updated"
+          v-else-if="route.query.status === 'updated' || highlightedUpdatedQuestionId === focusedQuestionId || route.query.updated === '1' || focusedQuestionItem?.has_author_updated || (focusedQuestionItem?.bank_submission_status === 'pending' && !focusedQuestionItem?.is_public)"
           class="rounded-2xl border border-[#FDE68A] bg-[#FFFBEB] p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-2xs"
         >
           <div class="flex items-start sm:items-center gap-3.5">
@@ -285,7 +285,7 @@
                 <span class="rounded-md bg-blue-200 px-2 py-0.5 text-xs font-black text-blue-900">#{{ focusedQuestionId }}</span>
               </h4>
               <p class="text-xs text-slate-600 mt-1 leading-relaxed">
-                Yêu cầu đưa câu hỏi vào Ngân hàng dùng chung đang được Quản trị viên trực tiếp xem xét và phê duyệt.
+                Yêu cầu đưa câu hỏi vào Ngân hàng dùng chung hoặc xử lý báo cáo đang được Quản trị viên trực tiếp xem xét và phê duyệt.
               </p>
             </div>
           </div>
@@ -313,8 +313,9 @@
               <p class="font-bold text-purple-950 text-xs sm:text-sm flex items-center gap-2">
                 <span>Đang xem chi tiết câu hỏi</span>
                 <span class="rounded-md bg-purple-200 px-2 py-0.5 text-xs font-black text-purple-900">#{{ focusedQuestionId }}</span>
-                <span v-if="focusedQuestionItem.is_public" class="text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded">
-                  ✓ Đã vào Ngân hàng
+                <span v-if="focusedQuestionItem.is_public" class="text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded flex items-center gap-1">
+                  <Check :size="11" class="stroke-[3]" />
+                  <span>Đã vào Ngân hàng</span>
                 </span>
               </p>
             </div>
