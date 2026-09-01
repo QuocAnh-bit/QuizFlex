@@ -1,6 +1,13 @@
 <template>
   <div class="quiz-editor-shell flex h-[calc(100dvh-64px)] min-h-[520px] flex-col overflow-hidden bg-slate-100 text-slate-900">
-    <EditorHeader v-model:title="quiz.title" :save-status="saveStatus" @preview="showMockNotice('Xem trước')" @complete="showMockNotice('Hoàn tất quiz')" />
+    <EditorHeader :title="quiz.title" :save-status="saveStatus" :is-saving="isSaving" :save-disabled="isLoading || Boolean(loadError)" @update:title="updateQuizTitle" @preview="showMockNotice('Xem trước')" @complete="completeQuiz" />
+    <div v-if="isLoading" class="grid min-h-0 flex-1 place-items-center p-6" role="status" aria-live="polite">
+      <div class="text-center"><span class="mx-auto block h-9 w-9 animate-spin rounded-full border-4 border-violet-100 border-t-violet-600"></span><p class="mt-3 text-sm font-black text-slate-700">Đang tải Quiz...</p><p class="mt-1 text-xs text-slate-500">Đang lấy dữ liệu chỉnh sửa từ máy chủ.</p></div>
+    </div>
+    <div v-else-if="loadError" class="grid min-h-0 flex-1 place-items-center p-6" role="alert">
+      <div class="w-full max-w-md rounded-2xl border border-rose-200 bg-white p-7 text-center shadow-sm"><p class="text-base font-black text-slate-900">Không thể tải Quiz</p><p class="mt-2 text-xs leading-5 text-slate-500">{{ loadError }}</p><button type="button" class="mt-5 rounded-xl bg-violet-600 px-4 py-2.5 text-xs font-black text-white shadow-md shadow-violet-200 hover:bg-violet-700" @click="loadQuiz">Thử lại</button></div>
+    </div>
+    <template v-else>
     <div class="compact-question-nav">
       <label for="compact-question-select" class="text-[10px] font-black uppercase tracking-wider text-slate-500">Câu hỏi</label>
       <select id="compact-question-select" :value="activeQuestionId || ''" class="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100" @change="selectQuestion($event.target.value)">
@@ -17,16 +24,22 @@
     <QuestionSourceModal v-if="isQuestionSourceOpen" @choose="handleSourceChoice" @close="isQuestionSourceOpen = false" />
     <QuestionPicker v-if="activePickerSource" :source="activePickerSource" @select="addPickedQuestions" @close="activePickerSource = ''" />
     <Transition name="toast"><div v-if="mockNotice" class="fixed bottom-5 left-1/2 z-50 -translate-x-1/2 rounded-xl bg-slate-900 px-4 py-3 text-xs font-bold text-white shadow-2xl">{{ mockNotice }} — chức năng đang dùng mock UI.</div></Transition>
+    <Transition name="toast"><div v-if="saveError" class="fixed bottom-5 left-1/2 z-[60] w-[min(92vw,520px)] -translate-x-1/2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-center text-xs font-bold text-rose-700 shadow-2xl">{{ saveError }}</div></Transition>
+    </template>
   </div>
 </template>
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import EditorHeader from '@/components/quiz-editor/EditorHeader.vue'
 import EditorToolbar from '@/components/quiz-editor/EditorToolbar.vue'
 import QuestionEditor from '@/components/quiz-editor/QuestionEditor.vue'
 import QuestionPicker from '@/components/quiz-editor/QuestionPicker.vue'
 import QuestionSidebar from '@/components/quiz-editor/QuestionSidebar.vue'
 import QuestionSourceModal from '@/components/quiz-editor/QuestionSourceModal.vue'
+import { getQuiz, updateQuiz } from '@/services/quiz-editor/quizEditorApi.js'
+import { normalizeQuiz } from '@/services/quiz-editor/quizEditorNormalizer.js'
+import { serializeQuiz } from '@/services/quiz-editor/quizEditorSerializer.js'
 
 let sequence = 100
 const TOTAL_QUIZ_POINTS = 10
@@ -34,28 +47,243 @@ const tempId = () => `temp-${Date.now()}-${sequence++}`
 const makeAnswers = (contents = ['Đáp án A', 'Đáp án B', 'Đáp án C', 'Đáp án D']) => contents.map((content, index) => ({ id: tempId(), content, is_correct: index === 0 }))
 const makeQuestion = (overrides = {}) => ({ id: tempId(), order: 0, type: 'single_choice', content: '', difficulty: 'medium', points: 1, answers: makeAnswers(), accepted_answers: [{ id: tempId(), content: '' }], ...overrides })
 
-const quiz = ref({ title: 'Kiến thức tổng hợp — QuizFlex', questions: [
-  makeQuestion({ content: 'Thủ đô của Việt Nam là thành phố nào?', answers: makeAnswers(['Hà Nội', 'Huế', 'Đà Nẵng', 'TP. Hồ Chí Minh']) }),
-  makeQuestion({ type: 'multi_choice', content: 'Đâu là các framework hoặc thư viện JavaScript?', points: 2, answers: makeAnswers(['Vue', 'React', 'Laravel', 'Svelte']).map((answer, index) => ({ ...answer, is_correct: index !== 2 })) }),
-  makeQuestion({ type: 'fill_in', content: 'Điền tên framework frontend đang được QuizFlex sử dụng.', accepted_answers: [{ id: tempId(), content: 'Vue' }, { id: tempId(), content: 'Vue.js' }] }),
-  makeQuestion({ type: 'true_false', content: 'Vue 3 hỗ trợ Composition API.', answers: makeAnswers(['Đúng', 'Sai']).slice(0, 2) }),
-] })
+const route = useRoute()
+const router = useRouter()
+const quiz = ref({ title: '', questions: [] })
 
-const activeQuestionId = ref(quiz.value.questions[0].id)
+const activeQuestionId = ref(null)
 const mockNotice = ref('')
-const saveStatus = ref('Đã lưu bản nháp')
+const saveStatus = ref('Đang tải...')
+const isLoading = ref(true)
+const loadError = ref('')
+const isDirty = ref(false)
+const isSaving = ref(false)
+const saveError = ref('')
+const originalQuiz = ref(null)
+const isHydrating = ref(true)
+const editorRevision = ref(0)
+const lastSavedRevision = ref(0)
 const isQuestionSourceOpen = ref(false)
 const activePickerSource = ref('')
 const questionOrigins = ref({})
 const manualPointQuestionIds = new Set()
 let noticeTimer
+let autosaveTimer
+let queuedManualSave = false
+let completeAfterSave = false
+const AUTOSAVE_DELAY_MS = 2000
 const activeQuestion = computed(() => quiz.value.questions.find((question) => question.id === activeQuestionId.value) || null)
 const activeQuestionIndex = computed(() => quiz.value.questions.findIndex((question) => question.id === activeQuestionId.value))
 const activeQuestionNumber = computed(() => Math.max(1, activeQuestionIndex.value + 1))
 
 const syncQuestionOrder = () => { quiz.value.questions.forEach((question, index) => { question.order = index + 1 }) }
-const markMockSaved = () => { saveStatus.value = 'Đã lưu bản nháp' }
+const quizId = computed(() => route.params.id || route.query.id)
+const cloneData = (value) => JSON.parse(JSON.stringify(value))
+const clearAutosaveTimer = () => { clearTimeout(autosaveTimer); autosaveTimer = undefined }
+const persistedSignature = (value) => JSON.stringify(serializeQuiz(value || {}))
+const hasPersistedChanges = () => originalQuiz.value !== null && persistedSignature(quiz.value) !== persistedSignature(originalQuiz.value)
+const scheduleAutosave = () => {
+  clearAutosaveTimer()
+  autosaveTimer = setTimeout(() => { performSave({ source: 'autosave' }) }, AUTOSAVE_DELAY_MS)
+}
+const markLocalChanged = () => {
+  isDirty.value = hasPersistedChanges()
+  if (isDirty.value) {
+    saveStatus.value = 'Chưa lưu'
+    return
+  }
+  clearAutosaveTimer()
+  saveStatus.value = 'Đã lưu'
+}
+const updateQuizTitle = (title) => { quiz.value.title = title; markLocalChanged() }
 const selectQuestion = (id) => { activeQuestionId.value = id }
+const loadQuiz = async () => {
+  clearAutosaveTimer()
+  isHydrating.value = true
+  if (!quizId.value) {
+    isLoading.value = false
+    isHydrating.value = false
+    saveStatus.value = 'Chưa tải dữ liệu'
+    loadError.value = 'Thiếu mã Quiz. Hãy mở trang với tham số ?id=...'
+    return
+  }
+
+  isLoading.value = true
+  loadError.value = ''
+  try {
+    const rawQuiz = await getQuiz(quizId.value)
+    const normalizedQuiz = normalizeQuiz(rawQuiz)
+    quiz.value = normalizedQuiz
+    originalQuiz.value = cloneData(normalizedQuiz)
+    activeQuestionId.value = normalizedQuiz.questions[0]?.id ?? null
+    manualPointQuestionIds.clear()
+    questionOrigins.value = {}
+    isDirty.value = false
+    editorRevision.value = 0
+    lastSavedRevision.value = 0
+    saveError.value = ''
+    saveStatus.value = 'Dữ liệu đã tải'
+    if (import.meta.env.DEV) console.info('[QuizEditorV2] loaded quiz')
+  } catch (error) {
+    quiz.value = { title: '', questions: [] }
+    activeQuestionId.value = null
+    saveStatus.value = 'Lỗi tải dữ liệu'
+    loadError.value = error?.response?.status === 404
+      ? 'Không tìm thấy Quiz hoặc Quiz không còn khả dụng.'
+      : 'Vui lòng kiểm tra quyền truy cập hoặc thử lại sau.'
+    if (import.meta.env.DEV) console.error('[QuizEditorV2] failed to load quiz', error)
+  } finally {
+    isLoading.value = false
+    isHydrating.value = false
+  }
+}
+const validateQuizForSave = () => {
+  if (!quiz.value.title.trim()) return { message: 'Vui lòng nhập tên Quiz trước khi lưu.' }
+
+  for (const [index, question] of quiz.value.questions.entries()) {
+    const label = `Câu ${index + 1}`
+    if (!question.content?.trim()) return { questionId: question.id, message: `${label} chưa có nội dung.` }
+    if (!['single_choice', 'multi_choice', 'fill_in', 'true_false'].includes(question.type)) return { questionId: question.id, message: `${label} có loại câu hỏi không hợp lệ.` }
+    if (!Number.isFinite(Number(question.points)) || Number(question.points) < 0.01) return { questionId: question.id, message: `${label} có số điểm không hợp lệ.` }
+
+    if (question.type === 'fill_in') {
+      const acceptedAnswers = (question.accepted_answers || []).filter((answer) => answer.content?.trim())
+      if (acceptedAnswers.length < 2) return { questionId: question.id, message: `${label} cần ít nhất 2 đáp án được chấp nhận theo API hiện tại.` }
+      continue
+    }
+
+    const answers = question.answers || []
+    if (answers.length < 2 || answers.some((answer) => !answer.content?.trim())) return { questionId: question.id, message: `${label} cần ít nhất 2 đáp án có nội dung.` }
+    const correctCount = answers.filter((answer) => answer.is_correct).length
+    if (question.type === 'single_choice' && correctCount !== 1) return { questionId: question.id, message: `${label} phải có đúng 1 đáp án đúng.` }
+    if (question.type === 'multi_choice' && correctCount < 1) return { questionId: question.id, message: `${label} phải có ít nhất 1 đáp án đúng.` }
+    if (question.type === 'true_false' && (answers.length !== 2 || correctCount !== 1)) return { questionId: question.id, message: `${label} Đúng/Sai phải có 2 lựa chọn và đúng 1 đáp án.` }
+  }
+
+  return null
+}
+const replaceSavedIds = (savingQuiz, savedQuiz) => {
+  const idMap = new Map()
+  savingQuiz.questions.forEach((question, questionIndex) => {
+    const savedQuestion = savedQuiz.questions[questionIndex]
+    if (!savedQuestion) return
+    if (question.id !== savedQuestion.id) idMap.set(question.id, savedQuestion.id)
+    const sourceAnswers = question.type === 'fill_in' ? question.accepted_answers : question.answers
+    const savedAnswers = savedQuestion.type === 'fill_in' ? savedQuestion.accepted_answers : savedQuestion.answers
+    ;(sourceAnswers || []).forEach((answer, answerIndex) => {
+      if (savedAnswers?.[answerIndex] && answer.id !== savedAnswers[answerIndex].id) idMap.set(answer.id, savedAnswers[answerIndex].id)
+    })
+  })
+
+  if (!idMap.size) return
+  isHydrating.value = true
+  const nextOrigins = { ...questionOrigins.value }
+  quiz.value.questions.forEach((question) => {
+    if (idMap.has(question.id)) {
+      const previousId = question.id
+      question.id = idMap.get(previousId)
+      if (nextOrigins[previousId]) {
+        nextOrigins[question.id] = nextOrigins[previousId]
+        delete nextOrigins[previousId]
+      }
+      if (manualPointQuestionIds.has(previousId)) {
+        manualPointQuestionIds.delete(previousId)
+        manualPointQuestionIds.add(question.id)
+      }
+    }
+    ;(question.answers || []).forEach((answer) => { if (idMap.has(answer.id)) answer.id = idMap.get(answer.id) })
+    ;(question.accepted_answers || []).forEach((answer) => { if (idMap.has(answer.id)) answer.id = idMap.get(answer.id) })
+  })
+  questionOrigins.value = nextOrigins
+  if (idMap.has(activeQuestionId.value)) activeQuestionId.value = idMap.get(activeQuestionId.value)
+  isHydrating.value = false
+}
+const performSave = async ({ source }) => {
+  const isManual = source === 'manual'
+  if (isManual) clearAutosaveTimer()
+  if (!isDirty.value || !quizId.value) return
+  if (isSaving.value) {
+    if (isManual) queuedManualSave = true
+    return
+  }
+
+  const validationError = validateQuizForSave()
+  if (validationError) {
+    if (isManual) {
+      if (validationError.questionId !== undefined) activeQuestionId.value = validationError.questionId
+      saveError.value = validationError.message
+      saveStatus.value = 'Chưa thể lưu'
+    } else {
+      saveStatus.value = 'Chưa lưu — dữ liệu chưa hoàn chỉnh'
+      if (import.meta.env.DEV) console.info('[QuizEditorV2] autosave deferred:', validationError.message)
+    }
+    return
+  }
+
+  saveError.value = ''
+  isSaving.value = true
+  saveStatus.value = 'Đang lưu...'
+  const savingRevision = editorRevision.value
+  const savingQuiz = cloneData(quiz.value)
+  let updateSucceeded = false
+  try {
+    const updatedQuiz = normalizeQuiz(await updateQuiz(quizId.value, serializeQuiz(savingQuiz)))
+    updateSucceeded = true
+    originalQuiz.value = cloneData(updatedQuiz)
+    lastSavedRevision.value = savingRevision
+    replaceSavedIds(savingQuiz, updatedQuiz)
+
+    if (isManual) {
+      const reloadedQuiz = normalizeQuiz(await getQuiz(quizId.value))
+      originalQuiz.value = cloneData(reloadedQuiz)
+      if (editorRevision.value === savingRevision) {
+        const previousActiveId = activeQuestionId.value
+        isHydrating.value = true
+        quiz.value = reloadedQuiz
+        activeQuestionId.value = reloadedQuiz.questions.some((question) => question.id === previousActiveId)
+          ? previousActiveId
+          : reloadedQuiz.questions[0]?.id ?? null
+        manualPointQuestionIds.clear()
+        questionOrigins.value = {}
+        isHydrating.value = false
+      }
+    }
+    isDirty.value = editorRevision.value !== lastSavedRevision.value
+    saveStatus.value = isDirty.value ? 'Chưa lưu' : 'Đã lưu'
+  } catch (error) {
+    if (updateSucceeded) {
+      isDirty.value = editorRevision.value !== lastSavedRevision.value
+      saveStatus.value = isDirty.value ? 'Chưa lưu' : 'Đã lưu, chưa xác minh'
+      if (isManual) saveError.value = 'Backend đã nhận dữ liệu nhưng không thể tải lại để xác minh.'
+    } else {
+      isDirty.value = true
+      saveStatus.value = source === 'autosave' ? 'Lưu tự động thất bại' : 'Lỗi khi lưu'
+      if (isManual) saveError.value = error?.response?.data?.message || 'Không thể lưu Quiz. Dữ liệu chỉnh sửa vẫn được giữ trên trình duyệt.'
+    }
+    if (import.meta.env.DEV) console.error('[QuizEditorV2] failed to save quiz', error)
+  } finally {
+    isSaving.value = false
+    const shouldComplete = completeAfterSave
+    completeAfterSave = false
+    if (queuedManualSave) {
+      queuedManualSave = false
+      performSave({ source: 'manual' })
+    } else if (isDirty.value && (updateSucceeded || editorRevision.value > savingRevision)) {
+      scheduleAutosave()
+    }
+    if (shouldComplete) completeQuiz()
+  }
+}
+const completeQuiz = async () => {
+  clearAutosaveTimer()
+  if (isSaving.value) {
+    completeAfterSave = true
+    saveStatus.value = 'Đang hoàn tất...'
+    return
+  }
+  if (isDirty.value) await performSave({ source: 'manual' })
+  if (!isDirty.value && !isSaving.value) await router.push(`/quizzes/${quizId.value}`)
+}
 const openQuestionSource = () => { isQuestionSourceOpen.value = true }
 const handleSourceChoice = (source) => {
   isQuestionSourceOpen.value = false
@@ -89,7 +317,7 @@ const reallocatePoints = (forceAll = false) => {
     allocatedPoints = roundPoints(allocatedPoints + question.points)
   })
 }
-const addQuestion = () => { const question = makeQuestion(); quiz.value.questions.push(question); syncQuestionOrder(); activeQuestionId.value = question.id; reallocatePoints(false); markMockSaved() }
+const addQuestion = () => { const question = makeQuestion(); quiz.value.questions.push(question); syncQuestionOrder(); activeQuestionId.value = question.id; reallocatePoints(false); markLocalChanged() }
 const addPickedQuestions = (selectedQuestions) => {
   if (!Array.isArray(selectedQuestions) || !selectedQuestions.length) return
   const selectedSource = activePickerSource.value
@@ -107,17 +335,17 @@ const addPickedQuestions = (selectedQuestions) => {
   activeQuestionId.value = normalizedQuestions[0].id
   activePickerSource.value = ''
   reallocatePoints(false)
-  markMockSaved()
+  markLocalChanged()
 }
-const addAnswer = () => { if (!activeQuestion.value) return; activeQuestion.value.answers.push({ id: tempId(), content: '', is_correct: false }); markMockSaved() }
-const removeAnswer = (index) => { if (!activeQuestion.value || activeQuestion.value.answers.length <= 2) return; const removed = activeQuestion.value.answers.splice(index, 1)[0]; if (removed?.is_correct && activeQuestion.value.type === 'single_choice') activeQuestion.value.answers[0].is_correct = true; markMockSaved() }
-const addFillAnswer = () => { activeQuestion.value?.accepted_answers.push({ id: tempId(), content: '' }); markMockSaved() }
-const removeFillAnswer = (index) => { if ((activeQuestion.value?.accepted_answers.length || 0) > 1) activeQuestion.value.accepted_answers.splice(index, 1); markMockSaved() }
+const addAnswer = () => { if (!activeQuestion.value) return; activeQuestion.value.answers.push({ id: tempId(), content: '', is_correct: false }); markLocalChanged() }
+const removeAnswer = (index) => { if (!activeQuestion.value || activeQuestion.value.answers.length <= 2) return; const removed = activeQuestion.value.answers.splice(index, 1)[0]; if (removed?.is_correct && activeQuestion.value.type === 'single_choice') activeQuestion.value.answers[0].is_correct = true; markLocalChanged() }
+const addFillAnswer = () => { activeQuestion.value?.accepted_answers.push({ id: tempId(), content: '' }); markLocalChanged() }
+const removeFillAnswer = (index) => { if ((activeQuestion.value?.accepted_answers.length || 0) > 1) activeQuestion.value.accepted_answers.splice(index, 1); markLocalChanged() }
 const updatePoints = (points) => {
   if (!activeQuestion.value || !Number.isFinite(points)) return
   if (quiz.value.questions.length === 1) {
     activeQuestion.value.points = TOTAL_QUIZ_POINTS
-    markMockSaved()
+    markLocalChanged()
     return
   }
 
@@ -136,14 +364,14 @@ const updatePoints = (points) => {
   const maximumPoint = Math.max(0.01, roundPoints(TOTAL_QUIZ_POINTS - otherManualTotal - automaticCount * 0.01))
   activeQuestion.value.points = roundPoints(Math.min(maximumPoint, Math.max(0.01, points)))
   reallocatePoints(false)
-  markMockSaved()
+  markLocalChanged()
 }
 const updateDifficulty = (difficulty) => {
   if (!activeQuestion.value || !['easy', 'medium', 'hard'].includes(difficulty)) return
   activeQuestion.value.difficulty = difficulty
-  markMockSaved()
+  markLocalChanged()
 }
-const changeQuestionType = (type) => { if (!activeQuestion.value) return; activeQuestion.value.type = type; if (type === 'true_false') activeQuestion.value.answers = makeAnswers(['Đúng', 'Sai']).slice(0, 2); if (type === 'fill_in' && !activeQuestion.value.accepted_answers.length) activeQuestion.value.accepted_answers = [{ id: tempId(), content: '' }]; if ((type === 'single_choice' || type === 'multi_choice') && activeQuestion.value.answers.length < 2) activeQuestion.value.answers = makeAnswers(); if (type === 'single_choice') activeQuestion.value.answers.forEach((answer, index) => { answer.is_correct = index === 0 }); markMockSaved() }
+const changeQuestionType = (type) => { if (!activeQuestion.value) return; activeQuestion.value.type = type; if (type === 'true_false') activeQuestion.value.answers = makeAnswers(['Đúng', 'Sai']).slice(0, 2); if (type === 'fill_in' && !activeQuestion.value.accepted_answers.length) activeQuestion.value.accepted_answers = [{ id: tempId(), content: '' }]; if ((type === 'single_choice' || type === 'multi_choice') && activeQuestion.value.answers.length < 2) activeQuestion.value.answers = makeAnswers(); if (type === 'single_choice') activeQuestion.value.answers.forEach((answer, index) => { answer.is_correct = index === 0 }); markLocalChanged() }
 const duplicateQuestion = () => {
   if (!activeQuestion.value) return
   const originalId = activeQuestion.value.id
@@ -157,7 +385,7 @@ const duplicateQuestion = () => {
   if (questionOrigins.value[originalId]) questionOrigins.value[clone.id] = questionOrigins.value[originalId]
   activeQuestionId.value = clone.id
   reallocatePoints(false)
-  markMockSaved()
+  markLocalChanged()
 }
 const removeQuestion = () => {
   const index = activeQuestionIndex.value
@@ -168,7 +396,7 @@ const removeQuestion = () => {
   syncQuestionOrder()
   activeQuestionId.value = quiz.value.questions[index]?.id || quiz.value.questions[index - 1]?.id || null
   reallocatePoints(false)
-  markMockSaved()
+  markLocalChanged()
 }
 const moveQuestion = (direction) => {
   const from = activeQuestionIndex.value
@@ -179,11 +407,18 @@ const moveQuestion = (direction) => {
   quiz.value.questions.splice(to, 0, question)
   syncQuestionOrder()
   activeQuestionId.value = currentId
-  markMockSaved()
+  markLocalChanged()
 }
 const showMockNotice = (action) => { mockNotice.value = action; clearTimeout(noticeTimer); noticeTimer = setTimeout(() => { mockNotice.value = '' }, 2200) }
-syncQuestionOrder()
-reallocatePoints(true)
+watch(quiz, () => {
+  if (isLoading.value || isHydrating.value || loadError.value) return
+  editorRevision.value += 1
+  markLocalChanged()
+  if (isDirty.value) scheduleAutosave()
+}, { deep: true, flush: 'sync' })
+watch(quizId, loadQuiz)
+onMounted(loadQuiz)
+onBeforeUnmount(() => { clearAutosaveTimer(); clearTimeout(noticeTimer) })
 </script>
 <style scoped>
 .editor-grid { display: grid; grid-template-columns: clamp(260px, 18vw, 280px) minmax(0, 1fr) 64px; overflow: hidden; }

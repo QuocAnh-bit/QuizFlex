@@ -9,13 +9,13 @@
     <div class="flex shrink-0 items-center gap-2 sm:gap-3">
       <div class="hidden items-center gap-2 rounded-full bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700 sm:flex"><Check class="h-3.5 w-3.5" />{{ saveStatus }}</div>
       <button type="button" class="header-button header-button-secondary" @click="$emit('preview')"><Eye class="h-4 w-4" /><span class="hidden sm:inline">Xem trước</span></button>
-      <button type="button" class="header-button header-button-primary" @click="$emit('complete')"><span>Hoàn tất</span><ArrowRight class="h-4 w-4" /></button>
+      <button type="button" class="header-button header-button-primary disabled:cursor-not-allowed disabled:opacity-60" :disabled="saveDisabled" @click="$emit('complete')"><span>Hoàn tất</span><ArrowRight class="h-4 w-4" /></button>
     </div>
   </header>
 </template>
 <script setup>
 import { ArrowRight, Check, Eye } from 'lucide-vue-next'
-defineProps({ title: { type: String, default: '' }, saveStatus: { type: String, default: 'Đã lưu bản nháp' } })
+defineProps({ title: { type: String, default: '' }, saveStatus: { type: String, default: 'Đã lưu bản nháp' }, isSaving: { type: Boolean, default: false }, saveDisabled: { type: Boolean, default: false } })
 defineEmits(['update:title', 'preview', 'complete'])
 </script>
 <style scoped>
