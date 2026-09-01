@@ -368,7 +368,7 @@ const routes = [
   {
     path: "/dashboard/questions/create",
     name: "user-question-create",
-    component: () => import("@/views/user/CreateExamView.vue"),
+    component: () => import("@/views/quiz/QuizCreateSetup.vue"),
     meta: {
       layout: "user",
       title: "Tạo quiz",
@@ -401,7 +401,7 @@ const routes = [
   {
     path: "/dashboard/questions/ai",
     name: "user-question-ai",
-    component: () => import("@/views/admin/AiQuiz.vue"),
+    redirect: { path: "/dashboard/questions/create", query: { initialSource: "ai" } },
     meta: {
       layout: "user",
       title: "AI Generator",
@@ -412,7 +412,7 @@ const routes = [
   {
     path: "/dashboard/questions/ocr",
     name: "user-question-ocr",
-    component: () => import("@/views/admin/OcrUpload.vue"),
+    redirect: { path: "/dashboard/questions/create", query: { initialSource: "ocr" } },
     meta: {
       layout: "user",
       title: "OCR Upload",

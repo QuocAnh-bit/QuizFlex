@@ -7,6 +7,9 @@
     <div v-else-if="loadError" class="grid min-h-0 flex-1 place-items-center p-6" role="alert">
       <div class="w-full max-w-md rounded-2xl border border-rose-200 bg-white p-7 text-center shadow-sm"><p class="text-base font-black text-slate-900">Không thể tải Quiz</p><p class="mt-2 text-xs leading-5 text-slate-500">{{ loadError }}</p><button type="button" class="mt-5 rounded-xl bg-violet-600 px-4 py-2.5 text-xs font-black text-white shadow-md shadow-violet-200 hover:bg-violet-700" @click="loadQuiz">Thử lại</button></div>
     </div>
+    <div v-else-if="missingQuizContext" class="min-h-0 flex-1 overflow-y-auto p-5 sm:p-8">
+      <div class="mx-auto max-w-2xl rounded-2xl border border-amber-200 bg-white p-6 shadow-sm"><p class="text-[11px] font-black uppercase tracking-wider text-amber-600">Cần bổ sung thông tin</p><h2 class="mt-2 text-xl font-black text-slate-900">Vui lòng thiết lập Lớp và Môn học trước khi chỉnh sửa Quiz.</h2><p class="mt-1 text-xs leading-5 text-slate-500">Quiz cũ vẫn được giữ nguyên. Sau khi cập nhật metadata, editor sẽ mở lại với đầy đủ câu hỏi hiện có.</p><div class="mt-5"><QuizSetupForm :initial-data="quiz" :is-submitting="isUpdatingContext" :external-error="contextError" submit-label="Lưu và tiếp tục" :show-cancel="false" @submit="saveMissingContext" /></div></div>
+    </div>
     <template v-else>
     <div class="compact-question-nav">
       <label for="compact-question-select" class="text-[10px] font-black uppercase tracking-wider text-slate-500">Câu hỏi</label>
@@ -16,13 +19,18 @@
       </select>
       <button type="button" class="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-violet-600 text-white shadow-sm" aria-label="Thêm câu hỏi" title="Thêm câu hỏi" @click="openQuestionSource">+</button>
     </div>
+    <div v-if="similarSelectionMode" class="flex items-center justify-between gap-3 border-b border-fuchsia-200 bg-fuchsia-50 px-4 py-2"><p class="text-xs font-bold text-fuchsia-800">Chọn câu hỏi mẫu ở cột trái · Đã chọn {{ similarSelectedIds.length }} câu</p><div class="flex gap-2"><button class="rounded-lg border border-fuchsia-200 bg-white px-3 py-2 text-xs font-black text-fuchsia-700" @click="cancelSimilarSelection">Hủy</button><button class="rounded-lg bg-fuchsia-600 px-3 py-2 text-xs font-black text-white disabled:opacity-40" :disabled="!similarSelectedIds.length" @click="openSimilarGenerator">Tạo câu tương tự</button></div></div>
     <div class="editor-grid min-h-0 flex-1">
-      <QuestionSidebar :questions="quiz.questions" :active-question-id="activeQuestionId" :question-origins="questionOrigins" @select-question="selectQuestion" @add-question="openQuestionSource" />
-      <QuestionEditor :question="activeQuestion" :question-number="activeQuestionNumber" :total-questions="quiz.questions.length" @change-type="changeQuestionType" @update-difficulty="updateDifficulty" @update-points="updatePoints" @add-answer="addAnswer" @remove-answer="removeAnswer" @add-fill-answer="addFillAnswer" @remove-fill-answer="removeFillAnswer" @add-question="openQuestionSource" />
-      <EditorToolbar :question="activeQuestion" :can-move-up="activeQuestionIndex > 0" :can-move-down="activeQuestionIndex >= 0 && activeQuestionIndex < quiz.questions.length - 1" @move-question="moveQuestion" @duplicate-question="duplicateQuestion" @remove-question="removeQuestion" />
+      <QuestionSidebar :questions="quiz.questions" :active-question-id="activeQuestionId" :question-origins="questionOrigins" :invalid-question-ids="invalidQuestionIds" :selection-mode="similarSelectionMode" :selected-question-ids="similarSelectedIds" @toggle-question="toggleSimilarQuestion" @select-question="selectQuestion" @add-question="openQuestionSource" />
+      <QuestionEditor ref="questionEditor" :question="activeQuestion" :question-number="activeQuestionNumber" :total-questions="quiz.questions.length" @change-type="changeQuestionType" @update-difficulty="updateDifficulty" @update-points="updatePoints" @add-answer="addAnswer" @remove-answer="removeAnswer" @add-fill-answer="addFillAnswer" @remove-fill-answer="removeFillAnswer" @add-question="openQuestionSource" />
+      <EditorToolbar :question="activeQuestion" :can-move-up="activeQuestionIndex > 0" :can-move-down="activeQuestionIndex >= 0 && activeQuestionIndex < quiz.questions.length - 1" :ai-review-disabled="aiToolBusy" @generate-ai="isAiGeneratorOpen = true" @review-quiz="isQuizReviewOpen = true" @similar-questions="startSimilarSelection" @add-image="questionEditor?.openImagePicker()" @move-question="moveQuestion" @duplicate-question="duplicateQuestion" @remove-question="removeQuestion" />
     </div>
     <QuestionSourceModal v-if="isQuestionSourceOpen" @choose="handleSourceChoice" @close="isQuestionSourceOpen = false" />
     <QuestionPicker v-if="activePickerSource" :source="activePickerSource" @select="addPickedQuestions" @close="activePickerSource = ''" />
+    <AiQuestionGenerator v-if="isAiGeneratorOpen" :quiz-context="quiz" @select="addAiQuestions" @close="isAiGeneratorOpen = false" />
+    <OcrQuestionImporter v-if="isOcrImporterOpen" :quiz-context="quiz" @select="addOcrQuestions" @close="isOcrImporterOpen = false" />
+    <AiQuizReview v-if="isQuizReviewOpen" :quiz="cloneData(quiz)" @select-question="goToReviewedQuestion" @close="isQuizReviewOpen = false" />
+    <SimilarQuestionGenerator v-if="isSimilarGeneratorOpen" :quiz="cloneData(quiz)" :source-questions="similarSourceQuestions" @select="addSimilarQuestions" @close="isSimilarGeneratorOpen = false" />
     <Transition name="toast"><div v-if="mockNotice" class="fixed bottom-5 left-1/2 z-50 -translate-x-1/2 rounded-xl bg-slate-900 px-4 py-3 text-xs font-bold text-white shadow-2xl">{{ mockNotice }} — chức năng đang dùng mock UI.</div></Transition>
     <Transition name="toast"><div v-if="saveError" class="fixed bottom-5 left-1/2 z-[60] w-[min(92vw,520px)] -translate-x-1/2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-center text-xs font-bold text-rose-700 shadow-2xl">{{ saveError }}</div></Transition>
     </template>
@@ -37,7 +45,13 @@ import QuestionEditor from '@/components/quiz-editor/QuestionEditor.vue'
 import QuestionPicker from '@/components/quiz-editor/QuestionPicker.vue'
 import QuestionSidebar from '@/components/quiz-editor/QuestionSidebar.vue'
 import QuestionSourceModal from '@/components/quiz-editor/QuestionSourceModal.vue'
+import AiQuestionGenerator from '@/components/quiz-editor/AiQuestionGenerator.vue'
+import AiQuizReview from '@/components/quiz-editor/ai/AiQuizReview.vue'
+import SimilarQuestionGenerator from '@/components/quiz-editor/ai/SimilarQuestionGenerator.vue'
+import QuizSetupForm from '@/components/quiz-create/QuizSetupForm.vue'
+import OcrQuestionImporter from '@/components/quiz-editor/ocr/OcrQuestionImporter.vue'
 import { getQuiz, updateQuiz } from '@/services/quiz-editor/quizEditorApi.js'
+import { updateQuizMetadata } from '@/services/quiz-editor/quizDraftApi.js'
 import { normalizeQuiz } from '@/services/quiz-editor/quizEditorNormalizer.js'
 import { serializeQuiz } from '@/services/quiz-editor/quizEditorSerializer.js'
 
@@ -50,6 +64,7 @@ const makeQuestion = (overrides = {}) => ({ id: tempId(), order: 0, type: 'singl
 const route = useRoute()
 const router = useRouter()
 const quiz = ref({ title: '', questions: [] })
+const questionEditor = ref(null)
 
 const activeQuestionId = ref(null)
 const mockNotice = ref('')
@@ -65,6 +80,15 @@ const editorRevision = ref(0)
 const lastSavedRevision = ref(0)
 const isQuestionSourceOpen = ref(false)
 const activePickerSource = ref('')
+const isAiGeneratorOpen = ref(false)
+const isOcrImporterOpen = ref(false)
+const isQuizReviewOpen = ref(false)
+const similarSelectionMode = ref(false)
+const similarSelectedIds = ref([])
+const isSimilarGeneratorOpen = ref(false)
+const aiToolBusy = computed(() => isQuizReviewOpen.value || isSimilarGeneratorOpen.value)
+const isUpdatingContext = ref(false)
+const contextError = ref('')
 const questionOrigins = ref({})
 const manualPointQuestionIds = new Set()
 let noticeTimer
@@ -75,6 +99,9 @@ const AUTOSAVE_DELAY_MS = 2000
 const activeQuestion = computed(() => quiz.value.questions.find((question) => question.id === activeQuestionId.value) || null)
 const activeQuestionIndex = computed(() => quiz.value.questions.findIndex((question) => question.id === activeQuestionId.value))
 const activeQuestionNumber = computed(() => Math.max(1, activeQuestionIndex.value + 1))
+const missingQuizContext = computed(() => !quiz.value.grade_id || !quiz.value.subject_id)
+const invalidQuestionIds = computed(() => new Set(quiz.value.questions.filter((question, index) => getQuestionValidationMessage(question, index)).map((question) => question.id)))
+const similarSourceQuestions = computed(() => quiz.value.questions.filter((question) => similarSelectedIds.value.includes(question.id)).map(cloneData))
 
 const syncQuestionOrder = () => { quiz.value.questions.forEach((question, index) => { question.order = index + 1 }) }
 const quizId = computed(() => route.params.id || route.query.id)
@@ -123,6 +150,7 @@ const loadQuiz = async () => {
     lastSavedRevision.value = 0
     saveError.value = ''
     saveStatus.value = 'Dữ liệu đã tải'
+    await consumeInitialSource()
     if (import.meta.env.DEV) console.info('[QuizEditorV2] loaded quiz')
   } catch (error) {
     quiz.value = { title: '', questions: [] }
@@ -137,27 +165,33 @@ const loadQuiz = async () => {
     isHydrating.value = false
   }
 }
+function getQuestionValidationMessage(question, index) {
+  const label = `Câu ${index + 1}`
+  if (!question.content?.trim()) return `${label} chưa có nội dung.`
+  if (!['single_choice', 'multi_choice', 'fill_in', 'true_false'].includes(question.type)) return `${label} có loại câu hỏi không hợp lệ.`
+  if (!Number.isFinite(Number(question.points)) || Number(question.points) < 0.01) return `${label} có số điểm không hợp lệ.`
+
+  if (question.type === 'fill_in') {
+    const acceptedAnswers = (question.accepted_answers || []).filter((answer) => answer.content?.trim())
+    if (acceptedAnswers.length < 2) return `${label} cần ít nhất 2 đáp án được chấp nhận theo API hiện tại.`
+    return ''
+  }
+
+  const answers = question.answers || []
+  if (answers.length < 2 || answers.some((answer) => !answer.content?.trim())) return `${label} cần ít nhất 2 đáp án có nội dung.`
+  const correctCount = answers.filter((answer) => answer.is_correct).length
+  if (question.type === 'single_choice' && correctCount !== 1) return `${label} phải có đúng 1 đáp án đúng.`
+  if (question.type === 'multi_choice' && correctCount < 1) return `${label} phải có ít nhất 1 đáp án đúng.`
+  if (question.type === 'true_false' && (answers.length !== 2 || correctCount !== 1)) return `${label} Đúng/Sai phải có 2 lựa chọn và đúng 1 đáp án.`
+  return ''
+}
+
 const validateQuizForSave = () => {
   if (!quiz.value.title.trim()) return { message: 'Vui lòng nhập tên Quiz trước khi lưu.' }
 
   for (const [index, question] of quiz.value.questions.entries()) {
-    const label = `Câu ${index + 1}`
-    if (!question.content?.trim()) return { questionId: question.id, message: `${label} chưa có nội dung.` }
-    if (!['single_choice', 'multi_choice', 'fill_in', 'true_false'].includes(question.type)) return { questionId: question.id, message: `${label} có loại câu hỏi không hợp lệ.` }
-    if (!Number.isFinite(Number(question.points)) || Number(question.points) < 0.01) return { questionId: question.id, message: `${label} có số điểm không hợp lệ.` }
-
-    if (question.type === 'fill_in') {
-      const acceptedAnswers = (question.accepted_answers || []).filter((answer) => answer.content?.trim())
-      if (acceptedAnswers.length < 2) return { questionId: question.id, message: `${label} cần ít nhất 2 đáp án được chấp nhận theo API hiện tại.` }
-      continue
-    }
-
-    const answers = question.answers || []
-    if (answers.length < 2 || answers.some((answer) => !answer.content?.trim())) return { questionId: question.id, message: `${label} cần ít nhất 2 đáp án có nội dung.` }
-    const correctCount = answers.filter((answer) => answer.is_correct).length
-    if (question.type === 'single_choice' && correctCount !== 1) return { questionId: question.id, message: `${label} phải có đúng 1 đáp án đúng.` }
-    if (question.type === 'multi_choice' && correctCount < 1) return { questionId: question.id, message: `${label} phải có ít nhất 1 đáp án đúng.` }
-    if (question.type === 'true_false' && (answers.length !== 2 || correctCount !== 1)) return { questionId: question.id, message: `${label} Đúng/Sai phải có 2 lựa chọn và đúng 1 đáp án.` }
+    const message = getQuestionValidationMessage(question, index)
+    if (message) return { questionId: question.id, message }
   }
 
   return null
@@ -295,7 +329,8 @@ const handleSourceChoice = (source) => {
     activePickerSource.value = source
     return
   }
-  if (source === 'ai') showMockNotice('Tạo câu hỏi bằng AI')
+  if (source === 'ai') isAiGeneratorOpen.value = true
+  if (source === 'ocr') isOcrImporterOpen.value = true
 }
 const roundPoints = (value) => Math.round(value * 100) / 100
 const reallocatePoints = (forceAll = false) => {
@@ -337,6 +372,58 @@ const addPickedQuestions = (selectedQuestions) => {
   reallocatePoints(false)
   markLocalChanged()
 }
+const consumeInitialSource = async () => {
+  const source = String(route.query.initialSource || '')
+  const shouldOpenSources = String(route.query.openQuestionSources || '') === '1'
+  if ((!source && !shouldOpenSources) || missingQuizContext.value) return
+  if (shouldOpenSources) isQuestionSourceOpen.value = true
+  if (source === 'ai') isAiGeneratorOpen.value = true
+  else if (source === 'personal' || source === 'bank') activePickerSource.value = source
+  else if (source === 'ocr') isOcrImporterOpen.value = true
+  else if (source === 'import') showMockNotice('Import tài liệu')
+  const nextQuery = { ...route.query }
+  delete nextQuery.initialSource
+  delete nextQuery.openQuestionSources
+  await router.replace({ query: nextQuery })
+}
+const saveMissingContext = async (form) => {
+  if (isUpdatingContext.value) return
+  isUpdatingContext.value = true
+  contextError.value = ''
+  try {
+    const updated = normalizeQuiz(await updateQuizMetadata(quizId.value, form))
+    quiz.value = updated
+    originalQuiz.value = cloneData(updated)
+    isDirty.value = false
+    saveStatus.value = 'Đã cập nhật thông tin Quiz'
+    await consumeInitialSource()
+  } catch (error) {
+    contextError.value = error?.response?.data?.message || error?.message || 'Không thể cập nhật thông tin Quiz.'
+  } finally {
+    isUpdatingContext.value = false
+  }
+}
+const addAiQuestions = (selectedQuestions) => {
+  activePickerSource.value = 'ai'
+  addPickedQuestions(selectedQuestions)
+  isAiGeneratorOpen.value = false
+}
+const addOcrQuestions = (selectedQuestions) => {
+  activePickerSource.value = 'ocr'
+  addPickedQuestions(selectedQuestions)
+  isOcrImporterOpen.value = false
+}
+const goToReviewedQuestion = (questionId) => {
+  const target = quiz.value.questions.find((question) => String(question.id) === String(questionId))
+  if (!target) return
+  activeQuestionId.value = target.id
+  isQuizReviewOpen.value = false
+}
+const startSimilarSelection = () => { similarSelectedIds.value = activeQuestion.value ? [activeQuestion.value.id] : []; similarSelectionMode.value = true }
+const toggleSimilarQuestion = (questionId) => { similarSelectedIds.value = similarSelectedIds.value.includes(questionId) ? similarSelectedIds.value.filter((id) => id !== questionId) : [...similarSelectedIds.value, questionId] }
+const cancelSimilarSelection = () => { similarSelectionMode.value = false; similarSelectedIds.value = [] }
+const openSimilarGenerator = () => { if (similarSelectedIds.value.length) isSimilarGeneratorOpen.value = true }
+const addSimilarQuestions = (questions) => { addAiQuestions(questions); isSimilarGeneratorOpen.value = false; cancelSimilarSelection() }
 const addAnswer = () => { if (!activeQuestion.value) return; activeQuestion.value.answers.push({ id: tempId(), content: '', is_correct: false }); markLocalChanged() }
 const removeAnswer = (index) => { if (!activeQuestion.value || activeQuestion.value.answers.length <= 2) return; const removed = activeQuestion.value.answers.splice(index, 1)[0]; if (removed?.is_correct && activeQuestion.value.type === 'single_choice') activeQuestion.value.answers[0].is_correct = true; markLocalChanged() }
 const addFillAnswer = () => { activeQuestion.value?.accepted_answers.push({ id: tempId(), content: '' }); markLocalChanged() }

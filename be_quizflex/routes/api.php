@@ -7,6 +7,7 @@ use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\AdminRoomController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\OcrController;
+use App\Http\Controllers\QuestionAiReviewController;
 use App\Http\Controllers\QuestionController;
 use App\Http\Controllers\QuizAttemptController;
 use App\Http\Controllers\QuizController;
@@ -79,6 +80,7 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/ocr/scan', [OcrController::class, 'scan']);
     Route::post('/orc/ai/quiz-suggestions', [OcrController::class, 'suggest']);
     Route::post('/orc/ai/review', [OcrController::class, 'review']);
+    Route::post('/ai/question-review', [QuestionAiReviewController::class, 'review']);
 
     Route::post('/payments/activate-trial', [PaymentController::class, 'activateTrial']);
     Route::get('/payments/upgrade-costs', [PaymentController::class, 'getUpgradeCosts']);
