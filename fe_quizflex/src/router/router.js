@@ -25,6 +25,12 @@ const routes = [
     meta: { layout: "user", title: "Danh sách quiz" },
   },
   {
+    path: "/quiz-editor-v2",
+    name: "quiz-editor-v2",
+    component: () => import("@/views/quiz/QuizEditorV2.vue"),
+    meta: { layout: "user", title: "Quiz Editor V2" },
+  },
+  {
     path: "/question-bank",
     redirect: "/dashboard/my-questions",
   },
