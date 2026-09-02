@@ -663,7 +663,7 @@
               >
                 <div class="flex items-center gap-1.5 text-emerald-900 font-bold">
                   <CheckCircle2 class="h-4 w-4 text-emerald-600" />
-                  <span>Bản đính chính đã được Tự động duyệt (Revision #{{ activeGroup.latest_review_request.revision_number }})</span>
+                  <span>Bản đính chính đã được Tự động duyệt (Phiên bản {{ activeGroup.latest_review_request.revision_number }})</span>
                 </div>
                 <p class="text-[11px] text-emerald-800 leading-relaxed">
                   Tác giả đã cập nhật nội dung đính chính và vượt qua toàn bộ quy tắc kiểm định an toàn tự động lúc {{ formatDate(activeGroup.latest_review_request.auto_approved_at || activeGroup.latest_review_request.updated_at) }}.
@@ -676,7 +676,7 @@
               >
                 <div class="flex items-center gap-1.5 text-rose-900 font-bold">
                   <AlertTriangle class="h-4 w-4 text-rose-600" />
-                  <span>Auto Review không đạt — Cần Quản trị viên thẩm định (Phiên bản #{{ activeGroup.latest_review_request.revision_number }})</span>
+                  <span>Auto Review không đạt — Cần Quản trị viên thẩm định (Phiên bản {{ activeGroup.latest_review_request.revision_number }})</span>
                 </div>
                 <p class="text-[11px] text-rose-800 leading-relaxed">
                   Lý do: {{ activeGroup.latest_review_request.auto_review_reason || 'Nội dung đính chính vi phạm quy tắc cấu trúc hoặc danh mục nghiêm trọng.' }}

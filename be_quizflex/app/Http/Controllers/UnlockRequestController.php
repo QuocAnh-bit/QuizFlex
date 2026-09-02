@@ -31,7 +31,18 @@ class UnlockRequestController extends Controller
             $query->where('user_id', (int) $request->query('user_id'));
         }
 
-        $requests = $query->get()->map(function (UnlockRequest $requestItem) {
+        if ($search = $request->input('search')) {
+            $keyword = trim((string) $search);
+            $query->where(function ($q) use ($keyword) {
+                $q->where('message', 'like', "%{$keyword}%")
+                  ->orWhereHas('user', fn($uq) => $uq->where('name', 'like', "%{$keyword}%")->orWhere('email', 'like', "%{$keyword}%"));
+            });
+        }
+
+        $perPage = min(max((int) $request->input('per_page', 10), 1), 100);
+        $paginated = $query->paginate($perPage);
+
+        $items = collect($paginated->items())->map(function (UnlockRequest $requestItem) {
             return [
                 'id' => $requestItem->id,
                 'user_id' => $requestItem->user_id,
@@ -58,7 +69,18 @@ class UnlockRequestController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Danh sách kháng cáo tài khoản',
-            'data' => $requests,
+            'data' => [
+                'items' => $items,
+                'total' => $paginated->total(),
+                'current_page' => $paginated->currentPage(),
+                'last_page' => $paginated->lastPage(),
+                'per_page' => $paginated->perPage(),
+            ],
+            'items' => $items,
+            'total' => $paginated->total(),
+            'current_page' => $paginated->currentPage(),
+            'last_page' => $paginated->lastPage(),
+            'per_page' => $paginated->perPage(),
         ]);
     }
 

@@ -593,32 +593,15 @@
       </div>
 
       <!-- PAGINATION -->
-      <div v-if="pagination.lastPage > 1" class="flex flex-wrap items-center justify-between border-t border-slate-100 bg-slate-50/50 p-4 text-xs font-medium text-slate-600">
-        <span>
-          Hiển thị trang {{ pagination.currentPage }} / {{ pagination.lastPage }} (Tổng {{ pagination.total }} câu hỏi)
-        </span>
-
-        <div class="flex items-center gap-1.5">
-          <button
-            type="button"
-            class="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 hover:bg-slate-50 disabled:opacity-40 cursor-pointer"
-            :disabled="pagination.currentPage <= 1"
-            @click="changePage(pagination.currentPage - 1)"
-          >
-            <ChevronLeft class="h-3.5 w-3.5" />
-            <span>Trước</span>
-          </button>
-
-          <button
-            type="button"
-            class="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 hover:bg-slate-50 disabled:opacity-40 cursor-pointer"
-            :disabled="pagination.currentPage >= pagination.lastPage"
-            @click="changePage(pagination.currentPage + 1)"
-          >
-            <span>Sau</span>
-            <ChevronRight class="h-3.5 w-3.5" />
-          </button>
-        </div>
+      <div v-if="pagination.total > 0" class="border-t border-slate-100 bg-slate-50/50 p-4">
+        <AppPagination
+          :current-page="pagination.currentPage"
+          :last-page="pagination.lastPage"
+          :total="pagination.total"
+          :per-page="pagination.perPage"
+          item-label="câu hỏi"
+          @change="changePage"
+        />
       </div>
     </div>
 
@@ -646,7 +629,7 @@
                   v-if="activeDetail?.current_revision?.revision_number > 1"
                   class="rounded-full bg-purple-100 px-2.5 py-0.5 text-[11px] font-bold text-purple-800"
                 >
-                  Lần gửi duyệt #{{ activeDetail?.current_revision?.revision_number }}
+                  Phiên bản {{ activeDetail?.current_revision?.revision_number }}
                 </span>
                 <span
                   v-else
@@ -777,7 +760,7 @@
             <div class="flex items-center gap-2 bg-purple-50 border border-purple-200 rounded-xl p-3.5 text-xs text-purple-900 font-medium">
               <AlertCircle class="h-4 w-4 text-[#7C3AED] shrink-0" />
               <span>
-                Tác giả đã chỉnh sửa và gửi duyệt lại. Bảng dưới đây đối chiếu chi tiết giữa phiên bản cũ bị từ chối và nội dung mới gửi.
+                Tác giả đã cập nhật câu hỏi (Phiên bản {{ activeDetail.current_revision.revision_number }}). Bảng dưới đây đối chiếu chi tiết giữa Phiên bản {{ activeDetail.previous_revision.revision_number }} ({{ getReviewStatusLabel(activeDetail.previous_revision.status) }}) và nội dung mới gửi.
               </span>
             </div>
 
@@ -790,7 +773,7 @@
                       {{ activeDetail.previous_revision.revision_number }}
                     </span>
                     <h3 class="text-sm font-black text-rose-900 uppercase tracking-wider">
-                      DỮ LIỆU CŨ
+                      DỮ LIỆU CŨ (Phiên bản {{ activeDetail.previous_revision.revision_number }})
                     </h3>
                   </div>
                   <span class="rounded-md bg-rose-100 text-rose-800 px-2 py-0.5 text-[11px] font-bold">
@@ -798,17 +781,20 @@
                   </span>
                 </div>
 
-                <!-- Lý do từ chối lần trước -->
-                <div class="rounded-xl border border-rose-300 bg-white p-3 text-xs text-rose-900 space-y-1 shadow-xs">
+                <!-- Lý do từ chối trước đó (Chỉ hiển thị nếu thực sự có phiên bản bị từ chối) -->
+                <div
+                  v-if="activeDetail.previous_rejected_revision && activeDetail.previous_rejected_revision.rejection_reason"
+                  class="rounded-xl border border-rose-300 bg-white p-3 text-xs text-rose-900 space-y-1 shadow-xs"
+                >
                   <div class="font-bold flex items-center gap-1.5 text-rose-700">
                     <XCircle class="h-4 w-4" />
-                    <span>Lý do từ chối lần trước:</span>
+                    <span>Lý do từ chối ở Phiên bản {{ activeDetail.previous_rejected_revision.revision_number }}:</span>
                   </div>
                   <p class="pl-5 leading-relaxed font-medium">
-                    {{ activeDetail.previous_revision.rejection_reason || 'Không có ghi chú' }}
+                    {{ activeDetail.previous_rejected_revision.rejection_reason }}
                   </p>
-                  <div v-if="activeDetail.previous_revision.reviewed_by_name || activeDetail.previous_revision.reviewed_at" class="pl-5 text-[11px] text-slate-500 pt-1">
-                    Người duyệt: <strong>{{ activeDetail.previous_revision.reviewed_by_name || 'Admin' }}</strong> • {{ formatDate(activeDetail.previous_revision.reviewed_at) }}
+                  <div v-if="activeDetail.previous_rejected_revision.reviewed_by_name || activeDetail.previous_rejected_revision.reviewed_at" class="pl-5 text-[11px] text-slate-500 pt-1">
+                    Người duyệt: <strong>{{ activeDetail.previous_rejected_revision.reviewed_by_name || 'Admin' }}</strong> • {{ formatDate(activeDetail.previous_rejected_revision.reviewed_at) }}
                   </div>
                 </div>
 
@@ -953,7 +939,7 @@
             <div class="flex items-center justify-between border-b border-slate-100 pb-3">
               <div class="flex items-center gap-2">
                 <span class="rounded-md bg-[#7C3AED] text-white px-2.5 py-1 text-xs font-bold">
-                  Lần gửi duyệt đầu tiên 
+                  Phiên bản 1
                 </span>
                 <span class="text-xs text-slate-500">
                   Đây là phiên bản đầu tiên. Không có phiên bản trước để so sánh.
@@ -1020,7 +1006,7 @@
           <div v-if="activeDetail?.history && activeDetail.history.length > 1" class="border-t border-slate-200 pt-5 space-y-3">
             <h4 class="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-2">
               <History class="h-4 w-4 text-[#7C3AED]" />
-              <span>Lịch sử các vòng thẩm định ({{ activeDetail.history.length }} lần gửi):</span>
+              <span>Lịch sử phiên bản ({{ activeDetail.history.length }} phiên bản):</span>
             </h4>
 
             <div class="space-y-2">
@@ -1170,6 +1156,7 @@ import {
   XCircle,
 } from 'lucide-vue-next'
 import StatusBadge from '@/components/common/StatusBadge.vue'
+import AppPagination from '@/components/common/AppPagination.vue'
 import { adminBankRequestsApi, adminQuestionsApi, taxonomyApi } from '@/services/api'
 import { useAppLoading } from '@/composables/useAppLoading'
 
@@ -1204,7 +1191,7 @@ const pagination = reactive({
   currentPage: 1,
   lastPage: 1,
   total: 0,
-  perPage: 15,
+  perPage: 10,
 })
 
 const filters = reactive({
