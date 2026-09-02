@@ -557,11 +557,7 @@ class QuizController extends Controller
                 continue;
             }
 
-            $question = Question::updateOrCreate(
-                [
-                    'id' => $questionData['id'] ?? null,
-                ],
-                [
+            $questionValues = [
                     'user_id' => $questionData['user_id'] ?? $quiz->user_id,
                     'education_level_id' => $questionData['education_level_id'] ?? $quiz->education_level_id,
                     'grade_id' => $questionData['grade_id'] ?? $quiz->grade_id,
@@ -578,7 +574,18 @@ class QuizController extends Controller
                             : (is_array($questionData['images'][0] ?? null)
                                 ? ($questionData['images'][0]['preview'] ?? $questionData['images'][0]['url'] ?? null)
                                 : (is_string($questionData['images'][0] ?? null) ? $questionData['images'][0] : null))),
-                ]
+            ];
+
+            if (empty($questionData['id'])) {
+                // A question created from the quiz editor is an independent
+                // quiz snapshot, not a new public/personal-bank entry.
+                $questionValues['quiz_id'] = $quiz->id;
+                $questionValues['is_public'] = false;
+            }
+
+            $question = Question::updateOrCreate(
+                ['id' => $questionData['id'] ?? null],
+                $questionValues
             );
 
             $this->syncAnswers($question, $questionData['answers'] ?? [], $questionData['correct'] ?? null);

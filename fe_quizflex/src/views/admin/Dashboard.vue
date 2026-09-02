@@ -234,6 +234,9 @@
 </template>
 
 <script setup>
+import { useAppLoading } from '@/composables/useAppLoading'
+const { beginTask, endTask } = useAppLoading()
+
 import { computed, onMounted, reactive, ref } from 'vue'
 import { adminBankRequestsApi, adminDashboardApi, quizReviewApi, reportApi } from '@/services/api'
 import VueApexCharts from 'vue3-apexcharts'
@@ -388,7 +391,9 @@ const quickLinks = [
 ]
 
 const loadDashboard = async () => {
-  isLoading.value = true
+    beginTask()
+    try {
+isLoading.value = true
   errorMessage.value = ''
 
   try {
@@ -419,7 +424,10 @@ const loadDashboard = async () => {
   } finally {
     isLoading.value = false
   }
-}
+    } finally {
+      endTask()
+    }
+  }
 
 const formatNumber = (value) => new Intl.NumberFormat('vi-VN').format(Number(value || 0))
 

@@ -315,53 +315,55 @@ const handleQuickLoginPassword = async () => {
 }
 
 onMounted(async () => {
-  const state = history.state
-  const savedUser = localStorage.getItem('quizflex_last_user')
-  const hasAuthParams = Boolean(
-    route.query.token ||
-    route.query.error_message ||
-    route.query.reset ||
-    route.query.verified ||
-    route.query.email ||
-    (state && (state.email || state.password))
-  )
+  beginTask()
+  try {
+    const state = history.state
+    const savedUser = localStorage.getItem('quizflex_last_user')
+    const hasAuthParams = Boolean(
+      route.query.token ||
+      route.query.error_message ||
+      route.query.reset ||
+      route.query.verified ||
+      route.query.email ||
+      (state && (state.email || state.password))
+    )
 
-  if (savedUser && !hasAuthParams) {
-    try {
-      lastUser.value = JSON.parse(savedUser)
-      lastLoginMethod.value = localStorage.getItem('quizflex_last_login_method') || 'password'
-      showQuickLogin.value = true
-    } catch {
-      showQuickLogin.value = false
-    }
-  }
-
-  if (route.query.error_message) {
-    errors.password = route.query.error_message
-    form.email = ''
-    form.password = ''
-    showQuickLogin.value = false
-    router.replace({ query: {} })
-    return
-  }
-
-  if (route.query.token) {
-    successMessage.value = 'Xác thực Google thành công! Đang tải thông tin cá nhân...'
-    try {
-      const token = route.query.token
-      tokenStorage.set(token)
-
-      const user = await authApi.me()
-      successMessage.value = `Xin chào ${user.name}! Đăng nhập Google thành công.`
-      localStorage.setItem('quizflex_last_login_method', 'google')
-
-      if (user.is_locked) {
-        successMessage.value = 'Tài khoản của bạn đã bị khóa. Đang chuyển tới trang kháng cáo...'
-        setTimeout(() => {
-          router.push('/account-locked')
-        }, 400)
-        return
+    if (savedUser && !hasAuthParams) {
+      try {
+        lastUser.value = JSON.parse(savedUser)
+        lastLoginMethod.value = localStorage.getItem('quizflex_last_login_method') || 'password'
+        showQuickLogin.value = true
+      } catch {
+        showQuickLogin.value = false
       }
+    }
+
+    if (route.query.error_message) {
+      errors.password = route.query.error_message
+      form.email = ''
+      form.password = ''
+      showQuickLogin.value = false
+      router.replace({ query: {} })
+      return
+    }
+
+    if (route.query.token) {
+      successMessage.value = 'Xác thực Google thành công! Đang tải thông tin cá nhân...'
+      try {
+        const token = route.query.token
+        tokenStorage.set(token)
+
+        const user = await authApi.me()
+        successMessage.value = `Xin chào ${user.name}! Đăng nhập Google thành công.`
+        localStorage.setItem('quizflex_last_login_method', 'google')
+
+        if (user.is_locked) {
+          successMessage.value = 'Tài khoản của bạn đã bị khóa. Đang chuyển tới trang kháng cáo...'
+          setTimeout(() => {
+            router.push('/account-locked')
+          }, 400)
+          return
+        }
 
       setTimeout(() => {
         router.push('/')
@@ -371,8 +373,8 @@ onMounted(async () => {
       errors.password = 'Không thể lấy thông tin đăng nhập Google.'
       tokenStorage.clear()
     }
-    return
-  }
+      return
+    }
 
   if (route.query.email && route.query.email.includes('@')) {
     form.email = route.query.email
@@ -393,6 +395,9 @@ onMounted(async () => {
     }
   } else if (route.query.reset === 'success') {
     successMessage.value = 'Đặt lại mật khẩu thành công! Vui lòng nhập mật khẩu mới để đăng nhập.'
+  }
+  } finally {
+    endTask()
   }
 })
 

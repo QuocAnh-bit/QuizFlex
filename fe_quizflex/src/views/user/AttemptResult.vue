@@ -349,6 +349,9 @@
 </template>
 
 <script setup>
+import { useAppLoading } from '@/composables/useAppLoading'
+const { beginTask, endTask } = useAppLoading()
+
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { Check, X, Flag } from 'lucide-vue-next'
@@ -538,7 +541,9 @@ const formatDateTime = (value) => {
 }
 
 const loadAttempt = async () => {
-  isLoading.value = true
+    beginTask()
+    try {
+isLoading.value = true
   errorMessage.value = ''
 
   try {
@@ -548,7 +553,10 @@ const loadAttempt = async () => {
   } finally {
     isLoading.value = false
   }
-}
+    } finally {
+      endTask()
+    }
+  }
 
 onMounted(loadAttempt)
 </script>

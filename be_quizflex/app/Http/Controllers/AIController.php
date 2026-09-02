@@ -25,6 +25,7 @@ class AIController extends Controller
             'difficulty' => ['nullable', 'string', 'in:easy,medium,hard'],
             'language' => ['nullable', 'string', 'in:vi,en'],
             'visibility' => ['nullable', 'string', 'in:private,public,group'],
+            'output_mode' => ['nullable', 'string', 'in:quiz,questions_only'],
             'education_level_id' => [
                 'nullable',
                 'required_with:grade_id,subject_id',
@@ -110,6 +111,9 @@ class AIController extends Controller
             'language' => $data['language'] ?? 'vi',
             'visibility' => $data['visibility'] ?? 'private',
             'status' => 'pending',
+            'response_json' => [
+                'output_mode' => $data['output_mode'] ?? 'quiz',
+            ],
         ]);
 
         $runSynchronously = config('queue.default') === 'sync' || $request->boolean('sync');
@@ -146,6 +150,7 @@ class AIController extends Controller
                 'difficulty' => $job->difficulty,
                 'language' => $job->language,
                 'visibility' => $job->visibility,
+                'output_mode' => $job->response_json['output_mode'] ?? 'quiz',
                 'questions_generated' => $job->questions_generated,
                 'quiz_id' => $job->quiz_id,
                 'error_message' => $job->error_message,
@@ -279,6 +284,7 @@ class AIController extends Controller
                 'difficulty' => $job->difficulty,
                 'language' => $job->language,
                 'visibility' => $job->visibility,
+                'output_mode' => $job->response_json['output_mode'] ?? 'quiz',
                 'current_step' => $job->current_step, // <-- THÊM DÒNG NÀY
                 'questions_generated' => $job->questions_generated,
                 'quiz_id' => $job->quiz_id,
@@ -290,6 +296,7 @@ class AIController extends Controller
                 'updated_at' => $job->updated_at,
                 'quiz' => $job->quiz,
                 'quiz_full' => $quizData,
+                'generated_result' => $job->status === 'completed' ? $job->response_json : null,
                 'log' => $job->log,
             ],
         ]);

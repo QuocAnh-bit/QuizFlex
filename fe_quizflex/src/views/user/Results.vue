@@ -131,6 +131,9 @@
 </template>
 
 <script setup>
+import { useAppLoading } from '@/composables/useAppLoading'
+const { beginTask, endTask } = useAppLoading()
+
 import { computed, onMounted, ref } from 'vue'
 import {
   ArrowRight,
@@ -190,7 +193,9 @@ const formatDisplayScore = (item) => {
 }
 
 const loadAttempts = async () => {
-  isLoading.value = true
+    beginTask()
+    try {
+isLoading.value = true
   errorMessage.value = ''
 
   try {
@@ -200,7 +205,10 @@ const loadAttempts = async () => {
   } finally {
     isLoading.value = false
   }
-}
+    } finally {
+      endTask()
+    }
+  }
 
 onMounted(loadAttempts)
 </script>

@@ -120,6 +120,9 @@
 </template>
 
 <script setup>
+import { useAppLoading } from '@/composables/useAppLoading'
+const { beginTask, endTask } = useAppLoading()
+
 import { computed, onMounted, ref } from 'vue'
 import { unlockRequestsApi } from '@/services/api'
 
@@ -138,7 +141,9 @@ const filteredRequests = computed(() => {
 })
 
 const loadRequests = async () => {
-  isLoading.value = true
+    beginTask()
+    try {
+isLoading.value = true
   errorMessage.value = ''
   try {
     const payload = await unlockRequestsApi.adminList({ status: statusFilter.value })
@@ -153,7 +158,10 @@ const loadRequests = async () => {
   } finally {
     isLoading.value = false
   }
-}
+    } finally {
+      endTask()
+    }
+  }
 
 const selectRequest = async (item) => {
   selectedRequest.value = item

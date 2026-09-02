@@ -168,6 +168,9 @@
 </template>
 
 <script setup>
+import { useAppLoading } from '@/composables/useAppLoading'
+const { beginTask, endTask } = useAppLoading()
+
 import { computed, onMounted, ref } from 'vue'
 import AppLoadingState from '@/components/common/AppLoadingState.vue'
 import AppErrorState from '@/components/common/AppErrorState.vue'
@@ -323,7 +326,9 @@ const quickComment = computed(() => {
 })
 
 const loadAnalytics = async () => {
-  isLoading.value = true
+    beginTask()
+    try {
+isLoading.value = true
   errorMessage.value = ''
 
   try {
@@ -333,7 +338,10 @@ const loadAnalytics = async () => {
   } finally {
     isLoading.value = false
   }
-}
+    } finally {
+      endTask()
+    }
+  }
 
 const getPeriodKey = (date, period) => {
   if (!(date instanceof Date) || Number.isNaN(date.getTime())) return null
