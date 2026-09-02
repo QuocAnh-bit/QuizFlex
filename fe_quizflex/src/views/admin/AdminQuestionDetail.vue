@@ -363,14 +363,16 @@
             {{ question.content }}
           </div>
 
-          <div
-            v-if="question.image_url"
-            class="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-slate-50"
-          >
-            <img
+          <!-- Question Image Media Block (Centered, balanced, clean framing & zoomable) -->
+          <div v-if="question.image_url" class="pt-2 pb-1 flex justify-center w-full">
+            <QuestionImage
               :src="question.image_url"
-              alt="Question Image"
-              class="max-h-80 w-full object-contain p-3"
+              size="normal"
+              max-height="max-h-[280px] sm:max-h-[320px] max-w-[360px] sm:max-w-[450px]"
+              rounded="rounded-xl"
+              container-bg-class="bg-slate-50/70"
+              container-border-class="border border-slate-200/80 shadow-2xs hover:border-purple-300"
+              allow-zoom
             />
           </div>
         </article>
@@ -822,6 +824,7 @@
 <script setup>
 import { computed, inject, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import QuestionImage from '@/components/question/QuestionImage.vue'
 import {
   AlertCircle,
   AlertTriangle,

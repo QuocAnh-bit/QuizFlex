@@ -144,6 +144,14 @@ export const questionsBankApi = {
     const { data } = await api.post('/questions', payload);
     return unwrap(data);
   },
+  async uploadImage(file) {
+    const formData = new FormData();
+    formData.append('image', file);
+    const { data } = await api.post('/upload/question-image', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return unwrap(data);
+  },
   async getQuestion(id) {
     const { data } = await api.get(`/questions/${id}`);
     return unwrap(data);
@@ -1616,6 +1624,7 @@ export const normalizeUser = (user) => {
 export const normalizeQuestion = (question) => ({
   id: question.id,
   question: question.text || question.content,
+  image_url: question.image_url || null,
   category: question.category || "Quiz",
   difficulty: difficultyLabel(question.difficulty || "medium"),
   type: question.type || "single_choice",

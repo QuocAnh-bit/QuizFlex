@@ -825,6 +825,7 @@ const normalizeQuestion = (q, idx) => {
     id: q.id ?? null,
     _uid: `q_${q.id || 'picked'}_${Date.now()}_${idx}_${Math.random().toString(36).substring(2, 7)}`,
     content: q.content || q.text || q.question || '',
+    image_url: q.image_url || '',
     type: q.type || 'single_choice',
     difficulty: q.difficulty || form.value.difficulty || 'medium',
     points: 1.0,
@@ -999,6 +1000,7 @@ const handleSaveQuiz = async () => {
       questions: form.value.questions.map((q, idx) => ({
         id: q.id,
         content: q.content.trim(),
+        image_url: q.image_url || null,
         type: q.type,
         difficulty: q.difficulty || 'medium',
         points: parseFloat(q.points) || 1.0,

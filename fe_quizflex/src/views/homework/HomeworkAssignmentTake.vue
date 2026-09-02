@@ -97,6 +97,15 @@
             <h1 class="text-xl font-bold leading-relaxed text-slate-900 sm:text-2xl pt-2">
               {{ currentQuestion.question }}
             </h1>
+
+            <!-- Optional Question Image -->
+            <div v-if="currentQuestion.image_url" class="py-2.5 flex justify-center">
+              <QuestionImage
+                :src="currentQuestion.image_url"
+                size="normal"
+                allow-zoom
+              />
+            </div>
           </div>
 
           <!-- Answers List -->
@@ -209,6 +218,7 @@ import { useRoute } from 'vue-router'
 import AppLoadingState from '@/components/common/AppLoadingState.vue'
 import AppErrorState from '@/components/common/AppErrorState.vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
+import QuestionImage from '@/components/question/QuestionImage.vue'
 import { homeworkApi, normalizeQuestion } from '@/services/api'
 
 const route = useRoute()

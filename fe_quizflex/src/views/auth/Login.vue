@@ -302,7 +302,7 @@ const handleQuickLoginPassword = async () => {
       return
     }
 
-    let targetPath = getDefaultRouteForRole(user.role)
+    let targetPath = safeRedirect(route.query.redirect) || getDefaultRouteForRole(user.role)
     setTimeout(() => {
       router.push(targetPath)
     }, 400)
@@ -364,7 +364,9 @@ onMounted(async () => {
       }
 
       setTimeout(() => {
-        router.push('/')
+        const targetPath = safeRedirect(route.query.redirect) || safeRedirect(localStorage.getItem('quizflex_auth_redirect')) || getDefaultRouteForRole(user.role)
+        localStorage.removeItem('quizflex_auth_redirect')
+        router.push(targetPath)
       }, 400)
     } catch {
       successMessage.value = ''
@@ -439,6 +441,9 @@ const handleLogin = async () => {
 }
 
 const loginWithGoogle = () => {
+  if (route.query.redirect) {
+    localStorage.setItem('quizflex_auth_redirect', route.query.redirect)
+  }
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api'
   let backendUrl = ''
   

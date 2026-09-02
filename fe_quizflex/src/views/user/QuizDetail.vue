@@ -415,6 +415,7 @@ import AppErrorState from '@/components/common/AppErrorState.vue'
 import VisibilityBadge from '@/components/common/VisibilityBadge.vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import QuestionReportModal from '@/components/question/QuestionReportModal.vue'
+import QuestionImage from '@/components/question/QuestionImage.vue'
 
 import {
   authApi,

@@ -92,10 +92,16 @@
               id="edit-question-content"
               v-model="form.content"
               required
-              rows="5"
+              rows="4"
               class="w-full resize-none rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium leading-relaxed text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15"
               placeholder="Nhập nội dung câu hỏi tại đây..."
             ></textarea>
+
+            <!-- 1.1 Upload hình ảnh câu hỏi -->
+            <QuestionImageUploader
+              v-model="form.image_url"
+              label="Hình ảnh minh họa cho câu hỏi (Tùy chọn)"
+            />
           </div>
 
           <!-- 2. Phân loại -->
@@ -459,13 +465,26 @@
           </div>
 
           <!-- Question content -->
-          <div class="border-y border-slate-200 py-4">
+          <div class="border-y border-slate-200 py-4 space-y-3">
             <p class="text-sm font-semibold leading-relaxed text-slate-900 break-words">
               <span v-if="form.content.trim()">{{ form.content }}</span>
               <span v-else class="text-sm font-normal italic text-slate-400">
                 [Nội dung câu hỏi sẽ xuất hiện tại đây khi bạn nhập...]
               </span>
             </p>
+
+            <!-- Preview image in live preview (Centered, balanced & crisp) -->
+            <div v-if="form.image_url" class="pt-2 pb-1 flex justify-center w-full">
+              <QuestionImage
+                :src="form.image_url"
+                size="compact"
+                max-height="max-h-40 sm:max-h-48 max-w-full"
+                rounded="rounded-xl"
+                container-bg-class="bg-slate-50/70"
+                container-border-class="border border-slate-200/80 shadow-2xs hover:border-purple-300"
+                allow-zoom
+              />
+            </div>
           </div>
 
           <!-- Answers preview -->
@@ -532,6 +551,8 @@ import {
   Save,
 } from 'lucide-vue-next'
 import { formatApiErrorMessage, myQuestionsApi, questionsBankApi, taxonomyApi } from '@/services/api'
+import QuestionImageUploader from '@/components/question/QuestionImageUploader.vue'
+import QuestionImage from '@/components/question/QuestionImage.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -550,6 +571,7 @@ const selectedBankTopic = ref('')
 
 const form = reactive({
   content: '',
+  image_url: '',
   type: 'single_choice',
   difficulty: 'medium',
   education_level_id: '',
@@ -687,7 +709,7 @@ const removeAnswerChoice = (targetIdx) => {
 }
 
 const goBack = () => {
-  router.push(`/dashboard/my-questions?question_id=${questionId.value}`)
+  router.push('/dashboard/my-questions')
 }
 
 const loadQuestionDetail = async () => {
@@ -704,6 +726,7 @@ const loadQuestionDetail = async () => {
 
     originalQuestion.value = q
     form.content = q.content || q.text || ''
+    form.image_url = q.image_url || ''
     form.difficulty = q.difficulty || 'medium'
     form.education_level_id = q.education_level_id || ''
     form.grade_id = q.grade_id || ''
@@ -801,6 +824,7 @@ const saveQuestion = async () => {
   try {
     const payload = {
       content: form.content.trim(),
+      image_url: form.image_url ? form.image_url.trim() : null,
       type: form.type,
       difficulty: form.difficulty,
       education_level_id: form.education_level_id || null,
@@ -818,7 +842,7 @@ const saveQuestion = async () => {
 
     await myQuestionsApi.update(questionId.value, payload)
     if (showToast) showToast('Đã lưu thay đổi thành công! Vui lòng bấm "Gửi duyệt" tại Kho câu hỏi để gửi yêu cầu kiểm duyệt lại cho Admin.', 'success')
-    router.push(`/dashboard/my-questions?question_id=${questionId.value}&updated=1`)
+    router.push(`/dashboard/my-questions?highlight=${questionId.value}&updated=1`)
   } catch (err) {
     const msg = formatApiErrorMessage(err, 'Cập nhật thất bại. Vui lòng kiểm tra lại.')
     if (showToast) showToast(msg, 'error')

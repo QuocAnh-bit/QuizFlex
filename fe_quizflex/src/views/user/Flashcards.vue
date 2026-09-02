@@ -534,6 +534,27 @@
           ></div>
         </div>
 
+        <!-- Guest Preview Notice Banner -->
+        <div
+          v-if="!isLoggedIn && questions.length > 5"
+          class="rounded-2xl border border-amber-200/90 bg-amber-50/90 p-3 text-xs text-amber-800 flex items-center justify-between gap-3 shadow-xs backdrop-blur-sm"
+          :class="{ 'bg-slate-800/90 border-amber-500/40 text-amber-200': isFullscreen }"
+        >
+          <div class="flex items-center gap-2">
+            <span class="text-base">🔒</span>
+            <span>
+              Bạn đang học thử <b>5 thẻ đầu tiên</b> (trong tổng số {{ questions.length }} thẻ).
+            </span>
+          </div>
+          <button
+            type="button"
+            class="h-7 px-3 rounded-lg bg-[#7C3AED] hover:bg-[#6D28D9] text-white font-bold text-xs shrink-0 transition active:scale-95 shadow-xs cursor-pointer"
+            @click="goToLogin"
+          >
+            Đăng nhập mở khóa
+          </button>
+        </div>
+
         <!-- 3D CARD (Harmonious immersive design for both Normal and Fullscreen) -->
         <div
           class="perspective-container mx-auto w-full transition-all duration-300"
@@ -612,19 +633,33 @@
               </div>
 
               <!-- Front Content -->
-              <div class="flex-1 flex items-center justify-center py-4 px-2 text-center overflow-y-auto scrollbar-soft">
+              <div class="flex-1 flex items-center justify-center py-3 px-2 text-center overflow-y-auto scrollbar-soft">
                 <!-- Case Normal: Question -->
-                <h3
-                  v-if="!isSwappedSides"
-                  class="font-bold leading-relaxed line-clamp-6 select-none transition-all"
-                  :class="[
-                    isFullscreen
-                      ? 'text-xl sm:text-2xl lg:text-3xl text-white font-black drop-shadow-sm'
-                      : 'text-lg sm:text-xl text-slate-900'
-                  ]"
-                >
-                  {{ currentCard.question }}
-                </h3>
+                <div v-if="!isSwappedSides" class="space-y-2.5 flex flex-col items-center justify-center max-w-full">
+                  <h3
+                    class="font-bold leading-relaxed line-clamp-4 select-none transition-all"
+                    :class="[
+                      isFullscreen
+                        ? 'text-xl sm:text-2xl lg:text-3xl text-white font-black drop-shadow-sm'
+                        : 'text-lg sm:text-xl text-slate-900'
+                    ]"
+                  >
+                    {{ currentCard.question }}
+                  </h3>
+
+                  <!-- Flashcard Question Image (Centered, elegant & zoomable without flipping card) -->
+                  <div v-if="currentCard.image_url" class="pt-2 flex justify-center w-full" @click.stop>
+                    <QuestionImage
+                      :src="currentCard.image_url"
+                      size="compact"
+                      max-height="max-h-28 sm:max-h-36 max-w-[280px]"
+                      rounded="rounded-xl"
+                      container-bg-class="bg-slate-50/70"
+                      container-border-class="border border-slate-200/80 shadow-2xs hover:border-purple-300"
+                      allow-zoom
+                    />
+                  </div>
+                </div>
 
                 <!-- Case Swapped: Answer as prompt -->
                 <div v-else class="space-y-2 text-center">
@@ -957,6 +992,66 @@
         </div>
       </div>
     </div>
+
+    <!-- Smart Resume Session Toast Notification (Phương án 3 - Non-blocking Toast) -->
+    <Transition
+      enter-active-class="transition duration-300 ease-out"
+      enter-from-class="transform translate-y-4 opacity-0 scale-95"
+      enter-to-class="transform translate-y-0 opacity-100 scale-100"
+      leave-active-class="transition duration-200 ease-in"
+      leave-from-class="transform translate-y-0 opacity-100 scale-100"
+      leave-to-class="transform translate-y-4 opacity-0 scale-95"
+    >
+      <div
+        v-if="showResumeToast"
+        class="fixed bottom-6 right-6 z-50 max-w-sm sm:max-w-md rounded-2xl border p-3.5 sm:p-4 shadow-2xl backdrop-blur-md flex items-center justify-between gap-3 animate-in fade-in slide-in-from-bottom-5"
+        :class="
+          isFullscreen
+            ? 'bg-slate-800/95 border-purple-500/40 text-slate-100 shadow-purple-950/50 ring-1 ring-purple-500/30'
+            : 'bg-white/95 border-purple-200 text-slate-900 shadow-xl ring-1 ring-purple-100'
+        "
+      >
+        <div class="flex items-center gap-3 min-w-0">
+          <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-purple-100 dark:bg-purple-900/60 text-lg text-[#7C3AED]">
+            ✨
+          </div>
+          <div class="min-w-0">
+            <p class="text-xs font-bold leading-tight truncate">
+              Đã khôi phục tại <b>Thẻ {{ resumedCardIndex }}</b>
+            </p>
+            <p class="text-[11px] opacity-75 truncate">
+              Đã thuộc: {{ masteredQuestions.length }} · Cần ôn: {{ needReviewQuestions.length }}
+            </p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-1.5 shrink-0">
+          <button
+            type="button"
+            class="h-7 px-2.5 rounded-lg border text-[11px] font-bold inline-flex items-center gap-1 transition active:scale-95 cursor-pointer"
+            :class="
+              isFullscreen
+                ? 'border-slate-700 bg-slate-700/80 hover:bg-slate-600 text-purple-300'
+                : 'border-purple-200 bg-purple-50 hover:bg-purple-100 text-[#7C3AED]'
+            "
+            title="Xóa tiến độ và học lại từ thẻ số 1"
+            @click="handleRestartFromToast"
+          >
+            <RotateCcw class="h-3 w-3" />
+            <span>Học lại từ đầu</span>
+          </button>
+
+          <button
+            type="button"
+            class="h-7 w-7 rounded-lg grid place-items-center opacity-60 hover:opacity-100 transition cursor-pointer"
+            title="Đóng thông báo"
+            @click="dismissResumeToast"
+          >
+            <X class="h-3.5 w-3.5" />
+          </button>
+        </div>
+      </div>
+    </Transition>
   </section>
 </template>
 
@@ -993,6 +1088,7 @@ import {
 
 import AppLoadingState from '@/components/common/AppLoadingState.vue'
 import AppErrorState from '@/components/common/AppErrorState.vue'
+import QuestionImage from '@/components/question/QuestionImage.vue'
 import {
   currentUserStorage,
   normalizeQuestion,
@@ -1014,7 +1110,13 @@ const currentIndex = ref(0)
 const isFinished = ref(false)
 
 // Guest Preview Limit State (Tài khoản khách xem tối đa 5 thẻ)
-const isLoggedIn = computed(() => !!tokenStorage.get() || !!currentUserStorage.get())
+const isLoggedIn = computed(() => {
+  const token = tokenStorage.get()
+  const user = currentUserStorage.get()
+  if (!token || !user) return false
+  const role = String(user.role || '').toLowerCase()
+  return role !== 'guest'
+})
 const GUEST_PREVIEW_LIMIT = 5
 const showGuestLimitModal = ref(false)
 
@@ -1036,6 +1138,24 @@ const restartGuestPreview = () => {
   showGuestLimitModal.value = false
   currentIndex.value = 0
   isFlipped.value = false
+}
+
+// Smart Resume Toast State (Phương án 3 - Non-blocking Toast)
+const showResumeToast = ref(false)
+const resumedCardIndex = ref(0)
+let resumeToastTimer = null
+
+const dismissResumeToast = () => {
+  showResumeToast.value = false
+  if (resumeToastTimer) {
+    clearTimeout(resumeToastTimer)
+    resumeToastTimer = null
+  }
+}
+
+const handleRestartFromToast = () => {
+  dismissResumeToast()
+  restartAll()
 }
 
 // Tools state
@@ -1173,6 +1293,16 @@ const restoreSessionState = () => {
         parsed.currentIndex < activeList.value.length
       ) {
         currentIndex.value = parsed.currentIndex
+        
+        // Nếu đang học dở từ thẻ 2 trở đi, hiển thị Toast thông báo trang nhã góc dưới
+        if (parsed.currentIndex > 0) {
+          resumedCardIndex.value = parsed.currentIndex + 1
+          showResumeToast.value = true
+          if (resumeToastTimer) clearTimeout(resumeToastTimer)
+          resumeToastTimer = setTimeout(() => {
+            showResumeToast.value = false
+          }, 7000)
+        }
       }
       return true
     }
@@ -1764,6 +1894,7 @@ onMounted(() => {
 onUnmounted(() => {
   speechService.stop()
   clearAutoSlideshow()
+  dismissResumeToast()
   window.removeEventListener('keydown', handleGlobalKeydown)
   document.removeEventListener('fullscreenchange', handleFullscreenChange)
 })
