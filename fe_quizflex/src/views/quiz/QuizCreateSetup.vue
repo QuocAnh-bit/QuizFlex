@@ -49,9 +49,9 @@ const showDraftDecision = ref(false)
 const editorQuery = { openQuestionSources: '1' }
 const navigateToEditor = async () => {
   if (!createdQuizId.value) return
-  await router.push({ name: 'quiz-editor-v2-edit', params: { id: createdQuizId.value }, query: editorQuery })
+  await router.push({ name: 'quiz-edit', params: { id: createdQuizId.value }, query: editorQuery })
 }
-const continueDraft = (quizId) => router.push({ name: 'quiz-editor-v2-edit', params: { id: quizId }, query: editorQuery })
+const continueDraft = (quizId) => router.push({ name: 'quiz-edit', params: { id: quizId }, query: editorQuery })
 const createDraft = async (form) => {
   if (isCreating.value || createdQuizId.value) return
   isCreating.value = true; createError.value = ''

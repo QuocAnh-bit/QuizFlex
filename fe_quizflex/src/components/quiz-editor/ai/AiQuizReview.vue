@@ -10,11 +10,11 @@ import { onMounted, ref } from 'vue'
 import { ChevronRight, LoaderCircle, TriangleAlert, X } from 'lucide-vue-next'
 import MathText from '@/components/MathText.vue'
 import { reviewWholeQuiz } from '@/services/quiz-editor/quizAiToolsApi.js'
-const props = defineProps({ quiz: { type: Object, required: true } })
-const emit = defineEmits(['close', 'select-question'])
-const loading = ref(false); const error = ref(''); const result = ref(null)
+const props = defineProps({ quiz: { type: Object, required: true }, initialResult: { type: Object, default: null } })
+const emit = defineEmits(['close', 'select-question', 'result'])
+const loading = ref(false); const error = ref(''); const result = ref(props.initialResult)
 const questionNumber = (id) => Math.max(1, props.quiz.questions.findIndex((q) => String(q.id) === String(id)) + 1)
 const goToQuestion = (issue) => { const id = issue.question_id; if (props.quiz.questions.some((q) => String(q.id) === String(id))) emit('select-question', id) }
-const load = async () => { if (loading.value) return; loading.value = true; error.value = ''; try { result.value = await reviewWholeQuiz(props.quiz) } catch (e) { error.value = e?.response?.data?.message || 'Không thể phân tích bộ đề lúc này.' } finally { loading.value = false } }
-onMounted(load)
+const load = async () => { if (loading.value) return; loading.value = true; error.value = ''; try { result.value = await reviewWholeQuiz(props.quiz); emit('result', result.value) } catch (e) { error.value = e?.response?.data?.message || 'Không thể phân tích bộ đề lúc này.' } finally { loading.value = false } }
+onMounted(() => { if (!result.value) load() })
 </script>

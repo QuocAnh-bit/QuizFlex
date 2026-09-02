@@ -70,15 +70,12 @@ final class CurriculumSubjectResolver
             && $gradeNumber <= 9
         ) {
             return [
-                'subject' =>
-                'Khoa học tự nhiên',
-
-                /*
-                 * Dữ liệu hiện tại chưa có
-                 * domain ổn định để tách riêng
-                 * Lý, Hóa và Sinh.
-                 */
-                'domain' => null,
+                'subject' => 'Khoa học tự nhiên',
+                'domain' => match ($code) {
+                    'physics' => 'Vật lí',
+                    'chemistry' => 'Hóa học',
+                    'biology' => 'Sinh học',
+                },
             ];
         }
 

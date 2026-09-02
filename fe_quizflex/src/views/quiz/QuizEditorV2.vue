@@ -1,6 +1,6 @@
 <template>
   <div class="quiz-editor-shell flex h-[calc(100dvh-64px)] min-h-[520px] flex-col overflow-hidden bg-slate-100 text-slate-900">
-    <EditorHeader :title="quiz.title" :save-status="saveStatus" :is-saving="isSaving" :save-disabled="isLoading || Boolean(loadError)" @update:title="updateQuizTitle" @preview="showMockNotice('Xem trước')" @complete="completeQuiz" />
+    <EditorHeader :title="quiz.title" :save-status="saveStatus" :time-limit-seconds="quiz.time_limit_seconds" :education-level-name="quiz.education_level_name" :grade-name="quiz.grade_name" :subject-name="quiz.subject_name" :topic-name="quiz.topic_name" :is-saving="isSaving" :is-deleting="isDeleting" :save-disabled="isLoading || Boolean(loadError) || isDeleting" :delete-disabled="isLoading || Boolean(loadError) || isSaving || !quizId" @update:title="updateQuizTitle" @update:time-limit="updateTimeLimit" @complete="completeQuiz" @delete="removeQuiz" />
     <div v-if="isLoading" class="grid min-h-0 flex-1 place-items-center p-6" role="status" aria-live="polite">
       <div class="text-center"><span class="mx-auto block h-9 w-9 animate-spin rounded-full border-4 border-violet-100 border-t-violet-600"></span><p class="mt-3 text-sm font-black text-slate-700">Đang tải Quiz...</p><p class="mt-1 text-xs text-slate-500">Đang lấy dữ liệu chỉnh sửa từ máy chủ.</p></div>
     </div>
@@ -19,20 +19,24 @@
       </select>
       <button type="button" class="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-violet-600 text-white shadow-sm" aria-label="Thêm câu hỏi" title="Thêm câu hỏi" @click="openQuestionSource">+</button>
     </div>
-    <div v-if="similarSelectionMode" class="flex items-center justify-between gap-3 border-b border-fuchsia-200 bg-fuchsia-50 px-4 py-2"><p class="text-xs font-bold text-fuchsia-800">Chọn câu hỏi mẫu ở cột trái · Đã chọn {{ similarSelectedIds.length }} câu</p><div class="flex gap-2"><button class="rounded-lg border border-fuchsia-200 bg-white px-3 py-2 text-xs font-black text-fuchsia-700" @click="cancelSimilarSelection">Hủy</button><button class="rounded-lg bg-fuchsia-600 px-3 py-2 text-xs font-black text-white disabled:opacity-40" :disabled="!similarSelectedIds.length" @click="openSimilarGenerator">Tạo câu tương tự</button></div></div>
+    <div v-if="similarSelectionMode" class="flex items-center justify-between gap-3 border-b border-fuchsia-200 bg-fuchsia-50 px-4 py-2"><p class="text-xs font-bold text-fuchsia-800">Chọn câu hỏi mẫu ở cột trái · Đã chọn {{ similarSelectedIds.length }} câu</p><div class="flex gap-2"><button class="rounded-lg border border-fuchsia-200 bg-white px-3 py-2 text-xs font-black text-fuchsia-700" @click="cancelSimilarSelection">Hủy</button><button class="rounded-lg bg-gradient-to-r from-violet-600 to-fuchsia-600 px-3 py-2 text-xs font-black text-white shadow-md shadow-fuchsia-200 transition hover:from-violet-700 hover:to-fuchsia-700 disabled:cursor-not-allowed disabled:from-slate-300 disabled:to-slate-300 disabled:shadow-none" :disabled="!similarSelectedIds.length" @click="openSimilarGenerator">Tạo câu tương tự</button></div></div>
+    <div v-if="saveAlert" class="flex flex-wrap items-center gap-3 border-b border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-800" role="alert">
+      <div class="min-w-0 flex-1"><p class="font-black">{{ saveAlert.title }}</p><p class="mt-0.5 text-rose-700">{{ saveAlert.message }}</p></div>
+      <button v-if="saveAlert.questionId !== null" type="button" class="rounded-lg border border-rose-200 bg-white px-3 py-1.5 font-black text-rose-700 hover:bg-rose-100" @click="goToSaveAlertQuestion">Xem câu lỗi</button>
+      <button type="button" class="rounded-lg px-2 py-1 font-black text-rose-500 hover:bg-rose-100" aria-label="Đóng thông báo" @click="saveAlert = null">×</button>
+    </div>
     <div class="editor-grid min-h-0 flex-1">
-      <QuestionSidebar :questions="quiz.questions" :active-question-id="activeQuestionId" :question-origins="questionOrigins" :invalid-question-ids="invalidQuestionIds" :selection-mode="similarSelectionMode" :selected-question-ids="similarSelectedIds" @toggle-question="toggleSimilarQuestion" @select-question="selectQuestion" @add-question="openQuestionSource" />
-      <QuestionEditor ref="questionEditor" :question="activeQuestion" :question-number="activeQuestionNumber" :total-questions="quiz.questions.length" @change-type="changeQuestionType" @update-difficulty="updateDifficulty" @update-points="updatePoints" @add-answer="addAnswer" @remove-answer="removeAnswer" @add-fill-answer="addFillAnswer" @remove-fill-answer="removeFillAnswer" @add-question="openQuestionSource" />
-      <EditorToolbar :question="activeQuestion" :can-move-up="activeQuestionIndex > 0" :can-move-down="activeQuestionIndex >= 0 && activeQuestionIndex < quiz.questions.length - 1" :ai-review-disabled="aiToolBusy" @generate-ai="isAiGeneratorOpen = true" @review-quiz="isQuizReviewOpen = true" @similar-questions="startSimilarSelection" @add-image="questionEditor?.openImagePicker()" @move-question="moveQuestion" @duplicate-question="duplicateQuestion" @remove-question="removeQuestion" />
+      <QuestionSidebar :questions="quiz.questions" :active-question-id="activeQuestionId" :question-origins="questionOrigins" :invalid-question-ids="invalidQuestionIds" :selection-mode="similarSelectionMode" :selected-question-ids="similarSelectedIds" :highlight-question-ids="newlyAddedQuestionIds" @toggle-question="toggleSimilarQuestion" @select-question="selectQuestion" @reorder-question="reorderQuestion" @add-question="openQuestionSource" />
+      <QuestionEditor ref="questionEditor" :question="activeQuestion" :question-number="activeQuestionNumber" :total-questions="quiz.questions.length" :manual-points="Boolean(activeQuestion && manualPointQuestionIds.has(activeQuestion.id))" :is-bank-locked="isBankQuestion(activeQuestion)" @change-type="changeQuestionType" @update-difficulty="updateDifficulty" @update-points="updatePoints" @set-points-mode="setPointsMode" @add-answer="addAnswer" @remove-answer="removeAnswer" @add-fill-answer="addFillAnswer" @remove-fill-answer="removeFillAnswer" @add-question="openQuestionSource" @duplicate-question="duplicateQuestion" />
+      <EditorToolbar :question="activeQuestion" :can-move-up="activeQuestionIndex > 0" :can-move-down="activeQuestionIndex >= 0 && activeQuestionIndex < quiz.questions.length - 1" :ai-review-disabled="aiToolBusy" @generate-ai="openAiGenerator" @review-quiz="openQuizReview" @similar-questions="startSimilarSelection" @add-image="questionEditor?.openImagePicker()" @move-question="moveQuestion" @duplicate-question="duplicateQuestion" @remove-question="removeQuestion" />
     </div>
     <QuestionSourceModal v-if="isQuestionSourceOpen" @choose="handleSourceChoice" @close="isQuestionSourceOpen = false" />
     <QuestionPicker v-if="activePickerSource" :source="activePickerSource" @select="addPickedQuestions" @close="activePickerSource = ''" />
-    <AiQuestionGenerator v-if="isAiGeneratorOpen" :quiz-context="quiz" @select="addAiQuestions" @close="isAiGeneratorOpen = false" />
+    <AiQuestionGenerator v-if="isAiGeneratorOpen" :quiz-context="quiz" :initial-results="aiGeneratorDraft.results" :initial-selected-ids="aiGeneratorDraft.selectedIds" @state-change="updateAiGeneratorDraft" @select="addAiQuestions" @close="isAiGeneratorOpen = false" />
     <OcrQuestionImporter v-if="isOcrImporterOpen" :quiz-context="quiz" @select="addOcrQuestions" @close="isOcrImporterOpen = false" />
-    <AiQuizReview v-if="isQuizReviewOpen" :quiz="cloneData(quiz)" @select-question="goToReviewedQuestion" @close="isQuizReviewOpen = false" />
-    <SimilarQuestionGenerator v-if="isSimilarGeneratorOpen" :quiz="cloneData(quiz)" :source-questions="similarSourceQuestions" @select="addSimilarQuestions" @close="isSimilarGeneratorOpen = false" />
+    <AiQuizReview v-if="isQuizReviewOpen" :quiz="cloneData(quiz)" :initial-result="aiQuizReviewDraft.signature === persistedSignature(quiz) ? aiQuizReviewDraft.result : null" @result="storeQuizReview" @select-question="goToReviewedQuestion" @close="isQuizReviewOpen = false" />
+    <SimilarQuestionGenerator v-if="isSimilarGeneratorOpen" :quiz="cloneData(quiz)" :source-questions="similarSourceQuestions" :initial-results="similarGeneratorDraft.signature === similarSourceSignature ? similarGeneratorDraft.results : []" :initial-selected-ids="similarGeneratorDraft.signature === similarSourceSignature ? similarGeneratorDraft.selectedIds : []" @state-change="updateSimilarGeneratorDraft" @select="addSimilarQuestions" @close="isSimilarGeneratorOpen = false" />
     <Transition name="toast"><div v-if="mockNotice" class="fixed bottom-5 left-1/2 z-50 -translate-x-1/2 rounded-xl bg-slate-900 px-4 py-3 text-xs font-bold text-white shadow-2xl">{{ mockNotice }} — chức năng đang dùng mock UI.</div></Transition>
-    <Transition name="toast"><div v-if="saveError" class="fixed bottom-5 left-1/2 z-[60] w-[min(92vw,520px)] -translate-x-1/2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-center text-xs font-bold text-rose-700 shadow-2xl">{{ saveError }}</div></Transition>
     </template>
   </div>
 </template>
@@ -40,7 +44,7 @@
 import { useAppLoading } from '@/composables/useAppLoading'
 const { beginTask, endTask } = useAppLoading()
 
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import EditorHeader from '@/components/quiz-editor/EditorHeader.vue'
 import EditorToolbar from '@/components/quiz-editor/EditorToolbar.vue'
@@ -53,7 +57,7 @@ import AiQuizReview from '@/components/quiz-editor/ai/AiQuizReview.vue'
 import SimilarQuestionGenerator from '@/components/quiz-editor/ai/SimilarQuestionGenerator.vue'
 import QuizSetupForm from '@/components/quiz-create/QuizSetupForm.vue'
 import OcrQuestionImporter from '@/components/quiz-editor/ocr/OcrQuestionImporter.vue'
-import { getQuiz, updateQuiz } from '@/services/quiz-editor/quizEditorApi.js'
+import { deleteQuiz, getQuiz, updateQuiz } from '@/services/quiz-editor/quizEditorApi.js'
 import { updateQuizMetadata } from '@/services/quiz-editor/quizDraftApi.js'
 import { normalizeQuiz } from '@/services/quiz-editor/quizEditorNormalizer.js'
 import { serializeQuiz } from '@/services/quiz-editor/quizEditorSerializer.js'
@@ -76,7 +80,9 @@ const isLoading = ref(true)
 const loadError = ref('')
 const isDirty = ref(false)
 const isSaving = ref(false)
+const isDeleting = ref(false)
 const saveError = ref('')
+const saveAlert = ref(null)
 const originalQuiz = ref(null)
 const isHydrating = ref(true)
 const editorRevision = ref(0)
@@ -86,15 +92,20 @@ const activePickerSource = ref('')
 const isAiGeneratorOpen = ref(false)
 const isOcrImporterOpen = ref(false)
 const isQuizReviewOpen = ref(false)
+const aiGeneratorDraft = ref({ results: [], selectedIds: [] })
+const aiQuizReviewDraft = ref({ signature: '', result: null })
+const similarGeneratorDraft = ref({ signature: '', results: [], selectedIds: [] })
 const similarSelectionMode = ref(false)
 const similarSelectedIds = ref([])
+const newlyAddedQuestionIds = ref([])
 const isSimilarGeneratorOpen = ref(false)
 const aiToolBusy = computed(() => isQuizReviewOpen.value || isSimilarGeneratorOpen.value)
 const isUpdatingContext = ref(false)
 const contextError = ref('')
 const questionOrigins = ref({})
-const manualPointQuestionIds = new Set()
+const manualPointQuestionIds = reactive(new Set())
 let noticeTimer
+let addedHighlightTimer
 let autosaveTimer
 let queuedManualSave = false
 let completeAfterSave = false
@@ -102,9 +113,41 @@ const AUTOSAVE_DELAY_MS = 2000
 const activeQuestion = computed(() => quiz.value.questions.find((question) => question.id === activeQuestionId.value) || null)
 const activeQuestionIndex = computed(() => quiz.value.questions.findIndex((question) => question.id === activeQuestionId.value))
 const activeQuestionNumber = computed(() => Math.max(1, activeQuestionIndex.value + 1))
+const isBankQuestion = (question) => Boolean(question?.origin_question_id || questionOrigins.value[question?.id] === 'bank')
+const rebuildQuestionOrigins = (questions) => {
+  questionOrigins.value = Object.fromEntries((questions || []).filter((question) => question.origin_question_id).map((question) => [question.id, 'bank']))
+}
+const questionFingerprint = (question) => {
+  const normalize = (value) => String(value || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().toLocaleLowerCase()
+  const answers = question?.type === 'fill_in' ? question.accepted_answers || [] : question?.answers || []
+  const answerKey = answers
+    .map((answer) => `${normalize(answer.content)}::${question?.type === 'fill_in' || answer.is_correct ? '1' : '0'}`)
+    .sort()
+    .join('||')
+  return `${normalize(question?.content)}###${question?.type || 'single_choice'}###${answerKey}`
+}
+const duplicateQuestionIds = (questions) => {
+  const seen = new Map()
+  const duplicates = new Set()
+  ;(questions || []).forEach((question) => {
+    if (!question?.content?.trim()) return
+    const fingerprint = questionFingerprint(question)
+    if (seen.has(fingerprint)) {
+      duplicates.add(question.id)
+      duplicates.add(seen.get(fingerprint))
+      return
+    }
+    seen.set(fingerprint, question.id)
+  })
+  return duplicates
+}
 const missingQuizContext = computed(() => !quiz.value.grade_id || !quiz.value.subject_id)
-const invalidQuestionIds = computed(() => new Set(quiz.value.questions.filter((question, index) => getQuestionValidationMessage(question, index)).map((question) => question.id)))
+const invalidQuestionIds = computed(() => {
+  const duplicates = duplicateQuestionIds(quiz.value.questions)
+  return new Set(quiz.value.questions.filter((question, index) => duplicates.has(question.id) || getQuestionValidationMessage(question, index)).map((question) => question.id))
+})
 const similarSourceQuestions = computed(() => quiz.value.questions.filter((question) => similarSelectedIds.value.includes(question.id)).map(cloneData))
+const similarSourceSignature = computed(() => JSON.stringify(similarSourceQuestions.value.map((question) => question.id)))
 
 const syncQuestionOrder = () => { quiz.value.questions.forEach((question, index) => { question.order = index + 1 }) }
 const quizId = computed(() => route.params.id || route.query.id)
@@ -126,7 +169,44 @@ const markLocalChanged = () => {
   saveStatus.value = 'Đã lưu'
 }
 const updateQuizTitle = (title) => { quiz.value.title = title; markLocalChanged() }
+const updateTimeLimit = (minutes) => {
+  if (!Number.isFinite(minutes)) return
+  quiz.value.time_limit_seconds = Math.min(1440, Math.max(1, Math.round(minutes))) * 60
+  markLocalChanged()
+}
 const selectQuestion = (id) => { activeQuestionId.value = id }
+const showSaveAlert = ({ title, message, questionId = null }) => {
+  saveAlert.value = { title, message, questionId }
+}
+const goToSaveAlertQuestion = () => {
+  if (saveAlert.value?.questionId !== null) activeQuestionId.value = saveAlert.value.questionId
+}
+const showValidationAlert = (validationError) => {
+  showSaveAlert({
+    title: 'Cần hoàn thiện câu hỏi',
+    message: validationError.message.replace(/^Câu \d+\s*/i, ''),
+    questionId: validationError.questionId ?? null,
+  })
+}
+const showApiSaveAlert = (error) => {
+  const rawMessage = String(error?.message || 'Không thể lưu Quiz. Dữ liệu chỉnh sửa vẫn được giữ trên trình duyệt.')
+  const questionMatch = rawMessage.match(/Câu\s*(\d+)/i)
+  const questionId = questionMatch ? quiz.value.questions[Number(questionMatch[1]) - 1]?.id ?? null : null
+
+  if (rawMessage.includes('nguồn không còn là câu hỏi Ngân hàng')) {
+    showSaveAlert({ title: 'Câu hỏi Ngân hàng không còn dùng được', message: 'Câu này không còn ở trạng thái đã duyệt. Hãy xóa câu đó hoặc chọn lại một câu khác từ Ngân hàng.', questionId })
+    return
+  }
+  if (rawMessage.includes('trùng với câu')) {
+    showSaveAlert({ title: 'Có câu hỏi trùng', message: rawMessage, questionId })
+    return
+  }
+  if (rawMessage.includes('không thể chỉnh sửa')) {
+    showSaveAlert({ title: 'Câu hỏi Ngân hàng đang được khóa', message: 'Hãy dùng “Tạo bản sao để chỉnh sửa” nếu muốn thay đổi nội dung hoặc đáp án.', questionId })
+    return
+  }
+  showSaveAlert({ title: 'Chưa thể lưu Quiz', message: rawMessage, questionId })
+}
 const loadQuiz = async () => {
     beginTask()
     try {
@@ -149,11 +229,12 @@ clearAutosaveTimer()
     originalQuiz.value = cloneData(normalizedQuiz)
     activeQuestionId.value = normalizedQuiz.questions[0]?.id ?? null
     manualPointQuestionIds.clear()
-    questionOrigins.value = {}
+    rebuildQuestionOrigins(normalizedQuiz.questions)
     isDirty.value = false
     editorRevision.value = 0
     lastSavedRevision.value = 0
     saveError.value = ''
+    saveAlert.value = null
     saveStatus.value = 'Dữ liệu đã tải'
     await consumeInitialSource()
     if (import.meta.env.DEV) console.info('[QuizEditorV2] loaded quiz')
@@ -196,6 +277,12 @@ function getQuestionValidationMessage(question, index) {
 
 const validateQuizForSave = () => {
   if (!quiz.value.title.trim()) return { message: 'Vui lòng nhập tên Quiz trước khi lưu.' }
+
+  const duplicateIds = duplicateQuestionIds(quiz.value.questions)
+  if (duplicateIds.size) {
+    const questionId = quiz.value.questions.find((question) => duplicateIds.has(question.id))?.id
+    return { questionId, message: 'Quiz đang có câu hỏi trùng nội dung, loại và đáp án. Hãy xóa hoặc chỉnh sửa một câu trước khi lưu.' }
+  }
 
   for (const [index, question] of quiz.value.questions.entries()) {
     const message = getQuestionValidationMessage(question, index)
@@ -251,9 +338,10 @@ const performSave = async ({ source }) => {
 
   const validationError = validateQuizForSave()
   if (validationError) {
-    if (isManual) {
-      if (validationError.questionId !== undefined) activeQuestionId.value = validationError.questionId
-      saveError.value = validationError.message
+      if (isManual) {
+        if (validationError.questionId !== undefined) activeQuestionId.value = validationError.questionId
+        saveError.value = validationError.message
+        showValidationAlert(validationError)
       saveStatus.value = 'Chưa thể lưu'
     } else {
       saveStatus.value = 'Chưa lưu — dữ liệu chưa hoàn chỉnh'
@@ -262,7 +350,8 @@ const performSave = async ({ source }) => {
     return
   }
 
-  saveError.value = ''
+    saveError.value = ''
+    saveAlert.value = null
   isSaving.value = true
   saveStatus.value = 'Đang lưu...'
   const savingRevision = editorRevision.value
@@ -286,7 +375,7 @@ const performSave = async ({ source }) => {
           ? previousActiveId
           : reloadedQuiz.questions[0]?.id ?? null
         manualPointQuestionIds.clear()
-        questionOrigins.value = {}
+        rebuildQuestionOrigins(reloadedQuiz.questions)
         isHydrating.value = false
       }
     }
@@ -297,10 +386,14 @@ const performSave = async ({ source }) => {
       isDirty.value = editorRevision.value !== lastSavedRevision.value
       saveStatus.value = isDirty.value ? 'Chưa lưu' : 'Đã lưu, chưa xác minh'
       if (isManual) saveError.value = 'Backend đã nhận dữ liệu nhưng không thể tải lại để xác minh.'
+      if (isManual) showSaveAlert({ title: 'Đã lưu nhưng chưa xác minh được', message: 'Dữ liệu có thể đã được lưu. Hãy tải lại trang để kiểm tra lại.' })
     } else {
       isDirty.value = true
       saveStatus.value = source === 'autosave' ? 'Lưu tự động thất bại' : 'Lỗi khi lưu'
-      if (isManual) saveError.value = error?.response?.data?.message || 'Không thể lưu Quiz. Dữ liệu chỉnh sửa vẫn được giữ trên trình duyệt.'
+      if (isManual) {
+        saveError.value = error?.message || 'Không thể lưu Quiz. Dữ liệu chỉnh sửa vẫn được giữ trên trình duyệt.'
+        showApiSaveAlert(error)
+      }
     }
     if (import.meta.env.DEV) console.error('[QuizEditorV2] failed to save quiz', error)
   } finally {
@@ -326,7 +419,37 @@ const completeQuiz = async () => {
   if (isDirty.value) await performSave({ source: 'manual' })
   if (!isDirty.value && !isSaving.value) await router.push(`/quizzes/${quizId.value}`)
 }
+const removeQuiz = async () => {
+  if (!quizId.value || isDeleting.value || isSaving.value) return
+  if (!window.confirm(`Xóa quiz “${quiz.value.title || 'Chưa đặt tên'}”? Quiz sẽ được chuyển vào thùng rác và có thể khôi phục sau.`)) return
+  clearAutosaveTimer()
+  isDeleting.value = true
+  isHydrating.value = true
+  saveError.value = ''
+  saveStatus.value = 'Đang xóa quiz...'
+  try {
+    await deleteQuiz(quizId.value)
+    await router.push('/quizzes')
+  } catch (error) {
+    isHydrating.value = false
+    isDeleting.value = false
+    saveStatus.value = isDirty.value ? 'Chưa lưu' : 'Đã lưu'
+    saveError.value = error?.response?.data?.message || error?.message || 'Không thể xóa quiz.'
+  }
+}
 const openQuestionSource = () => { isQuestionSourceOpen.value = true }
+const openAiGenerator = () => { isAiGeneratorOpen.value = true }
+const openQuizReview = () => {
+  if (aiQuizReviewDraft.value.signature !== persistedSignature(quiz.value)) aiQuizReviewDraft.value = { signature: '', result: null }
+  isQuizReviewOpen.value = true
+}
+const updateAiGeneratorDraft = (draft) => {
+  aiGeneratorDraft.value = {
+    results: Array.isArray(draft?.results) ? cloneData(draft.results) : [],
+    selectedIds: Array.isArray(draft?.selectedIds) ? [...draft.selectedIds] : [],
+  }
+}
+const storeQuizReview = (result) => { aiQuizReviewDraft.value = { signature: persistedSignature(quiz.value), result: cloneData(result) } }
 const handleSourceChoice = (source) => {
   isQuestionSourceOpen.value = false
   if (source === 'new') {
@@ -360,7 +483,12 @@ const reallocatePoints = (forceAll = false) => {
     allocatedPoints = roundPoints(allocatedPoints + question.points)
   })
 }
-const addQuestion = () => { const question = makeQuestion(); quiz.value.questions.push(question); syncQuestionOrder(); activeQuestionId.value = question.id; reallocatePoints(false); markLocalChanged() }
+const highlightAddedQuestions = (questions) => {
+  clearTimeout(addedHighlightTimer)
+  newlyAddedQuestionIds.value = questions.map((question) => question.id)
+  addedHighlightTimer = setTimeout(() => { newlyAddedQuestionIds.value = [] }, 2400)
+}
+const addQuestion = () => { const question = makeQuestion(); quiz.value.questions.push(question); syncQuestionOrder(); activeQuestionId.value = question.id; reallocatePoints(false); markLocalChanged(); highlightAddedQuestions([question]) }
 const addPickedQuestions = (selectedQuestions) => {
   if (!Array.isArray(selectedQuestions) || !selectedQuestions.length) return
   const selectedSource = activePickerSource.value
@@ -370,27 +498,35 @@ const addPickedQuestions = (selectedQuestions) => {
     id: tempId(),
     answers: (question.answers || []).map((answer) => ({ ...answer, id: tempId() })),
     accepted_answers: (question.accepted_answers || []).map((answer) => ({ ...answer, id: tempId() })),
+    origin_question_id: selectedSource === 'bank' ? Number(question.source_question_id || question.id) : null,
   }))
+  const existingFingerprints = new Set(quiz.value.questions.filter((question) => question.content?.trim()).map(questionFingerprint))
+  const uniqueQuestions = normalizedQuestions.filter((question) => {
+    const fingerprint = questionFingerprint(question)
+    if (!question.content?.trim() || existingFingerprints.has(fingerprint)) return false
+    existingFingerprints.add(fingerprint)
+    return true
+  })
+  if (!uniqueQuestions.length) {
+    window.alert('Các câu đã chọn đều trùng với câu hỏi đang có trong Quiz.')
+    return
+  }
+  if (uniqueQuestions.length < normalizedQuestions.length) window.alert(`Đã bỏ qua ${normalizedQuestions.length - uniqueQuestions.length} câu trùng trong Quiz.`)
   const insertAt = activeQuestionIndex.value < 0 ? quiz.value.questions.length : activeQuestionIndex.value + 1
-  quiz.value.questions.splice(insertAt, 0, ...normalizedQuestions)
+  quiz.value.questions.splice(insertAt, 0, ...uniqueQuestions)
   syncQuestionOrder()
-  normalizedQuestions.forEach((question) => { questionOrigins.value[question.id] = selectedSource })
-  activeQuestionId.value = normalizedQuestions[0].id
+  uniqueQuestions.forEach((question) => { questionOrigins.value[question.id] = selectedSource })
+  activeQuestionId.value = uniqueQuestions[0].id
   activePickerSource.value = ''
   reallocatePoints(false)
   markLocalChanged()
+  highlightAddedQuestions(uniqueQuestions)
 }
 const consumeInitialSource = async () => {
-  const source = String(route.query.initialSource || '')
   const shouldOpenSources = String(route.query.openQuestionSources || '') === '1'
-  if ((!source && !shouldOpenSources) || missingQuizContext.value) return
+  if (!shouldOpenSources || missingQuizContext.value) return
   if (shouldOpenSources) isQuestionSourceOpen.value = true
-  if (source === 'ai') isAiGeneratorOpen.value = true
-  else if (source === 'personal' || source === 'bank') activePickerSource.value = source
-  else if (source === 'ocr') isOcrImporterOpen.value = true
-  else if (source === 'import') showMockNotice('Import tài liệu')
   const nextQuery = { ...route.query }
-  delete nextQuery.initialSource
   delete nextQuery.openQuestionSources
   await router.replace({ query: nextQuery })
 }
@@ -411,10 +547,12 @@ const saveMissingContext = async (form) => {
     isUpdatingContext.value = false
   }
 }
-const addAiQuestions = (selectedQuestions) => {
+const addAiQuestions = async (selectedQuestions) => {
   activePickerSource.value = 'ai'
   addPickedQuestions(selectedQuestions)
+  aiGeneratorDraft.value = { results: [], selectedIds: [] }
   isAiGeneratorOpen.value = false
+  if (isDirty.value) await performSave({ source: 'manual' })
 }
 const addOcrQuestions = (selectedQuestions) => {
   activePickerSource.value = 'ocr'
@@ -430,8 +568,24 @@ const goToReviewedQuestion = (questionId) => {
 const startSimilarSelection = () => { similarSelectedIds.value = activeQuestion.value ? [activeQuestion.value.id] : []; similarSelectionMode.value = true }
 const toggleSimilarQuestion = (questionId) => { similarSelectedIds.value = similarSelectedIds.value.includes(questionId) ? similarSelectedIds.value.filter((id) => id !== questionId) : [...similarSelectedIds.value, questionId] }
 const cancelSimilarSelection = () => { similarSelectionMode.value = false; similarSelectedIds.value = [] }
-const openSimilarGenerator = () => { if (similarSelectedIds.value.length) isSimilarGeneratorOpen.value = true }
-const addSimilarQuestions = (questions) => { addAiQuestions(questions); isSimilarGeneratorOpen.value = false; cancelSimilarSelection() }
+const openSimilarGenerator = () => {
+  if (!similarSelectedIds.value.length) return
+  if (similarGeneratorDraft.value.signature !== similarSourceSignature.value) similarGeneratorDraft.value = { signature: similarSourceSignature.value, results: [], selectedIds: [] }
+  isSimilarGeneratorOpen.value = true
+}
+const updateSimilarGeneratorDraft = (draft) => {
+  similarGeneratorDraft.value = {
+    signature: similarSourceSignature.value,
+    results: Array.isArray(draft?.results) ? cloneData(draft.results) : [],
+    selectedIds: Array.isArray(draft?.selectedIds) ? [...draft.selectedIds] : [],
+  }
+}
+const addSimilarQuestions = async (questions) => {
+  await addAiQuestions(questions)
+  similarGeneratorDraft.value = { signature: '', results: [], selectedIds: [] }
+  isSimilarGeneratorOpen.value = false
+  cancelSimilarSelection()
+}
 const addAnswer = () => { if (!activeQuestion.value) return; activeQuestion.value.answers.push({ id: tempId(), content: '', is_correct: false }); markLocalChanged() }
 const removeAnswer = (index) => { if (!activeQuestion.value || activeQuestion.value.answers.length <= 2) return; const removed = activeQuestion.value.answers.splice(index, 1)[0]; if (removed?.is_correct && activeQuestion.value.type === 'single_choice') activeQuestion.value.answers[0].is_correct = true; markLocalChanged() }
 const addFillAnswer = () => { activeQuestion.value?.accepted_answers.push({ id: tempId(), content: '' }); markLocalChanged() }
@@ -477,10 +631,14 @@ const duplicateQuestion = () => {
   clone.accepted_answers = (clone.accepted_answers || []).map((answer) => ({ ...answer, id: tempId() }))
   quiz.value.questions.splice(activeQuestionIndex.value + 1, 0, clone)
   syncQuestionOrder()
-  if (questionOrigins.value[originalId]) questionOrigins.value[clone.id] = questionOrigins.value[originalId]
+  // A duplicate is a new local question. It must not inherit the Bank lock or
+  // the approved origin of the source question.
+  clone.origin_question_id = null
+  delete questionOrigins.value[clone.id]
   activeQuestionId.value = clone.id
   reallocatePoints(false)
   markLocalChanged()
+  highlightAddedQuestions([clone])
 }
 const removeQuestion = () => {
   const index = activeQuestionIndex.value
@@ -504,6 +662,29 @@ const moveQuestion = (direction) => {
   activeQuestionId.value = currentId
   markLocalChanged()
 }
+const setPointsMode = (mode) => {
+  if (!activeQuestion.value) return
+  if (mode === 'manual') {
+    manualPointQuestionIds.add(activeQuestion.value.id)
+    return
+  }
+  if (manualPointQuestionIds.delete(activeQuestion.value.id)) {
+    reallocatePoints(false)
+    markLocalChanged()
+  }
+}
+const reorderQuestion = ({ draggedId, targetId, position }) => {
+  const from = quiz.value.questions.findIndex((question) => question.id === draggedId)
+  const target = quiz.value.questions.findIndex((question) => question.id === targetId)
+  if (from < 0 || target < 0 || from === target) return
+  const [question] = quiz.value.questions.splice(from, 1)
+  let insertAt = quiz.value.questions.findIndex((item) => item.id === targetId)
+  if (position === 'after') insertAt += 1
+  quiz.value.questions.splice(insertAt, 0, question)
+  syncQuestionOrder()
+  activeQuestionId.value = draggedId
+  markLocalChanged()
+}
 const showMockNotice = (action) => { mockNotice.value = action; clearTimeout(noticeTimer); noticeTimer = setTimeout(() => { mockNotice.value = '' }, 2200) }
 watch(quiz, () => {
   if (isLoading.value || isHydrating.value || loadError.value) return
@@ -513,7 +694,7 @@ watch(quiz, () => {
 }, { deep: true, flush: 'sync' })
 watch(quizId, loadQuiz)
 onMounted(loadQuiz)
-onBeforeUnmount(() => { clearAutosaveTimer(); clearTimeout(noticeTimer) })
+onBeforeUnmount(() => { clearAutosaveTimer(); clearTimeout(noticeTimer); clearTimeout(addedHighlightTimer) })
 </script>
 <style scoped>
 .editor-grid { display: grid; grid-template-columns: clamp(260px, 18vw, 280px) minmax(0, 1fr) 64px; overflow: hidden; }

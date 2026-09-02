@@ -400,10 +400,18 @@ class GenerateQuizJob implements ShouldQueue
                 grade: $job->grade,
             );
 
+            /*
+             * Không phải mọi môn đều đã được nạp curriculum_chunks.
+             * RAG là nguồn bổ trợ, không phải điều kiện để AI có thể
+             * tạo câu hỏi. Vẫn truyền tên lớp/môn vào prompt để AI bám
+             * ngữ cảnh, nhưng không truyền unit nào cho retriever.
+             */
             if ($scope === null) {
-                throw new \RuntimeException(
-                    'Môn học chưa có dữ liệu RAG.'
-                );
+                return [
+                    'subject' => (string) $job->subject->name,
+                    'grade' => (int) $job->grade->level_number,
+                    'curriculum_unit_ids' => [],
+                ];
             }
 
             return [

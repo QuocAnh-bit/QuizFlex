@@ -3,23 +3,21 @@
     <div class="fixed inset-0 z-[110] grid place-items-center bg-slate-950/45 p-4 backdrop-blur-sm" @click.self="close">
       <section class="flex max-h-[92dvh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
         <header class="flex items-start justify-between border-b border-slate-200 px-5 py-4">
-          <div><p class="text-[11px] font-black uppercase tracking-[.16em] text-fuchsia-600">QuizFlex AI</p><h2 class="mt-1 text-xl font-black text-slate-900">Tạo câu hỏi bằng AI</h2><p class="mt-1 text-xs text-slate-500">AI tạo dữ liệu nháp. Bạn chọn câu phù hợp rồi chỉnh sửa trong Quiz Editor.</p></div>
+          <div><p class="text-[11px] font-black uppercase tracking-[.16em] text-fuchsia-600">QuizFlex AI</p><h2 class="mt-1 text-xl font-black text-slate-900">Tạo câu hỏi bằng AI</h2><p class="mt-1 text-xs text-slate-500">AI sử dụng ngữ cảnh Quiz ở nền để tạo câu hỏi nháp.</p></div>
           <button type="button" class="grid h-9 w-9 place-items-center rounded-xl text-slate-400 hover:bg-slate-100" aria-label="Đóng" @click="close"><X class="h-5 w-5" /></button>
         </header>
 
         <div class="min-h-0 flex-1 overflow-y-auto p-5">
-          <div class="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 md:grid-cols-3">
-            <label class="field-label">Cấp học<select v-model="form.education_level_id" class="field" :disabled="isBusy" @change="onLevelChange"><option value="">Chọn cấp học</option><option v-for="level in taxonomyLevels" :key="level.id" :value="level.id">{{ level.name }}</option></select></label>
-            <label class="field-label">Lớp<select v-model="form.grade_id" class="field" :disabled="isBusy || !form.education_level_id" @change="onGradeChange"><option value="">Chọn lớp</option><option v-for="grade in availableGrades" :key="grade.id" :value="grade.id">{{ grade.name }}</option></select></label>
-            <label class="field-label">Môn học<select v-model="form.subject_id" class="field" :disabled="isBusy || !form.grade_id" @change="onSubjectChange"><option value="">Chọn môn</option><option v-for="subject in availableSubjects" :key="subject.id" :value="subject.id">{{ subject.name }}</option></select></label>
-            <label class="field-label md:col-span-2">Chủ đề<select v-if="curriculumOptions.length" v-model="selectedCurriculumKey" class="field" :disabled="isBusy" @change="applyCurriculum"><option value="">Chọn chủ đề</option><option v-for="option in curriculumOptions" :key="option._key" :value="option._key">{{ option.label }}</option></select><input v-else v-model.trim="form.topic_name" class="field" :disabled="isBusy" placeholder="Nhập chủ đề" /></label>
-            <label class="field-label">Độ khó<select v-model="form.difficulty" class="field" :disabled="isBusy"><option value="easy">Dễ</option><option value="medium">Trung bình</option><option value="hard">Khó</option></select></label>
-            <label class="field-label">Số câu<input v-model.number="form.count" type="number" min="1" max="20" class="field" :disabled="isBusy" /></label>
-            <label class="field-label md:col-span-2">Yêu cầu<textarea v-model="form.prompt" rows="3" maxlength="5000" class="field resize-y" :disabled="isBusy" placeholder="Ví dụ: Tạo câu hỏi vận dụng có biểu thức LaTeX..." /></label>
-            <div class="flex items-end justify-end md:col-span-3"><button type="button" class="rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-5 py-3 text-xs font-black text-white shadow-lg disabled:cursor-not-allowed disabled:opacity-50" :disabled="isBusy || !canGenerate" @click="generate">{{ isBusy ? 'AI đang tạo câu hỏi...' : results.length ? 'Tạo lại' : 'Tạo câu hỏi' }}</button></div>
+          <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <label class="field-label">Yêu cầu tạo câu hỏi<textarea v-model="form.prompt" rows="4" maxlength="5000" class="field mt-1 resize-none" :disabled="isBusy" placeholder="Ví dụ: Tạo câu trắc nghiệm kiểm tra kiến thức về lực ma sát, có tình huống thực tế." /></label>
+            <div class="mt-3 flex flex-wrap items-end gap-3">
+              <label class="field-label w-28">Số câu<input v-model.number="form.count" type="number" min="1" max="20" class="field mt-1" :disabled="isBusy" /></label>
+              <label class="field-label w-40">Độ khó<select v-model="form.difficulty" class="field mt-1" :disabled="isBusy"><option value="easy">Dễ</option><option value="medium">Trung bình</option><option value="hard">Khó</option></select></label>
+              <button type="button" class="ml-auto rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-2.5 text-xs font-black text-white shadow-lg disabled:cursor-not-allowed disabled:opacity-50" :disabled="isBusy || !canGenerate" @click="generate"><span v-if="isBusy">Đang tạo…</span><span v-else>Tạo câu hỏi</span></button>
+            </div>
           </div>
 
-          <div v-if="taxonomyError || errorMessage" class="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-bold text-rose-700"><p>{{ errorMessage || taxonomyError }}</p><button v-if="errorMessage" type="button" class="mt-2 underline" :disabled="isBusy" @click="generate">Thử lại</button></div>
+          <div v-if="errorMessage" class="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-bold text-rose-700"><p>{{ errorMessage }}</p><button type="button" class="mt-2 underline" :disabled="isBusy" @click="generate">Thử lại</button></div>
           <div v-if="isBusy" class="grid min-h-48 place-items-center"><div class="text-center"><span class="mx-auto block h-9 w-9 animate-spin rounded-full border-4 border-fuchsia-100 border-t-fuchsia-600"></span><p class="mt-3 text-sm font-black text-slate-700">AI đang tạo câu hỏi...</p><p class="mt-1 text-xs text-slate-500">{{ statusLabel }}</p></div></div>
 
           <div v-else-if="results.length" class="mt-5 space-y-2">
@@ -39,45 +37,33 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+import { computed, onBeforeUnmount, reactive, ref } from 'vue'
 import { X } from 'lucide-vue-next'
-import { curriculumApi, taxonomyApi } from '@/services/api.js'
 import { getAiQuestionJob, normalizeAiQuestions, startAiQuestionGeneration } from '@/services/quiz-editor/aiQuestionApi.js'
 import MathText from '../MathText.vue'
 
-const props = defineProps({ quizContext: { type: Object, default: () => ({}) } })
-const emit = defineEmits(['select', 'close'])
-const form = reactive({ prompt: props.quizContext.description || props.quizContext.title || '', count: 5, difficulty: props.quizContext.difficulty || 'medium', education_level_id: props.quizContext.education_level_id || '', grade_id: props.quizContext.grade_id || '', subject_id: props.quizContext.subject_id || '', topic_name: props.quizContext.topic_name || '', curriculum_unit_ids: [] })
-const taxonomyLevels = ref([])
-const taxonomyError = ref('')
-const curriculumOptions = ref([])
-const selectedCurriculumKey = ref('')
-const results = ref([])
-const selectedIds = ref([])
+const props = defineProps({
+  quizContext: { type: Object, default: () => ({}) },
+  initialResults: { type: Array, default: () => [] },
+  initialSelectedIds: { type: Array, default: () => [] },
+})
+const emit = defineEmits(['select', 'close', 'state-change'])
+const form = reactive({ prompt: '', count: 5, difficulty: props.quizContext.difficulty || 'medium', education_level_id: props.quizContext.education_level_id || '', grade_id: props.quizContext.grade_id || '', subject_id: props.quizContext.subject_id || '', topic_name: props.quizContext.topic_name || '', curriculum_unit_ids: Array.isArray(props.quizContext.curriculum_unit_ids) ? [...props.quizContext.curriculum_unit_ids] : [] })
+const results = ref(props.initialResults.map((question) => ({ ...question })))
+const selectedIds = ref(props.initialSelectedIds.filter((id) => results.value.some((question) => question.id === id)))
 const isBusy = ref(false)
 const errorMessage = ref('')
 const statusLabel = ref('Đang gửi yêu cầu...')
 let pollTimer
 let cancelled = false
 
-const availableGrades = computed(() => taxonomyLevels.value.find((item) => Number(item.id) === Number(form.education_level_id))?.grades || [])
-const availableSubjects = computed(() => availableGrades.value.find((item) => Number(item.id) === Number(form.grade_id))?.subjects || [])
+const publishState = () => emit('state-change', {
+  results: results.value.map((question) => ({ ...question })),
+  selectedIds: [...selectedIds.value],
+})
+
 const taxonomyComplete = computed(() => Boolean(form.education_level_id && form.grade_id && form.subject_id))
-const canGenerate = computed(() => form.prompt.trim() && Number(form.count) >= 1 && Number(form.count) <= 20 && (!form.education_level_id || taxonomyComplete.value))
-const onLevelChange = () => { form.grade_id = ''; form.subject_id = ''; form.topic_name = ''; form.curriculum_unit_ids = []; curriculumOptions.value = [] }
-const onGradeChange = () => { form.subject_id = ''; form.topic_name = ''; form.curriculum_unit_ids = []; curriculumOptions.value = [] }
-const applyCurriculum = () => { const option = curriculumOptions.value.find((item) => item._key === selectedCurriculumKey.value); form.topic_name = option?.label || ''; form.curriculum_unit_ids = option?.curriculum_unit_ids || [] }
-const loadCurriculum = async () => {
-  curriculumOptions.value = []; selectedCurriculumKey.value = ''; form.curriculum_unit_ids = []
-  if (!taxonomyComplete.value) return
-  try {
-    const result = await curriculumApi.fetchOptions({ education_level_id: form.education_level_id, grade_id: form.grade_id, subject_id: form.subject_id })
-    curriculumOptions.value = (result.options || []).map((option, index) => ({ ...option, _key: `${index}-${option.label}` }))
-    const matching = curriculumOptions.value.find((option) => option.label === form.topic_name)
-    if (matching) { selectedCurriculumKey.value = matching._key; applyCurriculum() }
-  } catch { curriculumOptions.value = [] }
-}
-const onSubjectChange = () => { form.topic_name = ''; loadCurriculum() }
+const canGenerate = computed(() => form.prompt.trim() && Number(form.count) >= 1 && Number(form.count) <= 20 && taxonomyComplete.value)
 const waitForJob = async (jobId) => {
   while (!cancelled) {
     const job = await getAiQuestionJob(jobId)
@@ -90,20 +76,22 @@ const waitForJob = async (jobId) => {
 }
 const generate = async () => {
   if (!canGenerate.value || isBusy.value) return
-  isBusy.value = true; errorMessage.value = ''; results.value = []; selectedIds.value = []; statusLabel.value = 'Đang gửi yêu cầu...'
+  const requestPrompt = form.prompt.trim()
+  isBusy.value = true; errorMessage.value = ''; results.value = []; selectedIds.value = []; publishState(); statusLabel.value = 'Đang gửi yêu cầu...'
   try {
-    const started = await startAiQuestionGeneration({ prompt: form.prompt.trim(), count: Number(form.count), difficulty: form.difficulty, language: 'vi', education_level_id: form.education_level_id ? Number(form.education_level_id) : undefined, grade_id: form.grade_id ? Number(form.grade_id) : undefined, subject_id: form.subject_id ? Number(form.subject_id) : undefined, topic_name: form.topic_name || undefined, curriculum_unit_ids: form.curriculum_unit_ids })
+    const started = await startAiQuestionGeneration({ prompt: requestPrompt, count: Number(form.count), difficulty: form.difficulty, language: 'vi', education_level_id: form.education_level_id ? Number(form.education_level_id) : undefined, grade_id: form.grade_id ? Number(form.grade_id) : undefined, subject_id: form.subject_id ? Number(form.subject_id) : undefined, topic_name: form.topic_name || undefined, curriculum_unit_ids: form.curriculum_unit_ids })
     const job = await waitForJob(started.job_id)
     results.value = normalizeAiQuestions(job)
     if (!results.value.length) throw new Error('AI không trả về câu hỏi hợp lệ.')
     selectedIds.value = results.value.map((question) => question.id)
-  } catch (error) { if (!cancelled) errorMessage.value = error?.response?.data?.message || error?.message || 'Không thể tạo câu hỏi bằng AI' } finally { if (!cancelled) isBusy.value = false }
+    publishState()
+    form.prompt = ''
+  } catch (error) { if (!cancelled) { form.prompt = requestPrompt; errorMessage.value = error?.response?.data?.message || error?.message || 'Không thể tạo câu hỏi bằng AI' } } finally { if (!cancelled) isBusy.value = false }
 }
-const toggle = (id) => { selectedIds.value = selectedIds.value.includes(id) ? selectedIds.value.filter((item) => item !== id) : [...selectedIds.value, id] }
-const toggleAll = () => { selectedIds.value = selectedIds.value.length === results.value.length ? [] : results.value.map((question) => question.id) }
+const toggle = (id) => { selectedIds.value = selectedIds.value.includes(id) ? selectedIds.value.filter((item) => item !== id) : [...selectedIds.value, id]; publishState() }
+const toggleAll = () => { selectedIds.value = selectedIds.value.length === results.value.length ? [] : results.value.map((question) => question.id); publishState() }
 const addSelected = () => emit('select', results.value.filter((question) => selectedIds.value.includes(question.id)).map((question) => ({ ...question, source_type: 'ai' })))
-const close = () => emit('close')
-onMounted(async () => { try { const data = await taxonomyApi.tree(); taxonomyLevels.value = data?.education_levels || data?.educationLevels || []; if (taxonomyComplete.value) await loadCurriculum() } catch (error) { taxonomyError.value = error?.message || 'Không tải được danh mục chương trình học.' } })
+const close = () => { publishState(); emit('close') }
 onBeforeUnmount(() => { cancelled = true; clearTimeout(pollTimer) })
 </script>
 
