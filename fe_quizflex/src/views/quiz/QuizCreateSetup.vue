@@ -35,6 +35,9 @@ import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import QuizSetupForm from '@/components/quiz-create/QuizSetupForm.vue'
 import { createEmptyQuizDraft, getRecentEmptyQuizDrafts } from '@/services/quiz-editor/quizDraftApi.js'
+import { useAppLoading } from '@/composables/useAppLoading'
+
+const { beginTask, endTask } = useAppLoading()
 
 const router = useRouter()
 const isCreating = ref(false)
@@ -55,8 +58,13 @@ const createDraft = async (form) => {
   try { const quiz = await createEmptyQuizDraft(form); createdQuizId.value = quiz?.id; if (!createdQuizId.value) throw new Error('Backend không trả về mã Quiz.'); await navigateToEditor() } catch (error) { createError.value = createdQuizId.value ? 'Quiz đã được tạo nhưng chưa thể mở Editor. Hãy dùng nút mở Editor bên dưới.' : (error?.response?.data?.message || error?.message || 'Không thể tạo Quiz Draft.') } finally { isCreating.value = false }
 }
 onMounted(async () => {
-  try { recentEmptyDrafts.value = await getRecentEmptyQuizDrafts(3); showDraftDecision.value = recentEmptyDrafts.value.length > 0 }
-  catch { recentEmptyDrafts.value = [] }
-  finally { isLoadingDrafts.value = false }
+  beginTask()
+  try {
+    try { recentEmptyDrafts.value = await getRecentEmptyQuizDrafts(3); showDraftDecision.value = recentEmptyDrafts.value.length > 0 }
+    catch { recentEmptyDrafts.value = [] }
+    finally { isLoadingDrafts.value = false }
+  } finally {
+    endTask()
+  }
 })
 </script>

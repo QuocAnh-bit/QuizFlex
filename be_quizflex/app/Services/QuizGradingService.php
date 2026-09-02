@@ -60,6 +60,7 @@ class QuizGradingService
                 'question_id' => $question->id,
                 'question_content' => $question->content,
                 'question' => $question->content,
+                'image_url' => $question->image_url,
                 'type' => $question->type ?? 'single_choice',
                 'selected_answer_ids' => $selectedIds,
                 'selected_answer_keys' => $this->answerKeysFromIds($question, $selectedIds),

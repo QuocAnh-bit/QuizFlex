@@ -1,5 +1,5 @@
 <template>
-  <AppLoading :show="isLoading" />
+  <AppLoading :show="isLoading" :progress="progress" />
 
   <!-- Overlay tài khoản bị khóa -->
   <Transition name="fade">
@@ -56,14 +56,15 @@ import UserLayout from "@/layouts/UserLayout.vue";
 import AuthLayout from "@/layouts/AuthLayout.vue";
 
 import AppLoading from "@/components/common/AppLoading.vue";
+import { useAppLoading } from '@/composables/useAppLoading'
 import { authApi, currentUserStorage } from "@/services/api";
 import { getEcho, disconnectEcho } from "@/echo.js";
 import { getNotificationPresentation, NOTIFICATION_DELIVERY } from "@/utils/notificationPriority";
 
 const route = useRoute();
 const router = useRouter();
+const { isLoading, progress, startPageLoading } = useAppLoading();
 
-const isLoading = ref(true);
 const showLockedToast = ref(false);
 const lockedCountdown = ref(5);
 let lockedCountdownInterval = null
@@ -176,12 +177,7 @@ const goToAppeal = () => {
   }
 }
 
-let loadingTimer = null;
-let forceCloseTimer = null;
 let removeBeforeGuard = null;
-let removeAfterGuard = null;
-
-const MIN_LOADING_TIME = 150;
 
 const layout = computed(() => {
   const layoutName = route.meta.layout;
@@ -194,26 +190,6 @@ const layout = computed(() => {
 
   return layouts[layoutName] || UserLayout;
 });
-
-const startLoading = () => {
-  clearTimeout(loadingTimer);
-  clearTimeout(forceCloseTimer);
-
-  isLoading.value = true;
-
-  forceCloseTimer = setTimeout(() => {
-    isLoading.value = false;
-  }, MIN_LOADING_TIME + 700);
-};
-
-const stopLoading = () => {
-  clearTimeout(loadingTimer);
-  clearTimeout(forceCloseTimer);
-
-  loadingTimer = setTimeout(() => {
-    isLoading.value = false;
-  }, MIN_LOADING_TIME);
-};
 
 onMounted(() => {
   window.addEventListener('quizflex-account-locked', triggerLockedOverlay)
@@ -231,17 +207,12 @@ onMounted(() => {
 
   removeBeforeGuard = router.beforeEach((to, from, next) => {
     if (to.fullPath !== from.fullPath) {
-      startLoading();
+      startPageLoading();
     }
 
     next();
   });
 
-  removeAfterGuard = router.afterEach(() => {
-    stopLoading();
-  });
-
-  stopLoading();
 });
 
 onBeforeUnmount(() => {
@@ -249,15 +220,8 @@ onBeforeUnmount(() => {
   unsubscribeAccountChannel()
   disconnectEcho()
   if (lockedCountdownInterval) clearInterval(lockedCountdownInterval)
-  clearTimeout(loadingTimer);
-  clearTimeout(forceCloseTimer);
-
   if (removeBeforeGuard) {
     removeBeforeGuard();
-  }
-
-  if (removeAfterGuard) {
-    removeAfterGuard();
   }
 });
 </script>

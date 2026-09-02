@@ -365,6 +365,12 @@ class QuizReviewService
             ->latest('id')
             ->first();
 
+        $previousRejectedRequest = QuizReviewRequest::where('quiz_id', $quizId)
+            ->where('id', '<', $currentRequest->id)
+            ->where('status', 'rejected')
+            ->latest('id')
+            ->first();
+
         $history = QuizReviewRequest::where('quiz_id', $quizId)
             ->with(['user:id,name,email,avatar', 'reviewer:id,name,email,avatar'])
             ->orderBy('revision_number', 'desc')
@@ -375,7 +381,8 @@ class QuizReviewService
         return [
             'current_revision' => $this->formatRevision($currentRequest),
             'previous_revision' => $previousRequest ? $this->formatRevision($previousRequest) : null,
-            'previous_rejection_reason' => $previousRequest?->rejection_reason,
+            'previous_rejected_revision' => $previousRejectedRequest ? $this->formatRevision($previousRejectedRequest) : null,
+            'previous_rejection_reason' => $previousRejectedRequest?->rejection_reason,
             'diff' => $diff,
             'history' => $history->map(fn($item) => $this->formatRevision($item))->values()->toArray(),
         ];

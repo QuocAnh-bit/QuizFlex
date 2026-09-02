@@ -95,6 +95,9 @@ Route::middleware('auth:api')->group(function () {
     Route::put('/notifications/read-all', [NotificationController::class, 'markAllAsRead']);
     Route::delete('/notifications', [NotificationController::class, 'destroyAll']);
 
+    // Upload hình ảnh câu hỏi (Question Image Upload)
+    Route::post('/upload/question-image', [QuestionController::class, 'uploadQuestionImage']);
+
     // Kho câu hỏi cá nhân & Thùng rác câu hỏi (My Questions Repository)
     Route::post('/questions', [QuestionController::class, 'storeQuestion']);
     Route::get('/user/my-questions', [QuestionController::class, 'userBank']);

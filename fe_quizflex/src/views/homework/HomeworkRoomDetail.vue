@@ -723,6 +723,9 @@ import AppLoadingState from '@/components/common/AppLoadingState.vue'
 import AppErrorState from '@/components/common/AppErrorState.vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import { currentUserStorage, homeworkApi } from '@/services/api'
+import { useAppLoading } from '@/composables/useAppLoading'
+
+const { beginTask, endTask } = useAppLoading()
 import { Users, Clock, Check, X, Search, Eye, Trash2 } from 'lucide-vue-next'
 
 const showConfirm = inject('showConfirm')
@@ -1407,9 +1410,14 @@ const confirmDissolve = async () => {
 }
 
 onMounted(async () => {
-  await loadRoomDetail()
-  if (isAdmin.value) {
-    activeSettingsTab.value = 'members'
+  beginTask()
+  try {
+    await loadRoomDetail()
+    if (isAdmin.value) {
+      activeSettingsTab.value = 'members'
+    }
+  } finally {
+    endTask()
   }
 })
 </script>

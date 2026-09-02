@@ -131,12 +131,20 @@ class QuizReviewController extends Controller
             });
         }
 
+        if ($request->filled('difficulty')) {
+            $diff = $request->query('difficulty');
+            $query->where(function ($q) use ($diff) {
+                $q->where('snapshot_difficulty', $diff)
+                  ->orWhereHas('quiz', fn($qz) => $qz->where('difficulty', $diff));
+            });
+        }
+
         $pendingCount = QuizReviewRequest::where('status', 'pending')->count();
         $approvedCount = QuizReviewRequest::where('status', 'approved')->count();
         $rejectedCount = QuizReviewRequest::where('status', 'rejected')->count();
 
         $query->latest();
-        $perPage = min(max((int) $request->query('per_page', 15), 1), 100);
+        $perPage = min(max((int) $request->query('per_page', 10), 1), 100);
         $paginated = $query->paginate($perPage);
 
         return response()->json([

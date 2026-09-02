@@ -292,6 +292,9 @@ import {
   X,
 } from 'lucide-vue-next'
 import { adminSettingsApi } from '@/services/api'
+import { useAppLoading } from '@/composables/useAppLoading'
+
+const { beginTask, endTask } = useAppLoading()
 
 const STORAGE_KEY = 'quizflex_admin_system_settings'
 
@@ -344,39 +347,44 @@ const getRoleBadgeClass = (roleKey) => {
 }
 
 const loadSettings = async () => {
-  isLoading.value = true
-  errorMessage.value = ''
-
+  beginTask()
   try {
-    const res = await adminSettingsApi.getSettings()
-    const payload = res?.data || res
+    isLoading.value = true
+    errorMessage.value = ''
 
-    if (Array.isArray(payload?.limits) && payload.limits.length > 0) {
-      limits.splice(0, limits.length, ...payload.limits)
-    }
-
-    if (payload?.selectedVisibility) {
-      selectedVisibility.value = payload.selectedVisibility
-    }
-  } catch (err) {
-    console.warn('Không thể tải cài đặt từ Database, sử dụng cache/fallback:', err)
-    // Fallback sang localStorage nếu API có sự cố mạng
     try {
-      const raw = localStorage.getItem(STORAGE_KEY)
-      if (raw) {
-        const data = JSON.parse(raw)
-        if (Array.isArray(data.limits) && data.limits.length > 0) {
-          limits.splice(0, limits.length, ...data.limits)
-        }
-        if (data.selectedVisibility) {
-          selectedVisibility.value = data.selectedVisibility
-        }
+      const res = await adminSettingsApi.getSettings()
+      const payload = res?.data || res
+
+      if (Array.isArray(payload?.limits) && payload.limits.length > 0) {
+        limits.splice(0, limits.length, ...payload.limits)
       }
-    } catch (e) {
-      console.error(e)
+
+      if (payload?.selectedVisibility) {
+        selectedVisibility.value = payload.selectedVisibility
+      }
+    } catch (err) {
+      console.warn('Không thể tải cài đặt từ Database, sử dụng cache/fallback:', err)
+      // Fallback sang localStorage nếu API có sự cố mạng
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY)
+        if (raw) {
+          const data = JSON.parse(raw)
+          if (Array.isArray(data.limits) && data.limits.length > 0) {
+            limits.splice(0, limits.length, ...data.limits)
+          }
+          if (data.selectedVisibility) {
+            selectedVisibility.value = data.selectedVisibility
+          }
+        }
+      } catch (e) {
+        console.error(e)
+      }
+    } finally {
+      isLoading.value = false
     }
   } finally {
-    isLoading.value = false
+    endTask()
   }
 }
 

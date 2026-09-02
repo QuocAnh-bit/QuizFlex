@@ -922,6 +922,16 @@ public function adminIndex(Request $request)
         );
     }
 
+    // Lọc môn học
+    if ($request->filled('subject_id')) {
+        $query->where('subject_id', $request->subject_id);
+    }
+
+    // Lọc khối lớp
+    if ($request->filled('grade_id')) {
+        $query->where('grade_id', $request->grade_id);
+    }
+
     // Lọc public/private
     if ($request->filled('visibility')) {
         if ($request->visibility === 'public') {

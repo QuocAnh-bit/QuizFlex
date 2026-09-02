@@ -253,58 +253,15 @@
     </div>
 
     <!-- Pagination -->
-    <div
-      v-if="lastPage > 1"
-      class="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
-    >
-      <div class="text-sm text-slate-500">
-        Trang <span class="font-semibold text-slate-900">{{ currentPage }}</span> / {{ lastPage }}
-        (Tổng {{ trashCount }} câu)
-      </div>
-
-      <div class="flex items-center gap-1">
-        <button
-          class="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:bg-slate-50 disabled:opacity-40"
-          :disabled="currentPage <= 1"
-          @click="fetchTrash(1)"
-        >
-          <ChevronsLeft class="h-4 w-4" />
-        </button>
-        <button
-          class="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:bg-slate-50 disabled:opacity-40"
-          :disabled="currentPage <= 1"
-          @click="fetchTrash(currentPage - 1)"
-        >
-          <ChevronLeft class="h-4 w-4" />
-        </button>
-
-        <button
-          v-for="p in visiblePages"
-          :key="p"
-          class="flex h-8 w-8 items-center justify-center rounded-lg text-sm font-medium transition"
-          :class="p === currentPage
-            ? 'bg-rose-600 text-white'
-            : 'border border-slate-200 text-slate-700 hover:bg-slate-50'"
-          @click="fetchTrash(p)"
-        >
-          {{ p }}
-        </button>
-
-        <button
-          class="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:bg-slate-50 disabled:opacity-40"
-          :disabled="currentPage >= lastPage"
-          @click="fetchTrash(currentPage + 1)"
-        >
-          <ChevronRight class="h-4 w-4" />
-        </button>
-        <button
-          class="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:bg-slate-50 disabled:opacity-40"
-          :disabled="currentPage >= lastPage"
-          @click="fetchTrash(lastPage)"
-        >
-          <ChevronsRight class="h-4 w-4" />
-        </button>
-      </div>
+    <div v-if="trashCount > 0" class="pt-2">
+      <AppPagination
+        :current-page="currentPage"
+        :last-page="lastPage"
+        :total="trashCount"
+        :per-page="10"
+        item-label="câu hỏi đã xóa"
+        @change="fetchTrash"
+      />
     </div>
   </section>
 </template>
@@ -319,12 +276,13 @@ import {
   RotateCcw,
   User,
   Eye,
-  ChevronLeft,
-  ChevronsLeft,
-  ChevronsRight,
   Clock
 } from 'lucide-vue-next'
 import { adminQuestionsApi } from '@/services/api'
+import { useAppLoading } from '@/composables/useAppLoading'
+import AppPagination from '@/components/common/AppPagination.vue'
+
+const { beginTask, endTask } = useAppLoading()
 
 const showToast = inject('showToast')
 const showConfirm = inject('showConfirm')
@@ -379,7 +337,7 @@ const fetchTrash = async (page = 1) => {
     const res = await adminQuestionsApi.trash({
       page,
       search: search.value || undefined,
-      per_page: 15
+      per_page: 10
     })
     questions.value = res.items
     lastPage.value = res.lastPage
@@ -453,7 +411,12 @@ const handleBulkForceDelete = async () => {
   }
 }
 
-onMounted(() => {
-  fetchTrash()
+onMounted(async () => {
+  beginTask()
+  try {
+    await fetchTrash()
+  } finally {
+    endTask()
+  }
 })
 </script>

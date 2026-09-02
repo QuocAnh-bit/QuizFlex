@@ -90,6 +90,9 @@
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { currentUserStorage, paymentsApi } from '@/services/api'
+import { useAppLoading } from '@/composables/useAppLoading'
+
+const { beginTask, endTask } = useAppLoading()
 
 const route = useRoute()
 const isLoading = ref(true)
@@ -166,7 +169,12 @@ const formatDate = (dateString) => {
   })
 }
 
-onMounted(() => {
-  verifyTransaction()
+onMounted(async () => {
+  beginTask()
+  try {
+    await verifyTransaction()
+  } finally {
+    endTask()
+  }
 })
 </script>

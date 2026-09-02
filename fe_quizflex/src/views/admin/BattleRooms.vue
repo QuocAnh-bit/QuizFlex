@@ -325,29 +325,15 @@
       </div>
 
       <!-- Pagination Bar -->
-      <div v-if="listState.items.length > 0" class="flex flex-col gap-3 border-t border-slate-100 pt-4 text-xs sm:flex-row sm:items-center sm:justify-between">
-        <span class="text-slate-500 text-[11px]">
-          Hiển thị {{ listState.meta.from || 0 }}–{{ listState.meta.to || 0 }} trong số {{ formatNumber(listState.meta.total || 0) }} phòng thi đấu
-        </span>
-        <div class="flex items-center gap-2">
-          <button
-            class="btn-secondary text-[11px] px-2.5 py-1 disabled:opacity-40 inline-flex items-center gap-1"
-            type="button"
-            :disabled="listState.loading || listState.meta.current_page <= 1"
-            @click="loadRooms(listState.meta.current_page - 1)"
-          >
-            <ChevronLeft class="h-3 w-3" /> Trước
-          </button>
-          <span class="text-slate-700 font-bold">{{ listState.meta.current_page }} / {{ listState.meta.last_page }}</span>
-          <button
-            class="btn-secondary text-[11px] px-2.5 py-1 disabled:opacity-40 inline-flex items-center gap-1"
-            type="button"
-            :disabled="listState.loading || listState.meta.current_page >= listState.meta.last_page"
-            @click="loadRooms(listState.meta.current_page + 1)"
-          >
-            Sau <ChevronRight class="h-3 w-3" />
-          </button>
-        </div>
+      <div v-if="listState.items.length > 0" class="border-t border-slate-100 pt-4">
+        <AppPagination
+          :current-page="listState.meta.current_page"
+          :last-page="listState.meta.last_page"
+          :total="listState.meta.total"
+          :per-page="listState.meta.per_page || 10"
+          item-label="phòng thi đấu"
+          @change="loadRooms"
+        />
       </div>
       </div>
     </article>
@@ -456,6 +442,9 @@ import {
   inject,
 } from "vue";
 import { adminRoomApi, adminRoomsApi } from "@/services/api";
+import { useAppLoading } from "@/composables/useAppLoading";
+import AppPagination from "@/components/common/AppPagination.vue";
+const { beginTask, endTask } = useAppLoading();
 import {
   Swords,
   PlayCircle,
@@ -1139,9 +1128,13 @@ const LiveDetail = defineComponent({
   },
 });
 
-onMounted(() => {
-  loadStats();
-  loadRooms();
+onMounted(async () => {
+  beginTask();
+  try {
+    await Promise.all([loadStats(), loadRooms()]);
+  } finally {
+    endTask();
+  }
 });
 </script>
 

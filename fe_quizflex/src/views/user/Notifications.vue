@@ -254,6 +254,9 @@ import {
 } from 'lucide-vue-next'
 
 import { notificationApi } from '@/services/api'
+import { useAppLoading } from '@/composables/useAppLoading'
+
+const { beginTask, endTask } = useAppLoading()
 
 const router = useRouter()
 const showToast = inject('showToast')
@@ -519,8 +522,13 @@ const handleRealtimeNotification = (e) => {
   notifications.value.unshift(newNotification)
 }
 
-onMounted(() => {
-  fetchNotifications(1)
+onMounted(async () => {
+  beginTask()
+  try {
+    await fetchNotifications(1)
+  } finally {
+    endTask()
+  }
 
   window.addEventListener(
     'realtime-notification',

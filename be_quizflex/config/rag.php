@@ -33,7 +33,7 @@ return [
 
         'embedding_model' => env(
             'OPENROUTER_EMBEDDING_MODEL',
-            'qwen/qwen3-embedding-0.6b'
+            'qwen/qwen3-embedding-8b'
         ),
     ],
 
