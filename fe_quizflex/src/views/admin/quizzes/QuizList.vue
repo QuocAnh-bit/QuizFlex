@@ -506,30 +506,16 @@
       </div>
 
       <!-- Pagination -->
-      <div v-if="pagination.lastPage > 1" class="flex flex-wrap items-center justify-between border-t border-slate-100 bg-slate-50/50 p-4 text-xs font-medium text-slate-600">
-        <span>
-          Hiển thị trang {{ pagination.currentPage }} / {{ pagination.lastPage }} (Tổng {{ pagination.total }} bài Quiz)
-        </span>
-
-        <div class="flex items-center gap-1.5">
-          <button
-            type="button"
-            class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 hover:bg-slate-50 disabled:opacity-40 cursor-pointer"
-            :disabled="pagination.currentPage <= 1"
-            @click="changePage(pagination.currentPage - 1)"
-          >
-            ← Trước
-          </button>
-
-          <button
-            type="button"
-            class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 hover:bg-slate-50 disabled:opacity-40 cursor-pointer"
-            :disabled="pagination.currentPage >= pagination.lastPage"
-            @click="changePage(pagination.currentPage + 1)"
-          >
-            Sau →
-          </button>
-        </div>
+      <div class="border-t border-slate-100 bg-slate-50/50 p-4">
+        <AppPagination
+          :current-page="pagination.currentPage"
+          :last-page="pagination.lastPage"
+          :total="pagination.total"
+          :per-page="pagination.perPage"
+          :show-always="true"
+          item-label="bài Quiz"
+          @change="changePage"
+        />
       </div>
     </div>
 
@@ -915,6 +901,7 @@ import {
 } from 'lucide-vue-next'
 import { adminQuizzesApi, quizReviewApi, taxonomyApi } from '@/services/api'
 import { useAppLoading } from '@/composables/useAppLoading'
+import AppPagination from '@/components/common/AppPagination.vue'
 
 const { beginTask, endTask } = useAppLoading()
 const route = useRoute()
@@ -945,7 +932,7 @@ const pagination = reactive({
   currentPage: 1,
   lastPage: 1,
   total: 0,
-  perPage: 15,
+  perPage: 10,
 })
 
 const filters = reactive({
@@ -1058,6 +1045,8 @@ const loadTabItems = async (page = 1) => {
         status: currentTab.value,
         search: filters.search ? filters.search.trim() : undefined,
         subject_id: filters.subject_id || undefined,
+        grade_id: filters.grade_id || undefined,
+        difficulty: filters.difficulty || undefined,
       }
 
       const res = await quizReviewApi.fetchAdminReviewRequests(params)
@@ -1071,7 +1060,8 @@ const loadTabItems = async (page = 1) => {
         is_public: r.quiz?.is_public,
       }))
       pagination.total = res.total || 0
-      pagination.lastPage = res.last_page || 1
+      pagination.currentPage = res.currentPage || page
+      pagination.lastPage = res.lastPage || res.last_page || 1
 
       if (res.stats) {
         stats.pending = res.stats.pending || 0
@@ -1092,7 +1082,8 @@ const loadTabItems = async (page = 1) => {
       const res = await adminQuizzesApi.list(params)
       items.value = res.items || []
       pagination.total = res.total || 0
-      pagination.lastPage = res.lastPage || 1
+      pagination.currentPage = res.currentPage || page
+      pagination.lastPage = res.lastPage || res.last_page || 1
 
       if (res.stats) {
         stats.total = res.stats.total || 0

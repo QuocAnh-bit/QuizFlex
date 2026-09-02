@@ -1475,6 +1475,10 @@ class QuestionController extends Controller
                 'subject',
                 'latestReviewRequest.reviewer:id,name,email,avatar',
                 'latestReviewRequest.user:id,name,email,avatar',
+            ])
+            ->withCount([
+                'reports as reports_count',
+                'reports as active_reports_count' => fn($rep) => $rep->whereIn('status', \App\Models\ReportTicket::ACTIVE_STATUSES)
             ]);
 
         $status = $request->query('status', 'pending');
@@ -1546,7 +1550,7 @@ class QuestionController extends Controller
         ->latest('bank_submission_at')
         ->latest('updated_at');
 
-        $perPage = min(max((int) $request->query('per_page', 15), 1), 100);
+        $perPage = min(max((int) $request->query('per_page', 10), 1), 100);
         $paginated = $query->paginate($perPage);
 
         $items = collect($paginated->items())->map(function (Question $q) {
@@ -1556,12 +1560,12 @@ class QuestionController extends Controller
             $formatted['author_avatar'] = $q->user?->avatar ?? $q->quiz?->user?->avatar;
 
             $latestReq = $q->latestReviewRequest;
-            $hasActiveReports = \App\Models\ReportTicket::where('question_id', $q->id)->whereIn('status', \App\Models\ReportTicket::ACTIVE_STATUSES)->exists();
+            $hasActiveReports = ($q->active_reports_count ?? 0) > 0;
             $isPriority = ($latestReq && $latestReq->status === 'pending' && ($latestReq->is_priority || $latestReq->review_priority === 'high')) || $hasActiveReports;
 
             $formatted['is_priority'] = $isPriority;
             $formatted['review_priority'] = $isPriority ? 'high' : 'normal';
-            $formatted['reports_count'] = \App\Models\ReportTicket::where('question_id', $q->id)->count();
+            $formatted['reports_count'] = (int) ($q->reports_count ?? 0);
             $formatted['report_reason'] = $latestReq?->snapshot_metadata['report_reason'] ?? $formatted['report_reason'] ?? null;
             $formatted['report_description'] = $latestReq?->snapshot_metadata['report_description'] ?? null;
 
@@ -1613,6 +1617,8 @@ class QuestionController extends Controller
                 'question' => $this->formatQuestion($question, true),
                 'current_revision' => $diffData['current_revision'],
                 'previous_revision' => $diffData['previous_revision'],
+                'previous_rejected_revision' => $diffData['previous_rejected_revision'] ?? null,
+                'previous_rejection_reason' => $diffData['previous_rejection_reason'] ?? null,
                 'history' => $diffData['history'],
                 'reports' => $diffData['reports'] ?? [],
                 'is_priority' => $diffData['is_priority'] ?? false,
@@ -1922,7 +1928,7 @@ class QuestionController extends Controller
         $reportedCount = \App\Models\ReportTicket::where('status', 'pending')->count();
 
         $query->latest();
-        $perPage = min(max((int) $request->query('per_page', 15), 1), 100);
+        $perPage = min(max((int) $request->query('per_page', 10), 1), 100);
         $paginated = $query->paginate($perPage);
 
         $items = collect($paginated->items())->map(function (Question $q) {

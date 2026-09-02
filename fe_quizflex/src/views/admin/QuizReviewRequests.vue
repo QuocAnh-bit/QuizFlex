@@ -214,27 +214,15 @@
       </div>
 
       <!-- Pagination -->
-      <div v-if="pagination.total > pagination.perPage" class="p-4 border-t border-slate-100 flex items-center justify-between text-xs">
-        <span class="text-slate-500">
-          Hiển thị {{ (pagination.currentPage - 1) * pagination.perPage + 1 }} - {{ Math.min(pagination.currentPage * pagination.perPage, pagination.total) }} trên {{ pagination.total }} yêu cầu
-        </span>
-        <div class="flex items-center gap-2">
-          <button
-            class="btn-secondary text-xs px-3 py-1"
-            :disabled="pagination.currentPage <= 1"
-            @click="changePage(pagination.currentPage - 1)"
-          >
-            ← Trước
-          </button>
-          <span class="font-bold text-slate-700">Trang {{ pagination.currentPage }} / {{ pagination.lastPage }}</span>
-          <button
-            class="btn-secondary text-xs px-3 py-1"
-            :disabled="pagination.currentPage >= pagination.lastPage"
-            @click="changePage(pagination.currentPage + 1)"
-          >
-            Sau →
-          </button>
-        </div>
+      <div v-if="pagination.total > 0" class="p-4 border-t border-slate-100">
+        <AppPagination
+          :current-page="pagination.currentPage"
+          :last-page="pagination.lastPage"
+          :total="pagination.total"
+          :per-page="pagination.perPage"
+          item-label="yêu cầu"
+          @change="changePage"
+        />
       </div>
     </div>
 
@@ -815,6 +803,7 @@ import {
 } from 'lucide-vue-next'
 import { quizReviewApi, taxonomyApi } from '@/services/api'
 import StatusBadge from '@/components/common/StatusBadge.vue'
+import AppPagination from '@/components/common/AppPagination.vue'
 import { useAppLoading } from '@/composables/useAppLoading'
 
 const { beginTask, endTask } = useAppLoading()
@@ -840,7 +829,7 @@ const stats = reactive({
 const pagination = reactive({
   currentPage: 1,
   lastPage: 1,
-  perPage: 15,
+  perPage: 10,
   total: 0,
 })
 

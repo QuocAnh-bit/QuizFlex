@@ -498,13 +498,13 @@
            PAGINATION
       ======================================================== -->
       <AppPagination
-        v-if="pagination.total > 0"
         :current-page="pagination.currentPage"
         :last-page="pagination.lastPage"
         :total="pagination.total"
         :per-page="pagination.perPage"
+        :show-always="true"
         :show-per-page-selector="true"
-        :per-page-options="[12, 24, 48]"
+        :per-page-options="[10, 20, 50]"
         item-label="bài quiz"
         @update:current-page="onPageChange"
         @update:per-page="onPerPageChange"
@@ -616,7 +616,7 @@ const pagination = reactive({
   currentPage: 1,
   lastPage: 1,
   total: 0,
-  perPage: 12,
+  perPage: 10,
 });
 
 const taxonomyLevels = ref([]);

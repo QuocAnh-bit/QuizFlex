@@ -15,7 +15,7 @@ class AdminSubjectController extends Controller
     }
 
     /**
-     * Danh sách bộ môn đang hoạt động
+     * Danh sách bộ môn đang hoạt động (Hỗ trợ phân trang Server-side, Tìm kiếm & Lọc)
      */
     public function index(Request $request)
     {
@@ -40,7 +40,8 @@ class AdminSubjectController extends Controller
             });
         }
 
-        $subjects = $query->orderBy('order', 'asc')->orderBy('id', 'asc')->get();
+        $perPage = min(max((int) $request->input('per_page', 10), 1), 100);
+        $paginated = $query->orderBy('order', 'asc')->orderBy('id', 'asc')->paginate($perPage);
 
         $activeCount = Subject::count();
         $trashedCount = Subject::onlyTrashed()->count();
@@ -48,7 +49,11 @@ class AdminSubjectController extends Controller
         return response()->json([
             'success' => true,
             'data' => [
-                'subjects' => $subjects,
+                'subjects' => $paginated->items(),
+                'total' => $paginated->total(),
+                'current_page' => $paginated->currentPage(),
+                'last_page' => $paginated->lastPage(),
+                'per_page' => $paginated->perPage(),
                 'stats' => [
                     'total' => $activeCount,
                     'trashed' => $trashedCount,
@@ -58,19 +63,34 @@ class AdminSubjectController extends Controller
     }
 
     /**
-     * Danh sách môn học trong Thùng rác (Đã xóa mềm)
+     * Danh sách môn học trong Thùng rác (Hỗ trợ phân trang Server-side độc lập)
      */
     public function trash(Request $request)
     {
-        $subjects = Subject::onlyTrashed()
+        $query = Subject::onlyTrashed()
             ->with(['grades.educationLevel'])
-            ->withCount(['quizzes', 'questions'])
-            ->orderBy('deleted_at', 'desc')
-            ->get();
+            ->withCount(['quizzes', 'questions']);
+
+        if ($search = $request->input('search')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('code', 'like', "%{$search}%")
+                  ->orWhere('topic_name', 'like', "%{$search}%");
+            });
+        }
+
+        $perPage = min(max((int) $request->input('per_page', 10), 1), 100);
+        $paginated = $query->orderBy('deleted_at', 'desc')->paginate($perPage);
 
         return response()->json([
             'success' => true,
-            'data' => $subjects,
+            'data' => [
+                'subjects' => $paginated->items(),
+                'total' => $paginated->total(),
+                'current_page' => $paginated->currentPage(),
+                'last_page' => $paginated->lastPage(),
+                'per_page' => $paginated->perPage(),
+            ],
         ]);
     }
 

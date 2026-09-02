@@ -599,7 +599,7 @@
         <div class="flex items-center gap-2 bg-purple-50 border border-purple-200 rounded-2xl p-4 text-xs text-purple-900 font-medium">
           <AlertCircle class="h-4 w-4 text-[#7C3AED] shrink-0" />
           <span>
-            Bảng dưới đây đối chiếu chi tiết giữa phiên bản cũ và phiên bản mới.
+            Bảng dưới đây đối chiếu chi tiết giữa Phiên bản {{ question.previous_revision.revision_number }} ({{ getReviewStatusLabel(question.previous_revision.status) }}) và Phiên bản {{ question.current_revision.revision_number }}.
           </span>
         </div>
 
@@ -612,7 +612,7 @@
                   {{ question.previous_revision.revision_number }}
                 </span>
                 <h3 class="text-xs font-black text-rose-900 uppercase tracking-wider">
-                  DỮ LIỆU CŨ
+                  DỮ LIỆU CŨ (Phiên bản {{ question.previous_revision.revision_number }})
                 </h3>
               </div>
               <span class="rounded-md bg-rose-100 text-rose-800 px-2 py-0.5 text-[10px] font-bold">
@@ -620,13 +620,17 @@
               </span>
             </div>
 
-            <div v-if="question.previous_revision.rejection_reason" class="rounded-xl border border-rose-300 bg-white p-3 text-xs text-rose-900 space-y-1">
-              <div class="font-bold flex items-center gap-1 text-rose-700">
+            <!-- Lý do từ chối trước đó (Chỉ hiển thị nếu thực sự có phiên bản bị từ chối) -->
+            <div
+              v-if="question.previous_rejected_revision && question.previous_rejected_revision.rejection_reason"
+              class="rounded-xl border border-rose-300 bg-white p-3 text-xs text-rose-900 space-y-1 shadow-xs"
+            >
+              <div class="font-bold flex items-center gap-1.5 text-rose-700">
                 <X class="h-3.5 w-3.5" />
-                <span>Lý do từ chối lần trước:</span>
+                <span>Lý do từ chối ở Phiên bản {{ question.previous_rejected_revision.revision_number }}:</span>
               </div>
               <p class="leading-relaxed font-medium pl-4">
-                "{{ question.previous_revision.rejection_reason }}"
+                "{{ question.previous_rejected_revision.rejection_reason }}"
               </p>
             </div>
 
@@ -666,7 +670,7 @@
                   {{ question.current_revision.revision_number }}
                 </span>
                 <h3 class="text-xs font-black text-purple-900 uppercase tracking-wider">
-                  DỮ LIỆU MỚI
+                  DỮ LIỆU MỚI (Phiên bản {{ question.current_revision.revision_number }})
                 </h3>
               </div>
               <span class="rounded-md px-2 py-0.5 text-[10px] font-bold" :class="getReviewStatusClass(question.current_revision.status)">
@@ -716,7 +720,7 @@
 
       <!-- Single Revision Diff (First version) -->
       <div v-else class="rounded-2xl border border-slate-200 bg-white p-8 text-center text-xs text-slate-500 space-y-2">
-        <p class="font-bold text-slate-700">Đây là phiên bản đầu tiên (Revision #1)</p>
+        <p class="font-bold text-slate-700">Đây là phiên bản đầu tiên (Phiên bản 1)</p>
         <p>Câu hỏi này chưa có phiên bản cũ để so sánh.</p>
       </div>
     </div>
