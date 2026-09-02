@@ -8,13 +8,13 @@
         <p class="mt-1 text-sm text-slate-600">Xem xét và xử lý các yêu cầu mở khóa tài khoản từ người dùng.</p>
       </div>
       <div class="flex items-center gap-2.5">
-        <select v-model="statusFilter" class="field text-xs" @change="loadRequests">
+        <select v-model="statusFilter" class="field text-xs" @change="handleFilterChange">
           <option value="all">Tất cả trạng thái</option>
           <option value="pending">Chờ duyệt (Pending)</option>
           <option value="approved">Đã duyệt (Approved)</option>
           <option value="rejected">Đã từ chối (Rejected)</option>
         </select>
-        <button class="btn-secondary text-xs px-3.5 py-1.5" type="button" @click="loadRequests">
+        <button class="btn-secondary text-xs px-3.5 py-1.5" type="button" @click="loadRequests(pagination.currentPage)">
           🔄 Tải lại
         </button>
       </div>
@@ -25,36 +25,50 @@
     </div>
 
     <!-- Master-Detail Grid -->
-    <div class="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
+    <div class="grid gap-6 lg:grid-cols-[1.1fr_1.2fr]">
       <!-- Left: Requests List -->
-      <div class="card p-5 space-y-4">
-        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-          <h2 class="text-sm font-bold text-slate-900">Danh sách đơn kháng cáo</h2>
-          <span class="rounded bg-purple-50 text-[#7C3AED] px-2 py-0.5 text-xs font-bold">
-            {{ filteredRequests.length }} đơn
-          </span>
+      <div class="card p-5 space-y-4 flex flex-col justify-between">
+        <div class="space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <h2 class="text-sm font-bold text-slate-900">Danh sách đơn kháng cáo</h2>
+            <span class="rounded bg-purple-50 text-[#7C3AED] px-2 py-0.5 text-xs font-bold">
+              {{ pagination.total }} đơn
+            </span>
+          </div>
+
+          <div v-if="isLoading" class="py-10 text-center text-xs text-slate-400">Đang tải danh sách...</div>
+          <div v-else-if="requests.length === 0" class="py-10 text-center text-xs text-slate-400">Chưa có kháng cáo nào ở trạng thái này.</div>
+          <div v-else class="space-y-2">
+            <button
+              v-for="item in requests"
+              :key="item.id"
+              type="button"
+              class="flex w-full items-start justify-between rounded-xl border p-3.5 text-left transition cursor-pointer"
+              :class="selectedRequest?.id === item.id ? 'border-[#7C3AED] bg-purple-50/50 shadow-sm' : 'border-slate-100 bg-slate-50 hover:border-slate-200'"
+              @click="selectRequest(item)"
+            >
+              <div>
+                <p class="font-bold text-xs text-slate-900">{{ item.user?.name || 'Không rõ' }}</p>
+                <p class="text-[11px] text-slate-400">{{ item.user?.email || '' }}</p>
+                <span class="text-[10px] text-slate-400 block pt-1 font-medium">{{ formatDate(item.created_at) }}</span>
+              </div>
+              <span class="rounded px-2 py-0.5 text-[10px] font-bold uppercase" :class="statusBadgeClass(item.status)">
+                {{ item.status }}
+              </span>
+            </button>
+          </div>
         </div>
 
-        <div v-if="isLoading" class="py-10 text-center text-xs text-slate-400">Đang tải danh sách...</div>
-        <div v-else-if="filteredRequests.length === 0" class="py-10 text-center text-xs text-slate-400">Chưa có kháng cáo nào ở trạng thái này.</div>
-        <div v-else class="space-y-2 max-h-[500px] overflow-y-auto pr-1">
-          <button
-            v-for="item in filteredRequests"
-            :key="item.id"
-            type="button"
-            class="flex w-full items-start justify-between rounded-xl border p-3.5 text-left transition"
-            :class="selectedRequest?.id === item.id ? 'border-[#7C3AED] bg-purple-50/50 shadow-sm' : 'border-slate-100 bg-slate-50 hover:border-slate-200'"
-            @click="selectRequest(item)"
-          >
-            <div>
-              <p class="font-bold text-xs text-slate-900">{{ item.user?.name || 'Không rõ' }}</p>
-              <p class="text-[11px] text-slate-400">{{ item.user?.email || '' }}</p>
-              <span class="text-[10px] text-slate-400 block pt-1 font-medium">{{ formatDate(item.created_at) }}</span>
-            </div>
-            <span class="rounded px-2 py-0.5 text-[10px] font-bold uppercase" :class="statusBadgeClass(item.status)">
-              {{ item.status }}
-            </span>
-          </button>
+        <!-- Server-side Pagination -->
+        <div v-if="pagination.total > 0" class="pt-3 border-t border-slate-100">
+          <AppPagination
+            :current-page="pagination.currentPage"
+            :last-page="pagination.lastPage"
+            :total="pagination.total"
+            :per-page="pagination.perPage"
+            item-label="đơn kháng cáo"
+            @change="loadRequests"
+          />
         </div>
       </div>
 
@@ -113,6 +127,14 @@
               </button>
             </div>
           </div>
+
+          <div v-else-if="selectedRequest.admin_note" class="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs space-y-1">
+            <span class="text-[10px] font-bold uppercase text-slate-500 block">Phản hồi của Admin:</span>
+            <p class="text-slate-800 font-medium">{{ selectedRequest.admin_note }}</p>
+            <span v-if="selectedRequest.reviewed_by?.name" class="text-[11px] text-slate-400 block pt-1">
+              Duyệt bởi: {{ selectedRequest.reviewed_by.name }} • {{ formatDate(selectedRequest.reviewed_at) }}
+            </span>
+          </div>
         </div>
       </div>
     </div>
@@ -123,8 +145,9 @@
 import { useAppLoading } from '@/composables/useAppLoading'
 const { beginTask, endTask } = useAppLoading()
 
-import { computed, onMounted, ref } from 'vue'
+import { reactive, onMounted, ref } from 'vue'
 import { unlockRequestsApi } from '@/services/api'
+import AppPagination from '@/components/common/AppPagination.vue'
 
 const requests = ref([])
 const selectedRequest = ref(null)
@@ -135,19 +158,34 @@ const isLoading = ref(false)
 const isActionLoading = ref(false)
 const adminNoteError = ref('')
 
-const filteredRequests = computed(() => {
-  if (statusFilter.value === 'all') return requests.value
-  return requests.value.filter((item) => item.status === statusFilter.value)
+const pagination = reactive({
+  currentPage: 1,
+  lastPage: 1,
+  total: 0,
+  perPage: 10
 })
 
-const loadRequests = async () => {
-    beginTask()
-    try {
-isLoading.value = true
+const handleFilterChange = () => {
+  pagination.currentPage = 1
+  loadRequests(1)
+}
+
+const loadRequests = async (page = 1) => {
+  beginTask()
+  isLoading.value = true
   errorMessage.value = ''
+  pagination.currentPage = page
   try {
-    const payload = await unlockRequestsApi.adminList({ status: statusFilter.value })
-    requests.value = payload?.data || payload || []
+    const payload = await unlockRequestsApi.adminList({
+      status: statusFilter.value,
+      page,
+      per_page: pagination.perPage
+    })
+    requests.value = payload?.items || payload?.data || []
+    pagination.total = payload?.total || requests.value.length
+    pagination.currentPage = payload?.currentPage || page
+    pagination.lastPage = payload?.lastPage || 1
+
     if (requests.value.length) {
       selectedRequest.value = requests.value[0]
     } else {
@@ -157,11 +195,9 @@ isLoading.value = true
     errorMessage.value = error.message || 'Không tải được danh sách kháng cáo.'
   } finally {
     isLoading.value = false
+    endTask()
   }
-    } finally {
-      endTask()
-    }
-  }
+}
 
 const selectRequest = async (item) => {
   selectedRequest.value = item
@@ -192,7 +228,7 @@ const approveRequest = async () => {
   try {
     await unlockRequestsApi.approve(selectedRequest.value.id, { admin_note: trimmedNote })
     adminNote.value = ''
-    await loadRequests()
+    await loadRequests(pagination.currentPage)
   } catch (error) {
     errorMessage.value = error.message || 'Không thể duyệt kháng cáo.'
   } finally {
@@ -218,7 +254,7 @@ const rejectRequest = async () => {
   try {
     await unlockRequestsApi.reject(selectedRequest.value.id, { admin_note: trimmedNote })
     adminNote.value = ''
-    await loadRequests()
+    await loadRequests(pagination.currentPage)
   } catch (error) {
     errorMessage.value = error.message || 'Không thể từ chối kháng cáo.'
   } finally {
@@ -238,5 +274,5 @@ const statusBadgeClass = (status) => ({
   rejected: 'bg-red-100 text-red-800',
 }[status] || 'bg-slate-100 text-slate-500')
 
-onMounted(loadRequests)
+onMounted(() => loadRequests(1))
 </script>

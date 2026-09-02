@@ -90,14 +90,14 @@
         <div class="grid gap-3 sm:grid-cols-[1fr_160px_100px]">
           <div class="relative">
             <Search class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-            <input v-model="search" class="field text-xs pl-8 w-full" placeholder="Tìm theo tên hoặc email..." @keyup.enter="loadUsers" />
+            <input v-model="search" class="field text-xs pl-8 w-full" placeholder="Tìm theo tên hoặc email..." @keyup.enter="loadUsers(1)" />
           </div>
-          <select v-model="roleFilter" class="field text-xs" @change="loadUsers">
+          <select v-model="roleFilter" class="field text-xs" @change="loadUsers(1)">
             <option value="all">Tất cả role</option>
             <option value="admin">Admin</option>
             <option value="user">User</option>
           </select>
-          <button class="btn-secondary text-xs inline-flex items-center justify-center gap-1.5" type="button" @click="loadUsers">
+          <button class="btn-secondary text-xs inline-flex items-center justify-center gap-1.5" type="button" @click="loadUsers(1)">
             <Search class="h-3.5 w-3.5" /> Tìm kiếm
           </button>
         </div>
@@ -169,6 +169,19 @@
             </tbody>
           </table>
         </div>
+
+        <!-- Pagination for Active Users -->
+        <div class="pt-3">
+          <AppPagination
+            :current-page="activePagination.currentPage"
+            :last-page="activePagination.lastPage"
+            :total="activePagination.total"
+            :per-page="activePagination.perPage"
+            :show-always="true"
+            item-label="người dùng"
+            @change="loadUsers"
+          />
+        </div>
       </div>
 
       <!-- Tab 2: Locked Users -->
@@ -176,9 +189,9 @@
         <div class="grid gap-3 sm:grid-cols-[1fr_100px]">
           <div class="relative">
             <Search class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-            <input v-model="lockedSearch" class="field text-xs pl-8 w-full" placeholder="Tìm tài khoản bị khóa..." @keyup.enter="loadLockedUsers" />
+            <input v-model="lockedSearch" class="field text-xs pl-8 w-full" placeholder="Tìm tài khoản bị khóa..." @keyup.enter="loadLockedUsers(1)" />
           </div>
-          <button class="btn-secondary text-xs inline-flex items-center justify-center gap-1.5" type="button" @click="loadLockedUsers">
+          <button class="btn-secondary text-xs inline-flex items-center justify-center gap-1.5" type="button" @click="loadLockedUsers(1)">
             <Search class="h-3.5 w-3.5" /> Tìm kiếm
           </button>
         </div>
@@ -195,13 +208,13 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100 font-medium">
-              <tr v-if="pagedLockedUsers.length === 0">
+              <tr v-if="!isLoading && lockedUsers.length === 0">
                 <td colspan="5" class="py-10 text-center text-slate-400">
                   <Inbox class="mx-auto mb-2 h-6 w-6 opacity-40" />
                   Không có tài khoản nào bị khóa.
                 </td>
               </tr>
-              <tr v-for="user in pagedLockedUsers" :key="user.id" class="hover:bg-slate-50/70 transition-colors">
+              <tr v-for="user in lockedUsers" :key="user.id" class="hover:bg-slate-50/70 transition-colors">
                 <td class="py-3.5 px-4">
                   <div class="flex items-center gap-2.5">
                     <div class="h-8 w-8 rounded-full bg-red-500/10 text-red-600 font-bold flex items-center justify-center text-xs shrink-0">
@@ -246,29 +259,16 @@
         </div>
 
         <!-- Pagination for locked users -->
-        <div v-if="lockedUsers.length > LOCKED_PAGE_SIZE" class="flex items-center justify-between pt-1 text-xs">
-          <span class="text-slate-500 text-[11px]">
-            Hiển thị {{ (lockedPage - 1) * LOCKED_PAGE_SIZE + 1 }}–{{ Math.min(lockedPage * LOCKED_PAGE_SIZE, lockedUsers.length) }} trong số {{ lockedUsers.length }}
-          </span>
-          <div class="flex items-center gap-2">
-            <button
-              class="btn-secondary text-[11px] px-2.5 py-1 disabled:opacity-40 inline-flex items-center gap-1"
-              type="button"
-              :disabled="lockedPage === 1"
-              @click="lockedPage > 1 && lockedPage--"
-            >
-              <ChevronLeft class="h-3 w-3" /> Trước
-            </button>
-            <span class="text-slate-700 font-bold">{{ lockedPage }} / {{ totalLockedPages }}</span>
-            <button
-              class="btn-secondary text-[11px] px-2.5 py-1 disabled:opacity-40 inline-flex items-center gap-1"
-              type="button"
-              :disabled="lockedPage === totalLockedPages"
-              @click="lockedPage < totalLockedPages && lockedPage++"
-            >
-              Sau <ChevronRight class="h-3 w-3" />
-            </button>
-          </div>
+        <div class="pt-3">
+          <AppPagination
+            :current-page="lockedPagination.currentPage"
+            :last-page="lockedPagination.lastPage"
+            :total="lockedPagination.total"
+            :per-page="lockedPagination.perPage"
+            :show-always="true"
+            item-label="tài khoản bị khóa"
+            @change="loadLockedUsers"
+          />
         </div>
       </div>
 
@@ -277,15 +277,15 @@
         <div class="grid gap-3 sm:grid-cols-[1fr_160px_100px]">
           <div class="relative">
             <Search class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-            <input v-model="trashSearch" class="field text-xs pl-8 w-full" placeholder="Tìm trong thùng rác..." @keyup.enter="loadTrash" />
+            <input v-model="trashSearch" class="field text-xs pl-8 w-full" placeholder="Tìm trong thùng rác..." @keyup.enter="loadTrash(1)" />
           </div>
-          <select v-model="trashRoleFilter" class="field text-xs" @change="loadTrash">
+          <select v-model="trashRoleFilter" class="field text-xs" @change="loadTrash(1)">
             <option value="all">Tất cả role</option>
             <option value="ADMIN">Admin</option>
             <option value="VIP">VIP</option>
             <option value="USER">User</option>
           </select>
-          <button class="btn-secondary text-xs inline-flex items-center justify-center gap-1.5" type="button" @click="loadTrash">
+          <button class="btn-secondary text-xs inline-flex items-center justify-center gap-1.5" type="button" @click="loadTrash(1)">
             <Search class="h-3.5 w-3.5" /> Tìm kiếm
           </button>
         </div>
@@ -301,7 +301,7 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100 font-medium">
-              <tr v-if="trashedUsers.length === 0">
+              <tr v-if="!isLoading && trashedUsers.length === 0">
                 <td colspan="4" class="py-10 text-center text-slate-400">
                   <Inbox class="mx-auto mb-2 h-6 w-6 opacity-40" />
                   Thùng rác trống.
@@ -334,6 +334,19 @@
               </tr>
             </tbody>
           </table>
+        </div>
+
+        <!-- Pagination for Trashed Users -->
+        <div class="pt-3">
+          <AppPagination
+            :current-page="trashPagination.currentPage"
+            :last-page="trashPagination.lastPage"
+            :total="trashPagination.total"
+            :per-page="trashPagination.perPage"
+            :show-always="true"
+            item-label="người dùng đã xóa"
+            @change="loadTrash"
+          />
         </div>
       </div>
     </article>
@@ -458,6 +471,7 @@ import { computed, onMounted, reactive, ref, inject } from 'vue'
 import { useRouter } from 'vue-router'
 import { currentUserStorage, normalizeUser, unlockRequestsApi, usersApi } from '@/services/api'
 import { useAppLoading } from '@/composables/useAppLoading'
+import AppPagination from '@/components/common/AppPagination.vue'
 
 const { beginTask, endTask } = useAppLoading()
 import {
@@ -493,11 +507,29 @@ const trashSearch = ref('')
 const trashRoleFilter = ref('all')
 const isLoading = ref(false)
 
+const activePagination = reactive({
+  currentPage: 1,
+  lastPage: 1,
+  total: 0,
+  perPage: 10,
+})
+
+const trashPagination = reactive({
+  currentPage: 1,
+  lastPage: 1,
+  total: 0,
+  perPage: 10,
+})
+
 // Locked tab state
+const lockedPagination = reactive({
+  currentPage: 1,
+  lastPage: 1,
+  total: 0,
+  perPage: 10,
+})
 const lockedSearch = ref('')
 const lockedAppealMap = ref({})
-const lockedPage = ref(1)
-const LOCKED_PAGE_SIZE = 20
 const selectedLockedUser = ref(null)
 const modalAppealRequest = ref(null)
 const adminNote = ref('')
@@ -577,16 +609,22 @@ const openConfirm = (message, onConfirm) => {
   }
 }
 
-const loadUsers = async () => {
+const loadUsers = async (page = 1) => {
   isLoading.value = true
   errorMessage.value = ''
+  activePagination.currentPage = page
   try {
-    const data = await usersApi.list({
+    const res = await usersApi.list({
       search: search.value || undefined,
       role: roleFilter.value,
-      per_page: 100,
+      page,
+      per_page: activePagination.perPage,
     })
-    users.value = data.map(normalizeUser)
+    const list = res?.items || res?.data || (Array.isArray(res) ? res : [])
+    users.value = list.map(normalizeUser)
+    activePagination.total = res?.total ?? users.value.length
+    activePagination.currentPage = res?.currentPage ?? page
+    activePagination.lastPage = res?.lastPage ?? 1
   } catch (error) {
     errorMessage.value = `Không tải được user: ${error.message}`
     users.value = []
@@ -709,22 +747,31 @@ const closeEditModal = () => {
 const setViewMode = (mode) => {
   viewMode.value = mode
   if (mode === 'trash') {
-    loadTrash()
+    loadTrash(1)
   } else if (mode === 'locked') {
-    loadLockedUsers()
+    loadLockedUsers(1)
   } else {
-    loadUsers()
+    loadUsers(1)
   }
 }
 
-const loadLockedUsers = async () => {
+const loadLockedUsers = async (page = 1) => {
   isLoading.value = true
   errorMessage.value = ''
+  lockedPagination.currentPage = page
   try {
-    const data = await usersApi.list({ is_locked: 1, search: lockedSearch.value || undefined, per_page: 100 })
-    lockedUsers.value = data.map(normalizeUser)
-    lockedCount.value = lockedUsers.value.length
-    lockedPage.value = 1
+    const res = await usersApi.list({
+      is_locked: 1,
+      search: lockedSearch.value ? lockedSearch.value.trim() : undefined,
+      page,
+      per_page: lockedPagination.perPage,
+    })
+    const list = res?.items || res?.data || (Array.isArray(res) ? res : [])
+    lockedUsers.value = list.map(normalizeUser)
+    lockedPagination.total = res?.total ?? lockedUsers.value.length
+    lockedPagination.currentPage = res?.currentPage ?? page
+    lockedPagination.lastPage = res?.lastPage ?? 1
+    lockedCount.value = lockedPagination.total
     await loadAppealMap()
   } catch (error) {
     errorMessage.value = `Không tải được danh sách bị khóa: ${error.message}`
@@ -736,8 +783,8 @@ const loadLockedUsers = async () => {
 
 const loadLockedCount = async () => {
   try {
-    const data = await usersApi.list({ is_locked: 1, per_page: 100 })
-    lockedCount.value = data.length
+    const res = await usersApi.list({ is_locked: 1, per_page: 1 })
+    lockedCount.value = res?.total ?? 0
   } catch {
     lockedCount.value = 0
   }
@@ -749,22 +796,15 @@ const unlockUser = (id) => {
     successMessage.value = ''
     try {
       await usersApi.unlock(id)
-      lockedUsers.value = lockedUsers.value.filter((u) => u.id !== id)
-      lockedCount.value = Math.max(0, lockedCount.value - 1)
       if (selectedLockedUser.value?.id === id) selectedLockedUser.value = null
       successMessage.value = 'Đã mở khóa tài khoản thành công.'
+      await loadLockedUsers(lockedPagination.currentPage)
+      await loadLockedCount()
     } catch (error) {
       errorMessage.value = `Mở khóa thất bại: ${error.message}`
     }
   })
 }
-
-const pagedLockedUsers = computed(() => {
-  const start = (lockedPage.value - 1) * LOCKED_PAGE_SIZE
-  return lockedUsers.value.slice(start, start + LOCKED_PAGE_SIZE)
-})
-
-const totalLockedPages = computed(() => Math.max(1, Math.ceil(lockedUsers.value.length / LOCKED_PAGE_SIZE)))
 
 const appealLabel = (status) => ({ pending: 'Đang chờ', approved: 'Đã duyệt', rejected: 'Đã từ chối' }[status] || 'Chưa gửi')
 
@@ -825,7 +865,7 @@ const approveRequest = async () => {
   try {
     await unlockRequestsApi.approve(modalAppealRequest.value.id, { admin_note: trimmedNote })
     showAppealModal.value = false
-    await loadLockedUsers()
+    await loadLockedUsers(lockedPagination.currentPage)
     await loadLockedCount()
   } catch (error) {
     errorMessage.value = error.message || 'Không thể duyệt kháng cáo.'
@@ -860,16 +900,22 @@ const rejectRequest = async () => {
   }
 }
 
-const loadTrash = async () => {
+const loadTrash = async (page = 1) => {
   isLoading.value = true
   errorMessage.value = ''
+  trashPagination.currentPage = page
   try {
-    const data = await usersApi.trash({
+    const res = await usersApi.trash({
       search: trashSearch.value || undefined,
       role: trashRoleFilter.value,
-      per_page: 100,
+      page,
+      per_page: trashPagination.perPage,
     })
-    trashedUsers.value = data.map(normalizeUser)
+    const list = res?.items || res?.data || (Array.isArray(res) ? res : [])
+    trashedUsers.value = list.map(normalizeUser)
+    trashPagination.total = res?.total ?? trashedUsers.value.length
+    trashPagination.currentPage = res?.currentPage ?? page
+    trashPagination.lastPage = res?.lastPage ?? 1
   } catch (error) {
     errorMessage.value = `Không tải được thùng rác: ${error.message}`
     trashedUsers.value = []
@@ -884,8 +930,8 @@ const restoreUser = (id) => {
     successMessage.value = ''
     try {
       await usersApi.restore(id)
-      trashedUsers.value = trashedUsers.value.filter((user) => user.id !== id)
       successMessage.value = 'Đã khôi phục user.'
+      await loadTrash(trashPagination.currentPage)
     } catch (error) {
       errorMessage.value = `Khôi phục thất bại: ${error.message}`
     }
@@ -898,8 +944,8 @@ const forceDeleteUser = (id) => {
     successMessage.value = ''
     try {
       await usersApi.forceDelete(id)
-      trashedUsers.value = trashedUsers.value.filter((user) => user.id !== id)
       successMessage.value = 'Đã xóa vĩnh viễn user.'
+      await loadTrash(trashPagination.currentPage)
     } catch (error) {
       errorMessage.value = `Xóa vĩnh viễn thất bại: ${error.message}`
     }
@@ -912,8 +958,8 @@ const deleteUser = (id) => {
     successMessage.value = ''
     try {
       await usersApi.remove(id)
-      users.value = users.value.filter((user) => user.id !== id)
       successMessage.value = 'Đã xóa user.'
+      await loadUsers(activePagination.currentPage)
     } catch (error) {
       errorMessage.value = `Xóa user thất bại: ${error.message}`
     }

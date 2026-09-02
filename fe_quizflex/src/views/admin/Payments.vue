@@ -278,7 +278,7 @@
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 font-medium">
-            <tr v-for="item in filteredHistory" :key="item.id" class="hover:bg-slate-50 transition-colors">
+            <tr v-for="item in paginatedHistory" :key="item.id" class="hover:bg-slate-50 transition-colors">
               <td class="py-3 px-3 font-mono text-[11px] text-slate-700">{{ item.order_code }}</td>
               <td class="py-3 px-3 font-bold text-slate-900">{{ item.plan_name }}</td>
               <td class="py-3 px-3 uppercase text-[10px] font-bold text-slate-500">{{ item.provider }}</td>
@@ -297,28 +297,28 @@
         </table>
       </div>
 
-      <!-- Pagination -->
-      <div v-if="!selectedUser && filteredUsers.length > pageSize" class="flex items-center justify-between pt-4 border-t border-slate-100 text-xs">
-        <span class="text-slate-500 text-[11px]">
-          Hiển thị {{ (currentPage - 1) * pageSize + 1 }}–{{ Math.min(currentPage * pageSize, filteredUsers.length) }} trong số {{ filteredUsers.length }}
-        </span>
-        <div class="flex items-center gap-2">
-          <button
-            @click="currentPage > 1 && currentPage--"
-            :disabled="currentPage === 1"
-            class="btn-secondary text-[11px] px-2.5 py-1 disabled:opacity-40 inline-flex items-center gap-1"
-          >
-            <ChevronLeft class="h-3 w-3" /> Trước
-          </button>
-          <span class="text-slate-700 font-bold">{{ currentPage }} / {{ totalPages }}</span>
-          <button
-            @click="currentPage < totalPages && currentPage++"
-            :disabled="currentPage === totalPages"
-            class="btn-secondary text-[11px] px-2.5 py-1 disabled:opacity-40 inline-flex items-center gap-1"
-          >
-            Sau <ChevronRight class="h-3 w-3" />
-          </button>
-        </div>
+      <!-- Pagination for Customers Table -->
+      <div v-if="!selectedUser && filteredUsers.length > 0" class="pt-4 border-t border-slate-100">
+        <AppPagination
+          :current-page="currentPage"
+          :last-page="totalPages"
+          :total="filteredUsers.length"
+          :per-page="pageSize"
+          item-label="khách hàng"
+          @change="(p) => currentPage = p"
+        />
+      </div>
+
+      <!-- Pagination for Selected Customer History Table -->
+      <div v-if="selectedUser && filteredHistory.length > 0" class="pt-4 border-t border-slate-100">
+        <AppPagination
+          :current-page="historyCurrentPage"
+          :last-page="totalHistoryPages"
+          :total="filteredHistory.length"
+          :per-page="pageSize"
+          item-label="giao dịch"
+          @change="(p) => historyCurrentPage = p"
+        />
       </div>
     </div>
   </section>
@@ -330,6 +330,7 @@ const { beginTask, endTask } = useAppLoading()
 
 import { onMounted, ref, computed, watch } from 'vue'
 import { paymentsApi } from '@/services/api'
+import AppPagination from '@/components/common/AppPagination.vue'
 import {
   Wallet,
   Receipt,
@@ -356,6 +357,7 @@ const searchQuery = ref('')
 const sortBy = ref('amount_desc')
 const historyStatusFilter = ref('all')
 const currentPage = ref(1)
+const historyCurrentPage = ref(1)
 const pageSize = 10
 
 const totalRevenue = ref(0)
@@ -598,6 +600,14 @@ const filteredHistory = computed(() => {
   if (historyStatusFilter.value === 'all') return selectedUser.value.history
   return selectedUser.value.history.filter(h => h.status === historyStatusFilter.value)
 })
+
+const totalHistoryPages = computed(() => Math.max(1, Math.ceil(filteredHistory.value.length / pageSize)))
+const paginatedHistory = computed(() => {
+  const start = (historyCurrentPage.value - 1) * pageSize
+  return filteredHistory.value.slice(start, start + pageSize)
+})
+
+watch([selectedUser, historyStatusFilter], () => { historyCurrentPage.value = 1 })
 
 const selectedUserAvgOrder = computed(() => {
   if (!selectedUser.value || !selectedUser.value.total_transactions) return 0

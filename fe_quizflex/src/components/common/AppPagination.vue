@@ -127,7 +127,7 @@ const props = defineProps({
   },
   perPage: {
     type: Number,
-    default: 12,
+    default: 10,
   },
   itemLabel: {
     type: String,
@@ -135,7 +135,7 @@ const props = defineProps({
   },
   showAlways: {
     type: Boolean,
-    default: false,
+    default: true,
   },
   showFirstLast: {
     type: Boolean,

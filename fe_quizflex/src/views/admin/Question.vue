@@ -241,13 +241,14 @@
 
     <!-- Pagination Bar -->
     <AppPagination
-      v-if="!isLoading && total > 0"
+      v-if="!isLoading"
       :current-page="currentPage"
       :last-page="lastPage"
       :total="total"
       :per-page="perPage"
+      :show-always="true"
       :show-per-page-selector="true"
-      :per-page-options="[12, 24, 48]"
+      :per-page-options="[10, 20, 50]"
       item-label="bộ quiz"
       @update:current-page="onPageChange"
       @update:per-page="onPerPageChange"
@@ -302,7 +303,7 @@ const showTrash = ref(false)
 const currentPage = ref(1)
 const lastPage = ref(1)
 const total = ref(0)
-const perPage = ref(12)
+const perPage = ref(10)
 
 const visibilityChips = [
   { value: 'all', label: 'Tất cả', icon: null },
