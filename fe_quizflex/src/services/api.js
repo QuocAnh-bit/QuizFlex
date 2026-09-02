@@ -358,6 +358,30 @@ export const adminBankRequestsApi = {
   },
 };
 
+// Read-only observability APIs for the curriculum RAG corpus.
+export const adminRagApi = {
+  async overview() {
+    const { data } = await api.get('/admin/rag/overview')
+    return unwrap(data)
+  },
+  async documents(params = {}) {
+    const { data } = await api.get('/admin/rag/documents', { params })
+    return data
+  },
+  async units(params = {}) {
+    const { data } = await api.get('/admin/rag/units', { params })
+    return data
+  },
+  async chunks(params = {}) {
+    const { data } = await api.get('/admin/rag/chunks', { params })
+    return data
+  },
+  async testRetrieval(payload) {
+    const { data } = await api.post('/admin/rag/retrieval/test', payload)
+    return unwrap(data)
+  },
+};
+
 
 export const normalizeRole = (role) => {
   const value = String(role || "guest")

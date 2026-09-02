@@ -583,6 +583,7 @@ const routes = [
   { path: '/admin/quizzes-trash', redirect: '/admin/quizzes' },
   { path: '/admin/quizzes/:id', name: 'admin-quiz-detail', component: () => import('@/views/admin/quizzes/QuizDetail.vue'), meta: { layout: 'admin', title: 'Chi tiết Quiz', requiresAuth: true, roles: adminRoles } },
   { path: '/admin/quizzes/:id/edit', redirect: to => `/admin/quizzes/${to.params.id}` },
+  { path: '/admin/rag', name: 'admin-rag', component: () => import('@/views/admin/AdminRagData.vue'), meta: { layout: 'admin', title: 'Dữ liệu chương trình', requiresAuth: true, roles: adminRoles } },
 
   {
     path: "/gamification",
