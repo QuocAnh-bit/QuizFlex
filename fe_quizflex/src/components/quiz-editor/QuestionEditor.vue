@@ -5,43 +5,53 @@
         <div class="flex min-w-0 flex-wrap items-center gap-2">
           <GripVertical class="h-4 w-4 text-slate-400" />
           <span class="text-xs font-black text-slate-600">Câu {{ questionNumber }} / {{ totalQuestions }}</span>
-          <select :value="question.type" class="compact-control min-w-[132px]" aria-label="Loại câu hỏi" @change="$emit('change-type', $event.target.value)">
+          <select :value="question.type" :disabled="isBankLocked" class="compact-control min-w-[132px] disabled:cursor-not-allowed disabled:opacity-60" aria-label="Loại câu hỏi" @change="$emit('change-type', $event.target.value)">
             <option value="single_choice">Một đáp án</option>
             <option value="multi_choice">Nhiều đáp án</option>
             <option value="fill_in">Điền đáp án</option>
             <option value="true_false">Đúng / Sai</option>
           </select>
-          <select :value="question.difficulty || 'medium'" class="compact-control min-w-[104px]" aria-label="Mức độ câu hỏi" @change="$emit('update-difficulty', $event.target.value)">
+          <select :value="question.difficulty || 'medium'" :disabled="isBankLocked" class="compact-control min-w-[104px] disabled:cursor-not-allowed disabled:opacity-60" aria-label="Mức độ câu hỏi" @change="$emit('update-difficulty', $event.target.value)">
             <option value="easy">Dễ</option>
             <option value="medium">Vừa</option>
             <option value="hard">Khó</option>
           </select>
         </div>
-        <label class="compact-points">
-          <input :value="question.points" type="number" min="0.01" max="10" step="any" class="w-12 bg-transparent text-right text-xs font-black text-violet-700 outline-none" aria-label="Điểm câu hỏi" @input="$emit('update-points', Number($event.target.value))" />
-          <span>điểm</span>
-        </label>
+        <div class="flex flex-wrap items-center justify-end gap-2">
+          <div class="point-mode" aria-label="Chế độ chia điểm">
+            <button type="button" :class="{ active: !manualPoints }" @click="$emit('set-points-mode', 'auto')">Tự động</button>
+            <button type="button" :class="{ active: manualPoints }" @click="$emit('set-points-mode', 'manual')">Tự đặt</button>
+          </div>
+          <label class="compact-points" :class="{ 'opacity-70': !manualPoints }"><span>Điểm số</span><input :value="question.points" type="number" min="0.01" max="10" step="any" :disabled="!manualPoints" class="w-12 bg-transparent text-right text-xs font-black text-violet-700 outline-none disabled:cursor-not-allowed" aria-label="Điểm câu hỏi" @input="$emit('update-points', Number($event.target.value))" /><span>điểm</span></label>
+        </div>
       </div>
 
       <article class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-200/50">
         <div class="border-b border-slate-100 p-4 sm:p-5">
-          <div class="flex items-center justify-between gap-4"><p class="text-[11px] font-black uppercase tracking-[0.14em] text-violet-600">Nội dung câu hỏi</p><button type="button" class="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 text-slate-400 hover:bg-violet-50 hover:text-violet-600" title="Thêm hình ảnh" @click="openImagePicker"><ImagePlus class="h-4 w-4" /></button></div>
+          <div class="flex items-center justify-between gap-4"><p class="text-[11px] font-black uppercase tracking-[0.14em] text-violet-600">Nội dung câu hỏi</p><button v-if="!isBankLocked" type="button" class="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 text-slate-400 hover:bg-violet-50 hover:text-violet-600" title="Thêm hình ảnh" @click="openImagePicker"><ImagePlus class="h-4 w-4" /></button></div>
           <input ref="imageInput" class="hidden" type="file" accept="image/png,image/jpeg,image/webp,image/gif" @change="handleImageChange" />
-          <MixedContentEditor ref="contentEditor" v-model="question.content" class="mt-2" placeholder="Nhập nội dung câu hỏi..." @edit-formula="openFormulaEditor('question', null, $event)" />
+          <MathText v-if="isBankLocked" :content="question.content" class="mt-2 block whitespace-pre-wrap text-sm font-semibold leading-6 text-slate-800" />
+          <MixedContentEditor v-else ref="contentEditor" v-model="question.content" class="mt-2" placeholder="Nhập nội dung câu hỏi..." @edit-formula="openFormulaEditor('question', null, $event)" />
           <div v-if="question.image_url" class="question-image-preview">
             <img :src="question.image_url" alt="Ảnh minh họa câu hỏi" />
-            <div class="question-image-actions">
+            <div v-if="!isBankLocked" class="question-image-actions">
               <button type="button" @click="openImagePicker">Đổi ảnh</button>
               <button type="button" class="text-rose-600 hover:bg-rose-50" @click="removeImage">Xóa ảnh</button>
             </div>
           </div>
           <p v-if="imageError" class="mt-2 text-xs font-semibold text-rose-600">{{ imageError }}</p>
-          <div class="mt-2 flex items-center gap-1 border-t border-slate-100 pt-2 text-slate-400"><button type="button" class="format-button font-serif font-black">B</button><button type="button" class="format-button italic">I</button><button type="button" class="inline-flex h-8 items-center gap-1.5 rounded-lg px-2 text-xs font-bold transition hover:bg-violet-50 hover:text-violet-600" @click="openFormulaEditor('question')"><Sigma class="h-4 w-4" /> Công thức</button><span class="ml-auto text-[10px] font-semibold">{{ question.content.length }} ký tự</span></div>
+          <div v-if="!isBankLocked" class="mt-2 flex items-center gap-1 border-t border-slate-100 pt-2 text-slate-400"><button type="button" class="format-button font-serif font-black">B</button><button type="button" class="format-button italic">I</button><button type="button" class="inline-flex h-8 items-center gap-1.5 rounded-lg px-2 text-xs font-bold transition hover:bg-violet-50 hover:text-violet-600" @click="openFormulaEditor('question')"><Sigma class="h-4 w-4" /> Công thức</button><span class="ml-auto text-[10px] font-semibold">{{ question.content.length }} ký tự</span></div>
         </div>
 
         <div class="bg-slate-50/60 p-4 sm:p-5">
           <div class="mb-3 flex items-center justify-between"><div><p class="text-[11px] font-black uppercase tracking-[0.14em] text-slate-600">Thiết lập đáp án</p><p class="mt-0.5 text-xs text-slate-400">Đánh dấu đáp án đúng trước khi hoàn tất.</p></div><CheckCircle2 class="h-5 w-5 text-emerald-500" /></div>
-          <component :is="activeEditor" :question="question" @add-answer="$emit('add-answer')" @remove-answer="$emit('remove-answer', $event)" @add-fill-answer="$emit('add-fill-answer')" @remove-fill-answer="$emit('remove-fill-answer', $event)" @edit-formula="openFormulaEditor($event.type, $event.target, $event.formula)" />
+          <div v-if="isBankLocked" class="space-y-2">
+            <div v-for="(answer, index) in answerPreview" :key="answer.id || index" class="flex items-center gap-3 rounded-xl border px-3 py-2.5 text-sm" :class="(answer.is_correct || question.type === 'fill_in') ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-slate-200 bg-white text-slate-700'">
+              <span class="font-black">{{ String.fromCharCode(65 + index) }}.</span><MathText :content="answer.content" class="min-w-0 flex-1" /><span v-if="answer.is_correct || question.type === 'fill_in'" class="text-[10px] font-black uppercase">Đáp án đúng</span>
+            </div>
+            <div class="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-sky-100 bg-sky-50 px-3 py-2.5 text-xs text-sky-800"><span><b>Câu hỏi từ Ngân hàng đã kiểm duyệt</b> · Nội dung và đáp án được khóa để giữ nguyên trạng thái duyệt.</span><button type="button" class="rounded-lg bg-white px-3 py-1.5 font-black text-violet-700 shadow-sm ring-1 ring-violet-100 hover:bg-violet-50" @click="$emit('duplicate-question')">Tạo bản sao để chỉnh sửa</button></div>
+          </div>
+          <component v-else :is="activeEditor" :question="question" @add-answer="$emit('add-answer')" @remove-answer="$emit('remove-answer', $event)" @add-fill-answer="$emit('add-fill-answer')" @remove-fill-answer="$emit('remove-fill-answer', $event)" @edit-formula="openFormulaEditor($event.type, $event.target, $event.formula)" />
         </div>
       </article>
 
@@ -61,16 +71,18 @@
 <script setup>
 import { computed, nextTick, ref } from 'vue'
 import { CheckCircle2, FileQuestion, GripVertical, ImagePlus, Plus, Sigma } from 'lucide-vue-next'
+import MathText from '../MathText.vue'
 import MathFormulaEditor from './MathFormulaEditor.vue'
 import MixedContentEditor from './MixedContentEditor.vue'
 import FillInEditor from './question-types/FillInEditor.vue'
 import MultiChoiceEditor from './question-types/MultiChoiceEditor.vue'
 import SingleChoiceEditor from './question-types/SingleChoiceEditor.vue'
 import TrueFalseEditor from './question-types/TrueFalseEditor.vue'
-const props = defineProps({ question: { type: Object, default: null }, questionNumber: { type: Number, default: 1 }, totalQuestions: { type: Number, default: 0 } })
-defineEmits(['change-type', 'update-difficulty', 'update-points', 'add-answer', 'remove-answer', 'add-fill-answer', 'remove-fill-answer', 'add-question'])
+const props = defineProps({ question: { type: Object, default: null }, questionNumber: { type: Number, default: 1 }, totalQuestions: { type: Number, default: 0 }, manualPoints: Boolean, isBankLocked: Boolean })
+defineEmits(['change-type', 'update-difficulty', 'update-points', 'set-points-mode', 'add-answer', 'remove-answer', 'add-fill-answer', 'remove-fill-answer', 'add-question', 'duplicate-question'])
 const editors = { single_choice: SingleChoiceEditor, multi_choice: MultiChoiceEditor, fill_in: FillInEditor, true_false: TrueFalseEditor }
 const activeEditor = computed(() => editors[props.question?.type] || SingleChoiceEditor)
+const answerPreview = computed(() => props.question?.type === 'fill_in' ? props.question.accepted_answers || [] : props.question?.answers || [])
 const contentEditor = ref(null)
 const imageInput = ref(null)
 const imageError = ref('')
@@ -78,6 +90,7 @@ const formulaEditorOpen = ref(false)
 const formulaDraft = ref('')
 const formulaTarget = ref(null)
 const openImagePicker = () => {
+  if (props.isBankLocked) return
   imageError.value = ''
   imageInput.value?.click()
 }
@@ -150,6 +163,9 @@ const insertFormula = async (latex) => {
 .format-button { @apply grid h-8 w-8 place-items-center rounded-lg text-sm transition hover:bg-slate-100 hover:text-violet-600; }
 .compact-control { @apply rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700 outline-none shadow-sm transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100; }
 .compact-points { @apply inline-flex items-center gap-1 rounded-xl bg-violet-100 px-3 py-2 text-[10px] font-black text-violet-700; }
+.point-mode { @apply inline-flex rounded-xl border border-slate-200 bg-slate-100 p-0.5; }
+.point-mode button { @apply rounded-lg px-2.5 py-1.5 text-[10px] font-black text-slate-500 transition hover:text-violet-700; }
+.point-mode button.active { @apply bg-white text-violet-700 shadow-sm; }
 .question-image-preview { @apply mt-3 overflow-hidden rounded-xl border border-slate-200 bg-slate-50; }
 .question-image-preview img { @apply mx-auto max-h-72 w-auto max-w-full object-contain p-2; }
 .question-image-actions { @apply flex justify-end gap-2 border-t border-slate-200 bg-white p-2; }

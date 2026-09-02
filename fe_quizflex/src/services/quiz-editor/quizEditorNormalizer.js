@@ -37,6 +37,9 @@ export const normalizeQuestion = (rawQuestion) => {
     image_url: typeof question.image_url === 'string' ? question.image_url : null,
     difficulty: SUPPORTED_DIFFICULTIES.has(question.difficulty) ? question.difficulty : 'medium',
     points: asNumber(question.points, 1),
+    // A question copied from the approved bank remains an immutable snapshot
+    // inside a quiz. This value comes from the API, not from a UI-only flag.
+    origin_question_id: question.origin_question_id ?? null,
     answers,
     accepted_answers: type === 'fill_in'
       ? answers.map((answer) => ({ id: answer.id, content: answer.content }))
@@ -71,6 +74,7 @@ export const normalizeQuiz = (rawQuiz) => {
     subject_id: quiz.subject_id ?? null,
     subject_name: String(quiz.subject_name ?? quiz.subject?.name ?? ''),
     topic_name: quiz.topic_name ?? null,
+    curriculum_unit_ids: Array.isArray(quiz.curriculum_unit_ids) ? quiz.curriculum_unit_ids.map(Number).filter(Number.isInteger) : [],
     tag: quiz.tag ?? null,
     difficulty: SUPPORTED_DIFFICULTIES.has(quiz.difficulty) ? quiz.difficulty : 'medium',
     status: quiz.status ?? 'draft',

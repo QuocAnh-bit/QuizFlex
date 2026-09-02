@@ -14,6 +14,7 @@ const QUIZ_FIELDS = [
   'grade_id',
   'subject_id',
   'topic_name',
+  'curriculum_unit_ids',
   'tag',
   'difficulty',
   'status',
@@ -66,6 +67,12 @@ export const serializeQuestion = (editorQuestion) => {
     answers: sourceAnswers.map(serializeAnswer),
   }
 
+  // Preserve the provenance of a Bank question when it becomes a quiz snapshot.
+  // Temporary editor IDs never go to the API, but this stable Bank ID does.
+  if (Number.isInteger(Number(question.origin_question_id)) && Number(question.origin_question_id) > 0) {
+    payload.origin_question_id = Number(question.origin_question_id)
+  }
+
   return withBackendId(payload, question.id)
 }
 
@@ -80,4 +87,3 @@ export const serializeQuiz = (editorQuiz) => {
   payload.questions = asArray(quiz.questions).map(serializeQuestion)
   return payload
 }
-

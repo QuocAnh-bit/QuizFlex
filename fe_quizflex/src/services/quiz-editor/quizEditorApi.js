@@ -9,6 +9,8 @@ export const updateQuiz = async (id, payload) => {
   return unwrapResponse(response)
 }
 
+export const deleteQuiz = (id) => quizzesApi.remove(id)
+
 export const getQuizQuestions = async (quizId) => {
   const response = await api.get(`/quizzes/${quizId}/questions`)
   return unwrapResponse(response)

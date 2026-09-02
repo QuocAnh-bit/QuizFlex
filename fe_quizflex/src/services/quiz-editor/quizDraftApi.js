@@ -7,6 +7,7 @@ const metadataPayload = (form) => ({
   grade_id: Number(form.grade_id),
   subject_id: Number(form.subject_id),
   topic_name: String(form.topic_name || '').trim() || null,
+  curriculum_unit_ids: Array.isArray(form.curriculum_unit_ids) ? form.curriculum_unit_ids.map(Number).filter(Number.isInteger) : [],
   difficulty: form.difficulty || 'medium',
 })
 

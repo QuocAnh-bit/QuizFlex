@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use PHPOpenSourceSaver\JWTAuth\Exceptions\TokenExpiredException;
 use Illuminate\Support\Facades\Auth;
 
@@ -389,6 +390,8 @@ class QuizController extends Controller
             'grade_id' => ['nullable', 'integer', 'exists:grades,id'],
             'subject_id' => ['nullable', 'integer', 'exists:subjects,id'],
             'topic_name' => ['nullable', 'string', 'max:150'],
+            'curriculum_unit_ids' => ['nullable', 'array'],
+            'curriculum_unit_ids.*' => ['integer', 'distinct', 'exists:curriculum_units,id'],
             'tag' => ['nullable', 'string', 'max:100'],
             'difficulty' => ['nullable', 'string', Rule::in(['easy', 'medium', 'hard', 'Dễ', 'Vừa', 'Khó'])],
             'status' => ['nullable', Rule::in(['draft', 'published', 'archived'])],
@@ -414,6 +417,7 @@ class QuizController extends Controller
             'questions.*.type' => ['nullable', Rule::in(['single_choice', 'multi_choice', 'multiple_choice', 'true_false', 'fill_blank'])],
             'questions.*.points' => ['nullable', 'numeric', 'min:0.01', 'max:1000'],
             'questions.*.order' => ['nullable', 'integer', 'min:0'],
+            'questions.*.origin_question_id' => ['nullable', 'integer', 'exists:questions,id'],
             'questions.*.correct' => ['nullable'],
             'questions.*.answers' => ['required_with:questions', 'array', 'min:2'],
             'questions.*.answers.*.id' => ['nullable', 'integer', 'exists:answers,id'],
@@ -530,6 +534,7 @@ class QuizController extends Controller
             'grade_id' => array_key_exists('grade_id', $data) ? $data['grade_id'] : $currentQuiz?->grade_id,
             'subject_id' => array_key_exists('subject_id', $data) ? $data['subject_id'] : $currentQuiz?->subject_id,
             'topic_name' => array_key_exists('topic_name', $data) ? $data['topic_name'] : $currentQuiz?->topic_name,
+            'curriculum_unit_ids' => array_key_exists('curriculum_unit_ids', $data) ? array_values(array_unique(array_map('intval', $data['curriculum_unit_ids'] ?? []))) : ($currentQuiz?->curriculum_unit_ids ?? []),
             'tag' => array_key_exists('tag', $data) ? $data['tag'] : $currentQuiz?->tag,
             'difficulty' => $this->normalizeDifficulty($data['difficulty'] ?? $currentQuiz?->difficulty ?? 'medium'),
             'creation_mode' => $creationMode,
@@ -550,11 +555,57 @@ class QuizController extends Controller
     private function syncQuestions(Quiz $quiz, array $questions): void
     {
         $syncData = [];
+        $fingerprints = [];
+        $snapshotService = app(\App\Services\QuestionSnapshotService::class);
+
+        // Validate the complete incoming set before writing anything. This keeps
+        // one Quiz free of duplicate question snapshots and returns a useful
+        // validation error instead of allowing a later database conflict.
+        foreach ($questions as $index => $questionData) {
+            $content = trim((string) ($questionData['content'] ?? $questionData['text'] ?? ''));
+            if ($content === '') {
+                continue;
+            }
+
+            $fingerprint = $snapshotService->computeFingerprintFromSnapshot(
+                $content,
+                $questionData['type'] ?? 'single_choice',
+                $questionData['answers'] ?? []
+            );
+            if (isset($fingerprints[$fingerprint])) {
+                throw ValidationException::withMessages([
+                    "questions.{$index}" => 'Câu ' . ($index + 1) . ' trùng với câu ' . ($fingerprints[$fingerprint] + 1) . ' trong Quiz.',
+                ]);
+            }
+            $fingerprints[$fingerprint] = $index;
+        }
 
         foreach ($questions as $index => $questionData) {
             $questionContent = trim((string) ($questionData['content'] ?? $questionData['text'] ?? ''));
             if ($questionContent === '') {
                 continue;
+            }
+
+            $existingQuestion = !empty($questionData['id'])
+                ? Question::with('answers')->find($questionData['id'])
+                : null;
+
+            // A Bank question is stored as an immutable quiz snapshot. Even if a
+            // caller bypasses the V2 UI, its content, type, image and answers
+            // cannot be altered while it keeps the approved Bank provenance.
+            if ($existingQuestion?->origin_question_id) {
+                $incomingFingerprint = $snapshotService->computeFingerprintFromSnapshot(
+                        $questionContent,
+                        $questionData['type'] ?? 'single_choice',
+                        $questionData['answers'] ?? []
+                    );
+                $currentFingerprint = $snapshotService->computeFingerprint($existingQuestion);
+
+                if ($incomingFingerprint !== $currentFingerprint || ($questionData['image_url'] ?? null) !== $existingQuestion->image_url) {
+                    throw ValidationException::withMessages([
+                        "questions.{$index}" => 'Câu ' . ($index + 1) . ': Câu hỏi từ Ngân hàng đã kiểm duyệt không thể chỉnh sửa. Hãy nhân bản câu hỏi để tạo bản sao riêng.',
+                    ]);
+                }
             }
 
             $questionValues = [
@@ -581,6 +632,26 @@ class QuizController extends Controller
                 // quiz snapshot, not a new public/personal-bank entry.
                 $questionValues['quiz_id'] = $quiz->id;
                 $questionValues['is_public'] = false;
+
+                if (!empty($questionData['origin_question_id'])) {
+                    $bankQuestion = Question::query()
+                        ->whereKey($questionData['origin_question_id'])
+                        ->where('is_public', true)
+                        // Keep this definition aligned with QuestionController::bank().
+                        // Older approved Bank snapshots may not have
+                        // bank_submission_status populated, but are public with
+                        // status=approved and are valid selectable Bank records.
+                        ->where('status', 'approved')
+                        ->first();
+
+                    if (!$bankQuestion) {
+                        throw ValidationException::withMessages([
+                            "questions.{$index}.origin_question_id" => 'Câu ' . ($index + 1) . ': Câu hỏi nguồn không còn là câu hỏi Ngân hàng đã được duyệt.',
+                        ]);
+                    }
+
+                    $questionValues['origin_question_id'] = $bankQuestion->id;
+                }
             }
 
             $question = Question::updateOrCreate(
@@ -720,6 +791,7 @@ class QuizController extends Controller
             'subject_name' => $quiz->subject?->name,
             'subject_icon' => $quiz->subject?->icon,
             'topic_name' => $quiz->topic_name,
+            'curriculum_unit_ids' => $quiz->curriculum_unit_ids ?? [],
             'tag' => $quiz->tag ?? $quiz->category,
             'difficulty' => $quiz->difficulty,
             'difficulty_label' => $this->difficultyLabel($quiz->difficulty),
@@ -768,6 +840,7 @@ class QuizController extends Controller
             'topic_name' => $question->topic_name,
             'order' => $question->pivot?->order ?? $question->order,
             'points' => $question->pivot?->points ?? $question->points,
+            'origin_question_id' => $question->origin_question_id,
             'answers' => $question->answers->map(fn(Answer $answer, int $index) => [
                 'id' => $answer->id,
                 'question_id' => $answer->question_id,
