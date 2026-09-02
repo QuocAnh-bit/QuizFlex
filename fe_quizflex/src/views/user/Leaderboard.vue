@@ -562,6 +562,9 @@ import {
   Zap,
 } from "lucide-vue-next";
 import { currentUserStorage, gamificationApi } from "@/services/api";
+import { useAppLoading } from "@/composables/useAppLoading";
+
+const { beginTask, endTask } = useAppLoading();
 
 /* =========================================================
    STATE
@@ -657,6 +660,7 @@ const getUserAvatarClass = (user) => {
    LOAD LEADERBOARD
 ========================================================= */
 onMounted(async () => {
+  beginTask();
   isLoading.value = true;
   try {
     const currentUser = currentUserStorage.get();
@@ -678,6 +682,7 @@ onMounted(async () => {
     leaderboard.value = [];
   } finally {
     isLoading.value = false;
+    endTask();
   }
 });
 </script>

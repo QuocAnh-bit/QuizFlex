@@ -456,6 +456,8 @@ import {
   inject,
 } from "vue";
 import { adminRoomApi, adminRoomsApi } from "@/services/api";
+import { useAppLoading } from "@/composables/useAppLoading";
+const { beginTask, endTask } = useAppLoading();
 import {
   Swords,
   PlayCircle,
@@ -1139,9 +1141,13 @@ const LiveDetail = defineComponent({
   },
 });
 
-onMounted(() => {
-  loadStats();
-  loadRooms();
+onMounted(async () => {
+  beginTask();
+  try {
+    await Promise.all([loadStats(), loadRooms()]);
+  } finally {
+    endTask();
+  }
 });
 </script>
 

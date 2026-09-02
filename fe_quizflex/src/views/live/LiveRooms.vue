@@ -95,6 +95,9 @@
 </template>
 
 <script setup>
+import { useAppLoading } from '@/composables/useAppLoading'
+const { beginTask, endTask } = useAppLoading()
+
 import { onMounted, ref, computed } from 'vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import { currentUserStorage, liveRoomsApi } from '@/services/api'
@@ -115,7 +118,9 @@ const roleForRoom = (room) => {
 }
 
 const loadRooms = async () => {
-  isLoading.value = true
+    beginTask()
+    try {
+isLoading.value = true
   errorMessage.value = ''
 
   try {
@@ -125,7 +130,10 @@ const loadRooms = async () => {
   } finally {
     isLoading.value = false
   }
-}
+    } finally {
+      endTask()
+    }
+  }
 
 onMounted(loadRooms)
 </script>

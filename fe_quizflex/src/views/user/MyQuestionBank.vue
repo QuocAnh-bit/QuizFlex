@@ -727,6 +727,9 @@ import AppErrorState from '@/components/common/AppErrorState.vue'
 import QuestionImage from '@/components/question/QuestionImage.vue'
 import QuestionImageUploader from '@/components/question/QuestionImageUploader.vue'
 import { myQuestionsApi, questionsBankApi, taxonomyApi } from '@/services/api'
+import { useAppLoading } from '@/composables/useAppLoading'
+
+const { beginTask, endTask } = useAppLoading()
 import {
   Trash2,
   Plus,
@@ -1278,10 +1281,12 @@ watch(
   }
 )
 
-onMounted(() => {
-  fetchTaxonomy() 
-  fetchTopicsList()
-  loadQuestions()
-  loadTrash()
+onMounted(async () => {
+  beginTask()
+  try {
+    await Promise.all([fetchTaxonomy(), fetchTopicsList(), loadQuestions(), loadTrash()])
+  } finally {
+    endTask()
+  }
 })
 </script>

@@ -325,6 +325,9 @@
 </template>
 
 <script setup>
+import { useAppLoading } from '@/composables/useAppLoading'
+const { beginTask, endTask } = useAppLoading()
+
 import { onMounted, ref, computed, watch } from 'vue'
 import { paymentsApi } from '@/services/api'
 import {
@@ -368,7 +371,9 @@ const statusTabs = [
 ]
 
 const loadPayments = async () => {
-  isLoading.value = true
+    beginTask()
+    try {
+isLoading.value = true
   try {
     const res = await paymentsApi.history()
     const rawData = Array.isArray(res?.data) ? res.data : []
@@ -420,7 +425,10 @@ const loadPayments = async () => {
   } finally {
     isLoading.value = false
   }
-}
+    } finally {
+      endTask()
+    }
+  }
 
 const successTransactions = computed(() =>
   rawTransactions.value.filter(t => t.status === 'success')

@@ -158,6 +158,9 @@
 </template>
 
 <script setup>
+import { useAppLoading } from '@/composables/useAppLoading'
+const { beginTask, endTask } = useAppLoading()
+
 import { computed, onMounted, ref, watch, inject } from 'vue'
 import { useRoute } from 'vue-router'
 import AppLoadingState from '@/components/common/AppLoadingState.vue'
@@ -215,7 +218,9 @@ const formatCorrectCount = (attempt) => {
 }
 
 const loadAttempts = async () => {
-  isLoading.value = true
+    beginTask()
+    try {
+isLoading.value = true
   errorMessage.value = ''
 
   try {
@@ -237,7 +242,10 @@ const loadAttempts = async () => {
   } finally {
     isLoading.value = false
   }
-}
+    } finally {
+      endTask()
+    }
+  }
 
 const openEvaluation = async (attempt) => {
   selectedAttempt.value = attempt

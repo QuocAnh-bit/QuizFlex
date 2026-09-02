@@ -526,6 +526,7 @@ import HomeContinueLearning from '@/components/Home/HomeContinueLearning.vue'
 import HomeNotifications from '@/components/Home/HomeNotifications.vue'
 import HomeWeeklyRanking from '@/components/Home/HomeWeeklyRanking.vue'
 import AppPagination from '@/components/common/AppPagination.vue'
+import { useAppLoading } from '@/composables/useAppLoading'
 
 import {
   currentUserStorage,
@@ -535,6 +536,8 @@ import {
 } from '@/services/api'
 
 import userImage from '@/assets/user.png'
+
+const { beginTask, endTask } = useAppLoading()
 
 const currentUser = ref(
   currentUserStorage.get()
@@ -564,28 +567,33 @@ const categoryTabs = ref([
 ])
 
 const loadTaxonomySubjects = async () => {
+  beginTask()
   try {
-    const tree = await taxonomyApi.tree()
-    const levels = tree?.education_levels || (Array.isArray(tree) ? tree : [])
-    if (Array.isArray(levels) && levels.length > 0) {
-      const subjectSet = new Set()
-      levels.forEach((level) => {
-        if (Array.isArray(level.grades)) {
-          level.grades.forEach((grade) => {
-            if (Array.isArray(grade.subjects)) {
-              grade.subjects.forEach((sub) => {
-                if (sub.name) subjectSet.add(sub.name.trim())
-              })
-            }
-          })
+    try {
+      const tree = await taxonomyApi.tree()
+      const levels = tree?.education_levels || (Array.isArray(tree) ? tree : [])
+      if (Array.isArray(levels) && levels.length > 0) {
+        const subjectSet = new Set()
+        levels.forEach((level) => {
+          if (Array.isArray(level.grades)) {
+            level.grades.forEach((grade) => {
+              if (Array.isArray(grade.subjects)) {
+                grade.subjects.forEach((sub) => {
+                  if (sub.name) subjectSet.add(sub.name.trim())
+                })
+              }
+            })
+          }
+        })
+        if (subjectSet.size > 0) {
+          categoryTabs.value = ['Tất cả', ...Array.from(subjectSet)]
         }
-      })
-      if (subjectSet.size > 0) {
-        categoryTabs.value = ['Tất cả', ...Array.from(subjectSet)]
       }
+    } catch (e) {
+      console.warn('Không tải được danh mục môn học:', e)
     }
-  } catch (e) {
-    console.warn('Không tải được danh mục môn học:', e)
+  } finally {
+    endTask()
   }
 }
 
@@ -681,9 +689,14 @@ const difficultyClass = (difficulty) => ({
   Khó: 'bg-red-50 text-red-700',
 }[difficulty] || 'bg-purple-50 text-purple-700')
 
-onMounted(() => {
+onMounted(async () => {
   loadTaxonomySubjects()
-  loadQuizzes(1)
+  beginTask()
+  try {
+    await loadQuizzes(1)
+  } finally {
+    endTask()
+  }
   window.addEventListener('quizflex-user-updated', syncCurrentUser)
   window.addEventListener('storage', syncCurrentUser)
 })

@@ -111,11 +111,12 @@ class GenerateQuizJob implements ShouldQueue
                 throw new \RuntimeException('AI quota exhausted.');
             }
 
-            $quiz = $this->storeQuiz($job, $generatedQuiz);
+            $questionsOnly = ($job->response_json['output_mode'] ?? 'quiz') === 'questions_only';
+            $quiz = $questionsOnly ? null : $this->storeQuiz($job, $generatedQuiz);
 
             $log = AiLog::create([
                 'user_id' => $user->id,
-                'quiz_id' => $quiz->id,
+                'quiz_id' => $quiz?->id,
                 'action_type' => 'ai_generate',
                 'tokens_used' => (int) ($generatedQuiz['meta']['tokens_used'] ?? 0),
                 'questions_generated' => count($generatedQuiz['questions']),
@@ -127,11 +128,14 @@ class GenerateQuizJob implements ShouldQueue
 
             $job->update([
                 'ai_log_id' => $log->id,
-                'quiz_id' => $quiz->id,
+                'quiz_id' => $quiz?->id,
                 'questions_generated' => count($generatedQuiz['questions']),
                 'status' => 'completed',
                 'current_step' => 'completed', // <-- Thêm dòng này
-                'response_json' => $generatedQuiz,
+                'response_json' => [
+                    ...$generatedQuiz,
+                    'output_mode' => $questionsOnly ? 'questions_only' : 'quiz',
+                ],
                 'finished_at' => now(),
             ]);
         });

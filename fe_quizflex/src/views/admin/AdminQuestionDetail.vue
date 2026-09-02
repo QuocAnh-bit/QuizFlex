@@ -263,7 +263,7 @@
             <span>Cơ chế xử lý tự động:</span>
           </div>
           <p class="text-[11px] text-blue-800 leading-relaxed">
-            Khi Admin bấm <strong>Phê duyệt (Approve)</strong> câu hỏi này, hệ thống sẽ <strong>tự động chuyển tất cả báo cáo sang Đã giải quyết (Resolved)</strong>.
+            Khi Admin bấm <strong>Phê duyệt</strong> câu hỏi này, hệ thống sẽ <strong>tự động chuyển tất cả báo cáo sang Đã giải quyết</strong>.
           </p>
         </div>
       </div>
@@ -296,10 +296,7 @@
         @click="activeTab = 'diff'"
       >
         <GitCompare class="h-4 w-4" />
-        <span>Đối chiếu sai khác (Diff)</span>
-        <span class="rounded-full bg-purple-100 text-[#7C3AED] px-1.5 py-0.2 text-[10px] font-bold">
-          Rev #{{ question.current_revision?.revision_number || question.revision_number }}
-        </span>
+        <span>Đối chiếu sai khác</span>
       </button>
 
       <button
@@ -602,7 +599,7 @@
         <div class="flex items-center gap-2 bg-purple-50 border border-purple-200 rounded-2xl p-4 text-xs text-purple-900 font-medium">
           <AlertCircle class="h-4 w-4 text-[#7C3AED] shrink-0" />
           <span>
-            Bảng dưới đây đối chiếu chi tiết giữa phiên bản cũ (Revision #{{ question.previous_revision.revision_number }}) và phiên bản mới (Revision #{{ question.current_revision.revision_number }}).
+            Bảng dưới đây đối chiếu chi tiết giữa phiên bản cũ và phiên bản mới.
           </span>
         </div>
 
@@ -615,7 +612,7 @@
                   {{ question.previous_revision.revision_number }}
                 </span>
                 <h3 class="text-xs font-black text-rose-900 uppercase tracking-wider">
-                  DỮ LIỆU CŨ (Revision #{{ question.previous_revision.revision_number }})
+                  DỮ LIỆU CŨ
                 </h3>
               </div>
               <span class="rounded-md bg-rose-100 text-rose-800 px-2 py-0.5 text-[10px] font-bold">
@@ -669,7 +666,7 @@
                   {{ question.current_revision.revision_number }}
                 </span>
                 <h3 class="text-xs font-black text-purple-900 uppercase tracking-wider">
-                  DỮ LIỆU MỚI (Revision #{{ question.current_revision.revision_number }})
+                  DỮ LIỆU MỚI
                 </h3>
               </div>
               <span class="rounded-md px-2 py-0.5 text-[10px] font-bold" :class="getReviewStatusClass(question.current_revision.status)">
@@ -848,6 +845,9 @@ import {
 } from 'lucide-vue-next'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import { adminBankRequestsApi, adminQuestionsApi } from '@/services/api'
+import { useAppLoading } from '@/composables/useAppLoading'
+
+const { beginTask, endTask } = useAppLoading()
 
 const route = useRoute()
 const router = useRouter()
@@ -932,18 +932,23 @@ const formatDate = (dateStr) => {
 }
 
 const fetchQuestionDetail = async () => {
-  isLoading.value = true
-  errorMessage.value = ''
+  beginTask()
   try {
-    const data = await adminQuestionsApi.get(questionId)
-    question.value = data || {}
-    if (question.value.bank_submission_status === 'pending' && (question.value.previous_revision || (question.value.history && question.value.history.length > 1))) {
-      activeTab.value = 'diff'
+    isLoading.value = true
+    errorMessage.value = ''
+    try {
+      const data = await adminQuestionsApi.get(questionId)
+      question.value = data || {}
+      if (question.value.bank_submission_status === 'pending' && (question.value.previous_revision || (question.value.history && question.value.history.length > 1))) {
+        activeTab.value = 'diff'
+      }
+    } catch (err) {
+      errorMessage.value = `Không thể tải câu hỏi #${questionId}: ${err.message}`
+    } finally {
+      isLoading.value = false
     }
-  } catch (err) {
-    errorMessage.value = `Không thể tải câu hỏi #${questionId}: ${err.message}`
   } finally {
-    isLoading.value = false
+    endTask()
   }
 }
 

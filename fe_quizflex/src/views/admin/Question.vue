@@ -280,6 +280,9 @@ import {
 import VisibilityBadge from '@/components/common/VisibilityBadge.vue'
 import AppPagination from '@/components/common/AppPagination.vue'
 import { normalizeQuizCard, quizzesApi } from '@/services/api'
+import { useAppLoading } from '@/composables/useAppLoading'
+
+const { beginTask, endTask } = useAppLoading()
 
 const showConfirm = inject('showConfirm')
 const showToast = inject('showToast')
@@ -455,7 +458,12 @@ const toggleVisibility = async (quiz) => {
   }
 }
 
-onMounted(() => {
-  loadQuizzes(1)
+onMounted(async () => {
+  beginTask()
+  try {
+    await loadQuizzes(1)
+  } finally {
+    endTask()
+  }
 })
 </script>

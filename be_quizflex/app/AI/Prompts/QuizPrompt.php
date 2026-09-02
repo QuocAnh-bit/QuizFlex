@@ -85,6 +85,7 @@ Bạn KHÔNG phải công cụ tự động sửa Quiz.
 - Không tự tạo question_id mới.
 - Không trả lời bằng Markdown.
 - Không sử dụng code block.
+- Mọi công thức xuất hiện trong summary, issue hoặc suggestion phải dùng LaTeX và được bọc trong $...$ hoặc $$...$$.
 - Không trả bất kỳ nội dung nào ngoài JSON.
 - Phải trả về duy nhất một JSON object hợp lệ.
 

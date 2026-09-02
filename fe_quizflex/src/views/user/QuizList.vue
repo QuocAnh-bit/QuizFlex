@@ -592,6 +592,9 @@ import {
   quizzesApi,
   taxonomyApi,
 } from "@/services/api";
+import { useAppLoading } from "@/composables/useAppLoading";
+
+const { beginTask, endTask } = useAppLoading();
 
 /* =========================================================
    ROUTER
@@ -974,11 +977,16 @@ watch(
 ========================================================= */
 
 onMounted(async () => {
-  await fetchTaxonomyTree();
+  beginTask();
+  try {
+    await fetchTaxonomyTree();
 
-  applyRouteFilters();
+    applyRouteFilters();
 
-  await loadQuizzes(pagination.currentPage);
+    await loadQuizzes(pagination.currentPage);
+  } finally {
+    endTask();
+  }
 });
 </script>
 

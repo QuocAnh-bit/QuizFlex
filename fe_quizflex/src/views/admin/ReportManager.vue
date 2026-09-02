@@ -19,7 +19,7 @@
           <div>
             <div class="flex items-center gap-2.5">
               <h1 class="text-2xl font-black tracking-tight text-slate-900">
-                Giám Sát Báo Cáo Câu Hỏi
+                Quản lý báo cáo câu hỏi
               </h1>
             </div>
             <p class="mt-1 max-w-3xl text-sm text-slate-500">
@@ -676,7 +676,7 @@
               >
                 <div class="flex items-center gap-1.5 text-rose-900 font-bold">
                   <AlertTriangle class="h-4 w-4 text-rose-600" />
-                  <span>Auto Review không đạt — Cần Admin thẩm định (Revision #{{ activeGroup.latest_review_request.revision_number }})</span>
+                  <span>Auto Review không đạt — Cần Quản trị viên thẩm định (Phiên bản #{{ activeGroup.latest_review_request.revision_number }})</span>
                 </div>
                 <p class="text-[11px] text-rose-800 leading-relaxed">
                   Lý do: {{ activeGroup.latest_review_request.auto_review_reason || 'Nội dung đính chính vi phạm quy tắc cấu trúc hoặc danh mục nghiêm trọng.' }}
@@ -832,6 +832,9 @@ import {
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import AppPagination from '@/components/common/AppPagination.vue'
 import { reportApi } from '@/services/api'
+import { useAppLoading } from '@/composables/useAppLoading'
+
+const { beginTask, endTask } = useAppLoading()
 
 const route = useRoute()
 const showToast = inject('showToast')
@@ -1079,7 +1082,9 @@ const formatDate = (dateStr) => {
   })
 }
 
-onMounted(() => {
+onMounted(async () => {
+  beginTask()
+  try {
   if (route.query.status) {
     const s = route.query.status
     if (s === 'needs_admin_review' || s === 'admin_review_required' || s === 'needs_admin') {
@@ -1094,7 +1099,10 @@ onMounted(() => {
   } else if (route.query.stage) {
     selectedStage.value = route.query.stage
   }
-  fetchReports()
+  await fetchReports()
+  } finally {
+    endTask()
+  }
 })
 </script>
 

@@ -540,6 +540,9 @@ import {
   X,
 } from 'lucide-vue-next'
 import api, { adminQuizzesApi, quizReviewApi } from '@/services/api'
+import { useAppLoading } from '@/composables/useAppLoading'
+
+const { beginTask, endTask } = useAppLoading()
 
 const route = useRoute()
 const router = useRouter()
@@ -685,7 +688,12 @@ const toggleVisibility = async () => {
   }
 }
 
-onMounted(() => {
-  fetchQuizDetail()
+onMounted(async () => {
+  beginTask()
+  try {
+    await fetchQuizDetail()
+  } finally {
+    endTask()
+  }
 })
 </script>

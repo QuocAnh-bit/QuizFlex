@@ -21,7 +21,7 @@
               Ngân hàng câu hỏi
             </h1>
             <p class="mt-1 max-w-2xl text-sm text-slate-500">
-              Quản lý, phân loại, kiểm duyệt thẩm định nội dung (đối chiếu phiên bản cũ/mới) và điều chỉnh hiển thị câu hỏi toàn hệ thống.
+              Quản lý, phân loại, kiểm duyệt thẩm định nội dung và điều chỉnh hiển thị câu hỏi toàn hệ thống.
             </p>
           </div>
         </div>
@@ -425,7 +425,7 @@
               </td>
 
               <!-- Visibility (Separate Column) -->
-              <td class="p-3.5 align-top text-center">
+              <td class="p-3.5 align-top text-center whitespace-nowrap">  
                 <span
                   v-if="item.deleted_at || currentTab === 'trash'"
                   class="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-rose-50 text-rose-700 border border-rose-200"
@@ -436,12 +436,12 @@
                 </span>
                 <span
                   v-else
-                  class="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-bold uppercase tracking-wider"
+                  class="inline-flex items-center gap-1 rounded-md px-3 py-1 text-[10px] font-bold uppercase tracking-wider"
                   :class="item.is_public
                     ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
                     : 'bg-slate-100 text-slate-600 border border-slate-200'"
                 >
-                  <component :is="item.is_public ? Globe : Lock" class="h-3 w-3" />
+                  
                   <span>{{ item.is_public ? 'Công khai' : 'Riêng tư' }}</span>
                 </span>
               </td>
@@ -529,7 +529,6 @@
                       title="Xem chi tiết câu hỏi"
                     >
                       <Eye class="h-3.5 w-3.5" />
-                      <span>Xem chi tiết</span>
                     </router-link>
 
                     <!-- Toggle Visibility -->
@@ -778,7 +777,7 @@
             <div class="flex items-center gap-2 bg-purple-50 border border-purple-200 rounded-xl p-3.5 text-xs text-purple-900 font-medium">
               <AlertCircle class="h-4 w-4 text-[#7C3AED] shrink-0" />
               <span>
-                Tác giả đã chỉnh sửa và gửi duyệt lại (Revision #{{ activeDetail.current_revision.revision_number }}). Bảng dưới đây đối chiếu chi tiết giữa phiên bản cũ bị từ chối và nội dung mới gửi.
+                Tác giả đã chỉnh sửa và gửi duyệt lại. Bảng dưới đây đối chiếu chi tiết giữa phiên bản cũ bị từ chối và nội dung mới gửi.
               </span>
             </div>
 
@@ -791,7 +790,7 @@
                       {{ activeDetail.previous_revision.revision_number }}
                     </span>
                     <h3 class="text-sm font-black text-rose-900 uppercase tracking-wider">
-                      DỮ LIỆU CŨ (Revision #{{ activeDetail.previous_revision.revision_number }})
+                      DỮ LIỆU CŨ
                     </h3>
                   </div>
                   <span class="rounded-md bg-rose-100 text-rose-800 px-2 py-0.5 text-[11px] font-bold">
@@ -868,7 +867,7 @@
                       {{ activeDetail.current_revision.revision_number }}
                     </span>
                     <h3 class="text-sm font-black text-purple-900 uppercase tracking-wider">
-                      DỮ LIỆU MỚI (Revision #{{ activeDetail.current_revision.revision_number }})
+                      DỮ LIỆU MỚI
                     </h3>
                   </div>
                   <span
@@ -954,7 +953,7 @@
             <div class="flex items-center justify-between border-b border-slate-100 pb-3">
               <div class="flex items-center gap-2">
                 <span class="rounded-md bg-[#7C3AED] text-white px-2.5 py-1 text-xs font-bold">
-                  Lần gửi duyệt đầu tiên (Revision #1)
+                  Lần gửi duyệt đầu tiên 
                 </span>
                 <span class="text-xs text-slate-500">
                   Đây là phiên bản đầu tiên. Không có phiên bản trước để so sánh.
@@ -1031,7 +1030,7 @@
                 class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-3 text-xs shadow-2xs"
               >
                 <div class="flex items-center gap-3">
-                  <span class="font-black text-slate-900">Revision #{{ h.revision_number }}</span>
+                  <span class="font-black text-slate-900">Phiên bản #{{ h.revision_number }}</span>
                   <span
                     class="rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider"
                     :class="getReviewStatusClass(h.status)"
@@ -1172,6 +1171,9 @@ import {
 } from 'lucide-vue-next'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import { adminBankRequestsApi, adminQuestionsApi, taxonomyApi } from '@/services/api'
+import { useAppLoading } from '@/composables/useAppLoading'
+
+const { beginTask, endTask } = useAppLoading()
 
 const route = useRoute()
 const router = useRouter()
@@ -1742,17 +1744,21 @@ watch(() => filters.search, (newVal, oldVal) => {
   }, 400)
 })
 
-onMounted(() => {
-  if (route.query.tab) {
-    currentTab.value = route.query.tab
+onMounted(async () => {
+  beginTask()
+  try {
+    if (route.query.tab) {
+      currentTab.value = route.query.tab
+    }
+    if (route.query.search) {
+      filters.search = route.query.search
+    }
+    if (route.query.review_id) {
+      openReviewDetail(Number(route.query.review_id))
+    }
+    await Promise.all([fetchTaxonomies(), loadTabItems(1)])
+  } finally {
+    endTask()
   }
-  if (route.query.search) {
-    filters.search = route.query.search
-  }
-  if (route.query.review_id) {
-    openReviewDetail(Number(route.query.review_id))
-  }
-  fetchTaxonomies()
-  loadTabItems(1)
 })
 </script>
