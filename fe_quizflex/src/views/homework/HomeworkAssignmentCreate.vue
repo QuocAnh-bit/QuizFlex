@@ -136,6 +136,9 @@
 </template>
 
 <script setup>
+import { useAppLoading } from '@/composables/useAppLoading'
+const { beginTask, endTask } = useAppLoading()
+
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { currentUserStorage, homeworkApi, quizzesApi } from '@/services/api'
@@ -218,7 +221,9 @@ const buildPayload = () => ({
 })
 
 const loadData = async () => {
-  isLoading.value = true
+    beginTask()
+    try {
+isLoading.value = true
   errorMessage.value = ''
 
   try {
@@ -234,7 +239,10 @@ const loadData = async () => {
   } finally {
     isLoading.value = false
   }
-}
+    } finally {
+      endTask()
+    }
+  }
 
 const submitForm = async () => {
   formError.value = ''

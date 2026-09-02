@@ -325,6 +325,9 @@ import {
   Clock
 } from 'lucide-vue-next'
 import { adminQuestionsApi } from '@/services/api'
+import { useAppLoading } from '@/composables/useAppLoading'
+
+const { beginTask, endTask } = useAppLoading()
 
 const showToast = inject('showToast')
 const showConfirm = inject('showConfirm')
@@ -453,7 +456,12 @@ const handleBulkForceDelete = async () => {
   }
 }
 
-onMounted(() => {
-  fetchTrash()
+onMounted(async () => {
+  beginTask()
+  try {
+    await fetchTrash()
+  } finally {
+    endTask()
+  }
 })
 </script>

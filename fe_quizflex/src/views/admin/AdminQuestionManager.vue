@@ -1172,6 +1172,9 @@ import {
 } from 'lucide-vue-next'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import { adminBankRequestsApi, adminQuestionsApi, taxonomyApi } from '@/services/api'
+import { useAppLoading } from '@/composables/useAppLoading'
+
+const { beginTask, endTask } = useAppLoading()
 
 const route = useRoute()
 const router = useRouter()
@@ -1742,17 +1745,21 @@ watch(() => filters.search, (newVal, oldVal) => {
   }, 400)
 })
 
-onMounted(() => {
-  if (route.query.tab) {
-    currentTab.value = route.query.tab
+onMounted(async () => {
+  beginTask()
+  try {
+    if (route.query.tab) {
+      currentTab.value = route.query.tab
+    }
+    if (route.query.search) {
+      filters.search = route.query.search
+    }
+    if (route.query.review_id) {
+      openReviewDetail(Number(route.query.review_id))
+    }
+    await Promise.all([fetchTaxonomies(), loadTabItems(1)])
+  } finally {
+    endTask()
   }
-  if (route.query.search) {
-    filters.search = route.query.search
-  }
-  if (route.query.review_id) {
-    openReviewDetail(Number(route.query.review_id))
-  }
-  fetchTaxonomies()
-  loadTabItems(1)
 })
 </script>

@@ -845,6 +845,9 @@ import {
 } from 'lucide-vue-next'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import { adminBankRequestsApi, adminQuestionsApi } from '@/services/api'
+import { useAppLoading } from '@/composables/useAppLoading'
+
+const { beginTask, endTask } = useAppLoading()
 
 const route = useRoute()
 const router = useRouter()
@@ -929,18 +932,23 @@ const formatDate = (dateStr) => {
 }
 
 const fetchQuestionDetail = async () => {
-  isLoading.value = true
-  errorMessage.value = ''
+  beginTask()
   try {
-    const data = await adminQuestionsApi.get(questionId)
-    question.value = data || {}
-    if (question.value.bank_submission_status === 'pending' && (question.value.previous_revision || (question.value.history && question.value.history.length > 1))) {
-      activeTab.value = 'diff'
+    isLoading.value = true
+    errorMessage.value = ''
+    try {
+      const data = await adminQuestionsApi.get(questionId)
+      question.value = data || {}
+      if (question.value.bank_submission_status === 'pending' && (question.value.previous_revision || (question.value.history && question.value.history.length > 1))) {
+        activeTab.value = 'diff'
+      }
+    } catch (err) {
+      errorMessage.value = `Không thể tải câu hỏi #${questionId}: ${err.message}`
+    } finally {
+      isLoading.value = false
     }
-  } catch (err) {
-    errorMessage.value = `Không thể tải câu hỏi #${questionId}: ${err.message}`
   } finally {
-    isLoading.value = false
+    endTask()
   }
 }
 

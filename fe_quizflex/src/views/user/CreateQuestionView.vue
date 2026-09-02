@@ -749,16 +749,21 @@ const submitForm = async (createAnother = false) => {
 }
 
 onMounted(async () => {
+  beginTask()
   try {
-    const data = await taxonomyApi.tree()
-    const payload = data?.education_levels ? data : (data?.data ?? data)
-    if (payload) {
-      taxonomyLevels.value = payload.education_levels || payload.educationLevels || []
-      allSubjects.value = payload.subjects || []
+    try {
+      const data = await taxonomyApi.tree()
+      const payload = data?.education_levels ? data : (data?.data ?? data)
+      if (payload) {
+        taxonomyLevels.value = payload.education_levels || payload.educationLevels || []
+        allSubjects.value = payload.subjects || []
+      }
+    } catch (e) {
+      console.error('Không tải được taxonomy:', e)
     }
-  } catch (e) {
-    console.error('Không tải được taxonomy:', e)
+    await fetchTopicsList()
+  } finally {
+    endTask()
   }
-  fetchTopicsList()
 })
 </script>

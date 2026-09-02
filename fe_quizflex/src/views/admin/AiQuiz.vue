@@ -495,6 +495,9 @@
 </template>
 
 <script setup>
+import { useAppLoading } from '@/composables/useAppLoading'
+const { beginTask, endTask } = useAppLoading()
+
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { aiApi, authApi, currentUserStorage, curriculumApi, taxonomyApi } from '@/services/api'
@@ -737,7 +740,9 @@ const goToTaxonomyStep = (step) => {
 }
 
 const loadTaxonomy = async () => {
-  taxonomyLoading.value = true
+    beginTask()
+    try {
+taxonomyLoading.value = true
   taxonomyError.value = ''
 
   try {
@@ -748,7 +753,10 @@ const loadTaxonomy = async () => {
   } finally {
     taxonomyLoading.value = false
   }
-}
+    } finally {
+      endTask()
+    }
+  }
 
 const user = computed(() => currentUserStorage.get())
 const ocrLimit = computed(() => {

@@ -396,6 +396,9 @@
 </template>
 
 <script setup>
+import { useAppLoading } from '@/composables/useAppLoading'
+const { beginTask, endTask } = useAppLoading()
+
 import { computed, inject, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
@@ -470,7 +473,9 @@ const questions = computed(() =>
 )
 
 const loadQuiz = async () => {
-  isLoading.value = true
+    beginTask()
+    try {
+isLoading.value = true
   errorMessage.value = ''
 
   try {
@@ -485,7 +490,10 @@ const loadQuiz = async () => {
   } finally {
     isLoading.value = false
   }
-}
+    } finally {
+      endTask()
+    }
+  }
 
 const handleSubmitReview = async () => {
   if (!quiz.value) return

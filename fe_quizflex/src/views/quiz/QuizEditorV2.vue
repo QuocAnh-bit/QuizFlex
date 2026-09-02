@@ -37,6 +37,9 @@
   </div>
 </template>
 <script setup>
+import { useAppLoading } from '@/composables/useAppLoading'
+const { beginTask, endTask } = useAppLoading()
+
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import EditorHeader from '@/components/quiz-editor/EditorHeader.vue'
@@ -125,7 +128,9 @@ const markLocalChanged = () => {
 const updateQuizTitle = (title) => { quiz.value.title = title; markLocalChanged() }
 const selectQuestion = (id) => { activeQuestionId.value = id }
 const loadQuiz = async () => {
-  clearAutosaveTimer()
+    beginTask()
+    try {
+clearAutosaveTimer()
   isHydrating.value = true
   if (!quizId.value) {
     isLoading.value = false
@@ -164,7 +169,10 @@ const loadQuiz = async () => {
     isLoading.value = false
     isHydrating.value = false
   }
-}
+    } finally {
+      endTask()
+    }
+  }
 function getQuestionValidationMessage(question, index) {
   const label = `Câu ${index + 1}`
   if (!question.content?.trim()) return `${label} chưa có nội dung.`

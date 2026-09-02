@@ -204,6 +204,9 @@
 </template>
 
 <script setup>
+import { useAppLoading } from '@/composables/useAppLoading'
+const { beginTask, endTask } = useAppLoading()
+
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import AppLoadingState from '@/components/common/AppLoadingState.vue'
@@ -312,7 +315,9 @@ const buildAnswerPayload = () => {
 }
 
 const loadAttempt = async () => {
-  isLoading.value = true
+    beginTask()
+    try {
+isLoading.value = true
   errorMessage.value = ''
 
   try {
@@ -329,7 +334,10 @@ const loadAttempt = async () => {
   } finally {
     isLoading.value = false
   }
-}
+    } finally {
+      endTask()
+    }
+  }
 
 const submitAttempt = async () => {
   if (isSubmitting.value) return
