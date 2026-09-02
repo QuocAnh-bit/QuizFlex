@@ -3,7 +3,7 @@
     <div class="fixed inset-0 z-[110] grid place-items-center bg-slate-950/45 p-4 backdrop-blur-sm" @click.self="close">
       <section class="flex max-h-[92dvh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
         <header class="flex items-start justify-between border-b border-slate-200 px-5 py-4">
-          <div><p class="text-[11px] font-black uppercase tracking-[.16em] text-fuchsia-600">QuizFlex AI</p><h2 class="mt-1 text-xl font-black text-slate-900">Tạo câu hỏi bằng AI</h2><p class="mt-1 text-xs text-slate-500">AI sử dụng ngữ cảnh Quiz ở nền để tạo câu hỏi nháp.</p></div>
+          <div><p class="text-[11px] font-black uppercase tracking-[.16em] text-fuchsia-600">QuizFlex AI</p><h2 class="mt-1 text-xl font-black text-slate-900">Tạo câu hỏi bằng AI</h2><p class="mt-1 text-xs text-slate-500">AI sử dụng ngữ cảnh Quiz ở nền để tạo câu hỏi nháp.</p><span class="mt-2 inline-flex rounded-lg px-2.5 py-1 text-[10px] font-black" :class="aiAllowed ? 'bg-fuchsia-50 text-fuchsia-700' : 'bg-rose-50 text-rose-700'">{{ aiQuotaLabel }}</span></div>
           <button type="button" class="grid h-9 w-9 place-items-center rounded-xl text-slate-400 hover:bg-slate-100" aria-label="Đóng" @click="close"><X class="h-5 w-5" /></button>
         </header>
 
@@ -37,9 +37,10 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, reactive, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { X } from 'lucide-vue-next'
 import { getAiQuestionJob, normalizeAiQuestions, startAiQuestionGeneration } from '@/services/quiz-editor/aiQuestionApi.js'
+import { authApi, currentUserStorage } from '@/services/api.js'
 import MathText from '../MathText.vue'
 
 const props = defineProps({
@@ -54,6 +55,7 @@ const selectedIds = ref(props.initialSelectedIds.filter((id) => results.value.so
 const isBusy = ref(false)
 const errorMessage = ref('')
 const statusLabel = ref('Đang gửi yêu cầu...')
+const quotaUser = ref(currentUserStorage.get())
 let pollTimer
 let cancelled = false
 
@@ -63,7 +65,9 @@ const publishState = () => emit('state-change', {
 })
 
 const taxonomyComplete = computed(() => Boolean(form.education_level_id && form.grade_id && form.subject_id))
-const canGenerate = computed(() => form.prompt.trim() && Number(form.count) >= 1 && Number(form.count) <= 20 && taxonomyComplete.value)
+const aiAllowed = computed(() => Boolean(quotaUser.value?.ai_allowed ?? ((quotaUser.value?.role !== 'admin') && Number(quotaUser.value?.ai_quota_remaining || 0) > 0)))
+const aiQuotaLabel = computed(() => aiAllowed.value ? `Còn ${Number(quotaUser.value?.ai_quota_remaining || 0)} lượt tạo AI` : 'Bạn đã hết lượt tạo AI hoặc gói hiện tại không hỗ trợ')
+const canGenerate = computed(() => aiAllowed.value && form.prompt.trim() && Number(form.count) >= 1 && Number(form.count) <= 20 && taxonomyComplete.value)
 const waitForJob = async (jobId) => {
   while (!cancelled) {
     const job = await getAiQuestionJob(jobId)
@@ -75,7 +79,7 @@ const waitForJob = async (jobId) => {
   throw new Error('Đã hủy yêu cầu hiển thị.')
 }
 const generate = async () => {
-  if (!canGenerate.value || isBusy.value) return
+  if (!canGenerate.value || isBusy.value) { if (!aiAllowed.value) errorMessage.value = aiQuotaLabel.value; return }
   const requestPrompt = form.prompt.trim()
   isBusy.value = true; errorMessage.value = ''; results.value = []; selectedIds.value = []; publishState(); statusLabel.value = 'Đang gửi yêu cầu...'
   try {
@@ -86,6 +90,7 @@ const generate = async () => {
     selectedIds.value = results.value.map((question) => question.id)
     publishState()
     form.prompt = ''
+    quotaUser.value = await authApi.me()
   } catch (error) { if (!cancelled) { form.prompt = requestPrompt; errorMessage.value = error?.response?.data?.message || error?.message || 'Không thể tạo câu hỏi bằng AI' } } finally { if (!cancelled) isBusy.value = false }
 }
 const toggle = (id) => { selectedIds.value = selectedIds.value.includes(id) ? selectedIds.value.filter((item) => item !== id) : [...selectedIds.value, id]; publishState() }
@@ -93,6 +98,7 @@ const toggleAll = () => { selectedIds.value = selectedIds.value.length === resul
 const addSelected = () => emit('select', results.value.filter((question) => selectedIds.value.includes(question.id)).map((question) => ({ ...question, source_type: 'ai' })))
 const close = () => { publishState(); emit('close') }
 onBeforeUnmount(() => { cancelled = true; clearTimeout(pollTimer) })
+onMounted(async () => { try { quotaUser.value = await authApi.me() } catch {} })
 </script>
 
 <style scoped>

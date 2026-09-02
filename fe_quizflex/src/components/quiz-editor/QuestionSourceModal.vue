@@ -15,15 +15,15 @@
           <section>
             <h3 class="source-group-title">Tạo câu hỏi mới</h3>
             <div class="mt-3 grid gap-3 sm:grid-cols-2">
-              <button v-for="option in createOptions" :key="option.value" type="button" class="source-option group" @click="$emit('choose', option.value)">
+              <button v-for="option in createOptions" :key="option.value" type="button" class="source-option group" :class="{ 'source-option-locked': option.value === 'ai' && !aiAllowed }" @click="chooseSource(option.value)">
                 <span class="grid h-11 w-11 shrink-0 place-items-center rounded-xl" :class="option.iconClass"><component :is="option.icon" class="h-5 w-5" /></span>
-                <span class="min-w-0 text-left"><span class="block text-sm font-black text-slate-900">{{ option.title }}</span><span class="mt-1 block text-xs leading-5 text-slate-500">{{ option.description }}</span></span>
-                <ChevronRight class="ml-auto h-4 w-4 shrink-0 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-violet-500" />
+                <span class="min-w-0 text-left"><span class="block text-sm font-black text-slate-900">{{ option.title }}</span><span class="mt-1 block text-xs leading-5 text-slate-500">{{ option.description }}</span><small v-if="option.value === 'ai'" class="mt-1 block text-[10px] font-black" :class="aiAllowed ? 'text-fuchsia-700' : 'text-rose-700'">{{ aiQuotaLabel }}</small></span>
+                <LockKeyhole v-if="option.value === 'ai' && !aiAllowed" class="ml-auto h-4 w-4 shrink-0 text-rose-500" /><ChevronRight v-else class="ml-auto h-4 w-4 shrink-0 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-violet-500" />
               </button>
-              <button type="button" class="source-option group sm:col-span-2" @click="$emit('choose', ocrOption.value)">
+              <button type="button" class="source-option group sm:col-span-2" :class="{ 'source-option-locked': !ocrAllowed }" @click="chooseSource(ocrOption.value)">
                 <span class="grid h-11 w-11 shrink-0 place-items-center rounded-xl" :class="ocrOption.iconClass"><component :is="ocrOption.icon" class="h-5 w-5" /></span>
-                <span class="min-w-0 text-left"><span class="block text-sm font-black text-slate-900">{{ ocrOption.title }}</span><span class="mt-1 block text-xs leading-5 text-slate-500">{{ ocrOption.description }}</span></span>
-                <ChevronRight class="ml-auto h-4 w-4 shrink-0 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-violet-500" />
+                <span class="min-w-0 text-left"><span class="block text-sm font-black text-slate-900">{{ ocrOption.title }}</span><span class="mt-1 block text-xs leading-5 text-slate-500">{{ ocrOption.description }}</span><small class="mt-1 block text-[10px] font-black" :class="ocrAllowed ? 'text-sky-700' : 'text-rose-700'">{{ ocrQuotaLabel }}</small></span>
+                <LockKeyhole v-if="!ocrAllowed" class="ml-auto h-4 w-4 shrink-0 text-rose-500" /><ChevronRight v-else class="ml-auto h-4 w-4 shrink-0 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-violet-500" />
               </button>
             </div>
           </section>
@@ -45,9 +45,28 @@
 </template>
 
 <script setup>
-import { Bot, Camera, ChevronRight, Library, PenLine, UserRound, X } from 'lucide-vue-next'
+import { computed, onMounted, ref } from 'vue'
+import { Bot, Camera, ChevronRight, Library, LockKeyhole, PenLine, UserRound, X } from 'lucide-vue-next'
+import { useRouter } from 'vue-router'
+import { authApi, currentUserStorage } from '@/services/api.js'
 
-defineEmits(['choose', 'close'])
+const emit = defineEmits(['choose', 'close'])
+
+const router = useRouter()
+const quotaUser = ref(currentUserStorage.get())
+const aiAllowed = computed(() => Boolean(quotaUser.value?.ai_allowed ?? ((quotaUser.value?.role !== 'admin') && Number(quotaUser.value?.ai_quota_remaining || 0) > 0)))
+const ocrAllowed = computed(() => Boolean(quotaUser.value?.ocr_allowed))
+const aiQuotaLabel = computed(() => aiAllowed.value ? `Còn ${Number(quotaUser.value?.ai_quota_remaining || 0)} lượt tạo AI` : 'AI chưa khả dụng hoặc đã hết lượt')
+const ocrQuotaLabel = computed(() => quotaUser.value?.ocr_quota_unlimited ? 'OCR không giới hạn' : ocrAllowed.value ? `Còn ${Number(quotaUser.value?.ocr_quota_remaining || 0)} lượt OCR tháng này` : 'OCR chưa khả dụng hoặc đã hết lượt')
+const chooseSource = (source) => {
+  const isLocked = (source === 'ai' && !aiAllowed.value) || (source === 'ocr' && !ocrAllowed.value)
+  if (isLocked) {
+    emit('close')
+    router.push({ name: 'upgrade' })
+    return
+  }
+  emit('choose', source)
+}
 
 const createOptions = [
   { value: 'new', title: 'Tạo thủ công', description: 'Tự soạn câu hỏi trực tiếp trong editor.', icon: PenLine, iconClass: 'bg-violet-100 text-violet-700' },
@@ -58,10 +77,12 @@ const existingOptions = [
   { value: 'personal', title: 'Kho cá nhân', description: 'Dùng lại các câu hỏi bạn đã tạo trước đây.', icon: UserRound, iconClass: 'bg-emerald-100 text-emerald-700' },
   { value: 'bank', title: 'Ngân hàng câu hỏi', description: 'Tìm câu hỏi được chia sẻ và phù hợp với Quiz.', icon: Library, iconClass: 'bg-sky-100 text-sky-700' },
 ]
+onMounted(async () => { try { quotaUser.value = await authApi.me() } catch {} })
 </script>
 
 <style scoped>
 .source-option { @apply flex min-h-[92px] items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 transition hover:border-violet-300 hover:bg-violet-50/40 hover:shadow-sm; }
+.source-option-locked { @apply border-rose-200 bg-rose-50/40 hover:border-rose-300 hover:bg-rose-50; }
 .source-group-title { @apply text-[10px] font-black uppercase tracking-[.16em] text-slate-500; }
 @media (max-width: 639px) {
   .source-modal-overlay { align-items: end; padding: 0; }

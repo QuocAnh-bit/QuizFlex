@@ -41,7 +41,7 @@ class OcrController extends Controller
                 ->where('created_at', '>=', $startOfMonth)
                 ->count();
 
-            $limit = $tier === 'pro' ? 50 : 50;
+            $limit = $tier === 'pro' ? 50 : 10;
 
             if ($scanCount >= $limit) {
                 return response()->json([

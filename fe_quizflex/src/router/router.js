@@ -45,7 +45,8 @@ const routes = [
   {
     path: "/dashboard/my-questions/create",
     name: "user-my-questions-create",
-    component: () => import("@/views/user/CreateQuestionView.vue"),
+    component: () => import("@/views/user/EditQuestionView.vue"),
+    props: { create: true },
     meta: { layout: "user", title: "Tạo câu hỏi mới", requiresAuth: true, roles: workspaceRoles },
   },
   {

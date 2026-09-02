@@ -55,7 +55,7 @@
         </div>
       </article>
 
-      <button type="button" class="mx-auto mt-4 flex items-center gap-2 rounded-xl border border-dashed border-slate-300 bg-white px-5 py-2.5 text-xs font-black text-slate-600 shadow-sm transition hover:border-violet-300 hover:text-violet-700" @click="$emit('add-question')"><Plus class="h-4 w-4" /> Thêm câu hỏi phía dưới</button>
+      <button v-if="showAddQuestion" type="button" class="mx-auto mt-4 flex items-center gap-2 rounded-xl border border-dashed border-slate-300 bg-white px-5 py-2.5 text-xs font-black text-slate-600 shadow-sm transition hover:border-violet-300 hover:text-violet-700" @click="$emit('add-question')"><Plus class="h-4 w-4" /> Thêm câu hỏi phía dưới</button>
     </section>
     <section v-else class="grid h-full min-h-[360px] place-items-center">
       <div class="max-w-sm rounded-2xl border border-dashed border-slate-300 bg-white px-8 py-10 text-center shadow-sm">
@@ -78,7 +78,7 @@ import FillInEditor from './question-types/FillInEditor.vue'
 import MultiChoiceEditor from './question-types/MultiChoiceEditor.vue'
 import SingleChoiceEditor from './question-types/SingleChoiceEditor.vue'
 import TrueFalseEditor from './question-types/TrueFalseEditor.vue'
-const props = defineProps({ question: { type: Object, default: null }, questionNumber: { type: Number, default: 1 }, totalQuestions: { type: Number, default: 0 }, manualPoints: Boolean, isBankLocked: Boolean })
+const props = defineProps({ question: { type: Object, default: null }, questionNumber: { type: Number, default: 1 }, totalQuestions: { type: Number, default: 0 }, manualPoints: Boolean, isBankLocked: Boolean, showAddQuestion: { type: Boolean, default: true } })
 defineEmits(['change-type', 'update-difficulty', 'update-points', 'set-points-mode', 'add-answer', 'remove-answer', 'add-fill-answer', 'remove-fill-answer', 'add-question', 'duplicate-question'])
 const editors = { single_choice: SingleChoiceEditor, multi_choice: MultiChoiceEditor, fill_in: FillInEditor, true_false: TrueFalseEditor }
 const activeEditor = computed(() => editors[props.question?.type] || SingleChoiceEditor)

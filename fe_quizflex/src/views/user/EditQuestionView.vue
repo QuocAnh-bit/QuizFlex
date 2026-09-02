@@ -7,7 +7,7 @@
     >
       <div class="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-indigo-500 border-t-transparent"></div>
       <p class="text-sm font-medium text-slate-600">
-        Đang tải dữ liệu câu hỏi #{{ questionId }}...
+        {{ isCreateMode ? 'Đang chuẩn bị câu hỏi mới...' : `Đang tải dữ liệu câu hỏi #${questionId}...` }}
       </p>
     </div>
 
@@ -62,7 +62,7 @@
               <div class="min-w-0 flex-1">
                 <div class="flex flex-wrap items-center gap-2.5">
                   <h1 class="flex items-center gap-2.5 text-3xl font-black tracking-[-0.04em] text-[var(--text)]">
-                    Chỉnh sửa câu hỏi #{{ questionId }}
+                    {{ isCreateMode ? 'Tạo câu hỏi mới' : `Chỉnh sửa câu hỏi #${questionId}` }}
                     <span class="inline-block h-2 w-2 rounded-full bg-indigo-500"></span>
                   </h1>
 
@@ -76,7 +76,7 @@
                 </div>
 
                 <p class="mt-1 text-sm font-medium leading-6 text-[var(--muted)]">
-                  Cập nhật nội dung câu hỏi, các lựa chọn đáp án và thông tin phân loại. Sau khi lưu, bạn có thể gửi duyệt lại từ trang Kho câu hỏi của tôi.
+                  {{ isCreateMode ? 'Nhập nội dung, đáp án và thông tin phân loại. Câu hỏi mới sẽ được lưu riêng tư vào Kho câu hỏi của bạn.' : 'Cập nhật nội dung câu hỏi, các lựa chọn đáp án và thông tin phân loại. Sau khi lưu, bạn có thể gửi duyệt lại từ trang Kho câu hỏi của tôi.' }}
                 </p>
               </div>
             </div>
@@ -88,20 +88,21 @@
               <span class="h-4 w-1 rounded-full bg-indigo-500"></span>
               1. Nội dung câu hỏi
             </label>
-            <textarea
+            <div
               id="edit-question-content"
-              v-model="form.content"
-              required
-              rows="4"
-              class="w-full resize-none rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium leading-relaxed text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15"
-              placeholder="Nhập nội dung câu hỏi tại đây..."
-            ></textarea>
-
-            <!-- 1.1 Upload hình ảnh câu hỏi -->
-            <QuestionImageUploader
-              v-model="form.image_url"
-              label="Hình ảnh minh họa cho câu hỏi (Tùy chọn)"
-            />
+              class="rounded-xl border border-slate-200 bg-white px-4 py-3 transition focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-500/15"
+            >
+              <MixedContentEditor
+                v-model="form.content"
+                compact
+                placeholder="Nhập nội dung câu hỏi tại đây..."
+                @edit-formula="openFormulaEditor(form, $event)"
+              />
+              <button type="button" class="mt-2 inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold text-indigo-600 hover:bg-indigo-50" @click="openFormulaEditor(form)">
+                <Sigma class="h-3.5 w-3.5" /> Chèn công thức
+              </button>
+            </div>
+            <QuestionImageUploader v-model="form.image_url" label="Hình ảnh minh họa cho câu hỏi (Tùy chọn)" />
           </div>
 
           <!-- 2. Phân loại -->
@@ -235,14 +236,6 @@
                   </button>
                 </div>
 
-                <button
-                  type="button"
-                  class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-indigo-600 transition hover:bg-indigo-50 cursor-pointer shadow-2xs"
-                  @click="addAnswerChoice"
-                >
-                  <Plus class="h-3.5 w-3.5" />
-                  <span>Thêm đáp án</span>
-                </button>
               </div>
             </div>
 
@@ -255,68 +248,13 @@
               <span>Bạn có thể đánh dấu chọn <strong>từ 2 đáp án đúng trở lên</strong> bằng cách tick vào các ô vuông bên phải.</span>
             </div>
 
-            <div class="grid gap-3">
-              <div
-                v-for="(ans, idx) in form.answers"
-                :key="idx"
-                class="flex items-center gap-3 rounded-xl border p-2.5 transition"
-                :class="ans.is_correct
-                  ? 'border-emerald-200 bg-emerald-50'
-                  : 'border-slate-200 bg-slate-50 hover:border-slate-300'"
-              >
-                <span
-                  class="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-xs font-bold transition"
-                  :class="ans.is_correct
-                    ? 'bg-emerald-500 text-white shadow-xs'
-                    : 'bg-white text-slate-700 border border-slate-200'"
-                >
-                  {{ ans.key }}
-                </span>
-
-                <input
-                  :id="'edit-answer-input-' + idx"
-                  v-model="ans.content"
-                  required
-                  class="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15"
-                  :placeholder="`Nội dung đáp án ${ans.key}...`"
-                />
-
-                <label
-                  class="flex shrink-0 cursor-pointer select-none items-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium transition"
-                  :class="ans.is_correct
-                    ? 'border-emerald-200 bg-emerald-100 text-emerald-700 font-semibold'
-                    : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'"
-                >
-                  <input
-                    v-if="form.type === 'single_choice'"
-                    type="radio"
-                    name="edit_correct_answer_choice"
-                    :checked="ans.is_correct"
-                    class="h-4 w-4 cursor-pointer accent-emerald-500"
-                    @change="setCorrectAnswer(idx)"
-                  />
-                  <input
-                    v-else
-                    type="checkbox"
-                    :checked="ans.is_correct"
-                    class="h-4 w-4 cursor-pointer rounded accent-emerald-600"
-                    @change="toggleCorrectAnswer(idx)"
-                  />
-                  <span>{{ ans.is_correct ? 'Đáp án đúng' : 'Đánh dấu đúng' }}</span>
-                </label>
-
-                <button
-                  v-if="form.answers.length > 2"
-                  type="button"
-                  class="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 cursor-pointer"
-                  aria-label="Xóa đáp án"
-                  title="Xóa đáp án"
-                  @click="removeAnswerChoice(idx)"
-                >
-                  <X class="h-4 w-4" />
-                </button>
-              </div>
-            </div>
+            <AnswerList
+              :question="form"
+              :mode="form.type === 'multi_choice' ? 'multi' : 'single'"
+              @add-answer="addAnswerChoice"
+              @remove-answer="removeAnswerChoice"
+              @edit-formula="openFormulaEditor($event.target, $event.formula)"
+            />
           </div>
 
           <!-- 4. Lưu trữ & Kiểm duyệt -->
@@ -360,7 +298,7 @@
               class="rounded-xl bg-[#7C3AED] px-6 py-2.5 text-sm font-semibold text-white shadow-md shadow-[#7C3AED]/20 transition hover:bg-[#6D28D9] disabled:opacity-50 cursor-pointer"
               :disabled="isSubmitting"
             >
-              {{ isSubmitting ? 'Đang lưu...' : 'Lưu thay đổi' }}
+              {{ isSubmitting ? 'Đang lưu...' : (isCreateMode ? 'Lưu câu hỏi' : 'Lưu thay đổi') }}
             </button>
           </div>
         </div>
@@ -385,7 +323,7 @@
           @click="saveQuestion"
         >
           <Save class="h-3.5 w-3.5" />
-          <span>{{ isSubmitting ? 'Đang lưu...' : 'Lưu thay đổi' }}</span>
+          <span>{{ isSubmitting ? 'Đang lưu...' : (isCreateMode ? 'Lưu câu hỏi' : 'Lưu thay đổi') }}</span>
         </button>
       </div>
 
@@ -466,25 +404,13 @@
 
           <!-- Question content -->
           <div class="border-y border-slate-200 py-4 space-y-3">
-            <p class="text-sm font-semibold leading-relaxed text-slate-900 break-words">
-              <span v-if="form.content.trim()">{{ form.content }}</span>
+            <div class="text-sm font-semibold leading-relaxed text-slate-900 break-words">
+              <MathText v-if="form.content.trim()" :content="form.content" class="block" />
               <span v-else class="text-sm font-normal italic text-slate-400">
                 [Nội dung câu hỏi sẽ xuất hiện tại đây khi bạn nhập...]
               </span>
-            </p>
-
-            <!-- Preview image in live preview (Centered, balanced & crisp) -->
-            <div v-if="form.image_url" class="pt-2 pb-1 flex justify-center w-full">
-              <QuestionImage
-                :src="form.image_url"
-                size="compact"
-                max-height="max-h-40 sm:max-h-48 max-w-full"
-                rounded="rounded-xl"
-                container-bg-class="bg-slate-50/70"
-                container-border-class="border border-slate-200/80 shadow-2xs hover:border-purple-300"
-                allow-zoom
-              />
             </div>
+            <div v-if="form.image_url" class="flex w-full justify-center pb-1 pt-2"><QuestionImage :src="form.image_url" size="compact" max-height="max-h-40 sm:max-h-48 max-w-full" rounded="rounded-xl" container-bg-class="bg-slate-50/70" container-border-class="border border-slate-200/80 shadow-2xs hover:border-purple-300" allow-zoom /></div>
           </div>
 
           <!-- Answers preview -->
@@ -511,13 +437,13 @@
                 {{ ans.key }}
               </span>
 
-              <span class="min-w-0 flex-1 truncate text-xs font-medium">
-                <span
+              <span class="min-w-0 flex-1 text-xs font-medium">
+                <MathText
                   v-if="ans.content.trim()"
+                  :content="ans.content"
+                  compact
                   :class="ans.is_correct ? 'font-semibold text-emerald-800' : 'text-slate-700'"
-                >
-                  {{ ans.content }}
-                </span>
+                />
                 <span v-else class="italic text-slate-400">Nhập nội dung đáp án {{ ans.key }}...</span>
               </span>
 
@@ -533,33 +459,48 @@
         </article>
       </aside>
     </template>
+    <MathFormulaEditor
+      v-model="formulaDraft"
+      :open="formulaEditorOpen"
+      :editing="Boolean(formulaTarget?.formula)"
+      @close="closeFormulaEditor"
+      @confirm="applyFormula"
+    />
   </section>
 </template>
 
 <script setup>
 import { computed, inject, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import MathText from '@/components/MathText.vue'
 import {
   ArrowLeft,
   AlertTriangle,
   Lock,
   Globe,
-  Plus,
   Check,
   X,
   Pencil,
   Save,
+  Sigma,
 } from 'lucide-vue-next'
 import { formatApiErrorMessage, myQuestionsApi, questionsBankApi, taxonomyApi } from '@/services/api'
 import { useAppLoading } from '@/composables/useAppLoading'
+import MixedContentEditor from '@/components/quiz-editor/MixedContentEditor.vue'
+import MathFormulaEditor from '@/components/quiz-editor/MathFormulaEditor.vue'
+import AnswerList from '@/components/quiz-editor/question-types/shared/AnswerList.vue'
+import QuestionImage from '@/components/question/QuestionImage.vue'
+import QuestionImageUploader from '@/components/question/QuestionImageUploader.vue'
 
 const { beginTask, endTask } = useAppLoading()
 
 const route = useRoute()
 const router = useRouter()
 const showToast = inject('showToast')
+const props = defineProps({ create: Boolean })
 
 const questionId = computed(() => Number(route.params.id))
+const isCreateMode = computed(() => Boolean(props.create))
 const isLoadingData = ref(true)
 const fetchError = ref('')
 const isSubmitting = ref(false)
@@ -569,6 +510,40 @@ const taxonomyLevels = ref([])
 const allSubjects = ref([])
 const topicsList = ref([])
 const selectedBankTopic = ref('')
+const formulaEditorOpen = ref(false)
+const formulaDraft = ref('')
+const formulaTarget = ref(null)
+
+const openFormulaEditor = (target, formula = null) => {
+  formulaTarget.value = { target, formula }
+  formulaDraft.value = formula?.latex || ''
+  formulaEditorOpen.value = true
+}
+
+const closeFormulaEditor = () => {
+  formulaEditorOpen.value = false
+  formulaTarget.value = null
+}
+
+const wrapFormula = (latex, raw = '') => raw.startsWith('$$')
+  ? `$$${latex}$$`
+  : raw.startsWith('\\[')
+    ? `\\[${latex}\\]`
+    : raw.startsWith('\\(')
+      ? `\\(${latex}\\)`
+      : `$${latex}$`
+
+const applyFormula = (latex) => {
+  const current = formulaTarget.value
+  if (!current?.target) return
+  const content = current.target.content || ''
+  if (current.formula) {
+    current.target.content = `${content.slice(0, current.formula.start)}${wrapFormula(latex, current.formula.raw)}${content.slice(current.formula.end)}`
+  } else {
+    current.target.content = `${content}${content ? ' ' : ''}${wrapFormula(latex)}`
+  }
+  closeFormulaEditor()
+}
 
 const form = reactive({
   content: '',
@@ -639,16 +614,6 @@ const switchQuestionType = (newType) => {
   }
 }
 
-const setCorrectAnswer = (targetIdx) => {
-  form.answers.forEach((ans, idx) => {
-    ans.is_correct = idx === targetIdx
-  })
-}
-
-const toggleCorrectAnswer = (targetIdx) => {
-  form.answers[targetIdx].is_correct = !form.answers[targetIdx].is_correct
-}
-
 const difficultyText = (diff) => {
   switch (diff) {
     case 'easy': return 'Dễ'
@@ -710,12 +675,22 @@ const removeAnswerChoice = (targetIdx) => {
 }
 
 const goBack = () => {
-  router.push('/dashboard/my-questions')
+  router.push(isCreateMode.value ? '/dashboard/my-questions' : `/dashboard/my-questions?question_id=${questionId.value}`)
 }
 
 const loadQuestionDetail = async () => {
   isLoadingData.value = true
   fetchError.value = ''
+  if (isCreateMode.value) {
+    form.answers = [
+      { key: 'A', content: '', is_correct: true },
+      { key: 'B', content: '', is_correct: false },
+      { key: 'C', content: '', is_correct: false },
+      { key: 'D', content: '', is_correct: false },
+    ]
+    isLoadingData.value = false
+    return
+  }
   try {
     const res = await myQuestionsApi.fetchBank({ question_id: questionId.value })
     const items = res.items || []
@@ -793,7 +768,7 @@ const validateBeforeSave = () => {
     if (!form.answers[i].content.trim()) {
       return {
         message: `Vui lòng nhập nội dung cho Đáp án ${form.answers[i].key || String.fromCharCode(65 + i)}.`,
-        targetId: `edit-answer-input-${i}`
+        targetId: 'edit-answers-section'
       }
     }
   }
@@ -841,9 +816,15 @@ const saveQuestion = async () => {
       })),
     }
 
-    await myQuestionsApi.update(questionId.value, payload)
-    if (showToast) showToast('Đã lưu thay đổi thành công! Vui lòng bấm "Gửi duyệt" tại Kho câu hỏi để gửi yêu cầu kiểm duyệt lại cho Admin.', 'success')
-    router.push(`/dashboard/my-questions?highlight=${questionId.value}&updated=1`)
+    if (isCreateMode.value) {
+      await myQuestionsApi.createQuestion(payload)
+      if (showToast) showToast('Đã lưu câu hỏi mới vào Kho cá nhân.', 'success')
+      router.push('/dashboard/my-questions?created=1')
+    } else {
+      await myQuestionsApi.update(questionId.value, payload)
+      if (showToast) showToast('Đã lưu thay đổi thành công! Vui lòng bấm "Gửi duyệt" tại Kho câu hỏi để gửi yêu cầu kiểm duyệt lại cho Admin.', 'success')
+      router.push(`/dashboard/my-questions?highlight=${questionId.value}&updated=1`)
+    }
   } catch (err) {
     const msg = formatApiErrorMessage(err, 'Cập nhật thất bại. Vui lòng kiểm tra lại.')
     if (showToast) showToast(msg, 'error')
