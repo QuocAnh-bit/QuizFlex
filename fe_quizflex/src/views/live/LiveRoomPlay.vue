@@ -100,6 +100,15 @@
               <h2 class="text-xl font-bold leading-relaxed text-slate-900 sm:text-2xl pt-1">
                 {{ question.question }}
               </h2>
+
+              <!-- Optional Question Image -->
+              <div v-if="question.image_url" class="py-2 flex justify-center">
+                <QuestionImage
+                  :src="question.image_url"
+                  size="normal"
+                  allow-zoom
+                />
+              </div>
             </div>
 
             <!-- Answers List -->
@@ -216,6 +225,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import StatusBadge from '@/components/common/StatusBadge.vue'
+import QuestionImage from '@/components/question/QuestionImage.vue'
 import { getEcho, getTabId } from '@/echo'
 import { liveRoomApi, normalizeQuestion, currentUserStorage } from '@/services/api'
 import audioService from '@/services/audioService'

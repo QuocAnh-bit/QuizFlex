@@ -67,6 +67,15 @@
           <h1 class="text-xl font-bold leading-relaxed text-slate-900 sm:text-2xl pt-2">
             <MathText :text="currentQuestion.question" />
           </h1>
+
+          <!-- Optional Question Image (Balanced, centered, elegant & zoomable) -->
+          <div v-if="currentQuestion.image_url" class="py-2.5 flex justify-center">
+            <QuestionImage
+              :src="currentQuestion.image_url"
+              size="normal"
+              allow-zoom
+            />
+          </div>
         </div>
 
         <!-- Answers List -->
@@ -212,6 +221,7 @@ import { useAppLoading } from "@/composables/useAppLoading";
 
 const { beginTask, endTask } = useAppLoading();
 import MathText from "@/components/MathText.vue";
+import QuestionImage from "@/components/question/QuestionImage.vue";
 import audioService from "@/services/audioService";
 
 const route = useRoute();

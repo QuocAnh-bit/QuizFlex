@@ -469,6 +469,7 @@
                   <span v-if="q.subject_name" class="rounded-md bg-[#D1FAE5] text-[#065F46] px-2.5 py-0.5 text-[11px] font-bold">{{ q.subject_name }}</span>
                   <span v-if="q.topic_name" class="rounded-md bg-purple-50 border border-purple-200 text-purple-700 px-2 py-0.5 text-[11px] font-bold">Chủ đề: {{ q.topic_name }}</span>
                   <span v-if="q.quiz_title" class="rounded-md bg-slate-100 border border-slate-200 text-slate-700 px-2 py-0.5 text-[11px] font-bold truncate max-w-[200px]">Quiz: {{ q.quiz_title }}</span>
+                  <span v-if="q.image_url" class="rounded-md bg-sky-50 border border-sky-200 text-sky-700 px-2 py-0.5 text-[11px] font-bold inline-flex items-center gap-1">🖼️ Có ảnh</span>
                 </div>
 
                 <h3 class="text-base font-bold text-slate-900 leading-snug mt-1">{{ q.content || q.text }}</h3>
@@ -614,6 +615,12 @@
             </label>
           </div>
 
+          <!-- Upload hình ảnh câu hỏi -->
+          <QuestionImageUploader
+            v-model="editForm.image_url"
+            label="Hình ảnh minh họa cho câu hỏi (Tùy chọn)"
+          />
+
           <!-- ANSWERS EDIT SECTION -->
           <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 grid gap-3">
             <div class="flex items-center justify-between">
@@ -717,6 +724,8 @@ import { computed, inject, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppLoadingState from '@/components/common/AppLoadingState.vue'
 import AppErrorState from '@/components/common/AppErrorState.vue'
+import QuestionImage from '@/components/question/QuestionImage.vue'
+import QuestionImageUploader from '@/components/question/QuestionImageUploader.vue'
 import { myQuestionsApi, questionsBankApi, taxonomyApi } from '@/services/api'
 import { useAppLoading } from '@/composables/useAppLoading'
 
@@ -759,7 +768,7 @@ const highlightedApprovedQuestionId = ref(null)
 const hasAutoOpenedModal = ref(false)
 
 const focusedQuestionId = computed(() => {
-  return (route.query.question_id || route.query.id || route.query.highlight) ? Number(route.query.question_id || route.query.id || route.query.highlight) : null
+  return (route.query.question_id || route.query.id) ? Number(route.query.question_id || route.query.id) : null
 })
 
 const focusedQuestionItem = computed(() => {
@@ -804,6 +813,7 @@ const isSavingEdit = ref(false)
 const editForm = reactive({
   id: null,
   content: '',
+  image_url: '',
   difficulty: 'medium',
   topic_name: '',
   report_reason: '',
@@ -1037,6 +1047,7 @@ const loadQuestions = async () => {
 const openEditModal = (q) => {
   editForm.id = q.id
   editForm.content = q.content || q.text || ''
+  editForm.image_url = q.image_url || ''
   editForm.difficulty = q.difficulty || 'medium'
   editForm.topic_name = q.topic_name || ''
   editForm.report_reason = q.report_reason || ''
@@ -1074,6 +1085,7 @@ const saveEditQuestion = async () => {
   try {
     const payload = {
       content: editForm.content.trim(),
+      image_url: editForm.image_url || null,
       difficulty: editForm.difficulty,
       topic_name: editForm.topic_name.trim(),
       answers: editForm.answers.map(ans => ({

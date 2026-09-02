@@ -254,11 +254,6 @@
               </div>
             </div>
 
-            <!-- Image if exists -->
-            <div v-if="question.image_url" class="max-w-xs overflow-hidden rounded-lg border border-slate-200">
-              <img :src="question.image_url" alt="Hình ảnh câu hỏi" class="h-36 w-full object-cover" />
-            </div>
-
             <!-- Answers Grid -->
             <div class="grid gap-2 sm:grid-cols-2">
               <div
@@ -530,6 +525,7 @@
 <script setup>
 import { computed, inject, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import QuestionImage from '@/components/question/QuestionImage.vue'
 import {
   AlertCircle,
   ArrowLeft,

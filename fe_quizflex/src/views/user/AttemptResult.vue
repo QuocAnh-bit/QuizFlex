@@ -212,6 +212,16 @@
                 <MathText :text="item.question || item.question_content" />
               </div>
 
+              <!-- Question Image -->
+              <div v-if="item.image_url" class="py-1">
+                <QuestionImage
+                  :src="item.image_url"
+                  size="compact"
+                  max-height="max-h-36 sm:max-h-44 max-w-[340px] sm:max-w-[400px]"
+                  allow-zoom
+                />
+              </div>
+
               <!-- All Answer Options List: 2-column grid on desktop, 1-column on mobile -->
               <div
                 v-if="item.answers && item.answers.length > 0"
@@ -347,6 +357,7 @@ import { Check, X, Flag } from 'lucide-vue-next'
 import AppLoadingState from '@/components/common/AppLoadingState.vue'
 import AppErrorState from '@/components/common/AppErrorState.vue'
 import QuestionReportModal from '@/components/question/QuestionReportModal.vue'
+import QuestionImage from '@/components/question/QuestionImage.vue'
 import MathText from '@/components/MathText.vue'
 
 import {

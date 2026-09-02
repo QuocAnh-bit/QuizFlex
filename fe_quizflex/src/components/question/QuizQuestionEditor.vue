@@ -71,6 +71,14 @@
       ></textarea>
     </div>
 
+    <!-- 1.1 Question Image Uploader -->
+    <div class="pt-0.5">
+      <QuestionImageUploader
+        v-model="question.image_url"
+        label="Hình ảnh minh họa cho câu hỏi (Tùy chọn)"
+      />
+    </div>
+
     <!-- 2. Question Configuration: Type, Points, Difficulty -->
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
       <div class="space-y-1">
@@ -238,6 +246,7 @@ import {
   X,
   Lock,
 } from 'lucide-vue-next'
+import QuestionImageUploader from '@/components/question/QuestionImageUploader.vue'
 
 const props = defineProps({
   question: {

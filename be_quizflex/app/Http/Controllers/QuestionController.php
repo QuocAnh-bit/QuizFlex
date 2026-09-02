@@ -15,6 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -27,6 +28,41 @@ class QuestionController extends Controller
         $this->reviewService = $reviewService ?? app(QuestionReviewService::class);
         $this->snapshotService = $snapshotService ?? app(QuestionSnapshotService::class);
     }
+
+    /**
+     * Upload hình ảnh câu hỏi lên máy chủ và trả về URL công khai
+     */
+    public function uploadQuestionImage(Request $request)
+    {
+        $user = auth('api')->user();
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Unauthenticated.'], 401);
+        }
+
+        $request->validate([
+            'image' => ['required', 'image', 'mimes:jpeg,png,jpg,webp,svg,gif', 'max:5120'], // Max 5MB
+        ], [
+            'image.required' => 'Vui lòng chọn file hình ảnh cần tải lên.',
+            'image.image' => 'File tải lên phải là định dạng hình ảnh hợp lệ.',
+            'image.mimes' => 'Hệ thống chỉ chấp nhận ảnh định dạng JPG, JPEG, PNG, WEBP, SVG, GIF.',
+            'image.max' => 'Dung lượng hình ảnh không được vượt quá 5MB.',
+        ]);
+
+        $file = $request->file('image');
+        $path = $file->store('question-images', 'public');
+        $url = url(Storage::url($path));
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Tải ảnh lên máy chủ thành công!',
+            'data' => [
+                'url' => $url,
+                'path' => $path,
+                'filename' => basename($path),
+            ],
+        ]);
+    }
+
     public function index(Quiz $quiz)
     {
         $quiz->load('questions.answers');
@@ -771,7 +807,7 @@ class QuestionController extends Controller
         return $request->validate([
             'content' => [$isUpdate ? 'nullable' : 'required_without:text', 'string'],
             'text' => [$isUpdate ? 'nullable' : 'required_without:content', 'string'],
-            'image_url' => ['nullable', 'string', 'max:255'],
+            'image_url' => ['nullable', 'string', 'max:1000'],
             'type' => ['nullable', Rule::in(['single_choice', 'multi_choice', 'fill_blank'])],
             'order' => ['nullable', 'integer', 'min:0'],
             'points' => ['nullable', 'integer', 'min:1', 'max:1000'],
@@ -1156,6 +1192,7 @@ class QuestionController extends Controller
 
         $validated = $request->validate([
             'content' => ['required', 'string'],
+            'image_url' => ['nullable', 'string', 'max:1000'],
             'type' => ['nullable', Rule::in(['single_choice', 'multi_choice', 'true_false', 'fill_blank'])],
             'difficulty' => ['nullable', Rule::in(['easy', 'medium', 'hard'])],
             'points' => ['nullable', 'integer', 'min:1', 'max:1000'],
@@ -1199,6 +1236,7 @@ class QuestionController extends Controller
         DB::transaction(function () use ($question, $validated, $isAdmin, $type, $fingerprint) {
             $updateData = [
                 'content' => trim($validated['content']),
+                'image_url' => array_key_exists('image_url', $validated) ? $validated['image_url'] : $question->image_url,
                 'type' => $type,
                 'difficulty' => $validated['difficulty'] ?? $question->difficulty ?? 'medium',
                 'points' => $validated['points'] ?? $question->points ?? 10,
@@ -1267,6 +1305,7 @@ class QuestionController extends Controller
 
         $validated = $request->validate([
             'content' => ['required', 'string'],
+            'image_url' => ['nullable', 'string', 'max:1000'],
             'type' => ['nullable', Rule::in(['single_choice', 'multi_choice', 'true_false', 'fill_blank'])],
             'difficulty' => ['nullable', Rule::in(['easy', 'medium', 'hard'])],
             'points' => ['nullable', 'integer', 'min:1', 'max:1000'],
@@ -1307,6 +1346,7 @@ class QuestionController extends Controller
             $q = Question::create([
                 'user_id' => $user->id,
                 'content' => trim($validated['content']),
+                'image_url' => $validated['image_url'] ?? null,
                 'type' => $type,
                 'difficulty' => $validated['difficulty'] ?? 'medium',
                 'points' => $validated['points'] ?? 10,

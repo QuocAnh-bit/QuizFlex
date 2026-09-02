@@ -74,6 +74,12 @@
                   class="w-full resize-none rounded-xl border border-slate-200 bg-white p-4 text-sm font-medium leading-relaxed text-slate-900 outline-none transition focus:border-[#7C3AED] focus:ring-2 focus:ring-[#7C3AED]/20"
                   placeholder="Nhập nội dung câu hỏi tại đây..."
                 ></textarea>
+
+                <!-- Upload hình ảnh câu hỏi -->
+                <QuestionImageUploader
+                  v-model="form.image_url"
+                  label="Hình ảnh minh họa cho câu hỏi (Tùy chọn)"
+                />
               </div>
 
               <!-- SECTION 2: PHÂN LOẠI & THUỘC TÍNH -->
@@ -314,9 +320,24 @@
                 </div>
 
                 <!-- Content Preview -->
-                <div class="border-y border-slate-100 py-3 text-xs leading-relaxed font-bold text-slate-900 break-words">
-                  <span v-if="form.content.trim()">{{ form.content }}</span>
-                  <span v-else class="italic text-slate-400 font-normal">[Nội dung câu hỏi sẽ hiển thị ở đây...]</span>
+                <div class="border-y border-slate-100 py-3 text-xs leading-relaxed font-bold text-slate-900 break-words space-y-2">
+                  <div>
+                    <span v-if="form.content.trim()">{{ form.content }}</span>
+                    <span v-else class="italic text-slate-400 font-normal">[Nội dung câu hỏi sẽ hiển thị ở đây...]</span>
+                  </div>
+
+                  <!-- Image in Preview (Centered & clean framing) -->
+                  <div v-if="form.image_url" class="pt-2 pb-1 flex justify-center w-full">
+                    <QuestionImage
+                      :src="form.image_url"
+                      size="compact"
+                      max-height="max-h-36 sm:max-h-44 max-w-full"
+                      rounded="rounded-xl"
+                      container-bg-class="bg-slate-50/70"
+                      container-border-class="border border-slate-200/80 shadow-2xs hover:border-purple-300"
+                      allow-zoom
+                    />
+                  </div>
                 </div>
 
                 <!-- Answers Preview -->
@@ -362,6 +383,8 @@
 import { computed, inject, onMounted, reactive, ref, watch } from 'vue'
 import { Globe, Lock, Plus, Search, X } from 'lucide-vue-next'
 import { formatApiErrorMessage, myQuestionsApi, questionsBankApi, taxonomyApi } from '@/services/api'
+import QuestionImageUploader from '@/components/question/QuestionImageUploader.vue'
+import QuestionImage from '@/components/question/QuestionImage.vue'
 
 const props = defineProps({
   isOpen: { type: Boolean, default: false }
@@ -378,6 +401,7 @@ const selectedBankTopic = ref('')
 
 const form = reactive({
   content: '',
+  image_url: '',
   difficulty: 'medium',
   education_level_id: '',
   grade_id: '',
@@ -508,6 +532,7 @@ const submitQuestion = async () => {
   try {
     const payload = {
       content: form.content.trim(),
+      image_url: form.image_url ? form.image_url.trim() : null,
       difficulty: form.difficulty,
       education_level_id: form.education_level_id || null,
       grade_id: form.grade_id || null,
@@ -530,6 +555,7 @@ const submitQuestion = async () => {
 
     // Reset form
     form.content = ''
+    form.image_url = ''
     form.answers = [
       { key: 'A', content: '', is_correct: true },
       { key: 'B', content: '', is_correct: false },
