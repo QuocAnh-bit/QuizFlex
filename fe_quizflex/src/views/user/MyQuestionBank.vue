@@ -718,6 +718,9 @@ import { useRoute, useRouter } from 'vue-router'
 import AppLoadingState from '@/components/common/AppLoadingState.vue'
 import AppErrorState from '@/components/common/AppErrorState.vue'
 import { myQuestionsApi, questionsBankApi, taxonomyApi } from '@/services/api'
+import { useAppLoading } from '@/composables/useAppLoading'
+
+const { beginTask, endTask } = useAppLoading()
 import {
   Trash2,
   Plus,
@@ -1266,10 +1269,12 @@ watch(
   }
 )
 
-onMounted(() => {
-  fetchTaxonomy() 
-  fetchTopicsList()
-  loadQuestions()
-  loadTrash()
+onMounted(async () => {
+  beginTask()
+  try {
+    await Promise.all([fetchTaxonomy(), fetchTopicsList(), loadQuestions(), loadTrash()])
+  } finally {
+    endTask()
+  }
 })
 </script>

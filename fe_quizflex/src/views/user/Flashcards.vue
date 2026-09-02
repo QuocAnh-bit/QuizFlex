@@ -1001,6 +1001,9 @@ import {
   tokenStorage,
 } from '@/services/api'
 import speechService from '@/services/speechService'
+import { useAppLoading } from '@/composables/useAppLoading'
+
+const { beginTask, endTask } = useAppLoading()
 
 const route = useRoute()
 const router = useRouter()
@@ -1755,8 +1758,13 @@ const loadQuizDetails = async () => {
   }
 }
 
-onMounted(() => {
-  loadQuizDetails()
+onMounted(async () => {
+  beginTask()
+  try {
+    await loadQuizDetails()
+  } finally {
+    endTask()
+  }
   window.addEventListener('keydown', handleGlobalKeydown)
   document.addEventListener('fullscreenchange', handleFullscreenChange)
 })

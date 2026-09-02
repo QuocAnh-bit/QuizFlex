@@ -258,6 +258,9 @@ import {
   Search,
 } from 'lucide-vue-next'
 import { reportApi } from '@/services/api'
+import { useAppLoading } from '@/composables/useAppLoading'
+
+const { beginTask, endTask } = useAppLoading()
 
 const reports = ref([])
 const isLoading = ref(false)
@@ -344,7 +347,12 @@ const formatDate = (dateStr) => {
   })
 }
 
-onMounted(() => {
-  fetchMyReports()
+onMounted(async () => {
+  beginTask()
+  try {
+    await fetchMyReports()
+  } finally {
+    endTask()
+  }
 })
 </script>

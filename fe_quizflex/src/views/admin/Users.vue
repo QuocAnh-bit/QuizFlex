@@ -457,6 +457,9 @@
 import { computed, onMounted, reactive, ref, inject } from 'vue'
 import { useRouter } from 'vue-router'
 import { currentUserStorage, normalizeUser, unlockRequestsApi, usersApi } from '@/services/api'
+import { useAppLoading } from '@/composables/useAppLoading'
+
+const { beginTask, endTask } = useAppLoading()
 import {
   Users,
   UserPlus,
@@ -927,10 +930,13 @@ const formatDate = (value) => {
 }
 
 onMounted(async () => {
-  syncCurrentUser()
-  window.addEventListener('quizflex-user-updated', syncCurrentUser)
-  loadUsers()
-  loadLockedCount()
-  loadAppealMap()
+  beginTask()
+  try {
+    syncCurrentUser()
+    window.addEventListener('quizflex-user-updated', syncCurrentUser)
+    await Promise.all([loadUsers(), loadLockedCount(), loadAppealMap()])
+  } finally {
+    endTask()
+  }
 })
 </script>

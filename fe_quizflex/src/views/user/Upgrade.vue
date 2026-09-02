@@ -797,6 +797,9 @@ import {
   paymentsApi,
   authApi
 } from '@/services/api'
+import { useAppLoading } from '@/composables/useAppLoading'
+
+const { beginTask, endTask } = useAppLoading()
 
 const router = useRouter()
 const route = useRoute()
@@ -1036,22 +1039,22 @@ const fetchUpgradeCosts = async () => {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
+  beginTask()
+  try {
   if (currentUser.value) {
-    loadHistory()
-    fetchUpgradeCosts()
+    await Promise.all([loadHistory(), fetchUpgradeCosts()])
 
-    authApi.me()
-      .then(latestUser => {
-        currentUserStorage.set(latestUser)
-        currentUser.value = latestUser
-      })
-      .catch(error => {
+    try {
+      const latestUser = await authApi.me()
+      currentUserStorage.set(latestUser)
+      currentUser.value = latestUser
+    } catch (error) {
         console.error(
           'Failed to sync user state on mount:',
           error
         )
-      })
+    }
 
     if (route.query.plan) {
       const matchedPlan = plans.value.find(
@@ -1062,6 +1065,9 @@ onMounted(() => {
         openCheckout(matchedPlan)
       }
     }
+  }
+  } finally {
+    endTask()
   }
 })
 

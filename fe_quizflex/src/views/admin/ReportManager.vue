@@ -832,6 +832,9 @@ import {
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import AppPagination from '@/components/common/AppPagination.vue'
 import { reportApi } from '@/services/api'
+import { useAppLoading } from '@/composables/useAppLoading'
+
+const { beginTask, endTask } = useAppLoading()
 
 const route = useRoute()
 const showToast = inject('showToast')
@@ -1079,7 +1082,9 @@ const formatDate = (dateStr) => {
   })
 }
 
-onMounted(() => {
+onMounted(async () => {
+  beginTask()
+  try {
   if (route.query.status) {
     const s = route.query.status
     if (s === 'needs_admin_review' || s === 'admin_review_required' || s === 'needs_admin') {
@@ -1094,7 +1099,10 @@ onMounted(() => {
   } else if (route.query.stage) {
     selectedStage.value = route.query.stage
   }
-  fetchReports()
+  await fetchReports()
+  } finally {
+    endTask()
+  }
 })
 </script>
 

@@ -838,6 +838,9 @@ import {
   History,
 } from 'lucide-vue-next'
 import { adminBankRequestsApi, taxonomyApi } from '@/services/api'
+import { useAppLoading } from '@/composables/useAppLoading'
+
+const { beginTask, endTask } = useAppLoading()
 
 const route = useRoute()
 const showToast = inject('showToast')
@@ -1122,6 +1125,8 @@ const formatDate = (dateStr) => {
 }
 
 onMounted(async () => {
+  beginTask()
+  try {
   if (route.query.priority) {
     filters.priority = String(route.query.priority)
   }
@@ -1131,10 +1136,12 @@ onMounted(async () => {
   if (route.query.search) {
     filters.search = String(route.query.search)
   }
-  await fetchTaxonomy()
-  await loadRequests()
+  await Promise.all([fetchTaxonomy(), loadRequests()])
   if (route.query.open_id) {
     openDetailModal(Number(route.query.open_id))
+  }
+  } finally {
+    endTask()
   }
 })
 

@@ -137,6 +137,9 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { authApi, unlockRequestsApi } from '@/services/api'
+import { useAppLoading } from '@/composables/useAppLoading'
+
+const { beginTask, endTask } = useAppLoading()
 
 const route = useRoute()
 const router = useRouter()
@@ -275,8 +278,13 @@ watch(
   }
 )
 
-onMounted(() => {
-  loadData()
+onMounted(async () => {
+  beginTask()
+  try {
+    await loadData()
+  } finally {
+    endTask()
+  }
   window.addEventListener('quizflex-account-unlocked', handleUnlocked)
   window.addEventListener('quizflex-appeal-rejected', handleAppealRejected)
 
