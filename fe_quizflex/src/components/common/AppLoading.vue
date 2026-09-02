@@ -49,11 +49,8 @@
                      bg-[#7C3AED]/10 blur-2xl"
             ></div>
 
-            <!-- rotating border (spins while not yet complete) -->
-            <div
-              class="loading-ring absolute inset-0 rounded-[26px]"
-              :class="{ 'loading-ring--done': clampedProgress >= 100 }"
-            ></div>
+            <!-- rotating border -->
+            <div class="loading-ring absolute inset-0 rounded-[26px]"></div>
 
             <!-- white inner border -->
             <div
@@ -88,7 +85,7 @@
             class="mt-2.5 text-[25px] font-extrabold
                    tracking-[-0.035em] text-[#0F172A]"
           >
-            {{ clampedProgress >= 100 ? 'Hoàn tất!' : 'Đang tải...' }}
+            Đang tải...
           </h2>
 
           <p
@@ -96,7 +93,7 @@
                    text-[13px] font-medium leading-5
                    text-[#64748B]"
           >
-            {{ statusText || 'Đang chuẩn bị không gian học tập cho bạn' }}
+            Đang chuẩn bị không gian học tập cho bạn
           </p>
 
           <!-- Progress -->
@@ -108,35 +105,24 @@
               <div
                 class="loading-progress h-full rounded-full
                        bg-gradient-to-r from-[#7C3AED] to-[#A855F7]"
-                :style="{ width: clampedProgress + '%' }"
               ></div>
-            </div>
-
-            <!-- Percentage -->
-            <div
-              class="mt-2 text-[11px] font-bold tabular-nums text-[#7C3AED]"
-            >
-              {{ clampedProgress }}%
             </div>
           </div>
 
           <!-- Status -->
-          <div class="mt-3 flex items-center justify-center gap-2">
+          <div class="mt-5 flex items-center justify-center gap-2">
             <span
               class="loading-dot h-1.5 w-1.5 rounded-full bg-[#7C3AED]"
-              :class="{ 'loading-dot--done': clampedProgress >= 100 }"
             ></span>
 
             <span
               class="loading-dot h-1.5 w-1.5 rounded-full
                      bg-[#8B5CF6] [animation-delay:0.15s]"
-              :class="{ 'loading-dot--done': clampedProgress >= 100 }"
             ></span>
 
             <span
               class="loading-dot h-1.5 w-1.5 rounded-full
                      bg-[#A855F7] [animation-delay:0.3s]"
-              :class="{ 'loading-dot--done': clampedProgress >= 100 }"
             ></span>
           </div>
 
@@ -155,29 +141,12 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
-
-const props = defineProps({
+defineProps({
   show: {
     type: Boolean,
     default: false,
   },
-  // Tiến độ thực tế (0 - 100), truyền từ component cha dựa trên
-  // các bước load dữ liệu thật (VD: gọi API, load config, load user...).
-  progress: {
-    type: Number,
-    default: 0,
-  },
-  // Text mô tả bước đang chạy, tuỳ chọn (VD: "Đang tải dữ liệu người dùng...")
-  statusText: {
-    type: String,
-    default: '',
-  },
 })
-
-const clampedProgress = computed(() =>
-  Math.max(0, Math.min(100, Math.round(props.progress)))
-)
 </script>
 
 <style scoped>
@@ -215,17 +184,13 @@ const clampedProgress = computed(() =>
   animation: ring-spin 1.6s linear infinite;
 }
 
-/* Khi tải xong thì ngừng xoay */
-.loading-ring--done {
-  animation-play-state: paused;
-}
-
 /* =========================
    Progress
 ========================= */
 
 .loading-progress {
-  transition: width 0.35s ease-out;
+  width: 35%;
+  animation: progress-slide 1.35s ease-in-out infinite;
 }
 
 /* =========================
@@ -234,12 +199,6 @@ const clampedProgress = computed(() =>
 
 .loading-dot {
   animation: dot-pulse 0.9s ease-in-out infinite;
-}
-
-.loading-dot--done {
-  animation: none;
-  opacity: 1;
-  transform: translateY(0);
 }
 
 /* =========================
@@ -277,6 +236,20 @@ const clampedProgress = computed(() =>
   }
 }
 
+@keyframes progress-slide {
+  0% {
+    transform: translateX(-140%);
+  }
+
+  55% {
+    transform: translateX(100%);
+  }
+
+  100% {
+    transform: translateX(300%);
+  }
+}
+
 @keyframes dot-pulse {
   0%,
   100% {
@@ -308,6 +281,7 @@ const clampedProgress = computed(() =>
 
 @media (prefers-reduced-motion: reduce) {
   .loading-ring,
+  .loading-progress,
   .loading-dot,
   .loading-card {
     animation: none;
