@@ -21,7 +21,7 @@
               Quản lý Quiz
             </h1>
             <p class="mt-1 max-w-2xl text-sm text-slate-500">
-              Quản lý toàn bộ đề thi, kiểm duyệt đề thi công khai (đối chiếu sai khác các phiên bản câu hỏi/đáp án) và theo dõi hiệu suất.
+              Quản lý toàn bộ đề thi, kiểm duyệt đề thi công khai và theo dõi hiệu suất.
             </p>
           </div>
         </div>
@@ -404,7 +404,7 @@
                     ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
                     : 'bg-slate-100 text-slate-600'"
                 >
-                  <component :is="quiz.is_public ? Globe : Lock" class="h-3 w-3" />
+                  
                   <span>{{ quiz.is_public ? 'Công khai' : 'Đã ẩn' }}</span>
                 </span>
               </td>
@@ -451,7 +451,7 @@
                       title="Xem chi tiết Quiz"
                     >
                       <Eye class="h-3.5 w-3.5" />
-                      <span>Xem chi tiết</span>
+                      
                     </router-link>
 
                     <!-- Toggle Visibility -->

@@ -51,9 +51,7 @@
         <div class="rounded-2xl border border-purple-100 bg-gradient-to-br from-purple-50/80 via-slate-50/50 to-white p-5 sm:p-6 shadow-xs space-y-4">
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-purple-100/70 pb-4">
             <div class="flex items-center gap-4">
-              <div class="flex h-14 w-14 sm:h-16 sm:w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#7C3AED] to-indigo-600 text-white shadow-md shadow-[#7C3AED]/25">
-                <span class="text-2xl sm:text-3xl font-black tracking-tight">{{ scaledScore10 }}</span>
-              </div>
+              
               <div>
                 <div class="flex items-center gap-2">
                   <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Điểm tổng kết</span>
@@ -283,16 +281,6 @@
                   <span>Đã báo cáo</span>
                 </span>
 
-                <button
-                  v-else
-                  type="button"
-                  class="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-400 hover:text-rose-600 hover:bg-rose-50 px-2 py-0.5 rounded-md transition cursor-pointer"
-                  title="Báo cáo câu hỏi có sai sót"
-                  @click="openReportModal(item)"
-                >
-                  <Flag :size="12" />
-                  <span>Báo cáo câu hỏi</span>
-                </button>
               </div>
             </article>
           </div>
