@@ -532,6 +532,9 @@ import {
   Save,
 } from 'lucide-vue-next'
 import { formatApiErrorMessage, myQuestionsApi, questionsBankApi, taxonomyApi } from '@/services/api'
+import { useAppLoading } from '@/composables/useAppLoading'
+
+const { beginTask, endTask } = useAppLoading()
 
 const route = useRoute()
 const router = useRouter()
@@ -828,16 +831,21 @@ const saveQuestion = async () => {
 }
 
 onMounted(async () => {
+  beginTask()
   try {
-    const data = await taxonomyApi.tree()
-    const payload = data?.education_levels ? data : (data?.data ?? data)
-    if (payload) {
-      taxonomyLevels.value = payload.education_levels || payload.educationLevels || []
-      allSubjects.value = payload.subjects || []
+    try {
+      const data = await taxonomyApi.tree()
+      const payload = data?.education_levels ? data : (data?.data ?? data)
+      if (payload) {
+        taxonomyLevels.value = payload.education_levels || payload.educationLevels || []
+        allSubjects.value = payload.subjects || []
+      }
+    } catch (e) {
+      console.error('Không tải được taxonomy:', e)
     }
-  } catch (e) {
-    console.error('Không tải được taxonomy:', e)
+    await loadQuestionDetail()
+  } finally {
+    endTask()
   }
-  await loadQuestionDetail()
 })
 </script>

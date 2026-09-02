@@ -132,6 +132,9 @@ import { useRoute } from 'vue-router'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import { getEcho } from '@/echo'
 import { liveRoomApi } from '@/services/api'
+import { useAppLoading } from '@/composables/useAppLoading'
+
+const { beginTask, endTask } = useAppLoading()
 
 const route = useRoute()
 const liveRoomId = computed(() => route.params.liveRoomId)
@@ -206,15 +209,20 @@ const leaveRealtime = () => {
 }
 
 onMounted(async () => {
-  subscribeToRealtime()
+  beginTask()
   try {
-    liveRoom.value = await liveRoomApi.getLiveRoom(liveRoomId.value)
-  } catch (error) {
-    if (error.response?.status === 403) {
-      errorMessage.value = error.message || 'Phòng trực tuyến này đã bị khóa.'
+    subscribeToRealtime()
+    try {
+      liveRoom.value = await liveRoomApi.getLiveRoom(liveRoomId.value)
+    } catch (error) {
+      if (error.response?.status === 403) {
+        errorMessage.value = error.message || 'Phòng trực tuyến này đã bị khóa.'
+      }
     }
+    await loadLeaderboard(true)
+  } finally {
+    endTask()
   }
-  await loadLeaderboard(true)
   pollTimer = setInterval(loadLeaderboard, 15000)
 })
 

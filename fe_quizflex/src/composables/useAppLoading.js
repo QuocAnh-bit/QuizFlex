@@ -21,6 +21,7 @@ function startPageLoading() {
 
 function beginTask() {
   pendingTasks++
+  progress.value = Math.max(progress.value, 10)
 }
 
 function endTask() {

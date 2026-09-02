@@ -815,6 +815,9 @@ import {
 } from 'lucide-vue-next'
 import { quizReviewApi, taxonomyApi } from '@/services/api'
 import StatusBadge from '@/components/common/StatusBadge.vue'
+import { useAppLoading } from '@/composables/useAppLoading'
+
+const { beginTask, endTask } = useAppLoading()
 
 const showToast = inject('showToast')
 const showConfirm = inject('showConfirm')
@@ -1031,11 +1034,15 @@ const executeBulkApprove = async () => {
 }
 
 onMounted(async () => {
+  beginTask()
   try {
     allSubjects.value = await taxonomyApi.fetchSubjects()
   } catch (e) {
     console.error(e)
   }
-  await loadRequests()
+    await loadRequests()
+  } finally {
+    endTask()
+  }
 })
 </script>

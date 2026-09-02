@@ -496,6 +496,7 @@ import {
   Save,
   X
 } from 'lucide-vue-next'
+import { useAppLoading } from '@/composables/useAppLoading'
 import { formatApiErrorMessage, myQuestionsApi, questionsBankApi, taxonomyApi } from '@/services/api'
 
 const router = useRouter()

@@ -462,6 +462,9 @@ import {
   Monitor
 } from 'lucide-vue-next'
 import { adminSubjectsApi, formatApiErrorMessage } from '@/services/api'
+import { useAppLoading } from '@/composables/useAppLoading'
+
+const { beginTask, endTask } = useAppLoading()
 
 const showToast = inject('showToast', (msg) => alert(msg))
 
@@ -686,7 +689,12 @@ const confirmForceDelete = async (subject) => {
   }
 }
 
-onMounted(() => {
-  fetchSubjects()
+onMounted(async () => {
+  beginTask()
+  try {
+    await fetchSubjects()
+  } finally {
+    endTask()
+  }
 })
 </script>

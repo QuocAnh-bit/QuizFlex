@@ -525,6 +525,9 @@ import {
   Sparkles,
 } from 'lucide-vue-next'
 import api, { currentUserStorage, questionsBankApi, quizReviewApi, taxonomyApi } from '@/services/api'
+import { useAppLoading } from '@/composables/useAppLoading'
+
+const { beginTask, endTask } = useAppLoading()
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import QuizQuestionEditor from '@/components/question/QuizQuestionEditor.vue'
 import QuestionPickerModal from '@/components/question/QuestionPickerModal.vue'
@@ -1096,7 +1099,11 @@ const handleConfirmSubmitReview = async () => {
 }
 
 onMounted(async () => {
-  await loadTaxonomy()
-  await fetchQuiz()
+  beginTask()
+  try {
+    await Promise.all([loadTaxonomy(), fetchQuiz()])
+  } finally {
+    endTask()
+  }
 })
 </script>

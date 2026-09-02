@@ -213,7 +213,6 @@ onMounted(() => {
     next();
   });
 
-  startPageLoading();
 });
 
 onBeforeUnmount(() => {

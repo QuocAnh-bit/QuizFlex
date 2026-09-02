@@ -1263,6 +1263,9 @@ import {
   questionsBankApi,
   taxonomyApi,
 } from "@/services/api";
+import { useAppLoading } from "@/composables/useAppLoading";
+
+const { beginTask, endTask } = useAppLoading();
 
 const route = useRoute();
 const router = useRouter();
@@ -2112,11 +2115,16 @@ const handleCreateQuizSubmit = async () => {
 };
 
 onMounted(async () => {
-  await fetchTaxonomy();
-  await fetchTopicsList();
-  await updatePoolStats();
-  if (selectedIds.value.length > 0) {
-    await hydrateSelectedQuestions(selectedIds.value);
+  beginTask();
+  try {
+    await fetchTaxonomy();
+    await fetchTopicsList();
+    await updatePoolStats();
+    if (selectedIds.value.length > 0) {
+      await hydrateSelectedQuestions(selectedIds.value);
+    }
+  } finally {
+    endTask();
   }
 });
 </script>

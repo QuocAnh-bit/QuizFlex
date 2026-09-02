@@ -219,6 +219,9 @@ import StatusBadge from '@/components/common/StatusBadge.vue'
 import { getEcho, getTabId } from '@/echo'
 import { liveRoomApi, normalizeQuestion, currentUserStorage } from '@/services/api'
 import audioService from '@/services/audioService'
+import { useAppLoading } from '@/composables/useAppLoading'
+
+const { beginTask, endTask } = useAppLoading()
 
 const route = useRoute()
 const router = useRouter()
@@ -545,9 +548,14 @@ const submitAnswer = async (answerId) => {
 }
 
 onMounted(async () => {
-  audioService.playLobby()
-  subscribeToRealtime()
-  await loadCurrentQuestion(true)
+  beginTask()
+  try {
+    audioService.playLobby()
+    subscribeToRealtime()
+    await loadCurrentQuestion(true)
+  } finally {
+    endTask()
+  }
 
   pollTimer = setInterval(loadCurrentQuestion, 10000)
   leaderboardTimer = setInterval(loadLeaderboard, 15000)

@@ -434,6 +434,9 @@ import {
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import { getEcho, getTabId } from '@/echo'
 import { currentUserStorage, liveRoomApi } from '@/services/api'
+import { useAppLoading } from '@/composables/useAppLoading'
+
+const { beginTask, endTask } = useAppLoading()
 
 const showConfirm = inject('showConfirm')
 const showToast = inject('showToast')

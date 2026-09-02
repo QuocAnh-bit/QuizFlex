@@ -16,7 +16,7 @@
       </div>
 
       <!-- Google SSO Authenticating -->
-      <div v-if="route.query.token && !errors.password" class="text-center py-6 space-y-3">
+      <div v-if="isGoogleAuthenticating" class="text-center py-6 space-y-3">
         <div class="h-10 w-10 animate-spin rounded-full border-2 border-slate-200 border-t-[#7C3AED] mx-auto"></div>
         <h3 class="text-base font-bold text-slate-900">Đang thiết lập phiên đăng nhập...</h3>
         <p class="text-xs text-slate-500">Vui lòng chờ trong giây lát</p>
@@ -186,13 +186,16 @@ import { reactive, ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { authApi, tokenStorage, getDefaultRouteForRole } from '@/services/api'
 import BrandLogo from '@/components/common/BrandLogo.vue'
+import { useAppLoading } from '@/composables/useAppLoading'
 
 const route = useRoute()
 const router = useRouter()
+const { beginTask, endTask } = useAppLoading()
 const isPasswordVisible = ref(false)
 const successMessage = ref('')
 const isSubmitting = ref(false)
 const isShaking = ref(false)
+const isGoogleAuthenticating = ref(false)
 
 const form = reactive({ email: '', password: '', remember: true })
 const errors = reactive({ email: '', password: '' })
@@ -348,6 +351,7 @@ onMounted(async () => {
     }
 
     if (route.query.token) {
+      isGoogleAuthenticating.value = true
       successMessage.value = 'Xác thực Google thành công! Đang tải thông tin cá nhân...'
       try {
         const token = route.query.token
@@ -397,6 +401,7 @@ onMounted(async () => {
     successMessage.value = 'Đặt lại mật khẩu thành công! Vui lòng nhập mật khẩu mới để đăng nhập.'
   }
   } finally {
+    isGoogleAuthenticating.value = false
     endTask()
   }
 })
