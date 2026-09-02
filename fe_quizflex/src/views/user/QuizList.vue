@@ -498,13 +498,13 @@
            PAGINATION
       ======================================================== -->
       <AppPagination
-        v-if="pagination.total > 0"
         :current-page="pagination.currentPage"
         :last-page="pagination.lastPage"
         :total="pagination.total"
         :per-page="pagination.perPage"
+        :show-always="true"
         :show-per-page-selector="true"
-        :per-page-options="[12, 24, 48]"
+        :per-page-options="[10, 20, 50]"
         item-label="bài quiz"
         @update:current-page="onPageChange"
         @update:per-page="onPerPageChange"
@@ -592,6 +592,9 @@ import {
   quizzesApi,
   taxonomyApi,
 } from "@/services/api";
+import { useAppLoading } from "@/composables/useAppLoading";
+
+const { beginTask, endTask } = useAppLoading();
 
 /* =========================================================
    ROUTER
@@ -613,7 +616,7 @@ const pagination = reactive({
   currentPage: 1,
   lastPage: 1,
   total: 0,
-  perPage: 12,
+  perPage: 10,
 });
 
 const taxonomyLevels = ref([]);
@@ -974,11 +977,16 @@ watch(
 ========================================================= */
 
 onMounted(async () => {
-  await fetchTaxonomyTree();
+  beginTask();
+  try {
+    await fetchTaxonomyTree();
 
-  applyRouteFilters();
+    applyRouteFilters();
 
-  await loadQuizzes(pagination.currentPage);
+    await loadQuizzes(pagination.currentPage);
+  } finally {
+    endTask();
+  }
 });
 </script>
 

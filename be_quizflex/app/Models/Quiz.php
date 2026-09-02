@@ -19,6 +19,7 @@ class Quiz extends Model
         'grade_id',
         'subject_id',
         'topic_name',
+        'curriculum_unit_ids',
         'tag',
         'difficulty',
         'creation_mode',
@@ -38,6 +39,7 @@ class Quiz extends Model
     protected $casts = [
         'is_public' => 'boolean',
         'time_limit_seconds' => 'integer',
+        'curriculum_unit_ids' => 'array',
         'reviewed_at' => 'datetime',
         'deleted_at' => 'datetime',
     ];

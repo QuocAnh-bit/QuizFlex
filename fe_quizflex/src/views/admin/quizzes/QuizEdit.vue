@@ -174,6 +174,9 @@
 </template>
 
 <script setup>
+import { useAppLoading } from '@/composables/useAppLoading'
+const { beginTask, endTask } = useAppLoading()
+
 import { ref, computed, onMounted, inject } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { TriangleAlert, Clock, AlertCircle } from 'lucide-vue-next'
@@ -207,7 +210,9 @@ const hasUnsupportedQuestionTypes = computed(() =>
 )
 
 const fetchQuiz = async () => {
-  try {
+    beginTask()
+    try {
+try {
     loading.value = true
     const res = await api.get(`/admin/quizzes/${route.params.id}`)
     const quiz = res.data.data.quiz
@@ -241,7 +246,10 @@ const fetchQuiz = async () => {
   } finally {
     loading.value = false
   }
-}
+    } finally {
+      endTask()
+    }
+  }
 
 const addQuestion = () => {
   form.value.questions.push({

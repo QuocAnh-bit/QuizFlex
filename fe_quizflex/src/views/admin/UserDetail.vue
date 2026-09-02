@@ -219,6 +219,9 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { currentUserStorage, unlockRequestsApi, usersApi } from '@/services/api'
+import { useAppLoading } from '@/composables/useAppLoading'
+
+const { beginTask, endTask } = useAppLoading()
 
 const route = useRoute()
 const router = useRouter()
@@ -384,7 +387,11 @@ const formatCurrency = (value) => {
 }
 
 onMounted(async () => {
-  await loadActorProfile()
-  await loadUser()
+  beginTask()
+  try {
+    await Promise.all([loadActorProfile(), loadUser()])
+  } finally {
+    endTask()
+  }
 })
 </script>

@@ -167,10 +167,10 @@
       </router-link>
     </div>
 
-    <!-- Reports Cards List (Scrollable internal container for >2 reports) -->
-    <div v-else class="space-y-4 max-h-[590px] overflow-y-auto pr-1.5 scrollbar-soft focus:outline-none" tabindex="0">
+    <!-- Reports Cards List -->
+    <div v-else class="space-y-4">
       <article
-        v-for="rep in filteredReports"
+        v-for="rep in paginatedReports"
         :key="rep.id"
         class="rounded-3xl border border-slate-200 bg-white p-5 sm:p-6 shadow-2xs hover:shadow-md transition space-y-4"
       >
@@ -239,6 +239,18 @@
           </p>
         </div>
       </article>
+
+      <!-- Pagination -->
+      <div v-if="filteredReports.length > 0" class="pt-3">
+        <AppPagination
+          :current-page="currentPage"
+          :last-page="totalReportPages"
+          :total="filteredReports.length"
+          :per-page="pageSize"
+          item-label="báo cáo"
+          @change="(p) => currentPage = p"
+        />
+      </div>
     </div>
   </section>
 </template>
@@ -258,12 +270,18 @@ import {
   Search,
 } from 'lucide-vue-next'
 import { reportApi } from '@/services/api'
+import { useAppLoading } from '@/composables/useAppLoading'
+import AppPagination from '@/components/common/AppPagination.vue'
+
+const { beginTask, endTask } = useAppLoading()
 
 const reports = ref([])
 const isLoading = ref(false)
 const errorMessage = ref('')
 const selectedStatus = ref('all')
 const searchQuery = ref('')
+const currentPage = ref(1)
+const pageSize = 10
 
 const stats = reactive({
   total: 0,
@@ -301,6 +319,12 @@ const filteredReports = computed(() => {
 
     return content.includes(q) || reason.includes(q) || qId.includes(q)
   })
+})
+
+const totalReportPages = computed(() => Math.max(1, Math.ceil(filteredReports.value.length / pageSize)))
+const paginatedReports = computed(() => {
+  const start = (currentPage.value - 1) * pageSize
+  return filteredReports.value.slice(start, start + pageSize)
 })
 
 const fetchMyReports = async () => {
@@ -344,7 +368,12 @@ const formatDate = (dateStr) => {
   })
 }
 
-onMounted(() => {
-  fetchMyReports()
+onMounted(async () => {
+  beginTask()
+  try {
+    await fetchMyReports()
+  } finally {
+    endTask()
+  }
 })
 </script>

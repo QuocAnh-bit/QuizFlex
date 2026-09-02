@@ -25,6 +25,16 @@ const routes = [
     meta: { layout: "user", title: "Danh sách quiz" },
   },
   {
+    path: "/quiz-editor-v2",
+    name: "quiz-editor-v2",
+    redirect: "/dashboard/questions/create",
+  },
+  {
+    path: "/quizzes/:id/edit-v2",
+    name: "quiz-editor-v2-edit",
+    redirect: (to) => ({ path: `/quizzes/${to.params.id}/edit`, query: to.query }),
+  },
+  {
     path: "/question-bank",
     redirect: "/dashboard/my-questions",
   },
@@ -356,7 +366,7 @@ const routes = [
   {
     path: "/dashboard/questions/create",
     name: "user-question-create",
-    component: () => import("@/views/user/CreateExamView.vue"),
+    component: () => import("@/views/quiz/QuizCreateSetup.vue"),
     meta: {
       layout: "user",
       title: "Tạo quiz",
@@ -367,7 +377,7 @@ const routes = [
   {
     path: "/quizzes/:id/edit",
     name: "quiz-edit",
-    component: () => import("@/views/user/UserQuizEdit.vue"),
+    component: () => import("@/views/quiz/QuizEditorV2.vue"),
     meta: {
       layout: "user",
       title: "Chỉnh sửa quiz",
@@ -378,18 +388,12 @@ const routes = [
   {
     path: "/dashboard/questions/edit/:id",
     name: "user-question-edit",
-    component: () => import("@/views/user/UserQuizEdit.vue"),
-    meta: {
-      layout: "user",
-      title: "Sửa quiz",
-      requiresAuth: true,
-      roles: workspaceRoles,
-    },
+    redirect: (to) => ({ path: `/quizzes/${to.params.id}/edit`, query: to.query }),
   },
   {
     path: "/dashboard/questions/ai",
     name: "user-question-ai",
-    component: () => import("@/views/admin/AiQuiz.vue"),
+    redirect: "/dashboard/questions/create",
     meta: {
       layout: "user",
       title: "AI Generator",
@@ -400,7 +404,7 @@ const routes = [
   {
     path: "/dashboard/questions/ocr",
     name: "user-question-ocr",
-    component: () => import("@/views/admin/OcrUpload.vue"),
+    redirect: "/dashboard/questions/create",
     meta: {
       layout: "user",
       title: "OCR Upload",

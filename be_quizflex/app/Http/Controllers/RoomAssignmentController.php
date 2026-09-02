@@ -574,6 +574,7 @@ class RoomAssignmentController extends Controller
         'id' => $question->id,
         'content' => $question->content,
         'text' => $question->content,
+        'image_url' => $question->image_url,
         'type' => $question->type,
         'points' => $question->points,
 

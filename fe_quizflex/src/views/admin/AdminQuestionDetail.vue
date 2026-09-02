@@ -263,7 +263,7 @@
             <span>Cơ chế xử lý tự động:</span>
           </div>
           <p class="text-[11px] text-blue-800 leading-relaxed">
-            Khi Admin bấm <strong>Phê duyệt (Approve)</strong> câu hỏi này, hệ thống sẽ <strong>tự động chuyển tất cả báo cáo sang Đã giải quyết (Resolved)</strong>.
+            Khi Admin bấm <strong>Phê duyệt</strong> câu hỏi này, hệ thống sẽ <strong>tự động chuyển tất cả báo cáo sang Đã giải quyết</strong>.
           </p>
         </div>
       </div>
@@ -296,10 +296,7 @@
         @click="activeTab = 'diff'"
       >
         <GitCompare class="h-4 w-4" />
-        <span>Đối chiếu sai khác (Diff)</span>
-        <span class="rounded-full bg-purple-100 text-[#7C3AED] px-1.5 py-0.2 text-[10px] font-bold">
-          Rev #{{ question.current_revision?.revision_number || question.revision_number }}
-        </span>
+        <span>Đối chiếu sai khác</span>
       </button>
 
       <button
@@ -363,14 +360,16 @@
             {{ question.content }}
           </div>
 
-          <div
-            v-if="question.image_url"
-            class="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-slate-50"
-          >
-            <img
+          <!-- Question Image Media Block (Centered, balanced, clean framing & zoomable) -->
+          <div v-if="question.image_url" class="pt-2 pb-1 flex justify-center w-full">
+            <QuestionImage
               :src="question.image_url"
-              alt="Question Image"
-              class="max-h-80 w-full object-contain p-3"
+              size="normal"
+              max-height="max-h-[280px] sm:max-h-[320px] max-w-[360px] sm:max-w-[450px]"
+              rounded="rounded-xl"
+              container-bg-class="bg-slate-50/70"
+              container-border-class="border border-slate-200/80 shadow-2xs hover:border-purple-300"
+              allow-zoom
             />
           </div>
         </article>
@@ -600,7 +599,7 @@
         <div class="flex items-center gap-2 bg-purple-50 border border-purple-200 rounded-2xl p-4 text-xs text-purple-900 font-medium">
           <AlertCircle class="h-4 w-4 text-[#7C3AED] shrink-0" />
           <span>
-            Bảng dưới đây đối chiếu chi tiết giữa phiên bản cũ (Revision #{{ question.previous_revision.revision_number }}) và phiên bản mới (Revision #{{ question.current_revision.revision_number }}).
+            Bảng dưới đây đối chiếu chi tiết giữa Phiên bản {{ question.previous_revision.revision_number }} ({{ getReviewStatusLabel(question.previous_revision.status) }}) và Phiên bản {{ question.current_revision.revision_number }}.
           </span>
         </div>
 
@@ -613,7 +612,7 @@
                   {{ question.previous_revision.revision_number }}
                 </span>
                 <h3 class="text-xs font-black text-rose-900 uppercase tracking-wider">
-                  DỮ LIỆU CŨ (Revision #{{ question.previous_revision.revision_number }})
+                  DỮ LIỆU CŨ (Phiên bản {{ question.previous_revision.revision_number }})
                 </h3>
               </div>
               <span class="rounded-md bg-rose-100 text-rose-800 px-2 py-0.5 text-[10px] font-bold">
@@ -621,13 +620,17 @@
               </span>
             </div>
 
-            <div v-if="question.previous_revision.rejection_reason" class="rounded-xl border border-rose-300 bg-white p-3 text-xs text-rose-900 space-y-1">
-              <div class="font-bold flex items-center gap-1 text-rose-700">
+            <!-- Lý do từ chối trước đó (Chỉ hiển thị nếu thực sự có phiên bản bị từ chối) -->
+            <div
+              v-if="question.previous_rejected_revision && question.previous_rejected_revision.rejection_reason"
+              class="rounded-xl border border-rose-300 bg-white p-3 text-xs text-rose-900 space-y-1 shadow-xs"
+            >
+              <div class="font-bold flex items-center gap-1.5 text-rose-700">
                 <X class="h-3.5 w-3.5" />
-                <span>Lý do từ chối lần trước:</span>
+                <span>Lý do từ chối ở Phiên bản {{ question.previous_rejected_revision.revision_number }}:</span>
               </div>
               <p class="leading-relaxed font-medium pl-4">
-                "{{ question.previous_revision.rejection_reason }}"
+                "{{ question.previous_rejected_revision.rejection_reason }}"
               </p>
             </div>
 
@@ -667,7 +670,7 @@
                   {{ question.current_revision.revision_number }}
                 </span>
                 <h3 class="text-xs font-black text-purple-900 uppercase tracking-wider">
-                  DỮ LIỆU MỚI (Revision #{{ question.current_revision.revision_number }})
+                  DỮ LIỆU MỚI (Phiên bản {{ question.current_revision.revision_number }})
                 </h3>
               </div>
               <span class="rounded-md px-2 py-0.5 text-[10px] font-bold" :class="getReviewStatusClass(question.current_revision.status)">
@@ -717,7 +720,7 @@
 
       <!-- Single Revision Diff (First version) -->
       <div v-else class="rounded-2xl border border-slate-200 bg-white p-8 text-center text-xs text-slate-500 space-y-2">
-        <p class="font-bold text-slate-700">Đây là phiên bản đầu tiên (Revision #1)</p>
+        <p class="font-bold text-slate-700">Đây là phiên bản đầu tiên (Phiên bản 1)</p>
         <p>Câu hỏi này chưa có phiên bản cũ để so sánh.</p>
       </div>
     </div>
@@ -822,6 +825,7 @@
 <script setup>
 import { computed, inject, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import QuestionImage from '@/components/question/QuestionImage.vue'
 import {
   AlertCircle,
   AlertTriangle,
@@ -845,6 +849,9 @@ import {
 } from 'lucide-vue-next'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import { adminBankRequestsApi, adminQuestionsApi } from '@/services/api'
+import { useAppLoading } from '@/composables/useAppLoading'
+
+const { beginTask, endTask } = useAppLoading()
 
 const route = useRoute()
 const router = useRouter()
@@ -929,18 +936,23 @@ const formatDate = (dateStr) => {
 }
 
 const fetchQuestionDetail = async () => {
-  isLoading.value = true
-  errorMessage.value = ''
+  beginTask()
   try {
-    const data = await adminQuestionsApi.get(questionId)
-    question.value = data || {}
-    if (question.value.bank_submission_status === 'pending' && (question.value.previous_revision || (question.value.history && question.value.history.length > 1))) {
-      activeTab.value = 'diff'
+    isLoading.value = true
+    errorMessage.value = ''
+    try {
+      const data = await adminQuestionsApi.get(questionId)
+      question.value = data || {}
+      if (question.value.bank_submission_status === 'pending' && (question.value.previous_revision || (question.value.history && question.value.history.length > 1))) {
+        activeTab.value = 'diff'
+      }
+    } catch (err) {
+      errorMessage.value = `Không thể tải câu hỏi #${questionId}: ${err.message}`
+    } finally {
+      isLoading.value = false
     }
-  } catch (err) {
-    errorMessage.value = `Không thể tải câu hỏi #${questionId}: ${err.message}`
   } finally {
-    isLoading.value = false
+    endTask()
   }
 }
 

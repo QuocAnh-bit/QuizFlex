@@ -525,6 +525,9 @@ import {
   Sparkles,
 } from 'lucide-vue-next'
 import api, { currentUserStorage, questionsBankApi, quizReviewApi, taxonomyApi } from '@/services/api'
+import { useAppLoading } from '@/composables/useAppLoading'
+
+const { beginTask, endTask } = useAppLoading()
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import QuizQuestionEditor from '@/components/question/QuizQuestionEditor.vue'
 import QuestionPickerModal from '@/components/question/QuestionPickerModal.vue'
@@ -825,6 +828,7 @@ const normalizeQuestion = (q, idx) => {
     id: q.id ?? null,
     _uid: `q_${q.id || 'picked'}_${Date.now()}_${idx}_${Math.random().toString(36).substring(2, 7)}`,
     content: q.content || q.text || q.question || '',
+    image_url: q.image_url || '',
     type: q.type || 'single_choice',
     difficulty: q.difficulty || form.value.difficulty || 'medium',
     points: 1.0,
@@ -999,6 +1003,7 @@ const handleSaveQuiz = async () => {
       questions: form.value.questions.map((q, idx) => ({
         id: q.id,
         content: q.content.trim(),
+        image_url: q.image_url || null,
         type: q.type,
         difficulty: q.difficulty || 'medium',
         points: parseFloat(q.points) || 1.0,
@@ -1096,7 +1101,11 @@ const handleConfirmSubmitReview = async () => {
 }
 
 onMounted(async () => {
-  await loadTaxonomy()
-  await fetchQuiz()
+  beginTask()
+  try {
+    await Promise.all([loadTaxonomy(), fetchQuiz()])
+  } finally {
+    endTask()
+  }
 })
 </script>

@@ -81,14 +81,22 @@ final class CurriculumOptionService
          * Domain được dùng cho những môn
          * tích hợp như Lịch sử và Địa lí.
          */
-        if (
-            $domain !== null
-            && $domain !== ''
-        ) {
-            $query->where(
-                'domain',
-                $domain
-            );
+        if ($domain !== null && $domain !== '') {
+            /*
+             * Lịch sử - Địa lí là môn tích hợp, nhưng PDF được parse thành
+             * domain chi tiết như "Lịch sử Việt Nam" hoặc "Địa lí Việt Nam".
+             * Lọc theo family domain để không làm rỗng danh sách chủ đề;
+             * "Chủ đề chung" được dùng được cho cả hai phân môn.
+             */
+            if (in_array($domain, ['Lịch sử', 'Địa lí'], true)) {
+                $query->where(function ($domainQuery) use ($domain): void {
+                    $domainQuery
+                        ->where('domain', 'like', $domain . '%')
+                        ->orWhere('domain', 'Chủ đề chung');
+                });
+            } else {
+                $query->where('domain', $domain);
+            }
         }
 
         return $query
@@ -168,17 +176,39 @@ final class CurriculumOptionService
         CurriculumUnit $unit
     ): string {
         /*
-         * Topic là chủ đề chính. Những môn không
-         * có topic sẽ lần lượt dùng metadata gần
-         * nhất, không gọi AI để tự đặt chủ đề.
+         * Không thể dùng cùng một thứ tự metadata
+         * cho mọi môn:
+         *
+         * - Toán và các môn nội dung: topic là mạch
+         *   kiến thức phù hợp để hiển thị.
+         * - Ngữ văn: title thường là tác phẩm hoặc
+         *   nội dung cụ thể; topic thường chỉ là
+         *   nhãn rộng như "Đọc" hay "Tập làm văn".
+         * - Tiếng Anh: unit chủ điểm dùng topic,
+         *   còn unit ngữ pháp/kĩ năng dùng title để
+         *   tránh nhãn quá rộng như "Ngữ pháp".
          */
-        $fields = [
-            $unit->topic,
-            $unit->domain,
-            $unit->section,
-            $unit->subsection,
-            $unit->title,
-        ];
+        $fields = match ($unit->subject) {
+            'Ngữ văn' => [
+                $unit->title,
+                $unit->subsection,
+                $unit->section,
+                $unit->topic,
+                $unit->domain,
+            ],
+
+            'Tiếng Anh' => $this->englishLabelFields(
+                $unit
+            ),
+
+            default => [
+                $unit->topic,
+                $unit->domain,
+                $unit->section,
+                $unit->subsection,
+                $unit->title,
+            ],
+        };
 
         foreach ($fields as $value) {
             $value = $this->normalizeText(
@@ -204,6 +234,42 @@ final class CurriculumOptionService
             120,
             ''
         );
+    }
+
+    private function englishLabelFields(
+        CurriculumUnit $unit
+    ): array {
+        $domain = mb_strtolower(
+            $this->normalizeText(
+                (string) $unit->domain
+            )
+        );
+
+        /*
+         * Chủ điểm giao tiếp (Gia đình, Trường học,
+         * ...) đã có topic chính xác. Các unit còn
+         * lại cần title cụ thể hơn tên kĩ năng/mạch.
+         */
+        if (
+            $domain === 'chủ đề'
+            || $domain === 'chủ điểm'
+        ) {
+            return [
+                $unit->topic,
+                $unit->title,
+                $unit->subsection,
+                $unit->section,
+                $unit->domain,
+            ];
+        }
+
+        return [
+            $unit->title,
+            $unit->topic,
+            $unit->subsection,
+            $unit->section,
+            $unit->domain,
+        ];
     }
 
     private function normalizeText(

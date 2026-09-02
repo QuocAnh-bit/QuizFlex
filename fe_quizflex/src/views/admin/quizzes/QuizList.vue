@@ -21,7 +21,7 @@
               Quản lý Quiz
             </h1>
             <p class="mt-1 max-w-2xl text-sm text-slate-500">
-              Quản lý toàn bộ đề thi, kiểm duyệt đề thi công khai (đối chiếu sai khác các phiên bản câu hỏi/đáp án) và theo dõi hiệu suất.
+              Quản lý toàn bộ đề thi, kiểm duyệt đề thi công khai và theo dõi hiệu suất.
             </p>
           </div>
         </div>
@@ -404,7 +404,7 @@
                     ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
                     : 'bg-slate-100 text-slate-600'"
                 >
-                  <component :is="quiz.is_public ? Globe : Lock" class="h-3 w-3" />
+                  
                   <span>{{ quiz.is_public ? 'Công khai' : 'Đã ẩn' }}</span>
                 </span>
               </td>
@@ -451,7 +451,7 @@
                       title="Xem chi tiết Quiz"
                     >
                       <Eye class="h-3.5 w-3.5" />
-                      <span>Xem chi tiết</span>
+                      
                     </router-link>
 
                     <!-- Toggle Visibility -->
@@ -506,30 +506,16 @@
       </div>
 
       <!-- Pagination -->
-      <div v-if="pagination.lastPage > 1" class="flex flex-wrap items-center justify-between border-t border-slate-100 bg-slate-50/50 p-4 text-xs font-medium text-slate-600">
-        <span>
-          Hiển thị trang {{ pagination.currentPage }} / {{ pagination.lastPage }} (Tổng {{ pagination.total }} bài Quiz)
-        </span>
-
-        <div class="flex items-center gap-1.5">
-          <button
-            type="button"
-            class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 hover:bg-slate-50 disabled:opacity-40 cursor-pointer"
-            :disabled="pagination.currentPage <= 1"
-            @click="changePage(pagination.currentPage - 1)"
-          >
-            ← Trước
-          </button>
-
-          <button
-            type="button"
-            class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 hover:bg-slate-50 disabled:opacity-40 cursor-pointer"
-            :disabled="pagination.currentPage >= pagination.lastPage"
-            @click="changePage(pagination.currentPage + 1)"
-          >
-            Sau →
-          </button>
-        </div>
+      <div class="border-t border-slate-100 bg-slate-50/50 p-4">
+        <AppPagination
+          :current-page="pagination.currentPage"
+          :last-page="pagination.lastPage"
+          :total="pagination.total"
+          :per-page="pagination.perPage"
+          :show-always="true"
+          item-label="bài Quiz"
+          @change="changePage"
+        />
       </div>
     </div>
 
@@ -914,7 +900,10 @@ import {
   X,
 } from 'lucide-vue-next'
 import { adminQuizzesApi, quizReviewApi, taxonomyApi } from '@/services/api'
+import { useAppLoading } from '@/composables/useAppLoading'
+import AppPagination from '@/components/common/AppPagination.vue'
 
+const { beginTask, endTask } = useAppLoading()
 const route = useRoute()
 const router = useRouter()
 const showToast = inject('showToast')
@@ -943,7 +932,7 @@ const pagination = reactive({
   currentPage: 1,
   lastPage: 1,
   total: 0,
-  perPage: 15,
+  perPage: 10,
 })
 
 const filters = reactive({
@@ -1056,6 +1045,8 @@ const loadTabItems = async (page = 1) => {
         status: currentTab.value,
         search: filters.search ? filters.search.trim() : undefined,
         subject_id: filters.subject_id || undefined,
+        grade_id: filters.grade_id || undefined,
+        difficulty: filters.difficulty || undefined,
       }
 
       const res = await quizReviewApi.fetchAdminReviewRequests(params)
@@ -1069,7 +1060,8 @@ const loadTabItems = async (page = 1) => {
         is_public: r.quiz?.is_public,
       }))
       pagination.total = res.total || 0
-      pagination.lastPage = res.last_page || 1
+      pagination.currentPage = res.currentPage || page
+      pagination.lastPage = res.lastPage || res.last_page || 1
 
       if (res.stats) {
         stats.pending = res.stats.pending || 0
@@ -1090,7 +1082,8 @@ const loadTabItems = async (page = 1) => {
       const res = await adminQuizzesApi.list(params)
       items.value = res.items || []
       pagination.total = res.total || 0
-      pagination.lastPage = res.lastPage || 1
+      pagination.currentPage = res.currentPage || page
+      pagination.lastPage = res.lastPage || res.last_page || 1
 
       if (res.stats) {
         stats.total = res.stats.total || 0
@@ -1352,17 +1345,21 @@ watch(() => filters.search, (newVal, oldVal) => {
   }, 400)
 })
 
-onMounted(() => {
-  if (route.query.tab) {
-    currentTab.value = route.query.tab
+onMounted(async () => {
+  beginTask()
+  try {
+    if (route.query.tab) {
+      currentTab.value = route.query.tab
+    }
+    if (route.query.search) {
+      filters.search = route.query.search
+    }
+    if (route.query.review_id) {
+      openReviewDetail(Number(route.query.review_id))
+    }
+    await Promise.all([fetchTaxonomies(), loadTabItems(1)])
+  } finally {
+    endTask()
   }
-  if (route.query.search) {
-    filters.search = route.query.search
-  }
-  if (route.query.review_id) {
-    openReviewDetail(Number(route.query.review_id))
-  }
-  fetchTaxonomies()
-  loadTabItems(1)
 })
 </script>

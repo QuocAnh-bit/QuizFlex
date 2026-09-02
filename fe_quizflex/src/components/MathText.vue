@@ -1,33 +1,28 @@
 <template>
-  <span v-html="rendered"></span>
+  <span v-if="rendered" class="math-content" :class="{ 'math-content--compact': compact }" v-html="rendered"></span>
 </template>
 
 <script setup>
-import { computed } from "vue";
-import katex from "katex";
-import "katex/dist/katex.min.css";
+import { computed } from 'vue'
+import 'katex/dist/katex.min.css'
+import { renderMathContent } from './katex'
 
 const props = defineProps({
-  text: {
-    type: String,
-    default: "",
-  },
-});
+  text: { type: String, default: '' },
+  content: { type: String, default: '' },
+  compact: { type: Boolean, default: false },
+  mathOnly: { type: Boolean, default: false },
+})
 
-const rendered = computed(() => {
-  if (!props.text) return "";
-
-  return props.text.replace(/\$(.*?)\$/g, (_, formula) => {
-    try {
-      console.log(props.text);
-
-      return katex.renderToString(formula.trim(), {
-        throwOnError: false,
-        displayMode: false, // inline
-      });
-    } catch {
-      return `${formula}$`;
-    }
-  });
-});
+const rendered = computed(() => renderMathContent(props.content || props.text, {
+  compact: props.compact,
+  mathOnly: props.mathOnly,
+}))
 </script>
+
+<style>
+.math-content { white-space: normal; overflow-wrap: anywhere; }
+.math-content .math-content__block { display: block; max-width: 100%; overflow-x: auto; padding: 0.25rem 0; text-align: center; }
+.math-content--compact { display: inline; }
+.math-content--compact .katex { font-size: 1em; }
+</style>

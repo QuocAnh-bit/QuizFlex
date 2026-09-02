@@ -144,6 +144,14 @@ export const questionsBankApi = {
     const { data } = await api.post('/questions', payload);
     return unwrap(data);
   },
+  async uploadImage(file) {
+    const formData = new FormData();
+    formData.append('image', file);
+    const { data } = await api.post('/upload/question-image', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return unwrap(data);
+  },
   async getQuestion(id) {
     const { data } = await api.get(`/questions/${id}`);
     return unwrap(data);
@@ -233,7 +241,7 @@ export const adminQuestionsApi = {
       total: payload?.total ?? items.length,
       currentPage: payload?.current_page ?? 1,
       lastPage: payload?.last_page ?? 1,
-      perPage: payload?.per_page ?? 15,
+      perPage: payload?.per_page ?? 10,
       stats: payload?.stats ?? { total: 0, public: 0, private: 0, reported: 0 }
     };
   },
@@ -254,7 +262,7 @@ export const adminQuestionsApi = {
       total: payload?.total ?? items.length,
       currentPage: payload?.current_page ?? 1,
       lastPage: payload?.last_page ?? 1,
-      perPage: payload?.per_page ?? 15,
+      perPage: payload?.per_page ?? 10,
       trashCount: payload?.trash_count ?? data?.trash_count ?? 0
     };
   },
@@ -699,7 +707,18 @@ export const authApi = {
 export const usersApi = {
   async list(params = {}) {
     const { data } = await api.get("/users", { params });
-    return unwrapCollection(data);
+    const payload = data?.data ?? data;
+    const items = Array.isArray(payload?.data)
+      ? payload.data
+      : (Array.isArray(payload?.items) ? payload.items : (Array.isArray(payload) ? payload : []));
+    return {
+      items,
+      data: items,
+      total: payload?.total ?? items.length,
+      currentPage: payload?.current_page ?? payload?.currentPage ?? 1,
+      lastPage: payload?.last_page ?? payload?.lastPage ?? 1,
+      perPage: payload?.per_page ?? payload?.perPage ?? 10,
+    };
   },
 
   async get(id) {
@@ -724,7 +743,18 @@ export const usersApi = {
 
   async trash(params = {}) {
     const { data } = await api.get("/users/trashed", { params });
-    return unwrapCollection(data);
+    const payload = data?.data ?? data;
+    const items = Array.isArray(payload?.data)
+      ? payload.data
+      : (Array.isArray(payload?.items) ? payload.items : (Array.isArray(payload) ? payload : []));
+    return {
+      items,
+      data: items,
+      total: payload?.total ?? items.length,
+      currentPage: payload?.current_page ?? payload?.currentPage ?? 1,
+      lastPage: payload?.last_page ?? payload?.lastPage ?? 1,
+      perPage: payload?.per_page ?? payload?.perPage ?? 10,
+    };
   },
 
   async restore(id) {
@@ -997,7 +1027,18 @@ export const unlockRequestsApi = {
 
   async adminList(params = {}) {
     const { data } = await api.get("/admin/unlock-requests", { params });
-    return unwrap(data);
+    const payload = data?.data ?? data;
+    const items = Array.isArray(payload?.items)
+      ? payload.items
+      : (Array.isArray(payload?.data) ? payload.data : (Array.isArray(payload) ? payload : []));
+    return {
+      items,
+      data: items,
+      total: payload?.total ?? items.length,
+      currentPage: payload?.current_page ?? payload?.currentPage ?? 1,
+      lastPage: payload?.last_page ?? payload?.lastPage ?? 1,
+      perPage: payload?.per_page ?? payload?.perPage ?? 15,
+    };
   },
 
   async adminGet(id) {
@@ -1616,6 +1657,7 @@ export const normalizeUser = (user) => {
 export const normalizeQuestion = (question) => ({
   id: question.id,
   question: question.text || question.content,
+  image_url: question.image_url || null,
   category: question.category || "Quiz",
   difficulty: difficultyLabel(question.difficulty || "medium"),
   type: question.type || "single_choice",
@@ -1798,12 +1840,35 @@ export const notificationApi = {
 export const adminSubjectsApi = {
   async list(params = {}) {
     const { data } = await api.get("/admin/subjects", { params });
-    return data?.data || { subjects: [], stats: { total: 0, trashed: 0 } };
+    const payload = data?.data ?? data;
+    const items = Array.isArray(payload?.subjects)
+      ? payload.subjects
+      : (Array.isArray(payload?.data) ? payload.data : (Array.isArray(payload) ? payload : []));
+    return {
+      subjects: items,
+      items,
+      total: payload?.total ?? items.length,
+      currentPage: payload?.current_page ?? payload?.currentPage ?? 1,
+      lastPage: payload?.last_page ?? payload?.lastPage ?? 1,
+      perPage: payload?.per_page ?? payload?.perPage ?? 10,
+      stats: payload?.stats ?? { total: 0, trashed: 0 },
+    };
   },
 
-  async trash() {
-    const { data } = await api.get("/admin/subjects/trash");
-    return unwrapCollection(data);
+  async trash(params = {}) {
+    const { data } = await api.get("/admin/subjects/trash", { params });
+    const payload = data?.data ?? data;
+    const items = Array.isArray(payload?.subjects)
+      ? payload.subjects
+      : (Array.isArray(payload?.data) ? payload.data : (Array.isArray(payload) ? payload : []));
+    return {
+      subjects: items,
+      items,
+      total: payload?.total ?? items.length,
+      currentPage: payload?.current_page ?? payload?.currentPage ?? 1,
+      lastPage: payload?.last_page ?? payload?.lastPage ?? 1,
+      perPage: payload?.per_page ?? payload?.perPage ?? 10,
+    };
   },
 
   async create(payload) {

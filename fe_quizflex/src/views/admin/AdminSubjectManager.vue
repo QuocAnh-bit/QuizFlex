@@ -125,7 +125,7 @@
         <select
           v-model="filters.category_group"
           class="rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-[#7C3AED] focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/20"
-          @change="fetchSubjects"
+          @change="fetchSubjects(1)"
         >
           <option value="">Tất cả nhóm môn</option>
           <option value="natural">Khoa học Tự nhiên</option>
@@ -323,6 +323,18 @@
           </tbody>
         </table>
       </div>
+
+      <!-- Server-side Pagination -->
+      <div class="px-5 pb-5">
+        <AppPagination
+          :current-page="pagination.currentPage"
+          :last-page="pagination.lastPage"
+          :total="pagination.total"
+          :per-page="pagination.perPage"
+          item-label="bộ môn"
+          @change="fetchSubjects"
+        />
+      </div>
     </div>
 
     <!-- Modal Thêm / Sửa -->
@@ -462,6 +474,10 @@ import {
   Monitor
 } from 'lucide-vue-next'
 import { adminSubjectsApi, formatApiErrorMessage } from '@/services/api'
+import { useAppLoading } from '@/composables/useAppLoading'
+import AppPagination from '@/components/common/AppPagination.vue'
+
+const { beginTask, endTask } = useAppLoading()
 
 const showToast = inject('showToast', (msg) => alert(msg))
 
@@ -473,6 +489,13 @@ const openMenuId = ref(null)
 const subjects = ref([])
 const trashedSubjects = ref([])
 const stats = reactive({ total: 0, trashed: 0 })
+
+const pagination = reactive({
+  currentPage: 1,
+  lastPage: 1,
+  total: 0,
+  perPage: 10
+})
 
 const filters = reactive({
   search: '',
@@ -509,17 +532,30 @@ const getSubjectIcon = (code, name) => {
   return BookOpen
 }
 
-const fetchSubjects = async () => {
+const fetchSubjects = async (page = 1) => {
   isLoading.value = true
+  pagination.currentPage = page
   try {
+    const params = {
+      search: filters.search.trim() || undefined,
+      category_group: filters.category_group || undefined,
+      page,
+      per_page: pagination.perPage
+    }
     if (activeTab.value === 'active') {
-      const data = await adminSubjectsApi.list(filters)
-      subjects.value = data.subjects || []
-      stats.total = data.stats?.total || 0
+      const data = await adminSubjectsApi.list(params)
+      subjects.value = data.subjects || data.items || []
+      pagination.total = data.total || 0
+      pagination.currentPage = data.currentPage || page
+      pagination.lastPage = data.lastPage || 1
+      stats.total = data.stats?.total || data.total || 0
       stats.trashed = data.stats?.trashed || 0
     } else {
-      const data = await adminSubjectsApi.trash()
-      trashedSubjects.value = Array.isArray(data) ? data : []
+      const data = await adminSubjectsApi.trash(params)
+      trashedSubjects.value = data.subjects || data.items || []
+      pagination.total = data.total || 0
+      pagination.currentPage = data.currentPage || page
+      pagination.lastPage = data.lastPage || 1
     }
   } catch (e) {
     console.error('Lỗi khi tải danh sách môn học:', e)
@@ -531,7 +567,8 @@ const fetchSubjects = async () => {
 
 const toggleTab = (tab) => {
   activeTab.value = tab
-  fetchSubjects()
+  pagination.currentPage = 1
+  fetchSubjects(1)
 }
 
 const toggleDropdown = (id) => {
@@ -544,13 +581,13 @@ const closeDropdown = () => {
 
 const debounceSearch = () => {
   clearTimeout(searchTimeout)
-  searchTimeout = setTimeout(() => fetchSubjects(), 300)
+  searchTimeout = setTimeout(() => fetchSubjects(1), 300)
 }
 
 const resetFilters = () => {
   filters.search = ''
   filters.category_group = ''
-  fetchSubjects()
+  fetchSubjects(1)
 }
 
 const displayedSubjects = computed(() =>
@@ -686,7 +723,12 @@ const confirmForceDelete = async (subject) => {
   }
 }
 
-onMounted(() => {
-  fetchSubjects()
+onMounted(async () => {
+  beginTask()
+  try {
+    await fetchSubjects()
+  } finally {
+    endTask()
+  }
 })
 </script>

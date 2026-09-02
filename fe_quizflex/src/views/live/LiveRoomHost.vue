@@ -434,6 +434,9 @@ import {
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import { getEcho, getTabId } from '@/echo'
 import { currentUserStorage, liveRoomApi } from '@/services/api'
+import { useAppLoading } from '@/composables/useAppLoading'
+
+const { beginTask, endTask } = useAppLoading()
 
 const showConfirm = inject('showConfirm')
 const showToast = inject('showToast')
@@ -566,23 +569,28 @@ const hasRecentRealtime = () =>
   Date.now() - lastRealtimeAt.value < realtimeFreshMs
 
 const loadMonitor = async (force = false) => {
-  if (isDuplicateTab.value) return
-  if (!force && hasRecentRealtime()) return
-
+  beginTask()
   try {
-    const data = await liveRoomApi.getLiveCurrentQuestion(
-      liveRoomId.value
-    )
+    if (isDuplicateTab.value) return
+    if (!force && hasRecentRealtime()) return
 
-    monitor.value = data
-    liveRoom.value =
-      data.live_room || liveRoom.value
+    try {
+      const data = await liveRoomApi.getLiveCurrentQuestion(
+        liveRoomId.value
+      )
 
-    errorMessage.value = ''
-  } catch (error) {
-    errorMessage.value =
-      error.message ||
-      'Không tải được monitor live room.'
+      monitor.value = data
+      liveRoom.value =
+        data.live_room || liveRoom.value
+
+      errorMessage.value = ''
+    } catch (error) {
+      errorMessage.value =
+        error.message ||
+        'Không tải được monitor live room.'
+    }
+  } finally {
+    endTask()
   }
 }
 

@@ -248,6 +248,9 @@ import {
 } from 'lucide-vue-next'
 
 import { gamificationApi } from '@/services/api'
+import { useAppLoading } from '@/composables/useAppLoading'
+
+const { beginTask, endTask } = useAppLoading()
 
 const stats = ref({
   xp: 0,
@@ -312,7 +315,12 @@ const fetchData = async () => {
   }
 }
 
-onMounted(() => {
-  fetchData()
+onMounted(async () => {
+  beginTask()
+  try {
+    await fetchData()
+  } finally {
+    endTask()
+  }
 })
 </script>

@@ -39,7 +39,7 @@ class UserController extends Controller
             $query->where('is_locked', (bool) $request->query('is_locked'));
         }
 
-        $perPage = min(max((int) $request->query('per_page', 50), 1), 100);
+        $perPage = min(max((int) $request->query('per_page', 10), 1), 100);
         $users   = $query->paginate($perPage)->through(fn(User $u) => $this->formatUser($u));
 
         return response()->json(['success' => true, 'message' => 'Danh sách người dùng', 'data' => $users]);
@@ -305,7 +305,7 @@ class UserController extends Controller
             $query->where('role', strtolower((string) $request->query('role')));
         }
 
-        $perPage = min(max((int) $request->query('per_page', 50), 1), 100);
+        $perPage = min(max((int) $request->query('per_page', 10), 1), 100);
         $users   = $query->paginate($perPage)->through(fn(User $u) => $this->formatUser($u));
 
         return response()->json(['success' => true, 'message' => 'Danh sách người dùng đã xóa', 'data' => $users]);

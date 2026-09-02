@@ -648,6 +648,9 @@ import {
   tokenStorage,
   paymentsApi
 } from '@/services/api'
+import { useAppLoading } from '@/composables/useAppLoading'
+
+const { beginTask, endTask } = useAppLoading()
 
 const route = useRoute()
 const router = useRouter()
@@ -1101,7 +1104,9 @@ const saveProfile = async () => {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
+  beginTask()
+  try {
   if (
     route.query.tab ===
     'subscription'
@@ -1109,10 +1114,13 @@ onMounted(() => {
     activeTab.value =
       'subscription'
 
-    loadPaymentHistory()
+    await loadPaymentHistory()
   }
 
-  loadProfileFromApi()
+  await loadProfileFromApi()
+  } finally {
+    endTask()
+  }
 })
 
 watch(

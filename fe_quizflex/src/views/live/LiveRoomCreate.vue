@@ -52,6 +52,9 @@
 </template>
 
 <script setup>
+import { useAppLoading } from '@/composables/useAppLoading'
+const { beginTask, endTask } = useAppLoading()
+
 import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { liveRoomApi, quizzesApi } from '@/services/api'
@@ -68,7 +71,9 @@ const form = reactive({
 })
 
 const loadQuizzes = async () => {
-  isLoading.value = true
+    beginTask()
+    try {
+isLoading.value = true
   errorMessage.value = ''
 
   try {
@@ -78,7 +83,10 @@ const loadQuizzes = async () => {
   } finally {
     isLoading.value = false
   }
-}
+    } finally {
+      endTask()
+    }
+  }
 
 const handleCreate = async () => {
   if (!form.quiz_id) {

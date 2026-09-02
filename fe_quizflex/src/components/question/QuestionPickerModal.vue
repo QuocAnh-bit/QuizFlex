@@ -500,6 +500,14 @@
                     >
                       #{{ q.topic_name }}
                     </span>
+
+                    <!-- Has Image Badge -->
+                    <span
+                      v-if="q.image_url"
+                      class="rounded-md bg-sky-50 text-sky-700 border border-sky-200/80 px-2 py-0.5 text-[10px] font-bold inline-flex items-center gap-1"
+                    >
+                      🖼️ Có ảnh
+                    </span>
                   </div>
 
                   <!-- Right Action Button / Status -->
@@ -529,15 +537,6 @@
                   class="text-sm font-semibold text-slate-900 leading-relaxed my-2"
                 >
                   {{ q.content || q.text }}
-                </div>
-
-                <!-- Optional Image -->
-                <div v-if="q.image_url" class="my-2">
-                  <img
-                    :src="q.image_url"
-                    alt="Question Image"
-                    class="max-h-48 rounded-xl object-contain border border-slate-200"
-                  />
                 </div>
 
                 <!-- ANSWERS AREA (COLLAPSIBLE / EXPANDABLE) -->
@@ -691,6 +690,12 @@
               class="w-full resize-none rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs sm:text-sm font-medium text-slate-900 outline-none transition focus:border-[#7c3aed] focus:ring-1 focus:ring-[#7c3aed]"
               placeholder="Nhập nội dung câu hỏi tại đây..."
             ></textarea>
+
+            <!-- Upload hình ảnh câu hỏi -->
+            <QuestionImageUploader
+              v-model="createForm.image_url"
+              label="Hình ảnh minh họa cho câu hỏi (Tùy chọn)"
+            />
           </div>
 
           <!-- 2. Phân loại -->
@@ -931,6 +936,8 @@ import {
   Layers,
 } from "lucide-vue-next";
 import { myQuestionsApi, questionsBankApi, taxonomyApi } from "@/services/api";
+import QuestionImage from "@/components/question/QuestionImage.vue";
+import QuestionImageUploader from "@/components/question/QuestionImageUploader.vue";
 
 const props = defineProps({
   modelValue: {
@@ -999,6 +1006,7 @@ const isCreateQuestionModalOpen = ref(false);
 const isSubmittingCreate = ref(false);
 const createForm = reactive({
   content: "",
+  image_url: "",
   education_level_id: "",
   grade_id: "",
   subject_id: "",
@@ -1483,6 +1491,7 @@ const submitCreateQuestion = async () => {
   try {
     const payload = {
       content: createForm.content.trim(),
+      image_url: createForm.image_url ? createForm.image_url.trim() : null,
       difficulty: createForm.difficulty,
       education_level_id: createForm.education_level_id || null,
       grade_id: createForm.grade_id || null,
@@ -1512,6 +1521,7 @@ const submitCreateQuestion = async () => {
       selectedQuestionCache.value.set(createdId, {
         id: createdId,
         content: payload.content,
+        image_url: payload.image_url,
         difficulty: payload.difficulty,
         subject_id: payload.subject_id,
         source: "my_bank",
