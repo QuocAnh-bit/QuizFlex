@@ -472,7 +472,9 @@
                   <span v-if="q.image_url" class="rounded-md bg-sky-50 border border-sky-200 text-sky-700 px-2 py-0.5 text-[11px] font-bold inline-flex items-center gap-1">🖼️ Có ảnh</span>
                 </div>
 
-                <h3 class="text-base font-bold text-slate-900 leading-snug mt-1">{{ q.content || q.text }}</h3>
+                <h3 class="text-base font-bold text-slate-900 leading-snug mt-1">
+                  <MathText :content="q.content || q.text || ''" class="block" />
+                </h3>
 
                 <!-- Answers Grid -->
                 <div v-if="q.answers && q.answers.length > 0" class="mt-4 grid gap-3 md:grid-cols-2">
@@ -488,7 +490,7 @@
                     >
                       {{ ans.key }}
                     </span>
-                    <span class="truncate">{{ ans.text || ans.content }}</span>
+                    <MathText :content="ans.content || ans.text || ''" compact class="min-w-0 flex-1" />
                     <span v-if="ans.is_correct" class="ml-auto inline-flex items-center gap-1 text-[#10B981] text-xs font-bold shrink-0">
                       <Check :size="14" class="stroke-[3]" />
                       <span>Đúng</span>
@@ -689,7 +691,9 @@
                   <span>Xóa lúc: {{ formatDateTime(tq.deleted_at || tq.updated_at) }}</span>
                 </span>
               </div>
-              <p class="text-sm font-bold text-slate-900 truncate">{{ tq.content || tq.text }}</p>
+              <p class="text-sm font-bold text-slate-900">
+                <MathText :content="tq.content || tq.text || ''" compact />
+              </p>
             </div>
 
             <div class="flex items-center gap-2 shrink-0">
@@ -726,6 +730,7 @@ import AppLoadingState from '@/components/common/AppLoadingState.vue'
 import AppErrorState from '@/components/common/AppErrorState.vue'
 import QuestionImage from '@/components/question/QuestionImage.vue'
 import QuestionImageUploader from '@/components/question/QuestionImageUploader.vue'
+import MathText from '@/components/MathText.vue'
 import { myQuestionsApi, questionsBankApi, taxonomyApi } from '@/services/api'
 import { useAppLoading } from '@/composables/useAppLoading'
 
