@@ -48,7 +48,7 @@ const statusMap = {
   waiting: { text: 'Đang chờ', className: 'border-amber-200 bg-amber-50 text-amber-700', dotClass: 'bg-amber-500' },
   draft: { text: 'Bản nháp', className: 'border-slate-200 bg-slate-100 text-slate-600', dotClass: 'bg-slate-400' },
   closed: { text: 'Đã đóng', className: 'border-red-200 bg-red-50 text-red-700', dotClass: 'bg-red-500' },
-  expired: { text: 'Hết hạn', className: 'border-red-200 bg-red-50 text-red-700', dotClass: 'bg-red-500' },
+  expired: { text: 'Đã hết giờ làm bài', className: 'border-red-200 bg-red-50 text-red-700', dotClass: 'bg-red-500' },
   banned: { text: 'Đã khóa', className: 'border-red-200 bg-red-50 text-red-700', dotClass: 'bg-red-500' },
   in_progress: { text: 'Đang làm', className: 'border-blue-200 bg-blue-50 text-blue-700', dotClass: 'bg-blue-500' },
   host: { text: 'Chủ phòng', className: 'border-purple-200 bg-purple-50 text-purple-700', dotClass: 'bg-purple-600' },

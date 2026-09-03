@@ -93,7 +93,7 @@
           <div class="grid gap-4 sm:grid-cols-2">
             <label class="grid gap-1.5 text-xs font-bold text-slate-700">
               Thời lượng làm bài (phút)
-              <input v-model.number="form.duration_minutes" class="field text-xs" min="1" max="1440" type="number" placeholder="Để trống = Không giới hạn" />
+              <input v-model.number="form.duration_minutes" class="field text-xs" min="1" max="1440" type="number" placeholder="Để trống = Thời gian mặc định của quiz" />
             </label>
 
             <label class="grid gap-1.5 text-xs font-bold text-slate-700">
