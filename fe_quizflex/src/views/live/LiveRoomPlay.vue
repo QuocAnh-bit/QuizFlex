@@ -365,7 +365,7 @@ const loadCurrentQuestion = async (force = false) => {
       errorMessage.value = message || 'Phòng trực tuyến này đã bị khóa.'
       return
     }
-    if (message.includes('Chưa trong trạng thái đang chơi') || message.includes('chưa trong trạng thái')) {
+    if (message.includes('Chưa trong trạng thái đang chơi') || message.includes('chưa trong trạng thái') || message.includes('chưa bắt đầu') || message.includes('chờ chủ phòng')) {
       roomStatus.value = 'waiting'
       question.value = { id: 0, question: '', answers: [] }
       errorMessage.value = ''

@@ -155,7 +155,7 @@
 
             <template v-else>
               <Rocket :size="14" :stroke-width="2.5" />
-              Bắt đầu trận đấu (Start Live)
+              Bắt đầu trận đấu 
             </template>
           </button>
 
@@ -166,7 +166,7 @@
             :disabled="isActionLoading || isDuplicateTab"
             @click="finishLive"
           >
-            {{ isActionLoading ? 'Đang xử lý...' : 'Kết thúc trận đấu (Finish Live)' }}
+            {{ isActionLoading ? 'Đang xử lý...' : 'Kết thúc trận đấu' }}
           </button>
         </div>
       </article>
