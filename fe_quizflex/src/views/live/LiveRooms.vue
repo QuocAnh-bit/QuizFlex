@@ -21,7 +21,7 @@
     </div>
 
     <!-- Skeleton Loading -->
-    <div v-if="isLoading && !rooms.length" class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+    <div v-if="isLoading && !activeRooms.length" class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       <div v-for="i in 3" :key="i" class="card p-5 animate-pulse space-y-4">
         <div class="h-5 w-2/3 bg-slate-200 rounded"></div>
         <div class="h-4 w-full bg-slate-100 rounded"></div>
@@ -37,9 +37,9 @@
     </div>
 
     <!-- Rooms Grid -->
-    <div v-if="rooms.length" class="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+    <div v-if="activeRooms.length" class="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
       <article
-        v-for="room in rooms"
+        v-for="room in activeRooms"
         :key="room.id"
         class="card p-5 card-hover flex flex-col justify-between space-y-4"
       >
@@ -81,7 +81,7 @@
     </div>
 
     <!-- Empty State -->
-    <article v-if="!isLoading && !rooms.length && !errorMessage" class="card p-12 text-center text-slate-500 space-y-3">
+    <article v-if="!isLoading && !activeRooms.length && !errorMessage" class="card p-12 text-center text-slate-500 space-y-3">
       <span class="text-4xl block">🏆</span>
       <h2 class="text-xl font-bold text-slate-800">Chưa có phòng thi đấu nào</h2>
       <p class="text-xs max-w-sm mx-auto">Tạo phòng thi đấu mới từ bộ quiz của bạn hoặc nhập mã tham gia phòng từ giáo viên hoặc bạn bè.</p>
@@ -107,6 +107,10 @@ const isLoading = ref(false)
 const errorMessage = ref('')
 const currentUser = currentUserStorage.get()
 
+const activeRooms = computed(() => {
+  return (rooms.value || []).filter(room => !['finished', 'cancelled', 'banned', 'removed', 'closed'].includes(room.status))
+})
+
 const canCreateLiveRoom = computed(() => {
   const role = String(currentUser?.role || 'free').toLowerCase()
   return ['admin', 'plus', 'pro', 'ultra'].includes(role)
@@ -118,22 +122,22 @@ const roleForRoom = (room) => {
 }
 
 const loadRooms = async () => {
-    beginTask()
-    try {
-isLoading.value = true
-  errorMessage.value = ''
-
+  beginTask()
   try {
-    rooms.value = await liveRoomsApi.getLiveRooms()
-  } catch (error) {
-    errorMessage.value = `Không tải được danh sách phòng: ${error.message}`
-  } finally {
-    isLoading.value = false
-  }
+    isLoading.value = true
+    errorMessage.value = ''
+
+    try {
+      rooms.value = await liveRoomsApi.getLiveRooms()
+    } catch (error) {
+      errorMessage.value = `Không tải được danh sách phòng: ${error.message}`
     } finally {
-      endTask()
+      isLoading.value = false
     }
+  } finally {
+    endTask()
   }
+}
 
 onMounted(loadRooms)
 </script>

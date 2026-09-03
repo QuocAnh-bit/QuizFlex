@@ -39,6 +39,7 @@ class LiveRoomController extends Controller
                         $pq->where('user_id', $user->id);
                     });
             })
+            ->whereIn('status', ['waiting', 'playing'])
             ->orderByDesc('id')
             ->limit(30)
             ->get()

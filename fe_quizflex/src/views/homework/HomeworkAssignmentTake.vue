@@ -27,10 +27,18 @@
         <!-- Results Screen -->
         <template v-if="result">
           <div class="space-y-2 border-b border-slate-100 pb-4">
-            <span class="rounded-full bg-emerald-50 border border-emerald-200 px-3 py-0.5 text-xs font-bold text-emerald-700">
+            <span
+              v-if="isResultExpired"
+              class="rounded-full bg-red-50 border border-red-200 px-3 py-0.5 text-xs font-bold text-red-700"
+            >
+              ⏱ Đã hết giờ làm bài
+            </span>
+            <span v-else class="rounded-full bg-emerald-50 border border-emerald-200 px-3 py-0.5 text-xs font-bold text-emerald-700">
               ✓ Đã hoàn thành
             </span>
-            <h1 class="text-2xl font-black text-slate-900 sm:text-3xl pt-1">Đã nộp bài thành công</h1>
+            <h1 class="text-2xl font-black text-slate-900 sm:text-3xl pt-1">
+              {{ isResultExpired ? 'Đã hết giờ làm bài' : 'Đã nộp bài thành công' }}
+            </h1>
             <p class="text-xs text-slate-600">{{ submitMessage }}</p>
           </div>
 
@@ -53,7 +61,7 @@
             </div>
             <div class="rounded-xl border border-slate-100 bg-slate-50 p-4 text-center">
               <span class="text-xs font-semibold text-slate-500">Trạng thái</span>
-              <div class="mt-2"><StatusBadge :value="result.attempt?.status || 'completed'" /></div>
+              <div class="mt-2"><StatusBadge :value="result.attempt?.status || (isResultExpired ? 'expired' : 'completed')" /></div>
             </div>
           </div>
 
@@ -95,7 +103,7 @@
             </div>
 
             <h1 class="text-xl font-bold leading-relaxed text-slate-900 sm:text-2xl pt-2">
-              {{ currentQuestion.question }}
+              <MathText :text="currentQuestion.question" />
             </h1>
 
             <!-- Optional Question Image -->
@@ -114,7 +122,7 @@
               v-for="answer in currentQuestion.answers"
               :key="answer.id"
               type="button"
-              class="flex items-center gap-3.5 rounded-xl border p-4 text-left transition duration-150 active:scale-[0.99]"
+              class="flex items-center gap-3.5 rounded-xl border p-4 text-left transition duration-150 active:scale-[0.99] cursor-pointer"
               :class="isAnswerSelected(answer)
                 ? 'border-[#7C3AED] bg-purple-50 text-slate-900 shadow-sm'
                 : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'"
@@ -127,7 +135,7 @@
                 {{ answer.key }}
               </span>
               <span class="font-medium text-sm leading-relaxed flex-1">
-                {{ answer.text }}
+                <MathText :text="answer.text" />
               </span>
               <span
                 v-if="isAnswerSelected(answer)"
@@ -163,7 +171,7 @@
                 class="btn-primary text-xs px-5"
                 type="button"
                 :disabled="isSubmitting"
-                @click="submitAttempt"
+                @click="submitAttempt(false)"
               >
                 {{ isSubmitting ? 'Đang nộp...' : 'Nộp bài tập' }}
               </button>
@@ -172,39 +180,46 @@
         </template>
       </article>
 
-      <!-- Sidebar -->
+      <!-- Sidebar: Timer & Question Map -->
       <aside class="grid content-start gap-5">
+        <!-- Timer Card -->
         <article class="card p-5 space-y-4">
-          <div class="border-b border-slate-100 pb-3">
-            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Thông tin bài tập</span>
-            <h2 class="text-base font-bold text-slate-900 mt-1">{{ assignment?.title || quizMeta.title || 'Bài tập' }}</h2>
-          </div>
-
-          <div class="grid grid-cols-2 gap-2 text-xs">
-            <div class="rounded-lg bg-slate-50 p-2.5">
-              <span class="text-slate-400 font-bold uppercase text-[10px] block">Lượt làm</span>
-              <b class="text-slate-800 font-bold block mt-0.5">#{{ attemptId || '-' }}</b>
-            </div>
-            <div class="rounded-lg bg-slate-50 p-2.5">
-              <span class="text-slate-400 font-bold uppercase text-[10px] block">Tổng câu</span>
-              <b class="text-slate-800 font-bold block mt-0.5">{{ questions.length }} câu</b>
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Thời gian làm bài</span>
+            <div class="flex items-center gap-2">
+              <span class="text-lg">⏱️</span>
             </div>
           </div>
 
-          <div class="space-y-2 pt-2 border-t border-slate-100">
-            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">Danh sách câu hỏi</span>
-            <div class="grid grid-cols-5 gap-1.5">
-              <button
-                v-for="(_, index) in questions"
-                :key="index"
-                type="button"
-                class="grid h-9 place-items-center rounded-lg border text-xs font-bold transition active:scale-95"
-                :class="getQuestionMapClass(index)"
-                @click="goToQuestion(index)"
-              >
-                {{ index + 1 }}
-              </button>
+          <div
+            class="rounded-xl border p-4 text-center transition"
+            :class="hasTimeLimit && timeLeft <= 60 ? 'border-amber-200 bg-amber-50 text-amber-800' : 'border-slate-200 bg-slate-50 text-slate-900'"
+          >
+            <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Thời gian còn lại</p>
+            <div class="mt-1 text-3xl font-black tracking-wider">
+              {{ hasTimeLimit ? formatSeconds(timeLeft) : 'Không giới hạn' }}
             </div>
+          </div>
+        </article>
+
+        <!-- Question Map Card -->
+        <article class="card p-5 space-y-3">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Danh sách câu hỏi</h3>
+            <span class="text-xs font-semibold text-slate-500">{{ answeredQuestionsCount }}/{{ questions.length }} đã chọn</span>
+          </div>
+
+          <div class="grid grid-cols-5 gap-1.5 pt-1">
+            <button
+              v-for="(_, index) in questions"
+              :key="index"
+              type="button"
+              class="grid h-9 place-items-center rounded-lg border text-xs font-bold transition active:scale-95"
+              :class="getQuestionMapClass(index)"
+              @click="goToQuestion(index)"
+            >
+              {{ index + 1 }}
+            </button>
           </div>
         </article>
       </aside>
@@ -216,13 +231,14 @@
 import { useAppLoading } from '@/composables/useAppLoading'
 const { beginTask, endTask } = useAppLoading()
 
-import { computed, onMounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { computed, onBeforeUnmount, onMounted, onUnmounted, ref } from 'vue'
+import { onBeforeRouteLeave, useRoute } from 'vue-router'
 import AppLoadingState from '@/components/common/AppLoadingState.vue'
 import AppErrorState from '@/components/common/AppErrorState.vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import QuestionImage from '@/components/question/QuestionImage.vue'
-import { homeworkApi, normalizeQuestion } from '@/services/api'
+import MathText from '@/components/MathText.vue'
+import { formatSeconds, homeworkApi, normalizeQuestion } from '@/services/api'
 
 const route = useRoute()
 const roomId = computed(() => route.params.roomId)
@@ -240,9 +256,24 @@ const errorMessage = ref('')
 const submitMessage = ref('')
 const result = ref(null)
 
+const timeLeft = ref(0)
+const hasTimeLimit = ref(true)
+let timer = null
+
+const isResultExpired = computed(() => {
+  const status = result.value?.attempt?.status || result.value?.data?.attempt?.status || result.value?.status
+  return status === 'expired'
+})
+
 const currentQuestion = computed(() => questions.value[currentIndex.value] || { id: 0, question: '', answers: [] })
 const isLastQuestion = computed(() => currentIndex.value === questions.value.length - 1)
 const progressPercent = computed(() => Math.round(((currentIndex.value + 1) / Math.max(questions.value.length, 1)) * 100))
+
+const answeredQuestionsCount = computed(() => {
+  return Object.values(selectedAnswers.value).filter((v) =>
+    Array.isArray(v) ? v.length > 0 : Boolean(v),
+  ).length
+})
 
 const isAnswerSelected = (answer) => {
   const current = selectedAnswers.value[currentQuestion.value.id]
@@ -294,7 +325,7 @@ const toggleAnswer = (answer) => {
 const getQuestionMapClass = (i) => {
   const questionId = questions.value[i]?.id
   if (i === currentIndex.value) {
-    return ['border-[#7C3AED]', 'bg-[#7C3AED]', 'text-white']
+    return ['border-[#7C3AED]', 'bg-[#7C3AED]', 'text-white', 'shadow-sm']
   }
   const ans = selectedAnswers.value[questionId]
   const hasAnswered = Array.isArray(ans) ? ans.length > 0 : Boolean(ans)
@@ -324,49 +355,144 @@ const buildAnswerPayload = () => {
   return payload
 }
 
+const startTimer = () => {
+  if (!hasTimeLimit.value) return
+  clearInterval(timer)
+  timer = setInterval(async () => {
+    timeLeft.value -= 1
+
+    if (timeLeft.value <= 0) {
+      timeLeft.value = 0
+      clearInterval(timer)
+      await submitAttempt(true)
+    }
+  }, 1000)
+}
+
 const loadAttempt = async () => {
-    beginTask()
-    try {
-isLoading.value = true
-  errorMessage.value = ''
-
+  beginTask()
   try {
-    const data = await homeworkApi.startAssignmentAttempt(roomId.value, assignmentId.value)
-    assignment.value = data.assignment
-    attemptId.value = data.attempt?.id
-    quizMeta.value = {
-      title: data.quiz?.title || data.assignment?.quiz?.title || data.assignment?.title || 'Homework',
-    }
-    const rawQuestions = data.quiz?.questions || data.assignment?.quiz?.questions || []
-    questions.value = rawQuestions.map(normalizeQuestion)
-  } catch (error) {
-    errorMessage.value = `Không tải được bài tập: ${error.message}`
-  } finally {
-    isLoading.value = false
-  }
-    } finally {
-      endTask()
-    }
-  }
+    isLoading.value = true
+    errorMessage.value = ''
 
-const submitAttempt = async () => {
+    try {
+      const data = await homeworkApi.startAssignmentAttempt(roomId.value, assignmentId.value)
+      assignment.value = data.assignment
+      attemptId.value = data.attempt?.id
+      quizMeta.value = {
+        title: data.quiz?.title || data.assignment?.quiz?.title || data.assignment?.title || 'Homework',
+      }
+      const rawQuestions = data.quiz?.questions || data.assignment?.quiz?.questions || []
+      questions.value = rawQuestions.map(normalizeQuestion)
+
+      // Calculate time limit
+      let totalLimit = 0
+      if (data.assignment?.duration_minutes) {
+        totalLimit = Number(data.assignment.duration_minutes) * 60
+      } else if (data.quiz?.time_limit_seconds) {
+        totalLimit = Number(data.quiz.time_limit_seconds)
+      }
+
+      if (totalLimit > 0) {
+        hasTimeLimit.value = true
+        if (data.attempt?.started_at) {
+          const startedAtMs = new Date(data.attempt.started_at).getTime()
+          const nowMs = Date.now()
+          const elapsedSeconds = Math.max(0, Math.floor((nowMs - startedAtMs) / 1000))
+          timeLeft.value = Math.max(0, totalLimit - elapsedSeconds)
+        } else {
+          timeLeft.value = totalLimit
+        }
+      } else if (data.assignment?.deadline_at) {
+        hasTimeLimit.value = true
+        const deadlineMs = new Date(data.assignment.deadline_at).getTime()
+        const nowMs = Date.now()
+        timeLeft.value = Math.max(0, Math.floor((deadlineMs - nowMs) / 1000))
+      } else {
+        hasTimeLimit.value = false
+        timeLeft.value = 0
+      }
+
+      // Check against deadline_at if exists
+      if (hasTimeLimit.value && data.assignment?.deadline_at) {
+        const deadlineMs = new Date(data.assignment.deadline_at).getTime()
+        const nowMs = Date.now()
+        const secondsToDeadline = Math.max(0, Math.floor((deadlineMs - nowMs) / 1000))
+        if (secondsToDeadline < timeLeft.value) {
+          timeLeft.value = secondsToDeadline
+        }
+      }
+
+      if (hasTimeLimit.value && timeLeft.value <= 0) {
+        timeLeft.value = 0
+        await submitAttempt(true)
+        return
+      }
+
+      if (hasTimeLimit.value) {
+        startTimer()
+      }
+    } catch (error) {
+      errorMessage.value = `Không tải được bài tập: ${error.message}`
+    } finally {
+      isLoading.value = false
+    }
+  } finally {
+    endTask()
+  }
+}
+
+const submitAttempt = async (autoSubmit = false) => {
   if (isSubmitting.value) return
+  if (!autoSubmit && !questions.value.length) return
   isSubmitting.value = true
   errorMessage.value = ''
+  clearInterval(timer)
 
   try {
     const res = await homeworkApi.submitAssignmentAttempt(roomId.value, assignmentId.value, {
       attempt_id: attemptId.value,
       answers: buildAnswerPayload(),
     })
-    result.value = res
-    submitMessage.value = res.message || 'Nộp bài tập thành công.'
+    result.value = res.data || res
+    const isExpired = result.value?.attempt?.status === 'expired' || result.value?.status === 'expired' || autoSubmit
+    submitMessage.value = res.message || (isExpired ? 'Đã hết giờ làm bài.' : 'Nộp bài tập thành công.')
   } catch (error) {
-    errorMessage.value = `Không nộp được bài: ${error.message}`
+    if (autoSubmit) {
+      result.value = {
+        attempt: { status: 'expired' },
+        score: 0,
+        total_points: questions.value.length,
+        correct_count: 0,
+        total_questions: questions.value.length,
+        accuracy_percentage: 0,
+        score_percent: 0,
+      }
+      submitMessage.value = 'Đã hết giờ làm bài.'
+    } else {
+      errorMessage.value = `Không nộp được bài: ${error.message}`
+      if (hasTimeLimit.value && timeLeft.value > 0) {
+        startTimer()
+      }
+    }
   } finally {
     isSubmitting.value = false
   }
 }
 
-onMounted(loadAttempt)
+onMounted(async () => {
+  await loadAttempt()
+})
+
+onBeforeRouteLeave(() => {
+  clearInterval(timer)
+})
+
+onBeforeUnmount(() => {
+  clearInterval(timer)
+})
+
+onUnmounted(() => {
+  clearInterval(timer)
+})
 </script>
