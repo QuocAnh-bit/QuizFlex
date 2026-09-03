@@ -510,7 +510,7 @@
         "period": "30-day duration",
         "desc": "Maximize your power with unlimited benefits.",
         "btnText": "Get the ultimate plan",
-        "features": ["AI question generation (+1500 uses)", "Unlimited OCR document scan", "Unlock private quizzes", "Massive real-time rooms (up to 500 people)", "Unlimited Homework rooms", "Export questions to PDF/Excel", "Sparkling Ultra badge next to your name"]
+        "features": ["AI question generation (+1500 uses)", "OCR document scan (150 uses/month)", "Unlock private quizzes", "Massive real-time rooms (up to 500 people)", "Unlimited Homework rooms", "Export questions to PDF/Excel", "Sparkling Ultra badge next to your name"]
       }
     },
     "history": {

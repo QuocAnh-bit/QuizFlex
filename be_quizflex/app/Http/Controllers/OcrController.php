@@ -34,14 +34,19 @@ class OcrController extends Controller
             ], 403);
         }
 
-        if ($tier !== 'admin' && $tier !== 'ultra') {
+        if ($tier !== 'admin') {
             $startOfMonth = now()->startOfMonth();
             $scanCount = \App\Models\AiLog::where('user_id', $user->id)
                 ->where('action_type', 'ocr_upload')
                 ->where('created_at', '>=', $startOfMonth)
                 ->count();
 
-            $limit = $tier === 'pro' ? 50 : 10;
+            $limit = match ($tier) {
+                'ultra' => 150,
+                'pro' => 50,
+                'plus' => 10,
+                default => 0,
+            };
 
             if ($scanCount >= $limit) {
                 return response()->json([
