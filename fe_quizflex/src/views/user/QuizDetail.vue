@@ -314,7 +314,7 @@
                 <p
                   class="mt-1 text-xs font-medium leading-snug text-slate-800"
                 >
-                  {{ question.question }}
+                  <MathText :content="question.question || question.content || ''" />
                 </p>
               </div>
 
@@ -419,6 +419,7 @@ import VisibilityBadge from '@/components/common/VisibilityBadge.vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import QuestionReportModal from '@/components/question/QuestionReportModal.vue'
 import QuestionImage from '@/components/question/QuestionImage.vue'
+import MathText from '@/components/MathText.vue'
 
 import {
   authApi,

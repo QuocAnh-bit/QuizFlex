@@ -465,7 +465,7 @@
               class="rounded-xl border border-slate-100 bg-slate-50 p-3 space-y-2"
             >
               <p class="font-bold text-slate-900 leading-relaxed">
-                Câu {{ index + 1 }}: {{ question.text || question.content }}
+                Câu {{ index + 1 }}: <MathText :content="question.text || question.content || ''" compact />
               </p>
               <div class="space-y-1">
                 <div 
@@ -474,7 +474,8 @@
                   class="rounded-lg p-2 text-xs" 
                   :class="answer.is_correct ? 'bg-emerald-100/70 text-emerald-900 font-bold' : 'bg-white text-slate-700'"
                 >
-                  {{ answer.answer_key || answer.key }}. {{ answer.text || answer.content }}
+                  <span class="font-black">{{ answer.answer_key || answer.key }}.</span>
+                  <MathText :content="answer.text || answer.content || ''" compact />
                 </div>
               </div>
             </div>
@@ -501,6 +502,7 @@ const { beginTask, endTask } = useAppLoading()
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { aiApi, authApi, currentUserStorage, curriculumApi, taxonomyApi } from '@/services/api'
+import MathText from '@/components/MathText.vue'
 import {
   Sparkles,
   FileText,

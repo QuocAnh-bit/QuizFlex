@@ -851,7 +851,7 @@ class QuestionController extends Controller
                 [
                     'content' => $content,
                     'is_correct' => $isCorrect,
-                    'order' => $answerData['order'] ?? $index,
+                    'order' => $index,
                 ]
             );
 

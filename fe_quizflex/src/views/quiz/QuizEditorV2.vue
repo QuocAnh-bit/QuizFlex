@@ -42,7 +42,7 @@
     <OcrQuestionImporter v-if="isOcrImporterOpen" :quiz-context="quiz" @select="addOcrQuestions" @close="isOcrImporterOpen = false" />
     <AiQuizReview v-if="isQuizReviewOpen" :quiz="cloneData(quiz)" :initial-result="aiQuizReviewDraft.signature === persistedSignature(quiz) ? aiQuizReviewDraft.result : null" @result="storeQuizReview" @select-question="goToReviewedQuestion" @close="isQuizReviewOpen = false" />
     <SimilarQuestionGenerator v-if="isSimilarGeneratorOpen" :quiz="cloneData(quiz)" :source-questions="similarSourceQuestions" :initial-results="similarGeneratorDraft.signature === similarSourceSignature ? similarGeneratorDraft.results : []" :initial-selected-ids="similarGeneratorDraft.signature === similarSourceSignature ? similarGeneratorDraft.selectedIds : []" @state-change="updateSimilarGeneratorDraft" @select="addSimilarQuestions" @close="isSimilarGeneratorOpen = false" />
-    <QuizPointsModal v-if="isPointsModalOpen" :question-count="quiz.questions.length" :current-total="pointsBudget || totalQuizPoints" @apply-same="applySamePoints" @distribute="distributeTotalPoints" @close="isPointsModalOpen = false" />
+    <QuizPointsModal v-if="isPointsModalOpen" :question-count="quiz.questions.length" :current-total="pointsBudget || totalQuizPoints" @distribute="distributeTotalPoints" @close="isPointsModalOpen = false" />
     <EditorConfirmModal v-if="editorDialog" v-bind="editorDialog" @cancel="closeEditorDialog" @confirm="confirmEditorDialog" />
     <Transition name="toast"><div v-if="mockNotice" class="fixed bottom-5 left-1/2 z-50 -translate-x-1/2 rounded-xl bg-slate-900 px-4 py-3 text-xs font-bold text-white shadow-2xl">{{ mockNotice }} — chức năng đang dùng mock UI.</div></Transition>
     </template>
@@ -688,14 +688,6 @@ const updatePoints = (points) => {
   saveAlert.value = null
   markLocalChanged()
 }
-const applySamePoints = (points) => {
-  const value = roundPoints(points)
-  if (!Number.isFinite(value) || value <= 0) return
-  quiz.value.questions.forEach((question) => { question.points = value })
-  pointsBudget.value = roundPoints(value * quiz.value.questions.length)
-  isPointsModalOpen.value = false
-  markLocalChanged()
-}
 const distributeTotalPoints = (total) => {
   const questions = quiz.value.questions
   const target = roundPoints(total)
@@ -815,11 +807,6 @@ const confirmEditorDialog = async () => {
   }
   if (dialog.action === 'delete-question') executeRemoveQuestion(dialog.questionId)
 }
-const warnBeforeBrowserUnload = (event) => {
-  if (!isDirty.value) return
-  event.preventDefault()
-  event.returnValue = ''
-}
 onBeforeRouteLeave((to) => {
   if (allowNavigation || !isDirty.value) return true
   pendingNavigation.value = to.fullPath
@@ -841,8 +828,8 @@ watch(quiz, () => {
   if (isDirty.value) scheduleAutosave()
 }, { deep: true, flush: 'sync' })
 watch(quizId, loadQuiz)
-onMounted(() => { loadQuiz(); window.addEventListener('beforeunload', warnBeforeBrowserUnload) })
-onBeforeUnmount(() => { clearAutosaveTimer(); clearTimeout(noticeTimer); clearTimeout(addedHighlightTimer); window.removeEventListener('beforeunload', warnBeforeBrowserUnload) })
+onMounted(loadQuiz)
+onBeforeUnmount(() => { clearAutosaveTimer(); clearTimeout(noticeTimer); clearTimeout(addedHighlightTimer) })
 </script>
 <style scoped>
 .editor-grid { display: grid; grid-template-columns: clamp(260px, 18vw, 280px) minmax(0, 1fr) 64px; overflow: hidden; }

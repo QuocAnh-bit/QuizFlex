@@ -324,7 +324,7 @@
 
                     <!-- Question Content -->
                     <h3 class="text-sm font-bold leading-relaxed text-slate-900 break-words">
-                      {{ q.content || q.text }}
+                      <MathText :content="q.content || q.text || ''" compact />
                     </h3>
 
                     <!-- Answers 2-Column Grid (Spacious) -->
@@ -341,7 +341,7 @@
                         >
                           {{ ans.key }}
                         </span>
-                        <span class="truncate min-w-0 flex-1">{{ ans.content || ans.text }}</span>
+                        <MathText :content="ans.content || ans.text || ''" compact class="min-w-0 flex-1 truncate" />
                         <span v-if="ans.is_correct" class="text-emerald-600 text-xs shrink-0 font-bold">✓</span>
                       </div>
                     </div>
@@ -370,6 +370,7 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { Check, Globe, Lock, Plus, Search, X } from 'lucide-vue-next'
 import CreateQuestionStudioModal from '@/components/question/CreateQuestionStudioModal.vue'
+import MathText from '@/components/MathText.vue'
 import { myQuestionsApi, questionsBankApi, taxonomyApi } from '@/services/api'
 
 const props = defineProps({

@@ -1698,7 +1698,9 @@ export const normalizeQuestion = (question) => ({
     "",
   answers: (question.answers || []).map((answer, index) => ({
     id: answer.id,
-    key: answer.answer_key || answer.key || String.fromCharCode(65 + index),
+    // Labels are positional. Older imported questions may contain duplicate
+    // answer_key/order values (for example every answer is "A").
+    key: String.fromCharCode(65 + index),
     text: answer.text || answer.content,
     isCorrect: Boolean(answer.is_correct),
   })),
