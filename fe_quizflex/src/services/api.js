@@ -499,8 +499,11 @@ export const currentUserStorage = {
       return;
     }
 
-    localStorage.setItem("quizflex_current_user", JSON.stringify(normalized));
-    if (typeof window !== "undefined") {
+    const newJson = JSON.stringify(normalized);
+    const oldJson = localStorage.getItem("quizflex_current_user");
+    localStorage.setItem("quizflex_current_user", newJson);
+
+    if (oldJson !== newJson && typeof window !== "undefined") {
       window.dispatchEvent(
         new CustomEvent("quizflex-user-updated", { detail: normalized }),
       );
@@ -623,6 +626,8 @@ const normalizeRoomCode = (value) =>
     .trim()
     .toUpperCase();
 
+let inFlightMePromise = null;
+
 export const authApi = {
   async login(payload) {
     const { data } = await api.post("/auth/login", payload);
@@ -658,10 +663,22 @@ export const authApi = {
   },
 
   async me() {
-    const { data } = await api.get("/auth/me");
-    const user = unwrap(data);
-    currentUserStorage.set(user);
-    return currentUserStorage.get() || user;
+    if (inFlightMePromise) return inFlightMePromise;
+
+    inFlightMePromise = (async () => {
+      try {
+        const { data } = await api.get("/auth/me");
+        const user = unwrap(data);
+        currentUserStorage.set(user);
+        return currentUserStorage.get() || user;
+      } finally {
+        setTimeout(() => {
+          inFlightMePromise = null;
+        }, 1000);
+      }
+    })();
+
+    return inFlightMePromise;
   },
 
   async lockedInfo() {
@@ -1512,8 +1529,14 @@ export const liveRoomApi = {
 
 export const gamificationApi = {
   async getUserStats() {
-    const { data } = await api.get("/user/stats");
-    return unwrap(data);
+    return withMemoryCache(
+      "user_stats",
+      async () => {
+        const { data } = await api.get("/user/stats");
+        return unwrap(data);
+      },
+      3000,
+    );
   },
   async getBadges() {
     const { data } = await api.get("/badges");

@@ -780,6 +780,7 @@ import {
   Gift,
   KeyRound,
   Loader2,
+  LockKeyhole,
   PartyPopper,
   QrCode,
   ReceiptText,
