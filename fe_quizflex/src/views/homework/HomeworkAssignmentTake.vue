@@ -95,7 +95,7 @@
             </div>
 
             <h1 class="text-xl font-bold leading-relaxed text-slate-900 sm:text-2xl pt-2">
-              {{ currentQuestion.question }}
+              <MathText :content="currentQuestion.question || currentQuestion.content || ''" />
             </h1>
 
             <!-- Optional Question Image -->
@@ -127,7 +127,7 @@
                 {{ answer.key }}
               </span>
               <span class="font-medium text-sm leading-relaxed flex-1">
-                {{ answer.text }}
+                <MathText :content="answer.text || answer.content || ''" compact />
               </span>
               <span
                 v-if="isAnswerSelected(answer)"
@@ -222,6 +222,7 @@ import AppLoadingState from '@/components/common/AppLoadingState.vue'
 import AppErrorState from '@/components/common/AppErrorState.vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import QuestionImage from '@/components/question/QuestionImage.vue'
+import MathText from '@/components/MathText.vue'
 import { homeworkApi, normalizeQuestion } from '@/services/api'
 
 const route = useRoute()

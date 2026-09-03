@@ -536,7 +536,7 @@
                 <div
                   class="text-sm font-semibold text-slate-900 leading-relaxed my-2"
                 >
-                  {{ q.content || q.text }}
+                    <MathText :content="q.content || q.text || ''" compact />
                 </div>
 
                 <!-- ANSWERS AREA (COLLAPSIBLE / EXPANDABLE) -->
@@ -938,6 +938,7 @@ import {
 import { myQuestionsApi, questionsBankApi, taxonomyApi } from "@/services/api";
 import QuestionImage from "@/components/question/QuestionImage.vue";
 import QuestionImageUploader from "@/components/question/QuestionImageUploader.vue";
+import MathText from "@/components/MathText.vue";
 
 const props = defineProps({
   modelValue: {

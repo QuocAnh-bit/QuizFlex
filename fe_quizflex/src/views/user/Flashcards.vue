@@ -644,7 +644,7 @@
                         : 'text-lg sm:text-xl text-slate-900'
                     ]"
                   >
-                    {{ currentCard.question }}
+                    <MathText :content="currentCard.question || currentCard.content || ''" />
                   </h3>
 
                   <!-- Flashcard Question Image (Centered, elegant & zoomable without flipping card) -->
@@ -758,7 +758,7 @@
                     class="text-xs sm:text-sm font-semibold line-clamp-2 text-center px-1"
                     :class="isFullscreen ? 'text-slate-300' : 'text-slate-600'"
                   >
-                    {{ currentCard.question }}
+                    <MathText :content="currentCard.question || currentCard.content || ''" compact />
                   </p>
 
                   <div
@@ -793,7 +793,7 @@
                       </span>
 
                       <span class="flex-1 leading-snug">
-                        {{ answer.text }}
+                        <MathText :content="answer.text || answer.content || ''" compact />
                       </span>
 
                       <span
@@ -819,7 +819,7 @@
                           : 'text-base sm:text-lg text-slate-900'
                       ]"
                     >
-                      {{ currentCard.question }}
+                      <MathText :content="currentCard.question || currentCard.content || ''" />
                     </h3>
                   </div>
                 </template>
@@ -1089,6 +1089,7 @@ import {
 import AppLoadingState from '@/components/common/AppLoadingState.vue'
 import AppErrorState from '@/components/common/AppErrorState.vue'
 import QuestionImage from '@/components/question/QuestionImage.vue'
+import MathText from '@/components/MathText.vue'
 import {
   currentUserStorage,
   normalizeQuestion,

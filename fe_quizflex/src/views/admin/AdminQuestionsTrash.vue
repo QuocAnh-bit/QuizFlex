@@ -164,7 +164,7 @@
 
               <td class="max-w-md p-4">
                 <div class="line-clamp-2 font-medium text-slate-900" :title="q.content">
-                  {{ q.content }}
+                  <MathText :content="q.content || q.text || ''" compact />
                 </div>
               </td>
 
@@ -281,6 +281,7 @@ import {
 import { adminQuestionsApi } from '@/services/api'
 import { useAppLoading } from '@/composables/useAppLoading'
 import AppPagination from '@/components/common/AppPagination.vue'
+import MathText from '@/components/MathText.vue'
 
 const { beginTask, endTask } = useAppLoading()
 

@@ -198,7 +198,7 @@
         <div class="rounded-2xl border border-slate-100 bg-slate-50/80 p-3.5 text-xs space-y-1">
           <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Nội dung câu hỏi:</span>
           <p class="font-bold text-slate-900 leading-relaxed italic">
-            "{{ rep.question?.content || 'Nội dung câu hỏi không khả dụng' }}"
+            “<MathText :content="rep.question?.content || 'Nội dung câu hỏi không khả dụng'" compact />”
           </p>
         </div>
 
@@ -272,6 +272,7 @@ import {
 import { reportApi } from '@/services/api'
 import { useAppLoading } from '@/composables/useAppLoading'
 import AppPagination from '@/components/common/AppPagination.vue'
+import MathText from '@/components/MathText.vue'
 
 const { beginTask, endTask } = useAppLoading()
 

@@ -352,7 +352,7 @@
                       class="rounded-xl border border-slate-200 bg-slate-50 p-3.5 space-y-2.5"
                     >
                       <div class="flex items-start justify-between gap-2">
-                        <span class="font-bold text-slate-900 text-xs">Câu {{ idx + 1 }}: {{ q.content || q.question }}</span>
+                        <span class="font-bold text-slate-900 text-xs">Câu {{ idx + 1 }}: <MathText :content="q.content || q.question || ''" compact /></span>
                         <span class="text-[10px] font-bold text-slate-500 bg-white border border-slate-200 px-1.5 py-0.5 rounded">{{ q.points || 10 }} pts</span>
                       </div>
                       <div class="grid gap-1.5 sm:grid-cols-2 text-[11px]">
@@ -362,7 +362,7 @@
                           class="p-2 rounded border"
                           :class="ans.is_correct ? 'bg-emerald-50 border-emerald-300 text-emerald-900 font-bold' : 'bg-white border-slate-200 text-slate-700'"
                         >
-                          <span>{{ String.fromCharCode(65 + aIdx) }}. {{ ans.content }}</span>
+                          <span>{{ String.fromCharCode(65 + aIdx) }}. <MathText :content="ans.content || ''" compact /></span>
                           <span v-if="ans.is_correct" class="ml-1 text-[10px] text-emerald-700">✓</span>
                         </div>
                       </div>
@@ -457,7 +457,7 @@
                         <div class="p-4 space-y-2.5 bg-emerald-50/20">
                           <div class="flex items-center justify-between gap-2">
                             <span class="font-bold text-emerald-900 text-xs">
-                              [MỚI] Câu {{ diffItem.order }}: {{ diffItem.new_question?.content }}
+                              [MỚI] Câu {{ diffItem.order }}: <MathText :content="diffItem.new_question?.content || ''" compact />
                             </span>
                             <span class="rounded bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 text-[10px]">
                               + Thêm mới
@@ -470,7 +470,7 @@
                               class="p-2 rounded border"
                               :class="ans.is_correct ? 'bg-emerald-100 border-emerald-300 text-emerald-900 font-bold' : 'bg-white border-slate-200 text-slate-700'"
                             >
-                              <span>{{ String.fromCharCode(65 + aIdx) }}. {{ ans.content }}</span>
+                              <span>{{ String.fromCharCode(65 + aIdx) }}. <MathText :content="ans.content || ''" compact /></span>
                               <span v-if="ans.is_correct" class="ml-1 text-[10px] text-emerald-700">✓</span>
                             </div>
                           </div>
@@ -482,7 +482,7 @@
                         <div class="p-4 space-y-2.5 bg-rose-50/20">
                           <div class="flex items-center justify-between gap-2">
                             <span class="font-bold text-rose-900 text-xs">
-                              [CŨ] Câu {{ diffItem.order }}: {{ diffItem.old_question?.content }}
+                              [CŨ] Câu {{ diffItem.order }}: <MathText :content="diffItem.old_question?.content || ''" compact />
                             </span>
                             <span class="rounded bg-rose-100 text-rose-800 font-bold px-2 py-0.5 text-[10px]">
                               - Đã xóa
@@ -494,7 +494,7 @@
                               :key="aIdx"
                               class="p-2 rounded border bg-white border-slate-200 text-slate-600 line-through"
                             >
-                              <span>{{ String.fromCharCode(65 + aIdx) }}. {{ ans.content }}</span>
+                              <span>{{ String.fromCharCode(65 + aIdx) }}. <MathText :content="ans.content || ''" compact /></span>
                             </div>
                           </div>
                         </div>
@@ -521,11 +521,11 @@
                           <div v-if="diffItem.field_changes?.content" class="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-200 rounded-xl border border-slate-200 overflow-hidden text-xs">
                             <div class="p-3 bg-rose-50/20">
                               <span class="text-[10px] font-bold uppercase text-slate-400 block mb-1">Nội dung câu hỏi cũ:</span>
-                              <p class="text-rose-800 line-through">{{ diffItem.field_changes.content.old }}</p>
+                              <MathText :content="diffItem.field_changes.content.old || ''" compact class="text-rose-800 line-through" />
                             </div>
                             <div class="p-3 bg-emerald-50/20">
                               <span class="text-[10px] font-bold uppercase text-slate-400 block mb-1">Nội dung câu hỏi mới:</span>
-                              <p class="text-emerald-900 font-bold">{{ diffItem.field_changes.content.new }}</p>
+                              <MathText :content="diffItem.field_changes.content.new || ''" compact class="text-emerald-900 font-bold" />
                             </div>
                           </div>
 
@@ -555,7 +555,7 @@
                               <div class="p-3 bg-rose-50/20 flex items-center justify-between">
                                 <span v-if="ansDiff.status === 'added'" class="text-slate-400 italic">Không có đáp án này</span>
                                 <template v-else>
-                                  <span class="text-rose-800 line-through">{{ ansDiff.key }}. {{ ansDiff.old_content }}</span>
+                                  <span class="text-rose-800 line-through">{{ ansDiff.key }}. <MathText :content="ansDiff.old_content || ''" compact /></span>
                                   <span v-if="ansDiff.old_is_correct" class="text-[10px] font-bold text-emerald-700 ml-2">✓ Đúng</span>
                                 </template>
                               </div>
@@ -564,7 +564,7 @@
                               <div class="p-3 bg-emerald-50/20 flex items-center justify-between">
                                 <span v-if="ansDiff.status === 'removed'" class="text-rose-600 italic">Đáp án đã bị xóa</span>
                                 <template v-else>
-                                  <span class="text-emerald-900 font-bold">{{ ansDiff.key }}. {{ ansDiff.new_content }}</span>
+                                  <span class="text-emerald-900 font-bold">{{ ansDiff.key }}. <MathText :content="ansDiff.new_content || ''" compact /></span>
                                   <span v-if="ansDiff.new_is_correct" class="text-[10px] font-bold text-emerald-700 ml-2">✓ Đúng</span>
                                 </template>
                               </div>
@@ -640,7 +640,7 @@
                       <span class="h-6 w-6 rounded-lg bg-purple-100 text-[#7C3AED] font-black text-xs flex items-center justify-center shrink-0">
                         {{ index + 1 }}
                       </span>
-                      <h4 class="text-xs font-bold text-slate-900 leading-snug">{{ q.content || q.question }}</h4>
+                      <h4 class="text-xs font-bold text-slate-900 leading-snug"><MathText :content="q.content || q.question || ''" compact /></h4>
                     </div>
                     <span class="rounded-md bg-slate-100 border border-slate-200 px-2 py-0.5 text-[10px] font-bold text-slate-600 shrink-0">
                       {{ q.points || 10 }} pts
@@ -655,7 +655,7 @@
                       class="p-2.5 rounded-lg border text-xs flex items-center justify-between"
                       :class="ans.is_correct ? 'bg-emerald-50 border-emerald-300 text-emerald-900 font-bold' : 'bg-slate-50 border-slate-200 text-slate-700'"
                     >
-                      <span>{{ String.fromCharCode(65 + aIndex) }}. {{ ans.content }}</span>
+                      <span>{{ String.fromCharCode(65 + aIndex) }}. <MathText :content="ans.content || ''" compact /></span>
                       <span v-if="ans.is_correct" class="text-[10px] font-bold text-emerald-700 uppercase">✓ Đúng</span>
                     </div>
                   </div>
@@ -805,6 +805,7 @@ import { quizReviewApi, taxonomyApi } from '@/services/api'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import AppPagination from '@/components/common/AppPagination.vue'
 import { useAppLoading } from '@/composables/useAppLoading'
+import MathText from '@/components/MathText.vue'
 
 const { beginTask, endTask } = useAppLoading()
 
