@@ -42,7 +42,7 @@
     <OcrQuestionImporter v-if="isOcrImporterOpen" :quiz-context="quiz" @select="addOcrQuestions" @close="isOcrImporterOpen = false" />
     <AiQuizReview v-if="isQuizReviewOpen" :quiz="cloneData(quiz)" :initial-result="aiQuizReviewDraft.signature === persistedSignature(quiz) ? aiQuizReviewDraft.result : null" @result="storeQuizReview" @select-question="goToReviewedQuestion" @close="isQuizReviewOpen = false" />
     <SimilarQuestionGenerator v-if="isSimilarGeneratorOpen" :quiz="cloneData(quiz)" :source-questions="similarSourceQuestions" :initial-results="similarGeneratorDraft.signature === similarSourceSignature ? similarGeneratorDraft.results : []" :initial-selected-ids="similarGeneratorDraft.signature === similarSourceSignature ? similarGeneratorDraft.selectedIds : []" @state-change="updateSimilarGeneratorDraft" @select="addSimilarQuestions" @close="isSimilarGeneratorOpen = false" />
-    <QuizPointsModal v-if="isPointsModalOpen" :question-count="quiz.questions.length" :current-total="pointsBudget || totalQuizPoints" @apply-same="applySamePoints" @distribute="distributeTotalPoints" @close="isPointsModalOpen = false" />
+    <QuizPointsModal v-if="isPointsModalOpen" :question-count="quiz.questions.length" :current-total="pointsBudget || totalQuizPoints" @distribute="distributeTotalPoints" @close="isPointsModalOpen = false" />
     <EditorConfirmModal v-if="editorDialog" v-bind="editorDialog" @cancel="closeEditorDialog" @confirm="confirmEditorDialog" />
     <Transition name="toast"><div v-if="mockNotice" class="fixed bottom-5 left-1/2 z-50 -translate-x-1/2 rounded-xl bg-slate-900 px-4 py-3 text-xs font-bold text-white shadow-2xl">{{ mockNotice }} — chức năng đang dùng mock UI.</div></Transition>
     </template>
@@ -279,58 +279,84 @@ const showApiSaveAlert = (error) => {
   }
   showSaveAlert({ title: 'Chưa thể lưu Quiz', message: rawMessage, questionId })
 }
-const loadQuiz = async () => {
-    beginTask()
-    try {
-clearAutosaveTimer()
-  isHydrating.value = true
-  if (!quizId.value) {
-    isLoading.value = false
-    isHydrating.value = false
-    saveStatus.value = 'Chưa tải dữ liệu'
-    loadError.value = 'Thiếu mã Quiz. Hãy mở trang với tham số ?id=...'
-    return
+const applyQuizData = (rawQuiz, source = 'network') => {
+  const normalizedQuiz = normalizeQuiz(rawQuiz)
+  if (!normalizedQuiz.questions.length) {
+    const defaultQuestion = makeQuestion()
+    normalizedQuiz.questions.push(defaultQuestion)
   }
+  syncQuestionOrder()
+  quiz.value = normalizedQuiz
+  pointsBudget.value = roundPoints(normalizedQuiz.questions.reduce((total, question) => total + Number(question.points || 0), 0))
+  originalQuiz.value = cloneData(normalizedQuiz)
+  pendingCoverFile.value = null
+  coverRemoved.value = false
+  activeQuestionId.value = normalizedQuiz.questions[0]?.id ?? null
+  rebuildQuestionOrigins(normalizedQuiz.questions)
+  isDirty.value = false
+  editorRevision.value = 0
+  lastSavedRevision.value = 0
+  saveError.value = ''
+  saveAlert.value = null
+  saveStatus.value = source === 'cache' ? 'Đã lưu bản nháp' : 'Dữ liệu đã tải'
+  isLoading.value = false
+  isHydrating.value = false
+}
 
-  isLoading.value = true
-  loadError.value = ''
+const loadQuiz = async () => {
+  beginTask()
   try {
-    const rawQuiz = await getQuiz(quizId.value)
-    const normalizedQuiz = normalizeQuiz(rawQuiz)
-    quiz.value = normalizedQuiz
-    pointsBudget.value = roundPoints(normalizedQuiz.questions.reduce((total, question) => total + Number(question.points || 0), 0))
-    originalQuiz.value = cloneData(normalizedQuiz)
-    pendingCoverFile.value = null
-    coverRemoved.value = false
-    activeQuestionId.value = normalizedQuiz.questions[0]?.id ?? null
-    rebuildQuestionOrigins(normalizedQuiz.questions)
-    isDirty.value = false
-    editorRevision.value = 0
-    lastSavedRevision.value = 0
-    saveError.value = ''
-    saveAlert.value = null
-    saveStatus.value = 'Dữ liệu đã tải'
-    await consumeInitialSource()
-    if (import.meta.env.DEV) console.info('[QuizEditorV2] loaded quiz')
-  } catch (error) {
-    quiz.value = { title: '', cover: '', questions: [] }
-    pointsBudget.value = 0
-    pendingCoverFile.value = null
-    coverRemoved.value = false
-    activeQuestionId.value = null
-    saveStatus.value = 'Lỗi tải dữ liệu'
-    loadError.value = error?.response?.status === 404
-      ? 'Không tìm thấy Quiz hoặc Quiz không còn khả dụng.'
-      : 'Vui lòng kiểm tra quyền truy cập hoặc thử lại sau.'
-    if (import.meta.env.DEV) console.error('[QuizEditorV2] failed to load quiz', error)
-  } finally {
-    isLoading.value = false
-    isHydrating.value = false
-  }
-    } finally {
-      endTask()
+    clearAutosaveTimer()
+    isHydrating.value = true
+    if (!quizId.value) {
+      isLoading.value = false
+      isHydrating.value = false
+      saveStatus.value = 'Chưa tải dữ liệu'
+      loadError.value = 'Thiếu mã Quiz. Hãy mở trang với tham số ?id=...'
+      return
     }
+
+    // Ưu tiên nạp ngay tức thì từ cache nếu vừa tạo nháp ở bước trước
+    try {
+      const cachedRaw = sessionStorage.getItem(`quiz_draft_cache_${quizId.value}`)
+      if (cachedRaw) {
+        sessionStorage.removeItem(`quiz_draft_cache_${quizId.value}`)
+        const parsed = JSON.parse(cachedRaw)
+        if (parsed && (parsed.id || parsed.title)) {
+          applyQuizData(parsed, 'cache')
+          if (import.meta.env.DEV) console.info('[QuizEditorV2] loaded from instant draft cache')
+          return
+        }
+      }
+    } catch {}
+
+    isLoading.value = true
+    loadError.value = ''
+    try {
+      const fetchPromise = getQuiz(quizId.value)
+      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Yêu cầu tải dữ liệu Quiz từ máy chủ bị quá thời gian (timeout 8s).')), 8000))
+      const rawQuiz = await Promise.race([fetchPromise, timeoutPromise])
+      applyQuizData(rawQuiz, 'network')
+      if (import.meta.env.DEV) console.info('[QuizEditorV2] loaded quiz from server')
+    } catch (error) {
+      quiz.value = { title: '', cover: '', questions: [] }
+      pointsBudget.value = 0
+      pendingCoverFile.value = null
+      coverRemoved.value = false
+      activeQuestionId.value = null
+      saveStatus.value = 'Lỗi tải dữ liệu'
+      loadError.value = error?.response?.status === 404
+        ? 'Không tìm thấy Quiz hoặc Quiz không còn khả dụng.'
+        : (error?.message || 'Vui lòng kiểm tra quyền truy cập hoặc thử lại sau.')
+      if (import.meta.env.DEV) console.error('[QuizEditorV2] failed to load quiz', error)
+    } finally {
+      isLoading.value = false
+      isHydrating.value = false
+    }
+  } finally {
+    endTask()
   }
+}
 function getQuestionValidationMessage(question, index) {
   const label = `Câu ${index + 1}`
   if (!question.content?.trim()) return `${label} chưa có nội dung.`
@@ -605,13 +631,13 @@ const addPickedQuestions = (selectedQuestions) => {
   markLocalChanged()
   highlightAddedQuestions(uniqueQuestions)
 }
-const consumeInitialSource = async () => {
+const consumeInitialSource = () => {
   const shouldOpenSources = String(route.query.openQuestionSources || '') === '1'
   if (!shouldOpenSources || missingQuizContext.value) return
   if (shouldOpenSources) isQuestionSourceOpen.value = true
   const nextQuery = { ...route.query }
   delete nextQuery.openQuestionSources
-  await router.replace({ query: nextQuery })
+  router.replace({ path: route.path, query: nextQuery }).catch(() => {})
 }
 const saveMissingContext = async (form) => {
   if (isUpdatingContext.value) return
@@ -687,14 +713,6 @@ const updatePoints = (points) => {
   }
   activeQuestion.value.points = nextPoints
   saveAlert.value = null
-  markLocalChanged()
-}
-const applySamePoints = (points) => {
-  const value = roundPoints(points)
-  if (!Number.isFinite(value) || value <= 0) return
-  quiz.value.questions.forEach((question) => { question.points = value })
-  pointsBudget.value = roundPoints(value * quiz.value.questions.length)
-  isPointsModalOpen.value = false
   markLocalChanged()
 }
 const distributeTotalPoints = (total) => {
@@ -816,11 +834,6 @@ const confirmEditorDialog = async () => {
   }
   if (dialog.action === 'delete-question') executeRemoveQuestion(dialog.questionId)
 }
-const warnBeforeBrowserUnload = (event) => {
-  if (!isDirty.value) return
-  event.preventDefault()
-  event.returnValue = ''
-}
 onBeforeRouteLeave((to) => {
   if (allowNavigation || !isDirty.value) return true
   pendingNavigation.value = to.fullPath
@@ -878,7 +891,18 @@ watch(quiz, () => {
   markLocalChanged()
   if (isDirty.value) scheduleAutosave()
 }, { deep: true, flush: 'sync' })
-watch(quizId, loadQuiz)
+watch(quizId, (nextId, prevId) => {
+  if (nextId && String(nextId) !== String(prevId)) {
+    loadQuiz()
+  }
+})
+const warnBeforeBrowserUnload = (event) => {
+  if (isDirty.value) {
+    event.preventDefault()
+    event.returnValue = ''
+  }
+}
+
 onMounted(() => {
   loadQuiz()
   window.addEventListener('beforeunload', warnBeforeBrowserUnload)

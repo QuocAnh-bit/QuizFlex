@@ -46,16 +46,27 @@ const createdQuizId = ref(null)
 const recentEmptyDrafts = ref([])
 const isLoadingDrafts = ref(true)
 const showDraftDecision = ref(false)
-const editorQuery = { openQuestionSources: '1' }
 const navigateToEditor = async () => {
   if (!createdQuizId.value) return
-  await router.push({ name: 'quiz-edit', params: { id: createdQuizId.value }, query: editorQuery })
+  await router.push({ name: 'quiz-edit', params: { id: createdQuizId.value } })
 }
-const continueDraft = (quizId) => router.push({ name: 'quiz-edit', params: { id: quizId }, query: editorQuery })
+const continueDraft = (quizId) => router.push({ name: 'quiz-edit', params: { id: quizId } })
 const createDraft = async (form) => {
   if (isCreating.value || createdQuizId.value) return
   isCreating.value = true; createError.value = ''
-  try { const quiz = await createEmptyQuizDraft(form); createdQuizId.value = quiz?.id; if (!createdQuizId.value) throw new Error('Backend không trả về mã Quiz.'); await navigateToEditor() } catch (error) { createError.value = createdQuizId.value ? 'Quiz đã được tạo nhưng chưa thể mở Editor. Hãy dùng nút mở Editor bên dưới.' : (error?.response?.data?.message || error?.message || 'Không thể tạo Quiz Draft.') } finally { isCreating.value = false }
+  try {
+    const quiz = await createEmptyQuizDraft(form);
+    createdQuizId.value = quiz?.id;
+    if (!createdQuizId.value) throw new Error('Backend không trả về mã Quiz.');
+    try {
+      sessionStorage.setItem(`quiz_draft_cache_${quiz.id}`, JSON.stringify(quiz))
+    } catch {}
+    await navigateToEditor()
+  } catch (error) {
+    createError.value = createdQuizId.value ? 'Quiz đã được tạo nhưng chưa thể mở Editor. Hãy dùng nút mở Editor bên dưới.' : (error?.response?.data?.message || error?.message || 'Không thể tạo Quiz Draft.')
+  } finally {
+    isCreating.value = false
+  }
 }
 onMounted(async () => {
   beginTask()

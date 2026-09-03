@@ -531,7 +531,7 @@ public function checkAnswer(Request $request, Quiz $quiz)
 
                 if ($question && empty($item['answers'])) {
                     $item['answers'] = $question->answers->values()->map(function ($answer, int $index) {
-                        $key = chr(65 + (int) ($answer->order ?? $index));
+                        $key = chr(65 + $index);
                         return [
                             'id' => $answer->id,
                             'key' => $key,
@@ -584,8 +584,8 @@ public function checkAnswer(Request $request, Quiz $quiz)
                     'id' => $answer->id,
                     'content' => $answer->content,
                     'text' => $answer->content,
-                    'answer_key' => chr(65 + ($answer->order ?? $index)),
-                    'key' => chr(65 + ($answer->order ?? $index)),
+                    'answer_key' => chr(65 + $index),
+                    'key' => chr(65 + $index),
                     'order' => $answer->order,
                 ])->values(),
             ])->values(),

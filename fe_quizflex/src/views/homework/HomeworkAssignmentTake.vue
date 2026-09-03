@@ -101,7 +101,7 @@
 
             <!-- Question Content -->
             <h1 class="text-xl font-bold leading-relaxed text-slate-900 sm:text-2xl pt-2">
-              <MathText :text="currentQuestion.question" />
+              <MathText :content="currentQuestion.question || currentQuestion.content || ''" />
             </h1>
 
             <!-- Optional Question Image -->
@@ -133,7 +133,7 @@
                 {{ answer.key }}
               </span>
               <span class="font-medium text-sm leading-relaxed flex-1">
-                <MathText :text="answer.text" />
+                <MathText :content="answer.text || answer.content || ''" compact />
               </span>
               <span
                 v-if="isAnswerSelected(answer)"

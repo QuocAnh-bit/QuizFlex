@@ -1,5 +1,5 @@
 <template>
-  <div class="app-shell min-h-screen bg-[#F8FAFC]" :class="{ 'h-dvh overflow-hidden': isQuizEditorRoute }">
+  <div class="app-shell min-h-screen bg-[#F8FAFC]" :class="{ 'fixed inset-0 h-dvh overflow-hidden': isQuizEditorRoute }">
     <header
       class="sticky top-0 z-50 border-b border-slate-200 bg-white/95 backdrop-blur-md transition-all"
     >

@@ -52,6 +52,7 @@ class QuestionSnapshotService
         }
 
         $query = Question::where('fingerprint', $fingerprint)
+            ->whereNull('quiz_id')
             ->where('is_public', true);
 
         if ($lockForUpdate) {
@@ -90,11 +91,7 @@ class QuestionSnapshotService
 
             // 2. Nếu chưa có snapshot theo origin_id, kiểm tra xem đã có câu hỏi trong ngân hàng với cùng fingerprint hay chưa
             if (!$existingSnapshot && !empty($fingerprint)) {
-                $existingSnapshot = Question::whereNull('quiz_id')
-                    ->where('is_public', true)
-                    ->where('fingerprint', $fingerprint)
-                    ->lockForUpdate()
-                    ->first();
+                $existingSnapshot = $this->findExistingBankQuestion($fingerprint, true);
             }
 
             if ($existingSnapshot) {
@@ -179,11 +176,7 @@ class QuestionSnapshotService
 
             // 2. Nếu chưa có theo origin_id, kiểm tra xem đã có câu hỏi ngân hàng với cùng fingerprint hay chưa
             if (!$existingSnapshot && !empty($fingerprint)) {
-                $existingSnapshot = Question::whereNull('quiz_id')
-                    ->where('is_public', true)
-                    ->where('fingerprint', $fingerprint)
-                    ->lockForUpdate()
-                    ->first();
+                $existingSnapshot = $this->findExistingBankQuestion($fingerprint, true);
             }
 
             if ($existingSnapshot) {
@@ -237,7 +230,7 @@ class QuestionSnapshotService
                     'question_id' => $snapshot->id,
                     'content' => is_array($ans) ? ($ans['content'] ?? $ans['text'] ?? '') : (string)$ans,
                     'is_correct' => is_array($ans) ? (bool)($ans['is_correct'] ?? false) : false,
-                    'order' => is_array($ans) ? ($ans['order'] ?? $index) : $index,
+                    'order' => $index,
                 ]);
             }
 
@@ -256,7 +249,7 @@ class QuestionSnapshotService
         foreach ($snapshotAnswers as $index => $ans) {
             $content = is_array($ans) ? ($ans['content'] ?? $ans['text'] ?? '') : (string)$ans;
             $isCorrect = is_array($ans) ? (bool)($ans['is_correct'] ?? false) : false;
-            $order = is_array($ans) ? ($ans['order'] ?? $index) : $index;
+            $order = $index;
 
             if (isset($existingAnswers[$index])) {
                 $existingAnswer = $existingAnswers[$index];
@@ -294,7 +287,7 @@ class QuestionSnapshotService
         foreach ($originalAnswers as $ans) {
             $content = $ans->content;
             $isCorrect = (bool) $ans->is_correct;
-            $order = $ans->order ?? $index;
+            $order = $index;
 
             if (isset($existingAnswers[$index])) {
                 $existingAnswer = $existingAnswers[$index];
@@ -321,4 +314,3 @@ class QuestionSnapshotService
         }
     }
 }
-

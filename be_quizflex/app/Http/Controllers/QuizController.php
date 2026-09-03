@@ -749,7 +749,7 @@ class QuizController extends Controller
                 [
                     'content' => $answerContent,
                     'is_correct' => $isCorrect,
-                    'order' => $answerData['order'] ?? $index,
+                    'order' => $index,
                 ]
             );
 
@@ -896,8 +896,8 @@ class QuizController extends Controller
                 'question_id' => $answer->question_id,
                 'content' => $answer->content,
                 'text' => $answer->content,
-                'answer_key' => chr(65 + ($answer->order ?? $index)),
-                'key' => chr(65 + ($answer->order ?? $index)),
+                'answer_key' => chr(65 + $index),
+                'key' => chr(65 + $index),
                 'is_correct' => (bool) $answer->is_correct,
                 'order' => $answer->order,
             ])->values(),

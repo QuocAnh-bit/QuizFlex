@@ -357,7 +357,7 @@
           </div>
 
           <div class="text-base font-bold leading-relaxed text-slate-900 whitespace-pre-line sm:text-lg">
-            {{ question.content }}
+            <MathText :content="question.content || ''" />
           </div>
 
           <!-- Question Image Media Block (Centered, balanced, clean framing & zoomable) -->
@@ -405,7 +405,7 @@
               </span>
 
               <div class="min-w-0 flex-1 pt-1 leading-relaxed">
-                {{ ans.content }}
+                <MathText :content="ans.content || ans.text || ''" compact />
               </div>
 
               <div
@@ -638,7 +638,7 @@
             <div class="space-y-1">
               <span class="text-[11px] font-bold uppercase text-slate-500">Nội dung câu hỏi cũ:</span>
               <div class="rounded-xl border border-rose-200 bg-white p-3.5 text-xs font-semibold text-slate-800 leading-relaxed">
-                {{ question.previous_revision.content }}
+                <MathText :content="question.previous_revision.content || ''" />
               </div>
             </div>
 
@@ -655,7 +655,7 @@
                   <span class="grid h-5 w-5 place-items-center rounded text-[10px] font-bold" :class="ans.is_correct ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-700'">
                     {{ ans.key }}
                   </span>
-                  <span class="flex-1 truncate">{{ ans.content || ans.text }}</span>
+                  <MathText :content="ans.content || ans.text || ''" compact class="min-w-0 flex-1 truncate" />
                   <span v-if="ans.is_correct" class="text-[10px] font-bold text-emerald-600">✓ Đúng</span>
                 </div>
               </div>
@@ -692,7 +692,7 @@
                   ? 'border-purple-400 bg-white text-purple-950 ring-2 ring-purple-400/20'
                   : 'border-purple-200 bg-white text-slate-800'"
               >
-                {{ question.current_revision.content }}
+                <MathText :content="question.current_revision.content || ''" />
               </div>
             </div>
 
@@ -709,7 +709,7 @@
                   <span class="grid h-5 w-5 place-items-center rounded text-[10px] font-bold" :class="ans.is_correct ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-700'">
                     {{ ans.key }}
                   </span>
-                  <span class="flex-1 truncate">{{ ans.content || ans.text }}</span>
+                  <MathText :content="ans.content || ans.text || ''" compact class="min-w-0 flex-1 truncate" />
                   <span v-if="ans.is_correct" class="text-[10px] font-bold text-emerald-600">✓ Đáp án đúng</span>
                 </div>
               </div>
@@ -752,7 +752,7 @@
           </div>
 
           <p class="text-slate-800 font-medium">
-            "{{ h.content }}"
+            “<MathText :content="h.content || ''" compact />”
           </p>
 
           <div v-if="h.rejection_reason" class="rounded-xl border border-rose-200 bg-white p-3 text-rose-800 font-medium">
@@ -826,6 +826,7 @@
 import { computed, inject, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import QuestionImage from '@/components/question/QuestionImage.vue'
+import MathText from '@/components/MathText.vue'
 import {
   AlertCircle,
   AlertTriangle,
