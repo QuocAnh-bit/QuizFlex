@@ -143,6 +143,22 @@
         :key="quiz.id" 
         class="card card-hover overflow-hidden flex flex-col justify-between"
       >
+        <div
+          class="relative aspect-[16/7] w-full overflow-hidden bg-slate-800 bg-cover bg-center"
+          :style="{ background: quiz.cover }"
+          role="img"
+          :aria-label="`Ảnh bìa Quiz ${quiz.title}`"
+        >
+          <div class="absolute inset-0 bg-gradient-to-t from-slate-950/55 via-transparent to-black/10"></div>
+          <div class="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-3">
+            <span class="grid h-9 w-9 place-items-center rounded-xl border border-white/25 bg-white/90 text-xs font-black text-violet-700 shadow-md backdrop-blur-sm">
+              {{ quiz.icon || 'QZ' }}
+            </span>
+            <span v-if="quiz.badge" class="max-w-32 truncate rounded-lg border border-white/20 bg-slate-950/45 px-2 py-1 text-[10px] font-black uppercase tracking-wider text-white backdrop-blur-sm">
+              {{ quiz.badge }}
+            </span>
+          </div>
+        </div>
         <div class="p-5 space-y-3">
           <div class="flex items-center justify-between">
             <span

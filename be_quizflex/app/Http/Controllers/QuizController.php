@@ -18,6 +18,23 @@ use Illuminate\Support\Facades\Auth;
 
 class QuizController extends Controller
 {
+    public function cover(string $filename)
+    {
+        $safeFilename = basename($filename);
+        if ($safeFilename !== $filename) {
+            abort(404);
+        }
+
+        $path = 'quiz-covers/' . $safeFilename;
+        if (!Storage::disk('public')->exists($path)) {
+            abort(404);
+        }
+
+        return Storage::disk('public')->response($path, $safeFilename, [
+            'Cache-Control' => 'public, max-age=31536000, immutable',
+        ]);
+    }
+
     public function index(Request $request)
     {
         $user = $this->resolveOptionalApiUser();
@@ -452,7 +469,7 @@ class QuizController extends Controller
 
     private function storedCoverPublicUrl(string $path): string
     {
-        return url(Storage::url($path));
+        return url('/api/quiz-covers/' . basename($path));
     }
 
     private function resolveCoverForResponse(?string $cover): ?string
@@ -461,8 +478,9 @@ class QuizController extends Controller
             return null;
         }
 
-        if (str_starts_with($cover, '/storage/')) {
-            return url($cover);
+        $path = parse_url($cover, PHP_URL_PATH) ?: $cover;
+        if (str_starts_with($path, '/storage/quiz-covers/')) {
+            return url('/api/quiz-covers/' . basename($path));
         }
 
         return $cover;
@@ -476,7 +494,7 @@ class QuizController extends Controller
 
         $path = parse_url($cover, PHP_URL_PATH) ?: $cover;
 
-        if (!str_starts_with($path, '/storage/quiz-covers/')) {
+        if (!str_starts_with($path, '/storage/quiz-covers/') && !str_starts_with($path, '/api/quiz-covers/')) {
             return;
         }
 
@@ -617,7 +635,7 @@ class QuizController extends Controller
                     'content' => $questionContent,
                     'type' => $questionData['type'] ?? 'single_choice',
                     'order' => $questionData['order'] ?? $index,
-                    'points' => max(0.01, (float) ($questionData['points'] ?? 1.0)),
+                    'points' => max(0.01, (float) ($questionData['points'] ?? 10.0)),
                     'image_url' => is_string($questionData['image_url'] ?? null)
                         ? $questionData['image_url']
                         : (is_array($questionData['image_url'] ?? null)
@@ -654,16 +672,48 @@ class QuizController extends Controller
                 }
             }
 
-            $question = Question::updateOrCreate(
+            $reusedBankSnapshot = null;
+            if (empty($questionData['id']) && !empty($questionData['origin_question_id'])) {
+                // One approved Bank origin has one canonical active snapshot,
+                // shared between quizzes through quiz_questions. Multipart
+                // submissions can legitimately omit a snapshot id, so reuse
+                // the canonical row instead of violating the unique origin key.
+                $reusedBankSnapshot = Question::with('answers')
+                    ->where('origin_question_id', $questionData['origin_question_id'])
+                    ->first();
+
+                if ($reusedBankSnapshot) {
+                    $incomingFingerprint = $snapshotService->computeFingerprintFromSnapshot(
+                        $questionContent,
+                        $questionData['type'] ?? 'single_choice',
+                        $questionData['answers'] ?? []
+                    );
+                    $snapshotFingerprint = $snapshotService->computeFingerprint($reusedBankSnapshot);
+                    $incomingImage = $questionValues['image_url'] ?? null;
+
+                    if ($incomingFingerprint !== $snapshotFingerprint || $incomingImage !== $reusedBankSnapshot->image_url) {
+                        throw ValidationException::withMessages([
+                            "questions.{$index}" => 'Câu ' . ($index + 1) . ': Snapshot câu hỏi Ngân hàng đã tồn tại nhưng nội dung không khớp. Hãy tải lại Quiz rồi thử lại.',
+                        ]);
+                    }
+                }
+            }
+
+            $question = $reusedBankSnapshot ?: Question::updateOrCreate(
                 ['id' => $questionData['id'] ?? null],
                 $questionValues
             );
 
-            $this->syncAnswers($question, $questionData['answers'] ?? [], $questionData['correct'] ?? null);
+            // A reused Bank snapshot is immutable and already owns its answer
+            // rows. Only newly created or explicitly addressed questions need
+            // answer synchronization.
+            if (!$reusedBankSnapshot) {
+                $this->syncAnswers($question, $questionData['answers'] ?? [], $questionData['correct'] ?? null);
+            }
 
             $syncData[$question->id] = [
                 'order' => $questionData['order'] ?? $index,
-                'points' => max(0.01, (float) ($questionData['points'] ?? 1.0)),
+                'points' => max(0.01, (float) ($questionData['points'] ?? 10.0)),
             ];
         }
 

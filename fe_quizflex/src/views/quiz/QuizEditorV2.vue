@@ -1,6 +1,7 @@
 <template>
-  <div class="quiz-editor-shell flex h-[calc(100dvh-64px)] min-h-[520px] flex-col overflow-hidden bg-slate-100 text-slate-900">
-    <EditorHeader :title="quiz.title" :save-status="saveStatus" :time-limit-seconds="quiz.time_limit_seconds" :education-level-name="quiz.education_level_name" :grade-name="quiz.grade_name" :subject-name="quiz.subject_name" :topic-name="quiz.topic_name" :is-saving="isSaving" :is-deleting="isDeleting" :save-disabled="isLoading || Boolean(loadError) || isDeleting" :delete-disabled="isLoading || Boolean(loadError) || isSaving || !quizId" @update:title="updateQuizTitle" @update:time-limit="updateTimeLimit" @complete="completeQuiz" @delete="removeQuiz" />
+  <div class="quiz-editor-shell flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-slate-100 text-slate-900 shadow-sm">
+    <EditorHeader :title="quiz.title" :save-status="saveStatus" :time-limit-seconds="quiz.time_limit_seconds" :education-level-name="quiz.education_level_name" :grade-name="quiz.grade_name" :subject-name="quiz.subject_name" :topic-name="quiz.topic_name" :cover-panel-open="isCoverPanelOpen" :is-saving="isSaving || isSavingCover" :is-deleting="isDeleting" :save-disabled="isLoading || Boolean(loadError) || isDeleting || isSavingCover" :delete-disabled="isLoading || Boolean(loadError) || isSaving || isSavingCover || !quizId" @update:title="updateQuizTitle" @update:time-limit="updateTimeLimit" @toggle-cover="isCoverPanelOpen = !isCoverPanelOpen" @complete="completeQuiz" @delete="removeQuiz" />
+    <QuizCoverPanel v-if="!isLoading && !loadError && !missingQuizContext && isCoverPanelOpen" :selected-cover="quiz.cover" :uploaded-file="pendingCoverFile" @select="selectPresetCover" @upload="selectUploadedCover" @remove="removeCover" @close="isCoverPanelOpen = false" />
     <div v-if="isLoading" class="grid min-h-0 flex-1 place-items-center p-6" role="status" aria-live="polite">
       <div class="text-center"><span class="mx-auto block h-9 w-9 animate-spin rounded-full border-4 border-violet-100 border-t-violet-600"></span><p class="mt-3 text-sm font-black text-slate-700">Đang tải Quiz...</p><p class="mt-1 text-xs text-slate-500">Đang lấy dữ liệu chỉnh sửa từ máy chủ.</p></div>
     </div>
@@ -11,6 +12,11 @@
       <div class="mx-auto max-w-2xl rounded-2xl border border-amber-200 bg-white p-6 shadow-sm"><p class="text-[11px] font-black uppercase tracking-wider text-amber-600">Cần bổ sung thông tin</p><h2 class="mt-2 text-xl font-black text-slate-900">Vui lòng thiết lập Lớp và Môn học trước khi chỉnh sửa Quiz.</h2><p class="mt-1 text-xs leading-5 text-slate-500">Quiz cũ vẫn được giữ nguyên. Sau khi cập nhật metadata, editor sẽ mở lại với đầy đủ câu hỏi hiện có.</p><div class="mt-5"><QuizSetupForm :initial-data="quiz" :is-submitting="isUpdatingContext" :external-error="contextError" submit-label="Lưu và tiếp tục" :show-cancel="false" @submit="saveMissingContext" /></div></div>
     </div>
     <template v-else>
+    <div class="flex items-center justify-end gap-3 border-b border-slate-200 bg-white px-4 py-2.5 sm:px-6">
+      <span class="text-xs font-bold text-slate-600">Tổng điểm: <b class="text-slate-900">{{ formatPoints(totalQuizPoints) }}<template v-if="totalQuizPoints < pointsBudget"> / {{ formatPoints(pointsBudget) }}</template> điểm</b></span>
+      <span class="h-4 w-px bg-slate-200"></span>
+      <button type="button" class="rounded-lg px-2.5 py-1.5 text-xs font-black text-violet-700 hover:bg-violet-50" @click="isPointsModalOpen = true">Thiết lập điểm</button>
+    </div>
     <div class="compact-question-nav">
       <label for="compact-question-select" class="text-[10px] font-black uppercase tracking-wider text-slate-500">Câu hỏi</label>
       <select id="compact-question-select" :value="activeQuestionId || ''" class="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100" @change="selectQuestion($event.target.value)">
@@ -27,7 +33,7 @@
     </div>
     <div class="editor-grid min-h-0 flex-1">
       <QuestionSidebar :questions="quiz.questions" :active-question-id="activeQuestionId" :question-origins="questionOrigins" :invalid-question-ids="invalidQuestionIds" :selection-mode="similarSelectionMode" :selected-question-ids="similarSelectedIds" :highlight-question-ids="newlyAddedQuestionIds" @toggle-question="toggleSimilarQuestion" @select-question="selectQuestion" @reorder-question="reorderQuestion" @add-question="openQuestionSource" />
-      <QuestionEditor ref="questionEditor" :question="activeQuestion" :question-number="activeQuestionNumber" :total-questions="quiz.questions.length" :manual-points="Boolean(activeQuestion && manualPointQuestionIds.has(activeQuestion.id))" :is-bank-locked="isBankQuestion(activeQuestion)" @change-type="changeQuestionType" @update-difficulty="updateDifficulty" @update-points="updatePoints" @set-points-mode="setPointsMode" @add-answer="addAnswer" @remove-answer="removeAnswer" @add-fill-answer="addFillAnswer" @remove-fill-answer="removeFillAnswer" @add-question="openQuestionSource" @duplicate-question="duplicateQuestion" />
+      <QuestionEditor ref="questionEditor" :question="activeQuestion" :question-number="activeQuestionNumber" :total-questions="quiz.questions.length" :max-points="activeQuestionMaxPoints" :is-bank-locked="isBankQuestion(activeQuestion)" @change-type="changeQuestionType" @update-difficulty="updateDifficulty" @update-points="updatePoints" @add-answer="addAnswer" @remove-answer="removeAnswer" @add-fill-answer="addFillAnswer" @remove-fill-answer="removeFillAnswer" @add-question="openQuestionSource" @duplicate-question="duplicateQuestion" />
       <EditorToolbar :question="activeQuestion" :can-move-up="activeQuestionIndex > 0" :can-move-down="activeQuestionIndex >= 0 && activeQuestionIndex < quiz.questions.length - 1" :ai-review-disabled="aiToolBusy" @generate-ai="openAiGenerator" @review-quiz="openQuizReview" @similar-questions="startSimilarSelection" @add-image="questionEditor?.openImagePicker()" @move-question="moveQuestion" @duplicate-question="duplicateQuestion" @remove-question="removeQuestion" />
     </div>
     <QuestionSourceModal v-if="isQuestionSourceOpen" @choose="handleSourceChoice" @close="isQuestionSourceOpen = false" />
@@ -36,6 +42,7 @@
     <OcrQuestionImporter v-if="isOcrImporterOpen" :quiz-context="quiz" @select="addOcrQuestions" @close="isOcrImporterOpen = false" />
     <AiQuizReview v-if="isQuizReviewOpen" :quiz="cloneData(quiz)" :initial-result="aiQuizReviewDraft.signature === persistedSignature(quiz) ? aiQuizReviewDraft.result : null" @result="storeQuizReview" @select-question="goToReviewedQuestion" @close="isQuizReviewOpen = false" />
     <SimilarQuestionGenerator v-if="isSimilarGeneratorOpen" :quiz="cloneData(quiz)" :source-questions="similarSourceQuestions" :initial-results="similarGeneratorDraft.signature === similarSourceSignature ? similarGeneratorDraft.results : []" :initial-selected-ids="similarGeneratorDraft.signature === similarSourceSignature ? similarGeneratorDraft.selectedIds : []" @state-change="updateSimilarGeneratorDraft" @select="addSimilarQuestions" @close="isSimilarGeneratorOpen = false" />
+    <QuizPointsModal v-if="isPointsModalOpen" :question-count="quiz.questions.length" :current-total="pointsBudget || totalQuizPoints" @apply-same="applySamePoints" @distribute="distributeTotalPoints" @close="isPointsModalOpen = false" />
     <Transition name="toast"><div v-if="mockNotice" class="fixed bottom-5 left-1/2 z-50 -translate-x-1/2 rounded-xl bg-slate-900 px-4 py-3 text-xs font-bold text-white shadow-2xl">{{ mockNotice }} — chức năng đang dùng mock UI.</div></Transition>
     </template>
   </div>
@@ -44,10 +51,12 @@
 import { useAppLoading } from '@/composables/useAppLoading'
 const { beginTask, endTask } = useAppLoading()
 
-import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import EditorHeader from '@/components/quiz-editor/EditorHeader.vue'
 import EditorToolbar from '@/components/quiz-editor/EditorToolbar.vue'
+import QuizCoverPanel from '@/components/quiz-editor/QuizCoverPanel.vue'
+import QuizPointsModal from '@/components/quiz-editor/QuizPointsModal.vue'
 import QuestionEditor from '@/components/quiz-editor/QuestionEditor.vue'
 import QuestionPicker from '@/components/quiz-editor/QuestionPicker.vue'
 import QuestionSidebar from '@/components/quiz-editor/QuestionSidebar.vue'
@@ -63,15 +72,20 @@ import { normalizeQuiz } from '@/services/quiz-editor/quizEditorNormalizer.js'
 import { serializeQuiz } from '@/services/quiz-editor/quizEditorSerializer.js'
 
 let sequence = 100
-const TOTAL_QUIZ_POINTS = 10
 const tempId = () => `temp-${Date.now()}-${sequence++}`
 const makeAnswers = (contents = ['Đáp án A', 'Đáp án B', 'Đáp án C', 'Đáp án D']) => contents.map((content, index) => ({ id: tempId(), content, is_correct: index === 0 }))
-const makeQuestion = (overrides = {}) => ({ id: tempId(), order: 0, type: 'single_choice', content: '', difficulty: 'medium', points: 1, answers: makeAnswers(), accepted_answers: [{ id: tempId(), content: '' }], ...overrides })
+const makeQuestion = (overrides = {}) => ({ id: tempId(), order: 0, type: 'single_choice', content: '', difficulty: 'medium', points: 10, answers: makeAnswers(), accepted_answers: [{ id: tempId(), content: '' }], ...overrides })
 
 const route = useRoute()
 const router = useRouter()
-const quiz = ref({ title: '', questions: [] })
+const quiz = ref({ title: '', cover: '', questions: [] })
 const questionEditor = ref(null)
+const isCoverPanelOpen = ref(false)
+const pendingCoverFile = ref(null)
+const coverRemoved = ref(false)
+const isSavingCover = ref(false)
+const isPointsModalOpen = ref(false)
+const pointsBudget = ref(0)
 
 const activeQuestionId = ref(null)
 const mockNotice = ref('')
@@ -103,7 +117,6 @@ const aiToolBusy = computed(() => isQuizReviewOpen.value || isSimilarGeneratorOp
 const isUpdatingContext = ref(false)
 const contextError = ref('')
 const questionOrigins = ref({})
-const manualPointQuestionIds = reactive(new Set())
 let noticeTimer
 let addedHighlightTimer
 let autosaveTimer
@@ -113,6 +126,13 @@ const AUTOSAVE_DELAY_MS = 2000
 const activeQuestion = computed(() => quiz.value.questions.find((question) => question.id === activeQuestionId.value) || null)
 const activeQuestionIndex = computed(() => quiz.value.questions.findIndex((question) => question.id === activeQuestionId.value))
 const activeQuestionNumber = computed(() => Math.max(1, activeQuestionIndex.value + 1))
+const roundPoints = (value) => Math.round(Number(value) * 100) / 100
+const totalQuizPoints = computed(() => roundPoints(quiz.value.questions.reduce((total, question) => total + (Number(question.points) || 0), 0)))
+const activeQuestionMaxPoints = computed(() => {
+  if (!activeQuestion.value || pointsBudget.value <= 0) return 1000
+  return Math.max(0.01, roundPoints(Number(activeQuestion.value.points || 0) + pointsBudget.value - totalQuizPoints.value))
+})
+const formatPoints = (value) => Number(value || 0).toLocaleString('vi-VN', { maximumFractionDigits: 2 })
 const isBankQuestion = (question) => Boolean(question?.origin_question_id || questionOrigins.value[question?.id] === 'bank')
 const rebuildQuestionOrigins = (questions) => {
   questionOrigins.value = Object.fromEntries((questions || []).filter((question) => question.origin_question_id).map((question) => [question.id, 'bank']))
@@ -174,6 +194,52 @@ const updateTimeLimit = (minutes) => {
   quiz.value.time_limit_seconds = Math.min(1440, Math.max(1, Math.round(minutes))) * 60
   markLocalChanged()
 }
+const persistCover = async (payload, fallbackMessage) => {
+  if (!quizId.value || isSavingCover.value) return false
+  isSavingCover.value = true
+  saveStatus.value = 'Đang lưu ảnh bìa...'
+  try {
+    const updated = normalizeQuiz(await updateQuiz(quizId.value, payload))
+    isHydrating.value = true
+    quiz.value.cover = updated.cover
+    if (originalQuiz.value) originalQuiz.value.cover = updated.cover
+    isHydrating.value = false
+    // Keep the local blob preview after a successful upload. Replacing it
+    // immediately with the remote URL makes the cover flash while the browser
+    // downloads the newly stored image. It is cleared when the user chooses a
+    // preset, removes/replaces the cover, closes/reloads the editor.
+    if (!(payload.cover_file instanceof File)) pendingCoverFile.value = null
+    coverRemoved.value = false
+    saveStatus.value = isDirty.value ? 'Chưa lưu' : 'Đã lưu ảnh bìa'
+    return true
+  } catch (error) {
+    saveStatus.value = 'Lỗi tải ảnh bìa'
+    showSaveAlert({
+      title: 'Không thể lưu ảnh bìa',
+      message: error?.response?.data?.message || error?.message || fallbackMessage,
+    })
+    return false
+  } finally {
+    isSavingCover.value = false
+  }
+}
+const selectPresetCover = async (cover) => {
+  pendingCoverFile.value = null
+  coverRemoved.value = false
+  quiz.value.cover = cover
+  await persistCover({ cover }, 'Không thể lưu nền đã chọn.')
+}
+const selectUploadedCover = async (file) => {
+  pendingCoverFile.value = file
+  coverRemoved.value = false
+  await persistCover({ cover_file: file }, 'Không thể tải ảnh bìa lên máy chủ.')
+}
+const removeCover = async () => {
+  pendingCoverFile.value = null
+  coverRemoved.value = true
+  quiz.value.cover = ''
+  await persistCover({ remove_cover: true }, 'Không thể xóa ảnh bìa.')
+}
 const selectQuestion = (id) => { activeQuestionId.value = id }
 const showSaveAlert = ({ title, message, questionId = null }) => {
   saveAlert.value = { title, message, questionId }
@@ -226,9 +292,11 @@ clearAutosaveTimer()
     const rawQuiz = await getQuiz(quizId.value)
     const normalizedQuiz = normalizeQuiz(rawQuiz)
     quiz.value = normalizedQuiz
+    pointsBudget.value = roundPoints(normalizedQuiz.questions.reduce((total, question) => total + Number(question.points || 0), 0))
     originalQuiz.value = cloneData(normalizedQuiz)
+    pendingCoverFile.value = null
+    coverRemoved.value = false
     activeQuestionId.value = normalizedQuiz.questions[0]?.id ?? null
-    manualPointQuestionIds.clear()
     rebuildQuestionOrigins(normalizedQuiz.questions)
     isDirty.value = false
     editorRevision.value = 0
@@ -239,7 +307,10 @@ clearAutosaveTimer()
     await consumeInitialSource()
     if (import.meta.env.DEV) console.info('[QuizEditorV2] loaded quiz')
   } catch (error) {
-    quiz.value = { title: '', questions: [] }
+    quiz.value = { title: '', cover: '', questions: [] }
+    pointsBudget.value = 0
+    pendingCoverFile.value = null
+    coverRemoved.value = false
     activeQuestionId.value = null
     saveStatus.value = 'Lỗi tải dữ liệu'
     loadError.value = error?.response?.status === 404
@@ -277,6 +348,9 @@ function getQuestionValidationMessage(question, index) {
 
 const validateQuizForSave = () => {
   if (!quiz.value.title.trim()) return { message: 'Vui lòng nhập tên Quiz trước khi lưu.' }
+  if (pointsBudget.value > 0 && totalQuizPoints.value > pointsBudget.value + 0.001) {
+    return { message: `Tổng điểm ${formatPoints(totalQuizPoints.value)} vượt quá tổng điểm cho phép ${formatPoints(pointsBudget.value)}.` }
+  }
 
   const duplicateIds = duplicateQuestionIds(quiz.value.questions)
   if (duplicateIds.size) {
@@ -314,10 +388,6 @@ const replaceSavedIds = (savingQuiz, savedQuiz) => {
       if (nextOrigins[previousId]) {
         nextOrigins[question.id] = nextOrigins[previousId]
         delete nextOrigins[previousId]
-      }
-      if (manualPointQuestionIds.has(previousId)) {
-        manualPointQuestionIds.delete(previousId)
-        manualPointQuestionIds.add(question.id)
       }
     }
     ;(question.answers || []).forEach((answer) => { if (idMap.has(answer.id)) answer.id = idMap.get(answer.id) })
@@ -358,7 +428,8 @@ const performSave = async ({ source }) => {
   const savingQuiz = cloneData(quiz.value)
   let updateSucceeded = false
   try {
-    const updatedQuiz = normalizeQuiz(await updateQuiz(quizId.value, serializeQuiz(savingQuiz)))
+    const savePayload = serializeQuiz(savingQuiz)
+    const updatedQuiz = normalizeQuiz(await updateQuiz(quizId.value, savePayload))
     updateSucceeded = true
     originalQuiz.value = cloneData(updatedQuiz)
     lastSavedRevision.value = savingRevision
@@ -374,7 +445,6 @@ const performSave = async ({ source }) => {
         activeQuestionId.value = reloadedQuiz.questions.some((question) => question.id === previousActiveId)
           ? previousActiveId
           : reloadedQuiz.questions[0]?.id ?? null
-        manualPointQuestionIds.clear()
         rebuildQuestionOrigins(reloadedQuiz.questions)
         isHydrating.value = false
       }
@@ -463,37 +533,18 @@ const handleSourceChoice = (source) => {
   if (source === 'ai') isAiGeneratorOpen.value = true
   if (source === 'ocr') isOcrImporterOpen.value = true
 }
-const roundPoints = (value) => Math.round(value * 100) / 100
-const reallocatePoints = (forceAll = false) => {
-  const questions = quiz.value.questions
-  if (!questions.length) return
-  if (forceAll) manualPointQuestionIds.clear()
-
-  const automaticQuestions = questions.filter((question) => !manualPointQuestionIds.has(question.id))
-  const manualTotal = questions.reduce((total, question) => manualPointQuestionIds.has(question.id) ? total + (parseFloat(question.points) || 0) : total, 0)
-  if (!automaticQuestions.length) return
-
-  const remainingPoints = Math.max(0, roundPoints(TOTAL_QUIZ_POINTS - manualTotal))
-  const basePoints = roundPoints(remainingPoints / automaticQuestions.length)
-  let allocatedPoints = 0
-
-  automaticQuestions.forEach((question, index) => {
-    const isLastQuestion = index === automaticQuestions.length - 1
-    question.points = isLastQuestion ? roundPoints(remainingPoints - allocatedPoints) : basePoints
-    allocatedPoints = roundPoints(allocatedPoints + question.points)
-  })
-}
 const highlightAddedQuestions = (questions) => {
   clearTimeout(addedHighlightTimer)
   newlyAddedQuestionIds.value = questions.map((question) => question.id)
   addedHighlightTimer = setTimeout(() => { newlyAddedQuestionIds.value = [] }, 2400)
 }
-const addQuestion = () => { const question = makeQuestion(); quiz.value.questions.push(question); syncQuestionOrder(); activeQuestionId.value = question.id; reallocatePoints(false); markLocalChanged(); highlightAddedQuestions([question]) }
+const addQuestion = () => { const question = makeQuestion(); quiz.value.questions.push(question); pointsBudget.value = roundPoints(pointsBudget.value + question.points); syncQuestionOrder(); activeQuestionId.value = question.id; markLocalChanged(); highlightAddedQuestions([question]) }
 const addPickedQuestions = (selectedQuestions) => {
   if (!Array.isArray(selectedQuestions) || !selectedQuestions.length) return
   const selectedSource = activePickerSource.value
   const normalizedQuestions = selectedQuestions.map((question) => ({
     ...question,
+    points: Number(question.points) > 0 ? Number(question.points) : 10,
     difficulty: question.difficulty || 'medium',
     id: tempId(),
     answers: (question.answers || []).map((answer) => ({ ...answer, id: tempId() })),
@@ -514,11 +565,11 @@ const addPickedQuestions = (selectedQuestions) => {
   if (uniqueQuestions.length < normalizedQuestions.length) window.alert(`Đã bỏ qua ${normalizedQuestions.length - uniqueQuestions.length} câu trùng trong Quiz.`)
   const insertAt = activeQuestionIndex.value < 0 ? quiz.value.questions.length : activeQuestionIndex.value + 1
   quiz.value.questions.splice(insertAt, 0, ...uniqueQuestions)
+  pointsBudget.value = roundPoints(pointsBudget.value + uniqueQuestions.reduce((total, question) => total + Number(question.points || 0), 0))
   syncQuestionOrder()
   uniqueQuestions.forEach((question) => { questionOrigins.value[question.id] = selectedSource })
   activeQuestionId.value = uniqueQuestions[0].id
   activePickerSource.value = ''
-  reallocatePoints(false)
   markLocalChanged()
   highlightAddedQuestions(uniqueQuestions)
 }
@@ -591,28 +642,41 @@ const removeAnswer = (index) => { if (!activeQuestion.value || activeQuestion.va
 const addFillAnswer = () => { activeQuestion.value?.accepted_answers.push({ id: tempId(), content: '' }); markLocalChanged() }
 const removeFillAnswer = (index) => { if ((activeQuestion.value?.accepted_answers.length || 0) > 1) activeQuestion.value.accepted_answers.splice(index, 1); markLocalChanged() }
 const updatePoints = (points) => {
-  if (!activeQuestion.value || !Number.isFinite(points)) return
-  if (quiz.value.questions.length === 1) {
-    activeQuestion.value.points = TOTAL_QUIZ_POINTS
-    markLocalChanged()
+  if (!activeQuestion.value || !Number.isFinite(points) || points <= 0) return
+  const nextPoints = roundPoints(points)
+  const nextTotal = roundPoints(totalQuizPoints.value - Number(activeQuestion.value.points || 0) + nextPoints)
+  if (pointsBudget.value > 0 && nextTotal > pointsBudget.value + 0.001) {
+    showSaveAlert({
+      title: 'Điểm vượt quá giới hạn',
+      message: `Tổng sau thay đổi sẽ là ${formatPoints(nextTotal)} điểm, vượt quá tổng cho phép ${formatPoints(pointsBudget.value)} điểm. Hãy giảm điểm câu khác hoặc thiết lập lại tổng điểm.`,
+      questionId: activeQuestion.value.id,
+    })
     return
   }
-
-  if (!manualPointQuestionIds.has(activeQuestion.value.id) && manualPointQuestionIds.size >= quiz.value.questions.length - 1) {
-    const previousManualId = [...manualPointQuestionIds].find((id) => id !== activeQuestion.value.id)
-    if (previousManualId) manualPointQuestionIds.delete(previousManualId)
-  }
-
-  manualPointQuestionIds.add(activeQuestion.value.id)
-  const automaticCount = quiz.value.questions.length - manualPointQuestionIds.size
-  const otherManualTotal = quiz.value.questions.reduce((total, question) => {
-    return manualPointQuestionIds.has(question.id) && question.id !== activeQuestion.value.id
-      ? total + (parseFloat(question.points) || 0)
-      : total
-  }, 0)
-  const maximumPoint = Math.max(0.01, roundPoints(TOTAL_QUIZ_POINTS - otherManualTotal - automaticCount * 0.01))
-  activeQuestion.value.points = roundPoints(Math.min(maximumPoint, Math.max(0.01, points)))
-  reallocatePoints(false)
+  activeQuestion.value.points = nextPoints
+  saveAlert.value = null
+  markLocalChanged()
+}
+const applySamePoints = (points) => {
+  const value = roundPoints(points)
+  if (!Number.isFinite(value) || value <= 0) return
+  quiz.value.questions.forEach((question) => { question.points = value })
+  pointsBudget.value = roundPoints(value * quiz.value.questions.length)
+  isPointsModalOpen.value = false
+  markLocalChanged()
+}
+const distributeTotalPoints = (total) => {
+  const questions = quiz.value.questions
+  const target = roundPoints(total)
+  if (!questions.length || !Number.isFinite(target) || target < questions.length * 0.01) return
+  const base = Math.floor((target / questions.length) * 100) / 100
+  let allocated = 0
+  questions.forEach((question, index) => {
+    question.points = index === questions.length - 1 ? roundPoints(target - allocated) : base
+    allocated = roundPoints(allocated + question.points)
+  })
+  pointsBudget.value = target
+  isPointsModalOpen.value = false
   markLocalChanged()
 }
 const updateDifficulty = (difficulty) => {
@@ -630,13 +694,13 @@ const duplicateQuestion = () => {
   clone.answers = (clone.answers || []).map((answer) => ({ ...answer, id: tempId() }))
   clone.accepted_answers = (clone.accepted_answers || []).map((answer) => ({ ...answer, id: tempId() }))
   quiz.value.questions.splice(activeQuestionIndex.value + 1, 0, clone)
+  pointsBudget.value = roundPoints(pointsBudget.value + Number(clone.points || 0))
   syncQuestionOrder()
   // A duplicate is a new local question. It must not inherit the Bank lock or
   // the approved origin of the source question.
   clone.origin_question_id = null
   delete questionOrigins.value[clone.id]
   activeQuestionId.value = clone.id
-  reallocatePoints(false)
   markLocalChanged()
   highlightAddedQuestions([clone])
 }
@@ -644,11 +708,10 @@ const removeQuestion = () => {
   const index = activeQuestionIndex.value
   if (index < 0 || !window.confirm('Bạn có chắc muốn xóa câu hỏi này?')) return
   const [removedQuestion] = quiz.value.questions.splice(index, 1)
-  manualPointQuestionIds.delete(removedQuestion.id)
+  pointsBudget.value = Math.max(0, roundPoints(pointsBudget.value - Number(removedQuestion.points || 0)))
   delete questionOrigins.value[removedQuestion.id]
   syncQuestionOrder()
   activeQuestionId.value = quiz.value.questions[index]?.id || quiz.value.questions[index - 1]?.id || null
-  reallocatePoints(false)
   markLocalChanged()
 }
 const moveQuestion = (direction) => {
@@ -661,17 +724,6 @@ const moveQuestion = (direction) => {
   syncQuestionOrder()
   activeQuestionId.value = currentId
   markLocalChanged()
-}
-const setPointsMode = (mode) => {
-  if (!activeQuestion.value) return
-  if (mode === 'manual') {
-    manualPointQuestionIds.add(activeQuestion.value.id)
-    return
-  }
-  if (manualPointQuestionIds.delete(activeQuestion.value.id)) {
-    reallocatePoints(false)
-    markLocalChanged()
-  }
 }
 const reorderQuestion = ({ draggedId, targetId, position }) => {
   const from = quiz.value.questions.findIndex((question) => question.id === draggedId)

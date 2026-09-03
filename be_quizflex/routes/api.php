@@ -36,6 +36,8 @@ Route::get('/curriculums/options', [CurriculumOptionController::class, 'index'])
 Route::get('/curriculum/options', [CurriculumOptionController::class, 'index']);
 Route::get('/questions/bank', [QuestionController::class, 'bank']);
 Route::post('/quizzes/from-bank', [QuestionController::class, 'createQuizFromBank']);
+Route::get('/quiz-covers/{filename}', [QuizController::class, 'cover'])
+    ->where('filename', '[A-Za-z0-9._-]+');
 
 Route::get('/test', function () {
     return response()->json([

@@ -29,6 +29,6 @@ export const generateSimilarQuestions = async (quiz, selectedQuestions, count = 
   return (Array.isArray(data?.suggestions) ? data.suggestions : []).map((item, index) => {
     const entries = Object.entries(item.options || {})
     const correct = Array.isArray(item.correct_answer) ? item.correct_answer.map(String) : [String(item.correct_answer || '')]
-    return normalizeQuestion({ id: item.id || `similar-ai-${index}`, type: item.type || 'single_choice', content: item.question || '', difficulty: ['easy', 'medium', 'hard'].includes(item.difficulty) ? item.difficulty : (quiz.difficulty || 'medium'), points: 1, answers: entries.map(([key, content], answerIndex) => ({ id: `similar-ai-${index}-${answerIndex}`, content: String(content || ''), is_correct: correct.includes(String(key)), order: answerIndex })) })
+    return normalizeQuestion({ id: item.id || `similar-ai-${index}`, type: item.type || 'single_choice', content: item.question || '', difficulty: ['easy', 'medium', 'hard'].includes(item.difficulty) ? item.difficulty : (quiz.difficulty || 'medium'), points: 10, answers: entries.map(([key, content], answerIndex) => ({ id: `similar-ai-${index}-${answerIndex}`, content: String(content || ''), is_correct: correct.includes(String(key)), order: answerIndex })) })
   }).filter((question) => question.content && question.answers.length >= 2)
 }

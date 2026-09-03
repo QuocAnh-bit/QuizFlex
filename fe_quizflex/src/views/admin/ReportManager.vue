@@ -353,9 +353,7 @@
               </div>
 
               <!-- Question Content -->
-              <p class="text-sm font-bold text-slate-900 leading-relaxed pt-1">
-                {{ group.question?.content || 'Nội dung câu hỏi không khả dụng' }}
-              </p>
+              <div class="pt-1 text-sm font-bold leading-relaxed text-slate-900"><MathText :content="group.question?.content || 'Nội dung câu hỏi không khả dụng'" /></div>
             </div>
 
             <!-- Group Action Buttons (Clear CTA) -->
@@ -443,9 +441,7 @@
               <td class="p-3.5 align-top max-w-sm">
                 <div class="space-y-1">
                   <span class="font-bold text-slate-900">Câu hỏi #{{ report.question_id }}</span>
-                  <p class="text-slate-600 line-clamp-2 italic">
-                    "{{ report.question?.content || 'N/A' }}"
-                  </p>
+                  <div class="line-clamp-2 text-slate-600 italic"><MathText :content="report.question?.content || 'N/A'" compact /></div>
                 </div>
               </td>
 
@@ -625,9 +621,7 @@
               <div class="rounded-2xl border border-slate-200 bg-white p-4 space-y-3 shadow-xs text-xs">
                 <div>
                   <span class="text-[10px] font-bold uppercase text-slate-400">Đề bài:</span>
-                  <div class="font-bold text-slate-900 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-200 mt-1">
-                    {{ activeGroup?.question?.content }}
-                  </div>
+                  <div class="mt-1 rounded-xl border border-slate-200 bg-slate-50 p-3 font-bold leading-relaxed text-slate-900"><MathText :content="activeGroup?.question?.content || ''" /></div>
                 </div>
 
                 <div class="space-y-1.5">
@@ -638,7 +632,7 @@
                     class="rounded-xl border p-2 text-xs font-semibold flex items-center justify-between"
                     :class="ans.is_correct ? 'border-emerald-300 bg-emerald-50 text-emerald-900 font-bold' : 'border-slate-200 bg-white text-slate-700'"
                   >
-                    <span>{{ ans.key || ans.answer_key }}. {{ ans.content || ans.text }}</span>
+                    <span class="flex min-w-0 flex-1 items-start gap-1"><b class="shrink-0">{{ ans.key || ans.answer_key }}.</b><MathText :content="ans.content || ans.text || ''" compact class="min-w-0" /></span>
                     <span v-if="ans.is_correct" class="text-[10px] font-bold text-emerald-600 flex items-center gap-1">
                       <Check class="h-3 w-3 stroke-[3]" />
                       <span>Đáp án đúng</span>
@@ -835,6 +829,7 @@ import {
 } from 'lucide-vue-next'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import AppPagination from '@/components/common/AppPagination.vue'
+import MathText from '@/components/MathText.vue'
 import { reportApi } from '@/services/api'
 import { useAppLoading } from '@/composables/useAppLoading'
 
