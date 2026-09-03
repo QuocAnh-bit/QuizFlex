@@ -484,11 +484,12 @@ class AuthController extends Controller
 
     private function resolveOcrQuota(User $user, string $tier): array
     {
-        if (in_array($tier, ['admin', 'ultra'], true)) {
+        if ($tier === 'admin') {
             return ['allowed' => true, 'limit' => null, 'used' => 0, 'remaining' => null, 'unlimited' => true];
         }
 
         $limit = match ($tier) {
+            'ultra' => 150,
             'pro' => 50,
             'plus' => 10,
             default => 0,

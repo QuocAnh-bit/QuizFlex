@@ -195,7 +195,7 @@
           @click="activeTab = 'diff'"
         >
           <GitCompare class="h-4 w-4" />
-          <span>Đối chiếu sai khác (Diff)</span>
+          <span>Đối chiếu sai khác</span>
           <span v-if="hasDiffChanges" class="rounded-full bg-purple-100 px-1.5 py-0.5 text-[10px] text-[#7C3AED]">
             Có thay đổi
           </span>
@@ -248,9 +248,7 @@
                 >
                   {{ question.is_public ? 'Bank Public' : 'Kho cá nhân' }}
                 </span>
-                <span class="rounded bg-white border border-slate-200 px-2 py-0.5 text-[10px] font-bold text-slate-600">
-                  {{ question.points ?? 10 }} pts
-                </span>
+               
               </div>
             </div>
 

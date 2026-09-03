@@ -431,7 +431,7 @@
                       @click="openReviewDetail(quiz.review_request_id || quiz.id)"
                     >
                       <GitCompare class="h-3.5 w-3.5" />
-                      <span>{{ quiz.revision_number > 1 ? 'So sánh' : 'Đối chiếu' }}</span>
+                   
                     </button>
 
                     <router-link
@@ -473,7 +473,7 @@
                       title="Xem chi tiết & Lý do từ chối"
                     >
                       <Eye class="h-3.5 w-3.5" />
-                      <span>Xem chi tiết</span>
+                      
                     </router-link>
 
                     <button
@@ -495,7 +495,7 @@
                       title="Xem chi tiết Quiz"
                     >
                       <Eye class="h-3.5 w-3.5" />
-                      <span>Xem chi tiết</span>
+                      
                     </router-link>
                   </template>
                 </div>
