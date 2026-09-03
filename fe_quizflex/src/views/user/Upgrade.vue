@@ -998,7 +998,7 @@ const plans = ref([
     upgradeInfo: null,
     features: [
       'Dùng AI sinh đề (+1500 lượt)',
-      'Scan tài liệu OCR không giới hạn',
+      'Scan tài liệu OCR (150 lượt/tháng)',
       'Mở khóa Quiz Riêng tư',
       'Tạo phòng Realtime cực đại (max 500 người)',
       'Tạo phòng bài tập không giới hạn',

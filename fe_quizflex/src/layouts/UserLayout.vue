@@ -30,7 +30,7 @@
 
         <!-- Right Utilities & User Profile -->
         <div class="hidden shrink-0 items-center gap-2.5 md:flex">
-          <LanguageSwitcher />
+         
           <StreakXpBar />
 
           <!-- Guest -->

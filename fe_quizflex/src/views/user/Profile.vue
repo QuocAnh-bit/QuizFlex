@@ -784,9 +784,24 @@ const aiQuotaPercentage = computed(() => {
 const limitsInfo = computed(() => {
   const role = (profile.role || 'free').toLowerCase()
 
-  if (role === 'admin' || role === 'ultra') {
+  if (role === 'admin') {
     return {
       ocr: 'Không giới hạn số lượt',
+      ocrAllowed: true,
+
+      liveRoom: 'Tối đa 500 người / phòng',
+      liveRoomAllowed: true,
+
+      homeworkRoom: 'Không giới hạn phòng',
+      homeworkAllowed: true,
+
+      exportAllowed: true
+    }
+  }
+
+  if (role === 'ultra') {
+    return {
+      ocr: 'Tối đa 150 lượt / tháng',
       ocrAllowed: true,
 
       liveRoom: 'Tối đa 500 người / phòng',

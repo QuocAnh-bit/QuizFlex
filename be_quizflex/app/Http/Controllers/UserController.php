@@ -372,7 +372,7 @@ class UserController extends Controller
     private function ocrLabelForPlan(string $plan): string
     {
         return match ($plan) {
-            'ultra' => '∞',
+            'ultra' => '150',
             'pro'   => '50',
             'plus'  => '10',
             default => '0',
