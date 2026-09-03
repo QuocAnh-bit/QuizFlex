@@ -156,6 +156,11 @@
 
               <div>
                 <strong
+                  v-if="isLoadingQuizzes && rawQuizzes.length === 0"
+                  class="block h-7 w-12 rounded bg-slate-200 animate-pulse my-0.5"
+                ></strong>
+                <strong
+                  v-else
                   class="block text-xl font-black text-[#0F172A] sm:text-2xl"
                 >
                   {{ rawQuizzes.length || 0 }}
@@ -203,6 +208,11 @@
 
               <div>
                 <strong
+                  v-if="isLoadingQuizzes && rawQuizzes.length === 0"
+                  class="block h-7 w-12 rounded bg-slate-200 animate-pulse my-0.5"
+                ></strong>
+                <strong
+                  v-else
                   class="block text-xl font-black text-[#0F172A] sm:text-2xl"
                 >
                   {{ roomCountDisplay }}
@@ -245,6 +255,11 @@
 
               <div>
                 <strong
+                  v-if="isLoadingQuizzes && rawQuizzes.length === 0"
+                  class="block h-7 w-12 rounded bg-slate-200 animate-pulse my-0.5"
+                ></strong>
+                <strong
+                  v-else
                   class="block text-xl font-black text-[#0F172A] sm:text-2xl"
                 >
                   {{ totalLiveMatches }}
@@ -287,6 +302,11 @@
 
               <div>
                 <strong
+                  v-if="isLoadingQuizzes && rawQuizzes.length === 0"
+                  class="block h-7 w-12 rounded bg-slate-200 animate-pulse my-0.5"
+                ></strong>
+                <strong
+                  v-else
                   class="block text-xl font-black text-[#0F172A] sm:text-2xl"
                 >
                   {{ totalAttemptsDisplay }}
@@ -379,9 +399,45 @@
             </button>
           </div>
 
+          <!-- Skeleton Loading -->
+          <div
+            v-if="isLoadingQuizzes"
+            class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
+          >
+            <div
+              v-for="i in perPage"
+              :key="i"
+              class="rounded-2xl border border-slate-200 bg-white shadow-[0_4px_16px_rgba(15,23,42,0.04)] overflow-hidden flex flex-col justify-between animate-pulse min-h-[250px]"
+            >
+              <!-- Thumbnail skeleton -->
+              <div class="relative h-28 bg-slate-200">
+                <div class="absolute left-2.5 top-2.5 h-4 w-16 rounded-md bg-slate-300"></div>
+              </div>
+
+              <!-- Card Content skeleton -->
+              <div class="p-4 space-y-3 flex-1 flex flex-col justify-between">
+                <div>
+                  <div class="h-4 bg-slate-200 rounded w-5/6 mb-2"></div>
+                  <div class="h-4 bg-slate-100 rounded w-3/5 mb-3"></div>
+
+                  <div class="mt-2 flex items-center justify-between">
+                    <div class="h-3 bg-slate-200 rounded w-20"></div>
+                    <div class="h-3 bg-slate-200 rounded w-8"></div>
+                  </div>
+                </div>
+
+                <!-- Bottom skeleton -->
+                <div class="flex items-center justify-between pt-2.5 border-t border-slate-100">
+                  <div class="h-4 bg-slate-200 rounded w-10"></div>
+                  <div class="h-3 bg-slate-200 rounded w-16"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Quiz Cards -->
           <div
-            v-if="displayedQuizzes.length > 0"
+            v-else-if="displayedQuizzes.length > 0"
             class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
           >
             <article
@@ -402,12 +458,6 @@
                     class="absolute left-2.5 top-2.5 rounded-md bg-white/90 px-2 py-0.5 text-[10px] font-bold text-slate-800 shadow-sm"
                   >
                     {{ quiz.subject_name || quiz.category || quiz.badge || 'Quiz' }}
-                  </div>
-
-                  <div
-                    class="absolute bottom-2.5 right-2.5 flex h-8 w-8 items-center justify-center rounded-lg bg-white shadow text-sm"
-                  >
-                    {{ quiz.icon || '📝' }}
                   </div>
                 </div>
 
@@ -462,7 +512,7 @@
 
           <!-- Pagination Bar -->
           <AppPagination
-            v-if="totalQuizzes > 0"
+            v-if="!isLoadingQuizzes && totalQuizzes > 0"
             :current-page="currentPage"
             :last-page="lastPage"
             :total="totalQuizzes"
@@ -550,7 +600,7 @@ const totalQuizzes = ref(0)
 const currentPage = ref(1)
 const lastPage = ref(1)
 const perPage = ref(6)
-const isLoadingQuizzes = ref(false)
+const isLoadingQuizzes = ref(true)
 
 const categoryTabs = ref([
   'Tất cả',
