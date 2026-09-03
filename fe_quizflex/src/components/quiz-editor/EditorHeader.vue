@@ -14,6 +14,7 @@
     </div>
     <div class="flex shrink-0 items-center gap-2 sm:gap-3">
       <div class="hidden items-center gap-2 rounded-full bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700 sm:flex"><Check class="h-3.5 w-3.5" />{{ saveStatus }}</div>
+      <button type="button" class="cover-button header-button header-button-secondary" :class="{ 'border-violet-300 bg-violet-50 text-violet-700': coverPanelOpen }" title="Thiết lập ảnh bìa Quiz" aria-label="Thiết lập ảnh bìa Quiz" @click="$emit('toggle-cover')"><ImageIcon class="h-4 w-4" /><span class="hidden lg:inline">Ảnh bìa</span></button>
       <label class="quiz-time-control" title="Thời gian làm bài"><Clock3 class="h-4 w-4 text-violet-600" /><span class="hidden xl:inline">Thời gian</span><input :value="Math.max(1, Math.round(timeLimitSeconds / 60))" type="number" min="1" max="1440" aria-label="Thời gian làm bài, tính bằng phút" @change="$emit('update:time-limit', Number($event.target.value))" /><span>phút</span></label>
       <button type="button" class="header-button header-button-danger disabled:cursor-not-allowed disabled:opacity-50" :disabled="deleteDisabled || isDeleting" title="Xóa quiz" aria-label="Xóa quiz" @click="$emit('delete')"><LoaderCircle v-if="isDeleting" class="h-4 w-4 animate-spin" /><Trash2 v-else class="h-4 w-4" /><span class="hidden lg:inline">Xóa quiz</span></button>
       <button type="button" class="header-button header-button-primary disabled:cursor-not-allowed disabled:opacity-60" :disabled="saveDisabled" @click="$emit('complete')"><span>Hoàn tất</span><ArrowRight class="h-4 w-4" /></button>
@@ -21,9 +22,9 @@
   </header>
 </template>
 <script setup>
-import { ArrowRight, Check, Clock3, LoaderCircle, Trash2 } from 'lucide-vue-next'
-defineProps({ title: { type: String, default: '' }, saveStatus: { type: String, default: 'Đã lưu bản nháp' }, timeLimitSeconds: { type: Number, default: 600 }, educationLevelName: { type: String, default: '' }, gradeName: { type: String, default: '' }, subjectName: { type: String, default: '' }, topicName: { type: String, default: '' }, isSaving: { type: Boolean, default: false }, saveDisabled: { type: Boolean, default: false }, isDeleting: { type: Boolean, default: false }, deleteDisabled: { type: Boolean, default: false } })
-defineEmits(['update:title', 'update:time-limit', 'complete', 'delete'])
+import { ArrowRight, Check, Clock3, ImageIcon, LoaderCircle, Trash2 } from 'lucide-vue-next'
+defineProps({ title: { type: String, default: '' }, saveStatus: { type: String, default: 'Đã lưu bản nháp' }, timeLimitSeconds: { type: Number, default: 600 }, educationLevelName: { type: String, default: '' }, gradeName: { type: String, default: '' }, subjectName: { type: String, default: '' }, topicName: { type: String, default: '' }, coverPanelOpen: { type: Boolean, default: false }, isSaving: { type: Boolean, default: false }, saveDisabled: { type: Boolean, default: false }, isDeleting: { type: Boolean, default: false }, deleteDisabled: { type: Boolean, default: false } })
+defineEmits(['update:title', 'update:time-limit', 'toggle-cover', 'complete', 'delete'])
 </script>
 <style scoped>
 .editor-header { @apply flex min-h-[76px] items-center justify-between gap-4 border-b border-slate-200 bg-white px-4 py-3 sm:px-6; }
@@ -41,6 +42,7 @@ defineEmits(['update:title', 'update:time-limit', 'complete', 'delete'])
   .editor-header > div:first-child > div:first-child { display: none; }
   .quiz-title { margin-top: 0; font-size: .95rem; line-height: 1.25rem; }
   .header-button-secondary { display: none; }
+  .cover-button { display: inline-flex; padding: .625rem; }
   .quiz-time-control { padding: .5rem; }
   .quiz-time-control > svg { display: none; }
   .header-button-primary { padding: .625rem .75rem; white-space: nowrap; }

@@ -18,6 +18,6 @@ export const normalizeAiQuestions = (job = {}) => {
     order: index + 1,
     type: 'single_choice',
     difficulty,
-    points: 1,
+    points: 10,
   }))
 }

@@ -9,6 +9,7 @@ const TEMP_ID_PATTERN = /^(temp|local|mock|personal|bank)[-_]/i
 const QUIZ_FIELDS = [
   'title',
   'description',
+  'cover',
   'category',
   'education_level_id',
   'grade_id',
@@ -62,7 +63,7 @@ export const serializeQuestion = (editorQuestion) => {
     content: String(question.content ?? ''),
     image_url: typeof question.image_url === 'string' ? question.image_url : null,
     type: backendType,
-    points: finiteNumber(question.points, 1),
+    points: finiteNumber(question.points, 10),
     order: finiteNumber(question.order, 0),
     answers: sourceAnswers.map(serializeAnswer),
   }

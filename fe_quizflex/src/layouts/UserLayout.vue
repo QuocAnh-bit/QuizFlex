@@ -1,5 +1,5 @@
 <template>
-  <div class="app-shell min-h-screen bg-[#F8FAFC]">
+  <div class="app-shell min-h-screen bg-[#F8FAFC]" :class="{ 'h-dvh overflow-hidden': isQuizEditorRoute }">
     <header
       class="sticky top-0 z-50 border-b border-slate-200 bg-white/95 backdrop-blur-md transition-all"
     >
@@ -291,7 +291,7 @@
     </header>
 
     <!-- Main Content -->
-    <main class="app-container pb-16 pt-6">
+    <main :class="isQuizEditorRoute ? 'mx-auto h-[calc(100dvh-4rem)] w-[min(1240px,calc(100%-32px))] overflow-hidden py-3' : 'app-container pb-16 pt-6'">
       <slot />
     </main>
   </div>
@@ -346,6 +346,7 @@ import {
 const route = useRoute()
 const router = useRouter()
 const { t } = useI18n()
+const isQuizEditorRoute = computed(() => route.name === 'quiz-edit')
 
 const isMenuOpen = ref(false)
 const isUserDropdownOpen = ref(false)

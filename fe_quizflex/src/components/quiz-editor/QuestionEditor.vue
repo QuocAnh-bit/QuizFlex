@@ -1,5 +1,5 @@
 <template>
-  <main class="min-w-0 overflow-y-auto bg-slate-100/80 p-3 sm:p-4 lg:p-5">
+  <main ref="editorScroll" class="min-w-0 overflow-y-auto bg-slate-100/80 p-3 sm:p-4 lg:p-5">
     <section v-if="question" class="mx-auto w-full max-w-5xl">
       <div class="question-meta mb-2.5 flex flex-wrap items-center justify-between gap-3 px-1">
         <div class="flex min-w-0 flex-wrap items-center gap-2">
@@ -17,12 +17,17 @@
             <option value="hard">Khó</option>
           </select>
         </div>
-        <div class="flex flex-wrap items-center justify-end gap-2">
-          <div class="point-mode" aria-label="Chế độ chia điểm">
-            <button type="button" :class="{ active: !manualPoints }" @click="$emit('set-points-mode', 'auto')">Tự động</button>
-            <button type="button" :class="{ active: manualPoints }" @click="$emit('set-points-mode', 'manual')">Tự đặt</button>
+        <div class="relative flex flex-wrap items-center justify-end gap-2">
+          <button type="button" class="compact-points" aria-label="Chỉnh điểm câu hỏi" @click="pointsOpen = !pointsOpen"><span>{{ formatPoints(question.points) }} điểm</span><ChevronDown class="h-3.5 w-3.5" /></button>
+          <div v-if="pointsOpen" class="absolute right-0 top-10 z-30 w-48 rounded-xl border border-slate-200 bg-white p-3 shadow-xl">
+            <p class="mb-2 text-[10px] font-black uppercase tracking-wider text-slate-400">Điểm câu hỏi</p>
+            <div class="flex items-center gap-1.5">
+              <button type="button" class="point-step" aria-label="Giảm điểm" @click="changePoints(-1)">−</button>
+              <input :value="question.points" type="number" min="0.01" :max="maxPoints" step="0.5" class="min-w-0 flex-1 rounded-lg border border-slate-200 px-2 py-2 text-center text-xs font-black text-violet-700 outline-none focus:border-violet-400" aria-label="Điểm câu hỏi" @change="commitPoints($event.target.value)" />
+              <button type="button" class="point-step" :disabled="plusDisabled" aria-label="Tăng điểm" :title="plusDisabled ? 'Tổng điểm đã đạt giới hạn' : 'Tăng điểm'" @click="changePoints(1)">+</button>
+            </div>
+            <p class="mt-2 text-[10px] text-slate-400">Điểm phải lớn hơn 0.</p>
           </div>
-          <label class="compact-points" :class="{ 'opacity-70': !manualPoints }"><span>Điểm số</span><input :value="question.points" type="number" min="0.01" max="10" step="any" :disabled="!manualPoints" class="w-12 bg-transparent text-right text-xs font-black text-violet-700 outline-none disabled:cursor-not-allowed" aria-label="Điểm câu hỏi" @input="$emit('update-points', Number($event.target.value))" /><span>điểm</span></label>
         </div>
       </div>
 
@@ -69,8 +74,8 @@
   </main>
 </template>
 <script setup>
-import { computed, nextTick, ref } from 'vue'
-import { CheckCircle2, FileQuestion, GripVertical, ImagePlus, Plus, Sigma } from 'lucide-vue-next'
+import { computed, nextTick, ref, watch } from 'vue'
+import { CheckCircle2, ChevronDown, FileQuestion, GripVertical, ImagePlus, Plus, Sigma } from 'lucide-vue-next'
 import MathText from '../MathText.vue'
 import MathFormulaEditor from './MathFormulaEditor.vue'
 import MixedContentEditor from './MixedContentEditor.vue'
@@ -78,8 +83,22 @@ import FillInEditor from './question-types/FillInEditor.vue'
 import MultiChoiceEditor from './question-types/MultiChoiceEditor.vue'
 import SingleChoiceEditor from './question-types/SingleChoiceEditor.vue'
 import TrueFalseEditor from './question-types/TrueFalseEditor.vue'
-const props = defineProps({ question: { type: Object, default: null }, questionNumber: { type: Number, default: 1 }, totalQuestions: { type: Number, default: 0 }, manualPoints: Boolean, isBankLocked: Boolean, showAddQuestion: { type: Boolean, default: true } })
-defineEmits(['change-type', 'update-difficulty', 'update-points', 'set-points-mode', 'add-answer', 'remove-answer', 'add-fill-answer', 'remove-fill-answer', 'add-question', 'duplicate-question'])
+const props = defineProps({ question: { type: Object, default: null }, questionNumber: { type: Number, default: 1 }, totalQuestions: { type: Number, default: 0 }, maxPoints: { type: Number, default: 1000 }, isBankLocked: Boolean, showAddQuestion: { type: Boolean, default: true } })
+const emit = defineEmits(['change-type', 'update-difficulty', 'update-points', 'add-answer', 'remove-answer', 'add-fill-answer', 'remove-fill-answer', 'add-question', 'duplicate-question'])
+const pointsOpen = ref(false)
+const editorScroll = ref(null)
+watch(() => props.question?.id, async () => {
+  pointsOpen.value = false
+  await nextTick()
+  editorScroll.value?.scrollTo({ top: 0 })
+})
+const plusDisabled = computed(() => Number(props.question?.points || 0) >= props.maxPoints - 0.001)
+const formatPoints = (value) => Number(value || 0).toLocaleString('vi-VN', { maximumFractionDigits: 2 })
+const commitPoints = (value) => { const points = Number(value); if (Number.isFinite(points) && points > 0) emit('update-points', points) }
+const changePoints = (amount) => {
+  const proposed = Math.max(0.01, Number(props.question?.points || 0) + amount)
+  commitPoints(amount > 0 ? Math.min(props.maxPoints, proposed) : proposed)
+}
 const editors = { single_choice: SingleChoiceEditor, multi_choice: MultiChoiceEditor, fill_in: FillInEditor, true_false: TrueFalseEditor }
 const activeEditor = computed(() => editors[props.question?.type] || SingleChoiceEditor)
 const answerPreview = computed(() => props.question?.type === 'fill_in' ? props.question.accepted_answers || [] : props.question?.answers || [])
@@ -162,7 +181,8 @@ const insertFormula = async (latex) => {
 <style scoped>
 .format-button { @apply grid h-8 w-8 place-items-center rounded-lg text-sm transition hover:bg-slate-100 hover:text-violet-600; }
 .compact-control { @apply rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700 outline-none shadow-sm transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100; }
-.compact-points { @apply inline-flex items-center gap-1 rounded-xl bg-violet-100 px-3 py-2 text-[10px] font-black text-violet-700; }
+.compact-points { @apply inline-flex items-center gap-1 rounded-xl bg-violet-50 px-3 py-2 text-xs font-black text-violet-700 transition hover:bg-violet-100; }
+.point-step { @apply grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-slate-100 text-sm font-black text-slate-600 hover:bg-violet-100 hover:text-violet-700 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-300; }
 .point-mode { @apply inline-flex rounded-xl border border-slate-200 bg-slate-100 p-0.5; }
 .point-mode button { @apply rounded-lg px-2.5 py-1.5 text-[10px] font-black text-slate-500 transition hover:text-violet-700; }
 .point-mode button.active { @apply bg-white text-violet-700 shadow-sm; }

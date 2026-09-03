@@ -22,7 +22,7 @@ export const normalizeOcrQuestions = (payload = {}, filename = '') => {
     const explicitType = TYPE_MAP[raw.type]
     const type = explicitType || (correctKeys.length > 1 ? 'multi_choice' : 'single_choice')
     const answers = entries.map(([key, content], answerIndex) => ({ id: `ocr-result-${index}-answer-${answerIndex}`, content: String(content), is_correct: correctKeys.includes(String(key)), order: answerIndex }))
-    const question = normalizeQuestion({ id: `ocr-result-${index}`, order: index + 1, type, content: raw.question ?? raw.content ?? '', image_url: raw.image_url ?? raw.images?.[0]?.url ?? null, difficulty: raw.difficulty || 'medium', points: raw.points || 1, answers })
+    const question = normalizeQuestion({ id: `ocr-result-${index}`, order: index + 1, type, content: raw.question ?? raw.content ?? '', image_url: raw.image_url ?? raw.images?.[0]?.url ?? null, difficulty: raw.difficulty || 'medium', points: raw.points || 10, answers })
     let invalidReason = ''
     let warning = ''
     if (!question.content.trim()) invalidReason = 'Không nhận diện được nội dung câu hỏi.'
