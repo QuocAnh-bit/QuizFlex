@@ -45,7 +45,7 @@ class QuizGradingService
             }
 
             $allAnswers = $question->answers->values()->map(function (Answer $answer, int $index) {
-                $key = chr(65 + (int) ($answer->order ?? $index));
+                $key = chr(65 + $index);
                 return [
                     'id' => $answer->id,
                     'key' => $key,
@@ -110,7 +110,7 @@ class QuizGradingService
 
             $key = strtoupper(trim((string) $value));
             $answer = $question->answers->values()->first(function (Answer $answer, int $index) use ($key) {
-                return chr(65 + (int) ($answer->order ?? $index)) === $key;
+                return chr(65 + $index) === $key;
             });
 
             if ($answer) {
@@ -125,8 +125,12 @@ class QuizGradingService
     {
         return $question->answers
             ->values()
-            ->filter(fn (Answer $answer) => in_array((int) $answer->id, $ids, true))
-            ->map(fn (Answer $answer, int $index) => chr(65 + (int) ($answer->order ?? $index)))
+            ->map(fn (Answer $answer, int $index) => [
+                'id' => (int) $answer->id,
+                'key' => chr(65 + $index),
+            ])
+            ->filter(fn (array $answer) => in_array($answer['id'], $ids, true))
+            ->pluck('key')
             ->values()
             ->all();
     }

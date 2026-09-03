@@ -236,7 +236,7 @@ class QuestionSnapshotService
                     'question_id' => $snapshot->id,
                     'content' => is_array($ans) ? ($ans['content'] ?? $ans['text'] ?? '') : (string)$ans,
                     'is_correct' => is_array($ans) ? (bool)($ans['is_correct'] ?? false) : false,
-                    'order' => is_array($ans) ? ($ans['order'] ?? $index) : $index,
+                    'order' => $index,
                 ]);
             }
 
@@ -255,7 +255,7 @@ class QuestionSnapshotService
         foreach ($snapshotAnswers as $index => $ans) {
             $content = is_array($ans) ? ($ans['content'] ?? $ans['text'] ?? '') : (string)$ans;
             $isCorrect = is_array($ans) ? (bool)($ans['is_correct'] ?? false) : false;
-            $order = is_array($ans) ? ($ans['order'] ?? $index) : $index;
+            $order = $index;
 
             if (isset($existingAnswers[$index])) {
                 $existingAnswer = $existingAnswers[$index];
@@ -293,7 +293,7 @@ class QuestionSnapshotService
         foreach ($originalAnswers as $ans) {
             $content = $ans->content;
             $isCorrect = (bool) $ans->is_correct;
-            $order = $ans->order ?? $index;
+            $order = $index;
 
             if (isset($existingAnswers[$index])) {
                 $existingAnswer = $existingAnswers[$index];
