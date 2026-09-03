@@ -1190,6 +1190,10 @@ class QuestionController extends Controller
             return response()->json(['success' => false, 'message' => 'Bạn không có quyền sửa câu hỏi này.'], 403);
         }
 
+        $answerMinimum = $request->input('type') === 'fill_blank'
+            ? 1
+            : 2;
+
         $validated = $request->validate([
             'content' => ['required', 'string'],
             'image_url' => ['nullable', 'string', 'max:1000'],
@@ -1201,7 +1205,7 @@ class QuestionController extends Controller
             'subject_id' => ['nullable', 'integer'],
             'topic_name' => ['nullable', 'string', 'max:255'],
             'is_public' => ['nullable', 'boolean'],
-            'answers' => ['required', 'array', 'min:2'],
+            'answers' => ['required', 'array', 'min:' . $answerMinimum],
             'answers.*.content' => ['required', 'string'],
             'answers.*.key' => ['nullable', 'string'],
             'answers.*.is_correct' => ['nullable', 'boolean'],
@@ -1303,6 +1307,10 @@ class QuestionController extends Controller
             ], 403);
         }
 
+        $answerMinimum = $request->input('type') === 'fill_blank'
+            ? 1
+            : 2;
+
         $validated = $request->validate([
             'content' => ['required', 'string'],
             'image_url' => ['nullable', 'string', 'max:1000'],
@@ -1314,7 +1322,7 @@ class QuestionController extends Controller
             'subject_id' => ['nullable', 'integer'],
             'topic_name' => ['nullable', 'string', 'max:255'],
             'is_public' => ['nullable', 'boolean'],
-            'answers' => ['required', 'array', 'min:2'],
+            'answers' => ['required', 'array', 'min:' . $answerMinimum],
             'answers.*.content' => ['required', 'string'],
             'answers.*.key' => ['nullable', 'string'],
             'answers.*.is_correct' => ['nullable', 'boolean'],
@@ -2410,6 +2418,3 @@ class QuestionController extends Controller
         ]);
     }
 }
-
-
-

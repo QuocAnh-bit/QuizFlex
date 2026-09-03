@@ -442,6 +442,7 @@ class AuthController extends Controller
     private function formatUser(User $user): array
     {
         $tier = $user->getSubscriptionTier();
+        $ocrQuota = $this->resolveOcrQuota($user, $tier);
 
         $isTrial = false;
         if ($user->trial_used_at && $user->vip_expires_at) {
@@ -465,6 +466,12 @@ class AuthController extends Controller
             'role_label' => $roleLabel,
             'avatar' => $this->resolveAvatarForResponse($user->avatar),
             'ai_quota_remaining' => $user->ai_quota_remaining,
+            'ai_allowed' => $tier !== 'admin' && (int) ($user->ai_quota_remaining ?? 0) > 0,
+            'ocr_allowed' => $ocrQuota['allowed'],
+            'ocr_quota_limit' => $ocrQuota['limit'],
+            'ocr_quota_used' => $ocrQuota['used'],
+            'ocr_quota_remaining' => $ocrQuota['remaining'],
+            'ocr_quota_unlimited' => $ocrQuota['unlimited'],
             'is_locked' => (bool) $user->is_locked,
             'locked_at' => $user->locked_at ? $user->locked_at->toDateTimeString() : null,
             'locked_reason' => $user->locked_reason,
@@ -473,6 +480,24 @@ class AuthController extends Controller
             'created_at' => $user->created_at,
             'updated_at' => $user->updated_at,
         ];
+    }
+
+    private function resolveOcrQuota(User $user, string $tier): array
+    {
+        if (in_array($tier, ['admin', 'ultra'], true)) {
+            return ['allowed' => true, 'limit' => null, 'used' => 0, 'remaining' => null, 'unlimited' => true];
+        }
+
+        $limit = match ($tier) {
+            'pro' => 50,
+            'plus' => 10,
+            default => 0,
+        };
+        $used = $limit > 0
+            ? \App\Models\AiLog::query()->where('user_id', $user->id)->where('action_type', 'ocr_upload')->where('created_at', '>=', now()->startOfMonth())->count()
+            : 0;
+
+        return ['allowed' => $limit > $used, 'limit' => $limit, 'used' => $used, 'remaining' => max(0, $limit - $used), 'unlimited' => false];
     }
 
     private function storedAvatarPublicUrl(string $path): string
