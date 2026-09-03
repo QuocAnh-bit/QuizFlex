@@ -29,6 +29,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\QuizReviewController;
 use App\Http\Controllers\CurriculumOptionController;
 use App\Http\Controllers\AdminSettingController;
+use App\Http\Controllers\AdminRagController;
 
 Route::get('/taxonomies/tree', [TaxonomyController::class, 'tree']);
 Route::get('/curriculums/options', [CurriculumOptionController::class, 'index']);
@@ -113,6 +114,11 @@ Route::middleware('auth:api')->group(function () {
 
     Route::middleware('role:admin')->group(function () {
         Route::get('/admin/dashboard/overview', [AdminDashboardController::class, 'overview']);
+        Route::get('/admin/rag/overview', [AdminRagController::class, 'overview']);
+        Route::get('/admin/rag/documents', [AdminRagController::class, 'documents']);
+        Route::get('/admin/rag/units', [AdminRagController::class, 'units']);
+        Route::get('/admin/rag/chunks', [AdminRagController::class, 'chunks']);
+        Route::post('/admin/rag/retrieval/test', [AdminRagController::class, 'testRetrieval']);
         Route::get('/admin/rooms/stats', [AdminRoomController::class, 'stats']);
         Route::get('/admin/rooms/homework', [AdminRoomController::class, 'homeworkIndex']);
         Route::get('/admin/rooms/homework/trash', [AdminRoomController::class, 'homeworkTrash']);

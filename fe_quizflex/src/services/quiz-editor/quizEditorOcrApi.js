@@ -24,10 +24,14 @@ export const normalizeOcrQuestions = (payload = {}, filename = '') => {
     const answers = entries.map(([key, content], answerIndex) => ({ id: `ocr-result-${index}-answer-${answerIndex}`, content: String(content), is_correct: correctKeys.includes(String(key)), order: answerIndex }))
     const question = normalizeQuestion({ id: `ocr-result-${index}`, order: index + 1, type, content: raw.question ?? raw.content ?? '', image_url: raw.image_url ?? raw.images?.[0]?.url ?? null, difficulty: raw.difficulty || 'medium', points: raw.points || 1, answers })
     let invalidReason = ''
+    let warning = ''
     if (!question.content.trim()) invalidReason = 'Không nhận diện được nội dung câu hỏi.'
     else if (type === 'fill_in') invalidReason = 'Pipeline OCR hiện chưa trả đáp án điền khuyết theo schema EditorV2.'
     else if (answers.length < 2) invalidReason = 'Câu hỏi chưa nhận diện đủ lựa chọn.'
-    else if (!answers.some((answer) => answer.is_correct)) invalidReason = 'Chưa nhận diện được đáp án đúng.'
-    return { question: { ...question, source_type: 'ocr', source_filename: filename }, invalidReason }
+    // OCR có thể đọc đủ lựa chọn nhưng không suy ra được đáp án đúng.
+    // Đây là dữ liệu chưa hoàn chỉnh, không phải lý do để loại cả câu hỏi:
+    // người tạo có thể chọn đáp án đúng trực tiếp trong Editor V2.
+    else if (!answers.some((answer) => answer.is_correct)) warning = 'Chưa nhận diện được đáp án đúng. Bạn có thể chọn lại sau khi thêm vào Quiz.'
+    return { question: { ...question, source_type: 'ocr', source_filename: filename }, invalidReason, warning }
   })
 }
