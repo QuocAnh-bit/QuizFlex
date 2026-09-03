@@ -26,7 +26,10 @@ class LiveRoomController extends Controller
 
     public function index(Request $request)
     {
-        $user = $request->user();
+        $user = auth('api')->user() ?? $request->user();
+        if (!$user) {
+            return response()->json(['message' => 'Unauthenticated.'], 401);
+        }
         $rooms = LiveRoom::query()
             ->with(['quiz:id,title', 'host:id,name'])
             ->withCount('players')

@@ -63,7 +63,7 @@ import { getNotificationPresentation, NOTIFICATION_DELIVERY } from "@/utils/noti
 const route = useRoute();
 const router = useRouter();
 
-const isLoading = ref(true);
+const isLoading = ref(false);
 const showLockedToast = ref(false);
 const lockedCountdown = ref(5);
 let lockedCountdownInterval = null
@@ -181,7 +181,7 @@ let forceCloseTimer = null;
 let removeBeforeGuard = null;
 let removeAfterGuard = null;
 
-const MIN_LOADING_TIME = 150;
+const MIN_LOADING_TIME = 0;
 
 const layout = computed(() => {
   const layoutName = route.meta.layout;
@@ -198,21 +198,12 @@ const layout = computed(() => {
 const startLoading = () => {
   clearTimeout(loadingTimer);
   clearTimeout(forceCloseTimer);
-
-  isLoading.value = true;
-
-  forceCloseTimer = setTimeout(() => {
-    isLoading.value = false;
-  }, MIN_LOADING_TIME + 700);
 };
 
 const stopLoading = () => {
   clearTimeout(loadingTimer);
   clearTimeout(forceCloseTimer);
-
-  loadingTimer = setTimeout(() => {
-    isLoading.value = false;
-  }, MIN_LOADING_TIME);
+  isLoading.value = false;
 };
 
 onMounted(() => {
