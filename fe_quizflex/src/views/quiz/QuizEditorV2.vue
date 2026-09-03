@@ -52,8 +52,9 @@
 import { useAppLoading } from '@/composables/useAppLoading'
 const { beginTask, endTask } = useAppLoading()
 
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, inject, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
+import { authApi, currentUserStorage } from '@/services/api.js'
 import EditorHeader from '@/components/quiz-editor/EditorHeader.vue'
 import EditorToolbar from '@/components/quiz-editor/EditorToolbar.vue'
 import QuizCoverPanel from '@/components/quiz-editor/QuizCoverPanel.vue'
@@ -834,6 +835,43 @@ onBeforeRouteLeave((to) => {
   return false
 })
 const showMockNotice = (action) => { mockNotice.value = action; clearTimeout(noticeTimer); noticeTimer = setTimeout(() => { mockNotice.value = '' }, 2200) }
+const showToast = inject('showToast', null)
+const initialUser = currentUserStorage.get()
+let lastKnownRole = String(initialUser?.role || '').toLowerCase()
+let lastKnownAiAllowed = Boolean(initialUser?.ai_allowed ?? (Number(initialUser?.ai_quota_remaining || 0) > 0))
+let lastKnownOcrAllowed = Boolean(initialUser?.ocr_allowed)
+
+const checkAndNotifyUpgrade = (newUser) => {
+  if (!newUser) return
+  const currentRole = String(newUser.role || '').toLowerCase()
+  const currentAiAllowed = Boolean(newUser.ai_allowed ?? (Number(newUser.ai_quota_remaining || 0) > 0))
+  const currentOcrAllowed = Boolean(newUser.ocr_allowed)
+
+  const wasFree = !lastKnownRole || lastKnownRole === 'free'
+  const isNowPaid = currentRole && currentRole !== 'free'
+  const wasNotAllowed = !lastKnownAiAllowed && !lastKnownOcrAllowed
+  const isNowAllowed = currentAiAllowed || currentOcrAllowed
+
+  if ((wasFree && isNowPaid) || (wasNotAllowed && isNowAllowed)) {
+    if (showToast) {
+      const planName = currentRole.toUpperCase()
+      showToast(`Nâng cấp gói ${planName} thành công! Các tính năng AI và OCR đã sẵn sàng sử dụng.`, 'success')
+    }
+    lastKnownRole = currentRole
+    lastKnownAiAllowed = currentAiAllowed
+    lastKnownOcrAllowed = currentOcrAllowed
+  }
+}
+
+const syncUserOnFocus = async () => {
+  const userFromStorage = currentUserStorage.get()
+  if (userFromStorage) checkAndNotifyUpgrade(userFromStorage)
+  try {
+    const fresh = await authApi.me()
+    if (fresh) checkAndNotifyUpgrade(fresh)
+  } catch {}
+}
+
 watch(quiz, () => {
   if (isLoading.value || isHydrating.value || loadError.value) return
   editorRevision.value += 1
@@ -841,8 +879,22 @@ watch(quiz, () => {
   if (isDirty.value) scheduleAutosave()
 }, { deep: true, flush: 'sync' })
 watch(quizId, loadQuiz)
-onMounted(() => { loadQuiz(); window.addEventListener('beforeunload', warnBeforeBrowserUnload) })
-onBeforeUnmount(() => { clearAutosaveTimer(); clearTimeout(noticeTimer); clearTimeout(addedHighlightTimer); window.removeEventListener('beforeunload', warnBeforeBrowserUnload) })
+onMounted(() => {
+  loadQuiz()
+  window.addEventListener('beforeunload', warnBeforeBrowserUnload)
+  window.addEventListener('storage', syncUserOnFocus)
+  window.addEventListener('quizflex-user-updated', syncUserOnFocus)
+  window.addEventListener('focus', syncUserOnFocus)
+})
+onBeforeUnmount(() => {
+  clearAutosaveTimer()
+  clearTimeout(noticeTimer)
+  clearTimeout(addedHighlightTimer)
+  window.removeEventListener('beforeunload', warnBeforeBrowserUnload)
+  window.removeEventListener('storage', syncUserOnFocus)
+  window.removeEventListener('quizflex-user-updated', syncUserOnFocus)
+  window.removeEventListener('focus', syncUserOnFocus)
+})
 </script>
 <style scoped>
 .editor-grid { display: grid; grid-template-columns: clamp(260px, 18vw, 280px) minmax(0, 1fr) 64px; overflow: hidden; }

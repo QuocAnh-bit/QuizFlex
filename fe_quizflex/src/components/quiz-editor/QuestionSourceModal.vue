@@ -45,15 +45,20 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, inject, onBeforeUnmount, onMounted, ref } from 'vue'
 import { Bot, Camera, ChevronRight, Library, LockKeyhole, PenLine, UserRound, X } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
 import { authApi, currentUserStorage } from '@/services/api.js'
 
 const emit = defineEmits(['choose', 'close'])
+const showToast = inject('showToast', null)
 
 const router = useRouter()
 const quotaUser = ref(currentUserStorage.get())
+let previousRole = String(quotaUser.value?.role || '').toLowerCase()
+let previousAiAllowed = Boolean(quotaUser.value?.ai_allowed ?? (Number(quotaUser.value?.ai_quota_remaining || 0) > 0))
+let previousOcrAllowed = Boolean(quotaUser.value?.ocr_allowed)
+
 const isFreeUser = computed(() => {
   const role = String(quotaUser.value?.role || '').toLowerCase()
   return !role || role === 'free'
@@ -71,8 +76,8 @@ const ocrQuotaLabel = computed(() => quotaUser.value?.ocr_quota_unlimited ? 'OCR
 const chooseSource = (source) => {
   const isLocked = (source === 'ai' && !aiAllowed.value) || (source === 'ocr' && !ocrAllowed.value)
   if (isLocked) {
-    emit('close')
-    router.push({ name: 'upgrade' })
+      const routeData = router.resolve({ name: 'upgrade' })
+          window.open(routeData.href, '_blank')
     return
   }
   emit('choose', source)
@@ -87,7 +92,56 @@ const existingOptions = [
   { value: 'personal', title: 'Kho cá nhân', description: 'Dùng lại các câu hỏi bạn đã tạo trước đây.', icon: UserRound, iconClass: 'bg-emerald-100 text-emerald-700' },
   { value: 'bank', title: 'Ngân hàng câu hỏi', description: 'Tìm câu hỏi được chia sẻ và phù hợp với Quiz.', icon: Library, iconClass: 'bg-sky-100 text-sky-700' },
 ]
-onMounted(async () => { try { quotaUser.value = await authApi.me() } catch {} })
+
+const checkAndNotifyUpgrade = (newUser) => {
+  if (!newUser) return
+  const currentRole = String(newUser.role || '').toLowerCase()
+  const currentAiAllowed = Boolean(newUser.ai_allowed ?? (Number(newUser.ai_quota_remaining || 0) > 0))
+  const currentOcrAllowed = Boolean(newUser.ocr_allowed)
+
+  const wasFree = !previousRole || previousRole === 'free'
+  const isNowPaid = currentRole && currentRole !== 'free'
+  const wasNotAllowed = !previousAiAllowed && !previousOcrAllowed
+  const isNowAllowed = currentAiAllowed || currentOcrAllowed
+
+  if ((wasFree && isNowPaid) || (wasNotAllowed && isNowAllowed)) {
+    if (showToast) {
+      const planName = currentRole.toUpperCase()
+      showToast(`Nâng cấp gói ${planName} thành công! Các tính năng AI và OCR đã sẵn sàng sử dụng.`, 'success')
+    }
+    previousRole = currentRole
+    previousAiAllowed = currentAiAllowed
+    previousOcrAllowed = currentOcrAllowed
+  }
+}
+
+const syncUser = async () => {
+  const currentFromStorage = currentUserStorage.get()
+  if (currentFromStorage) {
+    checkAndNotifyUpgrade(currentFromStorage)
+    quotaUser.value = currentFromStorage
+  }
+  try {
+    const freshUser = await authApi.me()
+    if (freshUser) {
+      checkAndNotifyUpgrade(freshUser)
+      quotaUser.value = freshUser
+    }
+  } catch {}
+}
+
+onMounted(() => {
+  syncUser()
+  window.addEventListener('storage', syncUser)
+  window.addEventListener('quizflex-user-updated', syncUser)
+  window.addEventListener('focus', syncUser)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('storage', syncUser)
+  window.removeEventListener('quizflex-user-updated', syncUser)
+  window.removeEventListener('focus', syncUser)
+})
 </script>
 
 <style scoped>

@@ -23,7 +23,7 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import api, { tokenStorage } from '@/services/api'
+import { gamificationApi, tokenStorage } from '@/services/api'
 
 const stats = ref({
   xp: 0,
@@ -48,8 +48,8 @@ const fetchStats = async () => {
   }
 
   try {
-    const { data } = await api.get('/user/stats')
-    stats.value = data
+    const data = await gamificationApi.getUserStats()
+    if (data) stats.value = data
   } catch (e) {
     stats.value = {
       xp: 0,
