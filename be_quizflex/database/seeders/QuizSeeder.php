@@ -2,560 +2,410 @@
 
 namespace Database\Seeders;
 
+use App\Models\Grade;
+use App\Models\Question;
 use App\Models\Quiz;
+use App\Models\QuizAttempt;
+use App\Models\Subject;
 use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 
 class QuizSeeder extends Seeder
 {
     /**
-     * Run the database seeds.
+     * Khởi tạo các bài Quiz phong phú cho từng người dùng, kết hợp (mix) câu hỏi
+     * giữa Ngân hàng câu hỏi công khai và Kho câu hỏi cá nhân của tác giả.
      */
     public function run(): void
     {
-        $user = User::where('role', 'ADMIN')->first() ?? User::first();
-        if (!$user) {
-            $user = User::create([
-                'name' => 'QuizFlex Admin',
-                'email' => 'admin@quizflex.local',
-                'password' => bcrypt('password'),
-                'role' => 'ADMIN',
-                'ai_quota_remaining' => 999,
-            ]);
+        $users = User::all()->keyBy('email');
+        if ($users->isEmpty()) {
+            $this->command->warn('Chưa có người dùng nào. Vui lòng chạy UserSeeder trước!');
+            return;
         }
 
-        $quizzes = [
+        // Định nghĩa danh sách các Quiz mẫu đặc trưng cho từng người dùng
+        $quizzesDefinition = [
+            // =========================================================================
+            // 1. THẦY HOÀNG MINH ĐỨC (TOÁN HỌC)
+            // =========================================================================
             [
-                'title' => 'Địa lý Việt Nam kỳ thú',
-                'description' => 'Bộ trắc nghiệm tìm hiểu về các địa danh, sông ngòi và kỷ lục địa lý của đất nước Việt Nam.',
-                'category' => 'Địa lý',
-                'tag' => 'Việt Nam',
+                'author_email' => 'thay.duchoang@quizflex.vn',
+                'title' => 'Đề thi thử Tốt nghiệp THPT 2026 - Môn Toán (Đề số 01)',
+                'description' => 'Bộ đề chuẩn cấu trúc đề thi tốt nghiệp THPT năm 2026 môn Toán do Thầy Hoàng Minh Đức biên soạn, bao gồm chuyên đề Khảo sát hàm số, Hình học Oxyz và Tích phân.',
+                'subject_code' => 'math',
+                'grade_code' => 'grade_12',
                 'difficulty' => 'medium',
-                'is_public' => true,
-                'status' => 'published',
-                'time_limit_seconds' => 600,
-                'icon' => 'GEO',
-                'badge' => 'VN',
-                'questions' => [
-                    [
-                        'content' => 'Đỉnh núi cao nhất Việt Nam và Đông Dương tên là gì?',
-                        'correct' => 'A',
-                        'answers' => ['Fansipan (Phan Xi Păng)', 'Tây Côn Lĩnh', 'Bạch Mã', 'Puxailaileng'],
-                    ],
-                    [
-                        'content' => 'Sông Mê Kông đổ ra biển Đông qua bao nhiêu cửa sông lớn tại lãnh thổ Việt Nam?',
-                        'correct' => 'B',
-                        'answers' => ['7 cửa', '9 cửa (Cửu Long)', '5 cửa', '3 cửa'],
-                    ],
-                    [
-                        'content' => 'Tỉnh nào có diện tích lớn nhất Việt Nam hiện nay?',
-                        'correct' => 'A',
-                        'answers' => ['Nghệ An', 'Thanh Hóa', 'Sơn La', 'Lâm Đồng'],
-                    ],
-                    [
-                        'content' => 'Quần đảo Hoàng Sa về mặt hành chính thuộc quyền quản lý của tỉnh/thành phố nào?',
-                        'correct' => 'C',
-                        'answers' => ['Khánh Hòa', 'Quảng Nam', 'Thành phố Đà Nẵng', 'Bình Thuận'],
-                    ],
-                    [
-                        'content' => 'Vườn quốc gia Phong Nha - Kẻ Bàng nằm ở tỉnh nào của nước ta?',
-                        'correct' => 'D',
-                        'answers' => ['Quảng Trị', 'Thừa Thiên Huế', 'Hà Tĩnh', 'Quảng Bình'],
-                    ],
-                    [
-                        'content' => 'Hồ nước ngọt tự nhiên lớn nhất Việt Nam là hồ nào?',
-                        'correct' => 'A',
-                        'answers' => ['Hồ Ba Bể', 'Hồ Tây', 'Hồ Hoàn Kiếm', 'Hồ Trị An'],
-                    ],
-                    [
-                        'content' => 'Tỉnh nào của Việt Nam sở hữu đường bờ biển dài nhất?',
-                        'correct' => 'B',
-                        'answers' => ['Quảng Ninh', 'Khánh Hòa', 'Cà Mau', 'Bình Thuận'],
-                    ],
-                    [
-                        'content' => 'Mũi Cực Nam trên đất liền của nước Việt Nam nằm ở địa phận tỉnh nào?',
-                        'correct' => 'C',
-                        'answers' => ['Kiên Giang', 'Bạc Liêu', 'Cà Mau', 'Sóc Trăng'],
-                    ],
-                ],
-            ],
-            [
-                'title' => 'Lập trình và Khoa học Máy tính',
-                'description' => 'Kiểm tra kiến thức cơ bản về các ngôn ngữ lập trình, giao thức và kiến trúc máy tính.',
-                'category' => 'Công nghệ',
-                'tag' => 'Lập trình',
-                'difficulty' => 'easy',
-                'is_public' => true,
-                'status' => 'published',
-                'time_limit_seconds' => 600,
-                'icon' => 'TECH',
-                'badge' => 'IT',
-                'questions' => [
-                    [
-                        'content' => 'Ngôn ngữ lập trình nào được sử dụng phổ biến nhất để xây dựng tương tác và logic động trên giao diện trình duyệt Web?',
-                        'correct' => 'C',
-                        'answers' => ['Python', 'C++', 'JavaScript', 'SQL'],
-                    ],
-                    [
-                        'content' => 'Trong phát triển web, cụm từ viết tắt "HTML" có nghĩa là gì?',
-                        'correct' => 'A',
-                        'answers' => ['HyperText Markup Language', 'Hyperlinks and Text Markup Language', 'Home Tool Markup Language', 'HyperText Machine Language'],
-                    ],
-                    [
-                        'content' => 'Ký hiệu nào thường được dùng để kết thúc một câu lệnh trong các ngôn ngữ như PHP, C, C++ và Java?',
-                        'correct' => 'B',
-                        'answers' => ['Dấu hai chấm (:)', 'Dấu chấm phẩy (;)', 'Dấu chấm (.)', 'Dấu phẩy (,)'],
-                    ],
-                    [
-                        'content' => 'Đâu không phải là một hệ quản trị cơ sở dữ liệu quan hệ (RDBMS)?',
-                        'correct' => 'D',
-                        'answers' => ['MySQL', 'PostgreSQL', 'Microsoft SQL Server', 'MongoDB'],
-                    ],
-                    [
-                        'content' => 'Giao thức bảo mật tiêu chuẩn giúp mã hóa truyền tải dữ liệu giữa trình duyệt và máy chủ web là gì?',
-                        'correct' => 'A',
-                        'answers' => ['HTTPS', 'HTTP', 'FTP', 'SMTP'],
-                    ],
-                    [
-                        'content' => 'Framework phát triển ứng dụng Web phổ biến Laravel được viết bằng ngôn ngữ lập trình nào?',
-                        'correct' => 'B',
-                        'answers' => ['Ruby', 'PHP', 'Python', 'JavaScript'],
-                    ],
-                ],
-            ],
-            [
-                'title' => 'Toán học vui & Tư duy Logic',
-                'description' => 'Rèn luyện trí não với các câu hỏi toán học nhanh và câu đố tư duy logic thú vị.',
+                'time_limit_seconds' => 3000,
                 'category' => 'Toán học',
-                'tag' => 'Logic',
-                'difficulty' => 'medium',
-                'is_public' => true,
-                'status' => 'published',
-                'time_limit_seconds' => 720,
-                'icon' => 'MATH',
-                'badge' => 'LOG',
-                'questions' => [
-                    [
-                        'content' => 'Số nào là số tiếp theo hợp quy luật trong dãy số sau: 2, 4, 8, 16, ...?',
-                        'correct' => 'D',
-                        'answers' => ['20', '24', '28', '32'],
-                    ],
-                    [
-                        'content' => 'Tổng số đo các góc trong của một hình tam giác phẳng luôn bằng bao nhiêu độ?',
-                        'correct' => 'A',
-                        'answers' => ['180 độ', '90 độ', '360 độ', '270 độ'],
-                    ],
-                    [
-                        'content' => 'Nếu 3 con mèo bắt được 3 con chuột trong vòng 3 phút, thì cần bao nhiêu phút để 100 con mèo bắt được 100 con chuột?',
-                        'correct' => 'B',
-                        'answers' => ['100 phút', '3 phút', '1 phút', '33 phút'],
-                    ],
-                    [
-                        'content' => 'Một gia đình có 5 người con trai, mỗi người con trai lại có đúng 1 người em gái út. Hỏi gia đình đó có tổng cộng bao nhiêu người con?',
-                        'correct' => 'C',
-                        'answers' => ['10 người con', '5 người con', '6 người con', '8 người con'],
-                    ],
-                    [
-                        'content' => 'Giá trị của số Pi (π) dùng trong hình học thường được làm tròn xấp xỉ bằng bao nhiêu?',
-                        'correct' => 'A',
-                        'answers' => ['3.14', '3.12', '3.16', '3.20'],
-                    ],
-                ],
+                'tag' => 'THPT Quốc Gia',
+                'icon' => 'Calculator',
+                'badge' => 'Chuyên Toán',
             ],
             [
-                'title' => 'Tiếng Anh giao tiếp cơ bản',
-                'description' => 'Trắc nghiệm nhanh về từ vựng, ngữ pháp thông dụng và cách phản xạ tiếng Anh hàng ngày.',
-                'category' => 'Ngoại ngữ',
-                'tag' => 'Tiếng Anh',
-                'difficulty' => 'easy',
-                'is_public' => true,
-                'status' => 'published',
-                'time_limit_seconds' => 450,
-                'icon' => 'ENG',
-                'badge' => 'EN',
-                'questions' => [
-                    [
-                        'content' => 'Từ nào dưới đây là từ trái nghĩa chính xác của từ "Beautiful" (Xinh đẹp)?',
-                        'correct' => 'B',
-                        'answers' => ['Nice', 'Ugly', 'Pretty', 'Attractive'],
-                    ],
-                    [
-                        'content' => 'Hãy điền giới từ thích hợp vào chỗ trống: "I am interested ______ learning English."',
-                        'correct' => 'A',
-                        'answers' => ['in', 'at', 'on', 'with'],
-                    ],
-                    [
-                        'content' => 'Đâu là câu chào hỏi lịch sự và phù hợp nhất khi bạn lần đầu tiên được giới thiệu gặp gỡ một ai đó?',
-                        'correct' => 'C',
-                        'answers' => ['What\'s up?', 'Hello bro!', 'Nice to meet you', 'How\'s it going?'],
-                    ],
-                    [
-                        'content' => 'Thì nào trong tiếng Anh được sử dụng để diễn tả một hành động lặp đi lặp lại như một thói quen ở thời điểm hiện tại?',
-                        'correct' => 'D',
-                        'answers' => ['Thì Hiện tại tiếp diễn', 'Thì Quá khứ đơn', 'Thì Hiện tại hoàn thành', 'Thì Hiện tại đơn'],
-                    ],
-                    [
-                        'content' => 'Chọn từ viết đúng chính tả tiếng Anh trong các phương án sau:',
-                        'correct' => 'A',
-                        'answers' => ['Necessary', 'Neccessary', 'Necesasry', 'Neccesary'],
-                    ],
-                    [
-                        'content' => 'Từ "Vocabulary" dịch sang nghĩa tiếng Việt chính xác là gì?',
-                        'correct' => 'B',
-                        'answers' => ['Ngữ pháp', 'Từ vựng', 'Phát âm', 'Bài đọc'],
-                    ],
-                    [
-                        'content' => 'Điền dạng động từ đúng vào chỗ trống: "She ______ to school by bus every day."',
-                        'correct' => 'C',
-                        'answers' => ['go', 'going', 'goes', 'went'],
-                    ],
-                ],
-            ],
-            [
-                'title' => 'IELTS Academic Vocabulary & Phrasal Verbs',
-                'description' => 'Chinh phục các từ vựng học thuật băng nhóm C1/C2 và các phrasal verbs nâng cao trong đề thi IELTS.',
-                'category' => 'Ngoại ngữ',
-                'tag' => 'IELTS',
+                'author_email' => 'thay.duchoang@quizflex.vn',
+                'title' => 'Chuyên đề Nâng cao: Khảo sát hàm số & Cực trị Hình học',
+                'description' => 'Bài tập rèn luyện kỹ năng giải nhanh các bài toán vận dụng và vận dụng cao môn Toán lớp 12.',
+                'subject_code' => 'math',
+                'grade_code' => 'grade_12',
                 'difficulty' => 'hard',
-                'is_public' => true,
-                'status' => 'published',
-                'time_limit_seconds' => 720,
-                'icon' => 'IELTS',
-                'badge' => 'ENG',
-                'questions' => [
-                    [
-                        'content' => 'Which word is a synonym of "Substantial" in academic writing?',
-                        'correct' => 'A',
-                        'answers' => ['Significant', 'Tiny', 'Slight', 'Negligible'],
-                    ],
-                    [
-                        'content' => 'Complete the phrasal verb: "The researchers need to ______ out more experiments before reaching a conclusion."',
-                        'correct' => 'C',
-                        'answers' => ['bring', 'take', 'carry', 'put'],
-                    ],
-                    [
-                        'content' => 'Choose the word that means "to make a bad situation worse":',
-                        'correct' => 'B',
-                        'answers' => ['Ameliorate', 'Exacerbate', 'Mitigate', 'Alleviate'],
-                    ],
-                    [
-                        'content' => 'What is the meaning of the idiom "To call it a day"?',
-                        'correct' => 'D',
-                        'answers' => ['To start a new project', 'To celebrate a holiday', 'To work overtime', 'To stop working on something'],
-                    ],
-                    [
-                        'content' => 'Select the correct word: "The new policy had a profound ______ on the local economy."',
-                        'correct' => 'A',
-                        'answers' => ['effect', 'affect', 'effective', 'affection'],
-                    ],
-                    [
-                        'content' => 'Which of the following means "unbelievable or hard to credit"?',
-                        'correct' => 'B',
-                        'answers' => ['Credible', 'Incredible', 'Credulous', 'Incredulous'],
-                    ],
-                ],
+                'time_limit_seconds' => 2700,
+                'category' => 'Toán học',
+                'tag' => 'Vận dụng cao',
+                'icon' => 'TrendingUp',
+                'badge' => 'VIP Pro',
             ],
+
+            // =========================================================================
+            // 2. CÔ PHẠM QUỲNH NGA (TIẾNG ANH)
+            // =========================================================================
             [
-                'title' => 'English Grammar Masterclass: Tenses & Conditionals',
-                'description' => 'Luyện tập chuyên sâu các thì phức hợp, câu điều kiện hỗn hợp và đảo ngữ trong tiếng Anh.',
-                'category' => 'Ngoại ngữ',
-                'tag' => 'Ngữ pháp',
+                'author_email' => 'co.quynhnga@quizflex.vn',
+                'title' => 'Luyện đề Chuyên sâu: Ngữ pháp & Từ vựng Tiếng Anh 12',
+                'description' => 'Tuyển tập các câu hỏi ngữ pháp nâng cao, đảo ngữ, câu điều kiện hỗn hợp và collocation trọng tâm kì thi THPT Quốc Gia.',
+                'subject_code' => 'english',
+                'grade_code' => 'grade_12',
                 'difficulty' => 'medium',
-                'is_public' => true,
-                'status' => 'published',
-                'time_limit_seconds' => 600,
-                'icon' => 'GRAM',
-                'badge' => 'EN',
-                'questions' => [
-                    [
-                        'content' => 'If I ______ harder at university, I would have got a better job.',
-                        'correct' => 'C',
-                        'answers' => ['studied', 'study', 'had studied', 'have studied'],
-                    ],
-                    [
-                        'content' => 'By the time you arrive tomorrow, we ______ the entire project.',
-                        'correct' => 'B',
-                        'answers' => ['will finish', 'will have finished', 'finished', 'are finishing'],
-                    ],
-                    [
-                        'content' => 'Hardly ______ home when the electricity went out.',
-                        'correct' => 'A',
-                        'answers' => ['had I arrived', 'I arrived', 'did I arrive', 'I had arrived'],
-                    ],
-                    [
-                        'content' => 'She suggested that he ______ a doctor immediately.',
-                        'correct' => 'D',
-                        'answers' => ['sees', 'saw', 'is seeing', 'see'],
-                    ],
-                    [
-                        'content' => 'Unless you ______ your reservation in advance, you won\'t get a table.',
-                        'correct' => 'B',
-                        'answers' => ['don\'t make', 'make', 'made', 'will make'],
-                    ],
-                ],
+                'time_limit_seconds' => 2400,
+                'category' => 'Tiếng Anh',
+                'tag' => 'Grammar & Vocab',
+                'icon' => 'Languages',
+                'badge' => 'IELTS/THPT',
             ],
             [
-                'title' => 'Business English & Workplace Communication',
-                'description' => 'Từ vựng và mẫu câu giao tiếp tiếng Anh công sở, viết email chuyên nghiệp và đàm phán thương mại.',
-                'category' => 'Ngoại ngữ',
-                'tag' => 'Thương mại',
-                'difficulty' => 'medium',
-                'is_public' => true,
-                'status' => 'published',
-                'time_limit_seconds' => 600,
-                'icon' => 'BIZ',
-                'badge' => 'ENG',
-                'questions' => [
-                    [
-                        'content' => 'What is the formal opening phrase commonly used in business emails when you don\'t know the recipient\'s name?',
-                        'correct' => 'A',
-                        'answers' => ['Dear Sir or Madam,', 'Hey there,', 'Hi friend,', 'To my boss,'],
-                    ],
-                    [
-                        'content' => 'Choose the professional phrase for "Tôi muốn hoãn cuộc họp lại":',
-                        'correct' => 'C',
-                        'answers' => ['I want to destroy the meeting', 'I stop the meeting now', 'I would like to postpone the meeting', 'I kick the meeting away'],
-                    ],
-                    [
-                        'content' => 'What does "KPI" stand for in business operations?',
-                        'correct' => 'B',
-                        'answers' => ['Key Person Index', 'Key Performance Indicator', 'Knowledge Process Integration', 'Key Product Investment'],
-                    ],
-                    [
-                        'content' => 'Fill in the blank: "Please find attached our latest price ______ for your review."',
-                        'correct' => 'D',
-                        'answers' => ['quote-less', 'quoting', 'quoted', 'quotation'],
-                    ],
-                    [
-                        'content' => 'Which phrase means "to reach an agreement during negotiation"?',
-                        'correct' => 'A',
-                        'answers' => ['To strike a deal', 'To break the bank', 'To call the shots', 'To bite the bullet'],
-                    ],
-                ],
-            ],
-            [
-                'title' => 'TOEIC Test Prep: Essential Practice & Collocations',
-                'description' => 'Bộ đề luyện tập từ vựng, ngữ pháp Part 5 & 6 thường gặp trong kỳ thi TOEIC quốc tế.',
-                'category' => 'Ngoại ngữ',
-                'tag' => 'TOEIC',
-                'difficulty' => 'easy',
-                'is_public' => true,
-                'status' => 'published',
-                'time_limit_seconds' => 500,
-                'icon' => 'TOEIC',
-                'badge' => 'EN',
-                'questions' => [
-                    [
-                        'content' => 'The manager requested that all employees submit their monthly reports ______ Friday afternoon.',
-                        'correct' => 'B',
-                        'answers' => ['until', 'by', 'since', 'for'],
-                    ],
-                    [
-                        'content' => 'Due to severe weather conditions, flight departures have been ______ delayed.',
-                        'correct' => 'A',
-                        'answers' => ['temporarily', 'temporary', 'temporize', 'temporariness'],
-                    ],
-                    [
-                        'content' => 'All passengers are reminded to keep their personal belongings ______ at all times.',
-                        'correct' => 'C',
-                        'answers' => ['attend', 'attending', 'attended', 'attendant'],
-                    ],
-                    [
-                        'content' => 'The company offers an attractive salary package ______ comprehensive healthcare benefits.',
-                        'correct' => 'D',
-                        'answers' => ['along', 'instead of', 'except', 'along with'],
-                    ],
-                    [
-                        'content' => 'Customer satisfaction is our top ______ at QuizFlex Corporation.',
-                        'correct' => 'A',
-                        'answers' => ['priority', 'prior', 'prioritize', 'priorities'],
-                    ],
-                ],
-            ],
-            [
-                'title' => 'Khám phá Vũ trụ & Hệ Mặt Trời',
-                'description' => 'Hành trình thú vị khám phá các hành tinh, các vì sao và những sự kiện thiên văn kỳ vĩ.',
-                'category' => 'Thiên văn học',
-                'tag' => 'Vũ trụ',
+                'author_email' => 'co.quynhnga@quizflex.vn',
+                'title' => 'Đề kiểm tra Định kỳ: Phrasal Verbs & Collocations Master',
+                'description' => 'Thử thách 100% thành thạo cụm động từ và kết hợp từ thông dụng trong các bài đọc hiểu học thuật.',
+                'subject_code' => 'english',
+                'grade_code' => 'grade_12',
                 'difficulty' => 'hard',
-                'is_public' => true,
-                'status' => 'published',
-                'time_limit_seconds' => 600,
-                'icon' => 'SPACE',
-                'badge' => 'UNIVERSE',
-                'questions' => [
-                    [
-                        'content' => 'Hành tinh nào trong Hệ Mặt Trời được mệnh danh là "Hành tinh đỏ"?',
-                        'correct' => 'D',
-                        'answers' => ['Sao Kim', 'Sao Thủy', 'Sao Mộc', 'Sao Hỏa'],
-                    ],
-                    [
-                        'content' => 'Hành tinh nào có kích thước và khối lượng lớn nhất trong Hệ Mặt Trời?',
-                        'correct' => 'A',
-                        'answers' => ['Sao Mộc', 'Sao Thổ', 'Sao Thiên Vương', 'Sao Hải Vương'],
-                    ],
-                    [
-                        'content' => 'Thiên thể nào nằm ở vị trí trung tâm, cung cấp nhiệt lượng và ánh sáng duy trì sự sống cho Hệ Mặt Trời?',
-                        'correct' => 'B',
-                        'answers' => ['Trái Đất', 'Mặt Trời', 'Mặt Trăng', 'Sao Bắc Cực'],
-                    ],
-                    [
-                        'content' => 'Trái Đất của chúng ta mất khoảng bao nhiêu ngày để hoàn thành một chu kỳ quay quanh Mặt Trời?',
-                        'correct' => 'C',
-                        'answers' => ['30 ngày', '360 ngày', '365 ngày (hoặc 366 ngày năm nhuận)', '24 ngày'],
-                    ],
-                    [
-                        'content' => 'Nhà du hành vũ trụ nào là người đầu tiên đặt chân lên bề mặt Mặt Trăng vào năm 1969?',
-                        'correct' => 'A',
-                        'answers' => ['Neil Armstrong', 'Yuri Gagarin', 'Buzz Aldrin', 'Alan Shepard'],
-                    ],
-                    [
-                        'content' => 'Hiện tượng thiên văn xảy ra khi Mặt Trăng đi vào giữa Trái Đất và Mặt Trời, che khuất một phần hoặc toàn bộ ánh sáng Mặt Trời gọi là gì?',
-                        'correct' => 'B',
-                        'answers' => ['Nguyệt thực', 'Nhật thực', 'Sao băng', 'Hố đen'],
-                    ],
-                ],
+                'time_limit_seconds' => 1800,
+                'category' => 'Tiếng Anh',
+                'tag' => 'Advanced English',
+                'icon' => 'Award',
+                'badge' => 'Master',
+            ],
+
+            // =========================================================================
+            // 3. THẦY TRẦN QUỐC BẢO (VẬT LÝ)
+            // =========================================================================
+            [
+                'author_email' => 'thay.quocbao@quizflex.vn',
+                'title' => 'Tổng ôn Vật Lý 12: Dao động cơ & Dòng điện xoay chiều',
+                'description' => 'Bài kiểm tra đánh giá năng lực toàn diện kiến thức học kỳ 1 môn Vật lý lớp 12.',
+                'subject_code' => 'physics',
+                'grade_code' => 'grade_12',
+                'difficulty' => 'medium',
+                'time_limit_seconds' => 3000,
+                'category' => 'Vật lý',
+                'tag' => 'Vật Lý 12',
+                'icon' => 'Atom',
+                'badge' => 'Vật Lý Pro',
             ],
             [
-                'title' => 'Ôn thi THPT Quốc Gia - Hóa Học Chuyên sâu',
-                'description' => 'Bộ câu hỏi tổng hợp kiến thức Hóa học hữu cơ, vô cơ và các dạng bài tập este, kim loại.',
+                'author_email' => 'thay.quocbao@quizflex.vn',
+                'title' => 'Đề luyện thi Cấp tốc: Sóng ánh sáng & Hạt nhân nguyên tử',
+                'description' => 'Bộ câu hỏi chuẩn định dạng mới bám sát các dạng bài tập thực nghiệm vật lý.',
+                'subject_code' => 'physics',
+                'grade_code' => 'grade_12',
+                'difficulty' => 'easy',
+                'time_limit_seconds' => 2400,
+                'category' => 'Vật lý',
+                'tag' => 'Ôn thi cấp tốc',
+                'icon' => 'Zap',
+                'badge' => 'Cơ bản - Vận dụng',
+            ],
+
+            // =========================================================================
+            // 4. LÊ THANH HÀ (HÓA HỌC & SINH HỌC)
+            // =========================================================================
+            [
+                'author_email' => 'lethanhha@gmail.com',
+                'title' => 'Chuyên đề Hóa học 12: Este - Lipit & Cacbohiđrat',
+                'description' => 'Hệ thống câu hỏi lý thuyết và bài toán xà phòng hóa este đặc sắc.',
+                'subject_code' => 'chemistry',
+                'grade_code' => 'grade_12',
+                'difficulty' => 'medium',
+                'time_limit_seconds' => 2400,
                 'category' => 'Hóa học',
-                'tag' => 'THPT QG',
-                'difficulty' => 'hard',
-                'is_public' => true,
-                'status' => 'published',
-                'time_limit_seconds' => 900,
-                'icon' => 'CHEM',
-                'badge' => 'HOA',
-                'questions' => [
-                    [
-                        'content' => 'Chất nào sau đây là este có mùi thơm đặc trưng của chuối chín?',
-                        'correct' => 'A',
-                        'answers' => ['Isoamyl acetat', 'Ethyl acetat', 'Benzyl acetat', 'Methyl fomat'],
-                    ],
-                    [
-                        'content' => 'Kim loại nào sau đây có tính dẫn điện và dẫn nhiệt tốt nhất trong tất cả các kim loại?',
-                        'correct' => 'C',
-                        'answers' => ['Vàng (Au)', 'Đồng (Cu)', 'Bạc (Ag)', 'Nhôm (Al)'],
-                    ],
-                    [
-                        'content' => 'Phương pháp làm mềm nước cứng tạm thời đơn giản nhất bằng cách đun nóng là dựa trên phản ứng phân hủy muối nào?',
-                        'correct' => 'B',
-                        'answers' => ['Muối Clorua', 'Muối Bicarbonat (HCO3-)', 'Muối Sulfat', 'Muối Nitrat'],
-                    ],
-                    [
-                        'content' => 'Thủy ngân (Hg) rơi vãi khi nhiệt kế vỡ có thể được thu gom an toàn bằng cách rắc chất bột nào sau đây?',
-                        'correct' => 'D',
-                        'answers' => ['Bột vôi sống', 'Bột cát', 'Bột muối ăn', 'Bột lưu huỳnh (S)'],
-                    ],
-                    [
-                        'content' => 'Dung dịch làm quỳ tím chuyển sang màu đỏ là dung dịch nào sau đây?',
-                        'correct' => 'A',
-                        'answers' => ['Axit Axetic (CH3COOH)', 'Amoniac (NH3)', 'Anilin (C6H5NH2)', 'Glucozơ'],
-                    ],
-                ],
+                'tag' => 'Hóa Hữu cơ',
+                'icon' => 'FlaskConical',
+                'badge' => 'Hóa Học 12',
             ],
             [
-                'title' => 'Kinh tế Học & Tài chính Doanh nghiệp',
-                'description' => 'Kiểm tra hiểu biết về các nguyên lý kinh tế vi mô, vĩ mô và tài chính quản trị.',
-                'category' => 'Kinh tế',
-                'tag' => 'Tài chính',
+                'author_email' => 'lethanhha@gmail.com',
+                'title' => 'Sinh học 12: Cơ chế di truyền & Biến dị cấp độ phân tử',
+                'description' => 'Đề kiểm tra trọng tâm về ADN, ARN, Protein và quy luật di truyền Mendel.',
+                'subject_code' => 'biology',
+                'grade_code' => 'grade_12',
                 'difficulty' => 'medium',
-                'is_public' => true,
-                'status' => 'published',
-                'time_limit_seconds' => 600,
-                'icon' => 'ECO',
-                'badge' => 'FIN',
-                'questions' => [
-                    [
-                        'content' => 'Khi giá của một hàng hóa tăng lên, theo Quy luật Cung Cầu, lượng cầu của người tiêu dùng đối với hàng hóa đó thường sẽ biến động thế nào?',
-                        'correct' => 'B',
-                        'answers' => ['Tăng lên', 'Giảm đi', 'Không thay đổi', 'Bằng 0'],
-                    ],
-                    [
-                        'content' => 'Thuật ngữ GDP trong kinh tế học vĩ mô là viết tắt của cụm từ tiếng Anh nào?',
-                        'correct' => 'A',
-                        'answers' => ['Gross Domestic Product', 'General Domestic Performance', 'Gross Development Price', 'Global Domestic Product'],
-                    ],
-                    [
-                        'content' => 'Hiện tượng mức giá chung của nền kinh tế gia tăng liên tục theo thời gian làm giảm sức mua của đồng tiền gọi là gì?',
-                        'correct' => 'C',
-                        'answers' => ['Suy thoái', 'Thâm hụt', 'Lạm phát', 'Khủng hoảng'],
-                    ],
-                    [
-                        'content' => 'Ngân hàng Trung ương điều chỉnh lãi suất tái chiết khấu nhằm mục đích chính nào?',
-                        'correct' => 'D',
-                        'answers' => ['Thu thuế thu nhập', 'Quản lý giá xăng dầu', 'Tăng số lượng công ty', 'Điều tiết cung tiền và kiểm soát lạm phát'],
-                    ],
-                ],
+                'time_limit_seconds' => 2400,
+                'category' => 'Sinh học',
+                'tag' => 'Di truyền học',
+                'icon' => 'Dna',
+                'badge' => 'Sinh Học 12',
             ],
+
+            // =========================================================================
+            // 5. NGUYỄN DUY ANH (TIN HỌC / CNTT)
+            // =========================================================================
             [
-                'title' => 'Văn học Việt Nam Hiện đại & Kinh điển',
-                'description' => 'Cùng ôn lại các tác phẩm văn học xuất sắc trong chương trình ngữ văn và nền văn học nước nhà.',
-                'category' => 'Văn học',
-                'tag' => 'Ngữ văn',
+                'author_email' => 'nguyenduyanh@gmail.com',
+                'title' => 'Kiểm tra Kiến thức: Cơ sở dữ liệu SQL & Giải thuật lập trình',
+                'description' => 'Đánh giá kỹ năng lập trình cấu trúc dữ liệu, thuật toán sắp xếp và truy vấn cơ sở dữ liệu quan hệ.',
+                'subject_code' => 'informatics',
+                'grade_code' => 'grade_12',
+                'difficulty' => 'medium',
+                'time_limit_seconds' => 2700,
+                'category' => 'Tin học',
+                'tag' => 'Lập trình & CSDL',
+                'icon' => 'Laptop',
+                'badge' => 'IT Expert',
+            ],
+
+            // =========================================================================
+            // 6. NGUYỄN KHÁNH LINH (KỸ NĂNG & TIẾNG ANH)
+            // =========================================================================
+            [
+                'author_email' => 'nguyenkhanhlinh@gmail.com',
+                'title' => 'Tự luyện Kỹ năng: Quản lý thời gian & Tư duy phản biện',
+                'description' => 'Trắc nghiệm rèn luyện phương pháp học tập hiệu quả, Pomodoro và kỹ năng đọc hiểu học thuật.',
+                'subject_code' => 'skills',
+                'grade_code' => 'other_gen',
                 'difficulty' => 'easy',
-                'is_public' => true,
-                'status' => 'published',
-                'time_limit_seconds' => 600,
-                'icon' => 'LIT',
-                'badge' => 'VAN',
-                'questions' => [
-                    [
-                        'content' => 'Tác phẩm kiệt tác "Truyện Kiều" của Đại thi hào Nguyễn Du ban đầu có tên gốc là gì?',
-                        'correct' => 'A',
-                        'answers' => ['Đoạn Trường Tân Thanh', 'Kim Vân Kiều Truyện', 'Thanh Hiên Thi Tập', 'Nam Âm Tuyệt Xướng'],
-                    ],
-                    [
-                        'content' => 'Hình ảnh nhân vật Tràng đưa cô vợ nhặt về nhà trong cảnh đói thê thảm năm 1945 thuộc tác phẩm nào của nhà văn Kim Lân?',
-                        'correct' => 'C',
-                        'answers' => ['Làng', 'Chí Phèo', 'Vợ Nhặt', 'Tắt Đèn'],
-                    ],
-                    [
-                        'content' => 'Bài thơ "Tây Tiến" khắc họa hình ảnh người lính hào hoa, dũng cảm là sáng tác nổi tiếng của nhà thơ nào?',
-                        'correct' => 'A',
-                        'answers' => ['Quang Dũng', 'Tố Hữu', 'Chế Lan Viên', 'Huy Cận'],
-                    ],
-                    [
-                        'content' => 'Nhân vật nghệ sĩ phếp ảnh Phùng và chiếc thuyền ngoài xa rực rỡ trong sương sớm là nhân vật chính trong tác phẩm của ai?',
-                        'correct' => 'D',
-                        'answers' => ['Nam Cao', 'Nguyễn Tuân', 'Nguyễn Minh Châu', 'Nguyễn Thi'],
-                    ],
-                ],
+                'time_limit_seconds' => 1200,
+                'category' => 'Kỹ năng sống',
+                'tag' => 'Kỹ năng mềm',
+                'icon' => 'Lightbulb',
+                'badge' => 'Soft Skills',
+            ],
+
+            // =========================================================================
+            // 7. PHAN MINH KHÔI (HÓA - SINH NÂNG CAO)
+            // =========================================================================
+            [
+                'author_email' => 'phanminhkhoi@gmail.com',
+                'title' => 'Luyện tập Khối B: Kim loại kiềm & Di truyền quần thể',
+                'description' => 'Bộ câu hỏi tự luyện của học sinh chuyên Hóa - Sinh chuẩn bị cho kỳ thi tuyển sinh Đại học Y Dược.',
+                'subject_code' => 'chemistry',
+                'grade_code' => 'grade_12',
+                'difficulty' => 'hard',
+                'time_limit_seconds' => 2400,
+                'category' => 'Hóa học',
+                'tag' => 'Khối B00',
+                'icon' => 'Flame',
+                'badge' => 'Luyện thi ĐH',
+            ],
+
+            // =========================================================================
+            // 8. VŨ MINH QUÂN (HỌC SINH 12A1)
+            // =========================================================================
+            [
+                'author_email' => 'vuminhquan@gmail.com',
+                'title' => 'Tự học Nhóm 12A1: Toán mũ - Logarit & Sóng âm Vật lý',
+                'description' => 'Đề ôn tập tuần của nhóm học tập lớp 12A1.',
+                'subject_code' => 'math',
+                'grade_code' => 'grade_12',
+                'difficulty' => 'easy',
+                'time_limit_seconds' => 1800,
+                'category' => 'Toán học',
+                'tag' => 'Nhóm 12A1',
+                'icon' => 'Users',
+                'badge' => 'Tự học',
+            ],
+
+            // =========================================================================
+            // 9. ĐẶNG THÙY LINH (HỌC SINH 12A3 - KHXH)
+            // =========================================================================
+            [
+                'author_email' => 'dangthuylinh@gmail.com',
+                'title' => 'Tổng kết Văn học Hiện đại & Lịch sử Kháng chiến 1945-1975',
+                'description' => 'Bộ câu hỏi ôn tập chuyên đề Ngữ văn và Lịch sử Việt Nam giai đoạn cách mạng.',
+                'subject_code' => 'literature',
+                'grade_code' => 'grade_12',
+                'difficulty' => 'medium',
+                'time_limit_seconds' => 2400,
+                'category' => 'Ngữ văn',
+                'tag' => 'Khối C00',
+                'icon' => 'BookOpen',
+                'badge' => 'Khoa học Xã hội',
+            ],
+
+            // =========================================================================
+            // 10. ADMIN TRẦN HOÀNG LONG (HỆ THỐNG)
+            // =========================================================================
+            [
+                'author_email' => 'admin@quizflex.vn',
+                'title' => 'Đề Khảo sát Toàn diện Kiến thức Khoa học & Công nghệ Quốc gia',
+                'description' => 'Bài thi tổng hợp kiến thức đa lĩnh vực: Tin học, An toàn mạng, Kỹ năng số và Tư duy logic dành cho cộng đồng học viên QuizFlex.',
+                'subject_code' => 'informatics',
+                'grade_code' => 'other_gen',
+                'difficulty' => 'medium',
+                'time_limit_seconds' => 3600,
+                'category' => 'Tổng hợp',
+                'tag' => 'Toàn quốc',
+                'icon' => 'Globe',
+                'badge' => 'Official QuizFlex',
             ],
         ];
 
-        foreach ($quizzes as $quizData) {
-            $questions = $quizData['questions'];
-            unset($quizData['questions']);
+        $createdQuizzes = [];
+
+        foreach ($quizzesDefinition as $quizDef) {
+            $author = $users->get($quizDef['author_email']);
+            if (!$author) {
+                continue;
+            }
+
+            $subject = Subject::where('code', $quizDef['subject_code'])->first() ?? Subject::first();
+            $grade = Grade::where('code', $quizDef['grade_code'])->first();
 
             $quiz = Quiz::updateOrCreate(
-                ['title' => $quizData['title']],
-                array_merge($quizData, ['user_id' => $user->id])
+                [
+                    'user_id' => $author->id,
+                    'title' => $quizDef['title'],
+                ],
+                [
+                    'description' => $quizDef['description'],
+                    'category' => $quizDef['category'],
+                    'subject_id' => $subject->id,
+                    'grade_id' => $grade?->id,
+                    'education_level_id' => $grade?->education_level_id ?? $subject->education_level_id,
+                    'tag' => $quizDef['tag'],
+                    'difficulty' => $quizDef['difficulty'],
+                    'creation_mode' => 'manual',
+                    'status' => 'published',
+                    'review_status' => 'approved',
+                    'is_public' => true,
+                    'time_limit_seconds' => $quizDef['time_limit_seconds'],
+                    'icon' => $quizDef['icon'],
+                    'badge' => $quizDef['badge'],
+                ]
             );
 
-            // Xóa các câu hỏi cũ để tránh trùng lặp nếu chạy seeder nhiều lần
-            $quiz->questions()->delete();
+            // =========================================================================
+            // MIX CÂU HỎI: LẤY CÂU HỎI TỪ NGÂN HÀNG + KHO CÁ NHÂN CỦA TÁC GIẢ
+            // =========================================================================
+            // 1. Lấy câu hỏi cá nhân của tác giả
+            $personalQuestions = Question::where('user_id', $author->id)
+                ->whereNull('origin_question_id')
+                ->where('is_public', false)
+                ->get();
 
-            foreach ($questions as $questionIndex => $questionData) {
-                $answers = $questionData['answers'];
-                $correct = $questionData['correct'];
+            // 2. Lấy câu hỏi công khai từ Ngân hàng câu hỏi
+            $bankQuestionsQuery = Question::where('is_public', true)
+                ->where('subject_id', $subject->id);
 
-                $question = $quiz->questions()->create([
-                    'content' => $questionData['content'],
-                    'type' => 'single_choice',
-                    'order' => $questionIndex,
-                    'points' => 10,
+            if ($bankQuestionsQuery->count() < 4) {
+                $bankQuestions = Question::where('is_public', true)->inRandomOrder()->limit(6)->get();
+            } else {
+                $bankQuestions = $bankQuestionsQuery->inRandomOrder()->limit(6)->get();
+            }
+
+            $mixedQuestions = collect();
+
+            // Đưa câu hỏi cá nhân vào trước (2-4 câu)
+            if ($personalQuestions->isNotEmpty()) {
+                $mixedQuestions = $mixedQuestions->merge($personalQuestions->take(4));
+            }
+
+            // Đưa câu hỏi từ Ngân hàng vào (4-6 câu)
+            if ($bankQuestions->isNotEmpty()) {
+                $mixedQuestions = $mixedQuestions->merge($bankQuestions->take(6));
+            }
+
+            // Nếu vẫn ít hơn 5 câu, bổ sung thêm câu hỏi công khai bất kỳ
+            if ($mixedQuestions->count() < 5) {
+                $fallbackBank = Question::where('is_public', true)
+                    ->whereNotIn('id', $mixedQuestions->pluck('id'))
+                    ->limit(5)
+                    ->get();
+                $mixedQuestions = $mixedQuestions->merge($fallbackBank);
+            }
+
+            $syncData = [];
+            foreach ($mixedQuestions->values() as $idx => $q) {
+                $syncData[$q->id] = [
+                    'order' => $idx,
+                    'points' => 10.0,
+                ];
+            }
+
+            $quiz->questions()->sync($syncData);
+            $createdQuizzes[] = $quiz;
+        }
+
+        $this->command->info('Đã khởi tạo thành công ' . count($createdQuizzes) . ' bài Quiz mix câu hỏi Ngân hàng + Kho cá nhân!');
+
+        // =========================================================================
+        // TẠO LƯỢT LÀM BÀI MẪU (QUIZ ATTEMPTS) CHO CÁC QUIZ
+        // =========================================================================
+        $allUsersList = $users->values();
+        $attemptCount = 0;
+
+        foreach ($createdQuizzes as $quiz) {
+            $quiz->loadMissing('questions.answers');
+            $questions = $quiz->questions;
+            if ($questions->isEmpty()) {
+                continue;
+            }
+
+            // Tạo 4-6 lượt làm bài từ các học sinh/người dùng khác nhau
+            $randomUsers = $allUsersList->where('id', '!=', $quiz->user_id)->random(min(5, $allUsersList->count() - 1));
+
+            foreach ($randomUsers as $studentUser) {
+                $correctCount = 0;
+                $answersSnapshot = [];
+                $totalPoints = $questions->count() * 10;
+
+                foreach ($questions as $q) {
+                    $answers = $q->answers;
+                    $correctAnswer = $answers->firstWhere('is_correct', true);
+
+                    // Tỉ lệ trả lời đúng thực tế 70% - 90%
+                    $isCorrect = (rand(1, 100) <= 80);
+                    if ($isCorrect && $correctAnswer) {
+                        $selectedId = $correctAnswer->id;
+                        $correctCount++;
+                    } else {
+                        $wrongAnswer = $answers->firstWhere('is_correct', false);
+                        $selectedId = $wrongAnswer ? $wrongAnswer->id : ($answers->first()?->id);
+                    }
+
+                    $answersSnapshot[] = [
+                        'question_id' => $q->id,
+                        'selected_answer_ids' => $selectedId ? [$selectedId] : [],
+                        'is_correct' => $isCorrect,
+                    ];
+                }
+
+                $score = round(($correctCount / max(1, $questions->count())) * 100, 1);
+                $timeSpent = rand(300, 1800);
+                $startedAt = now()->subDays(rand(1, 10))->subHours(rand(1, 20));
+
+                QuizAttempt::create([
+                    'user_id' => $studentUser->id,
+                    'quiz_id' => $quiz->id,
+                    'room_id' => null,
+                    'assignment_id' => null,
+                    'mode' => 'practice',
+                    'attempt_number' => 1,
+                    'score' => $score,
+                    'total_points' => $totalPoints,
+                    'time_spent_seconds' => $timeSpent,
+                    'answers_snapshot' => $answersSnapshot,
+                    'status' => 'completed',
+                    'started_at' => $startedAt,
+                    'finished_at' => (clone $startedAt)->addSeconds($timeSpent),
+                    'submitted_at' => (clone $startedAt)->addSeconds($timeSpent),
+                    'xp_earned' => (int) ($score * 0.5),
                 ]);
 
-                foreach ($answers as $answerIndex => $answerContent) {
-                    $question->answers()->create([
-                        'content' => $answerContent,
-                        'is_correct' => chr(65 + $answerIndex) === $correct,
-                        'order' => $answerIndex,
-                    ]);
-                }
+                $attemptCount++;
             }
         }
+
+        $this->command->info("Đã khởi tạo thành công {$attemptCount} lượt làm bài thi chuẩn cho các Quiz!");
     }
 }

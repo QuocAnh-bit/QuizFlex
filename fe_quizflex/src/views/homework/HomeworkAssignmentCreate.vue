@@ -229,7 +229,7 @@ isLoading.value = true
   try {
     const [roomData, quizData] = await Promise.all([
       homeworkApi.getHomeworkRoom(roomId.value),
-      quizzesApi.list({ per_page: 100 }),
+      quizzesApi.list({ mine: 1, per_page: 100 }),
     ])
 
     room.value = roomData
