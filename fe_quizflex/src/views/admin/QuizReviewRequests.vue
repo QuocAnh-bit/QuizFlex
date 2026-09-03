@@ -21,15 +21,15 @@
         <div class="flex flex-wrap items-center gap-3">
           <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-center">
             <span class="text-[10px] font-bold uppercase text-slate-500">Chờ duyệt</span>
-            <p class="text-xl font-black text-amber-600">{{ stats.pending }}</p>
+            <div v-if="isLoading" class="mx-auto mt-1 h-5 w-10 animate-pulse rounded bg-amber-200"></div><p v-else class="text-xl font-black text-amber-600">{{ stats.pending }}</p>
           </div>
           <div class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-center">
             <span class="text-[10px] font-bold uppercase text-slate-500">Đã duyệt</span>
-            <p class="text-xl font-black text-emerald-600">{{ stats.approved }}</p>
+            <div v-if="isLoading" class="mx-auto mt-1 h-5 w-10 animate-pulse rounded bg-emerald-200"></div><p v-else class="text-xl font-black text-emerald-600">{{ stats.approved }}</p>
           </div>
           <div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-center">
             <span class="text-[10px] font-bold uppercase text-slate-500">Bị từ chối</span>
-            <p class="text-xl font-black text-rose-600">{{ stats.rejected }}</p>
+            <div v-if="isLoading" class="mx-auto mt-1 h-5 w-10 animate-pulse rounded bg-rose-200"></div><p v-else class="text-xl font-black text-rose-600">{{ stats.rejected }}</p>
           </div>
           <button
             type="button"
@@ -811,7 +811,7 @@ const { beginTask, endTask } = useAppLoading()
 const showToast = inject('showToast')
 const showConfirm = inject('showConfirm')
 
-const isLoading = ref(false)
+const isLoading = ref(true)
 const isProcessing = ref(false)
 const requests = ref([])
 const selectedIds = ref([])

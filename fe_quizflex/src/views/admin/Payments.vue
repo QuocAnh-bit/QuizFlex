@@ -31,7 +31,8 @@
         </div>
         <div class="min-w-0">
           <span class="text-[9px] font-bold uppercase tracking-wide text-slate-400 block truncate">{{ kpi.label }}</span>
-          <strong class="text-sm font-black block truncate" :class="kpi.valueColor || 'text-slate-900'">{{ kpi.value }}</strong>
+          <span v-if="isLoading" class="mt-1 block h-4 w-14 animate-pulse rounded bg-slate-200"></span>
+          <strong v-else class="text-sm font-black block truncate" :class="kpi.valueColor || 'text-slate-900'">{{ kpi.value }}</strong>
         </div>
       </div>
     </div>
@@ -47,12 +48,14 @@
           </div>
           <div class="text-right">
             <span class="text-[10px] font-bold uppercase text-slate-400 block">Cao nhất trong kỳ</span>
-            <b class="text-sm font-black text-[#7C3AED]">{{ formatPrice(maxDailyRevenue) }}</b>
+            <span v-if="isLoading" class="ml-auto mt-1 block h-4 w-16 animate-pulse rounded bg-purple-100"></span>
+            <b v-else class="text-sm font-black text-[#7C3AED]">{{ formatPrice(maxDailyRevenue) }}</b>
           </div>
         </div>
 
         <div class="rounded-xl border border-slate-100 bg-slate-50/50 p-4">
-          <div v-if="dailyRevenue.length" class="flex items-end gap-1.5 sm:gap-2 h-48">
+          <div v-if="isLoading" class="grid h-48 place-items-center text-xs text-slate-400">Đang tải biểu đồ...</div>
+          <div v-else-if="dailyRevenue.length" class="flex items-end gap-1.5 sm:gap-2 h-48">
             <div
               v-for="day in dailyRevenue"
               :key="day.date"
@@ -73,8 +76,10 @@
         <div class="grid grid-cols-3 gap-3">
           <div class="rounded-xl border border-slate-100 bg-slate-50 p-3 space-y-0.5">
             <span class="text-[10px] font-bold uppercase text-slate-400 block">Doanh thu tháng này</span>
-            <strong class="text-sm font-black text-slate-900 block">{{ formatPrice(monthRevenue) }}</strong>
-            <span class="inline-flex items-center gap-1 text-[10px] font-bold" :class="monthGrowth >= 0 ? 'text-emerald-600' : 'text-red-600'">
+            <span v-if="isLoading" class="mt-1 block h-4 w-16 animate-pulse rounded bg-slate-200"></span>
+            <strong v-else class="text-sm font-black text-slate-900 block">{{ formatPrice(monthRevenue) }}</strong>
+            <span v-if="isLoading" class="mt-1 block h-3 w-10 animate-pulse rounded bg-slate-200"></span>
+            <span v-else class="inline-flex items-center gap-1 text-[10px] font-bold" :class="monthGrowth >= 0 ? 'text-emerald-600' : 'text-red-600'">
               <ArrowUpRight v-if="monthGrowth >= 0" class="h-3 w-3" />
               <ArrowDownRight v-else class="h-3 w-3" />
               {{ Math.abs(monthGrowth).toFixed(1) }}%
@@ -82,13 +87,16 @@
           </div>
           <div class="rounded-xl border border-slate-100 bg-slate-50 p-3 space-y-0.5">
             <span class="text-[10px] font-bold uppercase text-slate-400 block">Giá trị đơn TB</span>
-            <strong class="text-sm font-black text-slate-900 block">{{ formatPrice(averageOrderValue) }}</strong>
+            <span v-if="isLoading" class="mt-1 block h-4 w-16 animate-pulse rounded bg-slate-200"></span>
+            <strong v-else class="text-sm font-black text-slate-900 block">{{ formatPrice(averageOrderValue) }}</strong>
             <span class="text-[10px] text-slate-500 font-medium block">Mỗi đơn thành công</span>
           </div>
           <div class="rounded-xl border border-slate-100 bg-slate-50 p-3 space-y-0.5">
             <span class="text-[10px] font-bold uppercase text-slate-400 block">Tỷ lệ hủy / thất bại</span>
-            <strong class="text-sm font-black text-red-600 block">{{ failureRate.toFixed(1) }}%</strong>
-            <span class="text-[10px] text-slate-500 font-medium block">{{ failedCount }} lỗi · {{ refundedCount }} hoàn</span>
+            <span v-if="isLoading" class="mt-1 block h-4 w-12 animate-pulse rounded bg-red-100"></span>
+            <strong v-else class="text-sm font-black text-red-600 block">{{ failureRate.toFixed(1) }}%</strong>
+            <span v-if="isLoading" class="mt-1 block h-3 w-20 animate-pulse rounded bg-slate-200"></span>
+            <span v-else class="text-[10px] text-slate-500 font-medium block">{{ failedCount }} lỗi · {{ refundedCount }} hoàn</span>
           </div>
         </div>
       </article>
@@ -352,7 +360,7 @@ import {
 const usersList = ref([])
 const rawTransactions = ref([])
 const selectedUser = ref(null)
-const isLoading = ref(false)
+const isLoading = ref(true)
 const searchQuery = ref('')
 const sortBy = ref('amount_desc')
 const historyStatusFilter = ref('all')

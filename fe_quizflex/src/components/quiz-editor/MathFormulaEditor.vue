@@ -31,6 +31,8 @@ const focusMathField = async () => {
   if (!mathField.value) return
   mathField.value.value = draft.value
   mathField.value.mathVirtualKeyboardPolicy = 'manual'
+  // Không dùng menu mặc định của MathLive trong QuizFlex; chỉ giữ nút bàn phím toán.
+  mathField.value.menuItems = []
   mathField.value.focus()
   window.mathVirtualKeyboard?.show({ animate: true })
 }

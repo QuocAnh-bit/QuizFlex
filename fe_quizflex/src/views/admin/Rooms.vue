@@ -28,7 +28,8 @@
       <article class="card p-5 card-hover flex items-start justify-between gap-3">
         <div class="space-y-1">
           <span class="text-[10px] font-bold uppercase text-slate-400 block">Tổng số phòng bài tập</span>
-          <strong class="text-2xl font-black text-slate-900 block">{{ formatNumber(stats.homework_total) }}</strong>
+          <div v-if="statsLoading" class="h-7 w-16 animate-pulse rounded-md bg-slate-200"></div>
+          <strong v-else class="text-2xl font-black text-slate-900 block">{{ formatNumber(stats.homework_total) }}</strong>
           <span class="text-[11px] text-slate-500 font-medium block">Tất cả phòng bài tập</span>
         </div>
         <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-blue-600">
@@ -39,8 +40,10 @@
       <article class="card p-5 card-hover flex items-start justify-between gap-3">
         <div class="space-y-1">
           <span class="text-[10px] font-bold uppercase text-slate-400 block">Đang hoạt động</span>
-          <strong class="text-2xl font-black text-amber-600 block">{{ formatNumber(stats.active_total) }}</strong>
-          <span class="text-[11px] text-slate-500 font-medium block">{{ stats.active_percent }}% tổng số</span>
+          <div v-if="statsLoading" class="h-7 w-12 animate-pulse rounded-md bg-amber-100"></div>
+          <strong v-else class="text-2xl font-black text-amber-600 block">{{ formatNumber(stats.active_total) }}</strong>
+          <span v-if="statsLoading" class="mt-1 block h-3 w-20 animate-pulse rounded bg-slate-100"></span>
+          <span v-else class="text-[11px] text-slate-500 font-medium block">{{ stats.active_percent }}% tổng số</span>
         </div>
         <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600">
           <Users class="h-4 w-4" />
@@ -50,7 +53,8 @@
       <article class="card p-5 card-hover flex items-start justify-between gap-3">
         <div class="space-y-1">
           <span class="text-[10px] font-bold uppercase text-slate-400 block">Số phòng bị khóa</span>
-          <strong class="text-2xl font-black text-slate-900 block">{{ formatNumber(stats.banned_total) }}</strong>
+          <div v-if="statsLoading" class="h-7 w-12 animate-pulse rounded-md bg-slate-200"></div>
+          <strong v-else class="text-2xl font-black text-slate-900 block">{{ formatNumber(stats.banned_total) }}</strong>
           <span class="text-[11px] text-slate-500 font-medium block">Đang bị khóa (banned)</span>
         </div>
         <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-purple-500/10 text-[#7C3AED]">
@@ -61,8 +65,10 @@
       <article class="card p-5 card-hover flex items-start justify-between gap-3">
         <div class="space-y-1">
           <span class="text-[10px] font-bold uppercase text-slate-400 block">Trong thùng rác</span>
-          <strong class="text-2xl font-black text-red-600 block">{{ formatNumber(stats.trash_total) }}</strong>
-          <span class="text-[11px] text-slate-500 font-medium block">{{ stats.trash_percent }}% tổng số</span>
+          <div v-if="statsLoading" class="h-7 w-12 animate-pulse rounded-md bg-red-100"></div>
+          <strong v-else class="text-2xl font-black text-red-600 block">{{ formatNumber(stats.trash_total) }}</strong>
+          <span v-if="statsLoading" class="mt-1 block h-3 w-20 animate-pulse rounded bg-slate-100"></span>
+          <span v-else class="text-[11px] text-slate-500 font-medium block">{{ stats.trash_percent }}% tổng số</span>
         </div>
         <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-red-500/10 text-red-600">
           <Trash2 class="h-4 w-4" />
@@ -486,8 +492,10 @@ const stats = reactive({
   trash_total: 0,
   trash_percent: 0,
 });
+const statsLoading = ref(true);
 
 const loadStats = async () => {
+  statsLoading.value = true;
   try {
     const data = await adminRoomsApi.getStats();
     if (data) {
@@ -502,6 +510,8 @@ const loadStats = async () => {
     }
   } catch (err) {
     console.error("Lỗi khi tải thống kê phòng bài tập:", err);
+  } finally {
+    statsLoading.value = false;
   }
 };
 
