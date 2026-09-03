@@ -7,7 +7,7 @@
       </div>
       <div class="mt-3 h-1.5 overflow-hidden rounded-full bg-slate-100"><div class="h-full rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500" :style="{ width: completionWidth }"></div></div>
     </div>
-    <nav class="flex-1 space-y-2 overflow-y-auto p-3" aria-label="Danh sách câu hỏi">
+    <nav ref="questionList" class="flex-1 space-y-2 overflow-y-auto p-3" aria-label="Danh sách câu hỏi" @dragover.prevent="autoScrollQuestions">
       <button v-for="(question, index) in questions" :key="question.id" :ref="(element) => setQuestionItemRef(element, question.id)" type="button" class="question-item group relative" :class="[invalidQuestionIds.has(question.id) ? 'question-item-invalid' : (question.id === activeQuestionId ? 'question-item-valid-active' : 'question-item-valid'), selectedQuestionIds.includes(question.id) ? 'ring-2 ring-fuchsia-400' : '', highlightQuestionIds.includes(question.id) ? 'question-item-added' : '', draggedQuestionId === question.id ? 'question-item-dragging' : '', dragTargetId === question.id ? (dropPosition === 'before' ? 'question-drop-before' : 'question-drop-after') : '']" :draggable="!selectionMode" @click="handleQuestionClick(question.id)" @dragstart="startQuestionDrag($event, question.id)" @dragover.prevent="updateQuestionDrop($event, question.id)" @drop.prevent="finishQuestionDrop(question.id)" @dragend="resetQuestionDrag" @mouseenter="showQuestionTooltip($event, question)" @mousemove="moveQuestionTooltip" @mouseleave="hideQuestionTooltip">
         <input v-if="selectionMode" type="checkbox" class="h-4 w-4 shrink-0 accent-fuchsia-600" :checked="selectedQuestionIds.includes(question.id)" tabindex="-1" aria-hidden="true" />
         <GripVertical v-else class="h-4 w-4 shrink-0 cursor-grab text-slate-300 transition group-hover:text-violet-500" aria-hidden="true" />
@@ -27,6 +27,7 @@ import MathText from '../MathText.vue'
 const props = defineProps({ questions: { type: Array, default: () => [] }, activeQuestionId: { type: [Number, String], default: null }, questionOrigins: { type: Object, default: () => ({}) }, invalidQuestionIds: { type: Set, default: () => new Set() }, selectionMode: Boolean, selectedQuestionIds: { type: Array, default: () => [] }, highlightQuestionIds: { type: Array, default: () => [] } })
 const emit = defineEmits(['select-question', 'toggle-question', 'reorder-question', 'add-question'])
 const hoveredQuestion = ref(null)
+const questionList = ref(null)
 const draggedQuestionId = ref(null)
 const dragTargetId = ref(null)
 const dropPosition = ref('after')
@@ -63,6 +64,20 @@ const updateQuestionDrop = (event, questionId) => {
   dragTargetId.value = questionId
   dropPosition.value = event.clientY < bounds.top + bounds.height / 2 ? 'before' : 'after'
   event.dataTransfer.dropEffect = 'move'
+}
+const autoScrollQuestions = (event) => {
+  if (!draggedQuestionId.value || !questionList.value) return
+  const bounds = questionList.value.getBoundingClientRect()
+  const edgeSize = Math.min(80, bounds.height * 0.22)
+  let delta = 0
+  if (event.clientY < bounds.top + edgeSize) {
+    const strength = (bounds.top + edgeSize - event.clientY) / edgeSize
+    delta = -Math.ceil(4 + 18 * Math.min(1, strength))
+  } else if (event.clientY > bounds.bottom - edgeSize) {
+    const strength = (event.clientY - (bounds.bottom - edgeSize)) / edgeSize
+    delta = Math.ceil(4 + 18 * Math.min(1, strength))
+  }
+  if (delta) questionList.value.scrollBy({ top: delta, behavior: 'auto' })
 }
 const resetQuestionDrag = () => {
   draggedQuestionId.value = null

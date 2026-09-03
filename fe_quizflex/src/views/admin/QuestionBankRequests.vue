@@ -25,7 +25,7 @@
             @click="filters.status = 'pending'; filters.priority = ''; loadRequests(true)"
           >
             <span class="text-[10px] font-medium uppercase text-slate-500 block">Chờ duyệt</span>
-            <p class="text-xl font-bold text-amber-600 leading-tight mt-0.5">{{ stats.pending }}</p>
+            <div v-if="isLoading" class="mx-auto mt-1 h-5 w-10 animate-pulse rounded bg-amber-200"></div><p v-else class="text-xl font-bold text-amber-600 leading-tight mt-0.5">{{ stats.pending }}</p>
           </div>
 
           <div
@@ -34,7 +34,7 @@
             @click="filters.status = 'approved'; filters.priority = ''; loadRequests(true)"
           >
             <span class="text-[10px] font-medium uppercase text-slate-500 block">Đã duyệt</span>
-            <p class="text-xl font-bold text-emerald-600 leading-tight mt-0.5">{{ stats.approved }}</p>
+            <div v-if="isLoading" class="mx-auto mt-1 h-5 w-10 animate-pulse rounded bg-emerald-200"></div><p v-else class="text-xl font-bold text-emerald-600 leading-tight mt-0.5">{{ stats.approved }}</p>
           </div>
 
           <div
@@ -43,7 +43,7 @@
             @click="filters.status = 'rejected'; filters.priority = ''; loadRequests(true)"
           >
             <span class="text-[10px] font-medium uppercase text-slate-500 block">Bị từ chối</span>
-            <p class="text-xl font-bold text-rose-600 leading-tight mt-0.5">{{ stats.rejected }}</p>
+            <div v-if="isLoading" class="mx-auto mt-1 h-5 w-10 animate-pulse rounded bg-rose-200"></div><p v-else class="text-xl font-bold text-rose-600 leading-tight mt-0.5">{{ stats.rejected }}</p>
           </div>
 
           <button
@@ -837,7 +837,7 @@ const showToast = inject('showToast')
 
 const requests = ref([])
 const selectedIds = ref([])
-const isLoading = ref(false)
+const isLoading = ref(true)
 const errorMessage = ref('')
 const allSubjects = ref([])
 

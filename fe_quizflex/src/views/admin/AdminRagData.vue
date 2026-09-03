@@ -9,10 +9,10 @@
         <button type="button" class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-slate-50" @click="refresh"><RefreshCw class="h-4 w-4" :class="{ 'animate-spin': isLoading }" />Làm mới</button>
       </div>
       <div class="mt-6 grid grid-cols-2 gap-3.5 xl:grid-cols-4">
-        <StatCard label="Tài liệu" :value="overview.documents" :icon="FileText" color="purple" />
-        <StatCard label="Đơn vị kiến thức" :value="overview.units" :icon="BookOpen" color="sky" />
-        <StatCard label="Đoạn kiến thức" :value="overview.chunks" :icon="Layers3" color="amber" />
-        <StatCard label="Đã embedding" :value="`${overview.embedded_chunks} / ${overview.chunks}`" :sub="`${overview.embedding_percent}% hoàn thành`" :icon="CheckCircle2" color="emerald" />
+        <StatCard label="Tài liệu" :value="overview.documents" :loading="overviewLoading" :icon="FileText" color="purple" />
+        <StatCard label="Đơn vị kiến thức" :value="overview.units" :loading="overviewLoading" :icon="BookOpen" color="sky" />
+        <StatCard label="Đoạn kiến thức" :value="overview.chunks" :loading="overviewLoading" :icon="Layers3" color="amber" />
+        <StatCard label="Đã embedding" :value="`${overview.embedded_chunks} / ${overview.chunks}`" :sub="`${overview.embedding_percent}% hoàn thành`" :loading="overviewLoading" :icon="CheckCircle2" color="emerald" />
       </div>
     </div>
 
@@ -63,12 +63,12 @@ import RagDetailPanel from '@/components/admin/RagDetailPanel.vue'
 import RagRetrievalTest from '@/components/admin/RagRetrievalTest.vue'
 
 const StatusBadge = defineComponent({ props: { status: String, kind: String }, setup: props => ({ label: () => props.kind === 'document' ? ({ pending: 'Chờ xử lý', parsed: 'Đã phân tích', chunked: 'Đã chia đoạn', embedded: 'Hoàn tất', failed: 'Có lỗi' }[props.status] || props.status) : ({ pending: 'Chờ embedding', processing: 'Đang embedding', embedded: 'Đã embedding', failed: 'Có lỗi' }[props.status] || props.status) }), template: `<span class="inline-flex rounded-lg px-2 py-1 font-bold" :class="status === 'embedded' ? 'bg-emerald-50 text-emerald-700' : status === 'failed' ? 'bg-rose-50 text-rose-700' : status === 'pending' ? 'bg-amber-50 text-amber-700' : 'bg-sky-50 text-sky-700'">{{ label() }}</span>` })
-const StatCard = defineComponent({ props: { label: String, value: [String, Number], sub: String, icon: [Object, Function], color: String }, template: `<div class="rounded-xl border border-slate-200 bg-slate-50 p-4"><div class="flex items-center gap-3"><div class="grid h-10 w-10 place-items-center rounded-lg" :class="{purple:'bg-purple-100 text-[#7C3AED]',sky:'bg-sky-100 text-sky-600',amber:'bg-amber-100 text-amber-600',emerald:'bg-emerald-100 text-emerald-600'}[color]"><component :is="icon" class="h-5 w-5" /></div><div><p class="text-xs font-semibold text-slate-500">{{ label }}</p><p class="text-2xl font-black text-slate-900">{{ value }}</p></div></div><p v-if="sub" class="mt-2 text-xs font-medium text-emerald-700">{{ sub }}</p></div>` })
+const StatCard = defineComponent({ props: { label: String, value: [String, Number], sub: String, loading: Boolean, icon: [Object, Function], color: String }, template: `<div class="rounded-xl border border-slate-200 bg-slate-50 p-4"><div class="flex items-center gap-3"><div class="grid h-10 w-10 place-items-center rounded-lg" :class="{purple:'bg-purple-100 text-[#7C3AED]',sky:'bg-sky-100 text-sky-600',amber:'bg-amber-100 text-amber-600',emerald:'bg-emerald-100 text-emerald-600'}[color]"><component :is="icon" class="h-5 w-5" /></div><div class="min-w-0"><p class="text-xs font-semibold text-slate-500">{{ label }}</p><div v-if="loading" class="mt-1 h-7 w-20 animate-pulse rounded-md bg-slate-200"></div><p v-else class="text-2xl font-black text-slate-900">{{ value }}</p></div></div><div v-if="loading && sub" class="mt-2 h-3 w-24 animate-pulse rounded bg-slate-200"></div><p v-else-if="sub" class="mt-2 text-xs font-medium text-emerald-700">{{ sub }}</p></div>` })
 
 const tabs = [{ key: 'documents', label: 'Tài liệu' }, { key: 'units', label: 'Đơn vị kiến thức' }, { key: 'chunks', label: 'Đoạn truy xuất' }, { key: 'retrieval', label: 'Kiểm tra truy xuất' }]
 const grades = Array.from({ length: 12 }, (_, index) => index + 1)
 const documentStatuses = ['pending', 'parsed', 'chunked', 'embedded', 'failed']; const chunkStatuses = ['pending', 'processing', 'embedded', 'failed']
-const activeTab = ref('documents'); const items = ref([]); const detailItem = ref(null); const isLoading = ref(false); const errorMessage = ref(''); let searchTimer
+const activeTab = ref('documents'); const items = ref([]); const detailItem = ref(null); const isLoading = ref(false); const overviewLoading = ref(true); const errorMessage = ref(''); let searchTimer
 const overview = reactive({ documents: 0, units: 0, chunks: 0, embedded_chunks: 0, embedding_percent: 0 })
 const filters = reactive({ search: '', subject: '', status: '', grade: '', domain: '', topic: '', embedding_status: '' })
 const filterOptions = reactive({ subjects: [], domains: [], topics: [] }); const pagination = reactive({ currentPage: 1, lastPage: 1, total: 0, perPage: 10 })
@@ -82,7 +82,7 @@ const pageLabel = item => item.source_page_start === item.source_page_end ? `Tra
 const outcomesCount = item => Array.isArray(item.learning_outcomes) ? item.learning_outcomes.length : 0
 const formatDate = value => value ? new Intl.DateTimeFormat('vi-VN', { dateStyle: 'medium' }).format(new Date(value)) : '—'
 const requestParams = () => ({ page: pagination.currentPage, per_page: pagination.perPage, search: filters.search.trim() || undefined, subject: filters.subject || undefined, ...(activeTab.value === 'documents' ? { status: filters.status || undefined } : activeTab.value === 'units' ? { grade: filters.grade || undefined, domain: filters.domain || undefined, topic: filters.topic || undefined } : { grade: filters.grade || undefined, embedding_status: filters.embedding_status || undefined }) })
-const loadOverview = async () => { try { Object.assign(overview, await adminRagApi.overview()) } catch { /* page data remains usable if overview is unavailable */ } }
+const loadOverview = async () => { overviewLoading.value = true; try { Object.assign(overview, await adminRagApi.overview()) } catch { /* page data remains usable if overview is unavailable */ } finally { overviewLoading.value = false } }
 const loadItems = async (page = pagination.currentPage) => { pagination.currentPage = page; isLoading.value = true; errorMessage.value = ''; try { const response = await adminRagApi[activeTab.value](requestParams()); items.value = response.data || []; Object.assign(pagination, { currentPage: response.meta?.current_page || page, lastPage: response.meta?.last_page || 1, total: response.meta?.total || 0, perPage: response.meta?.per_page || 10 }); Object.assign(filterOptions, { subjects: response.meta?.subjects || [], domains: response.meta?.domains || [], topics: response.meta?.topics || [] }) } catch (error) { items.value = []; errorMessage.value = error.response?.data?.message || 'Không thể tải dữ liệu chương trình. Vui lòng thử lại.' } finally { isLoading.value = false } }
 const resetFilters = () => { Object.keys(filters).forEach(key => filters[key] = ''); pagination.currentPage = 1; loadItems(1) }
 const applyFilters = () => { pagination.currentPage = 1; loadItems(1) }

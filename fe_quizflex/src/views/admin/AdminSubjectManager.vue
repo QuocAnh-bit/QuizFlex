@@ -65,7 +65,7 @@
             </div>
             <div>
               <p class="text-xs font-medium text-slate-500">Tổng bộ môn</p>
-              <p class="text-2xl font-bold text-slate-900">{{ stats.total || 0 }}</p>
+              <div v-if="isLoading" class="mt-1 h-7 w-16 animate-pulse rounded-md bg-slate-200"></div><p v-else class="text-2xl font-bold text-slate-900">{{ stats.total || 0 }}</p>
             </div>
           </div>
         </div>
@@ -77,7 +77,7 @@
             </div>
             <div>
               <p class="text-xs font-medium text-slate-500">Khoa học Tự nhiên</p>
-              <p class="text-2xl font-bold text-slate-900">{{ naturalGroupCount }}</p>
+              <div v-if="isLoading" class="mt-1 h-7 w-16 animate-pulse rounded-md bg-emerald-100"></div><p v-else class="text-2xl font-bold text-slate-900">{{ naturalGroupCount }}</p>
             </div>
           </div>
         </div>
@@ -89,7 +89,7 @@
             </div>
             <div>
               <p class="text-xs font-medium text-slate-500">Xã hội & Ngoại ngữ</p>
-              <p class="text-2xl font-bold text-slate-900">{{ socialGroupCount }}</p>
+              <div v-if="isLoading" class="mt-1 h-7 w-16 animate-pulse rounded-md bg-amber-100"></div><p v-else class="text-2xl font-bold text-slate-900">{{ socialGroupCount }}</p>
             </div>
           </div>
         </div>
@@ -101,7 +101,7 @@
             </div>
             <div>
               <p class="text-xs font-medium text-slate-500">Thùng rác</p>
-              <p class="text-2xl font-bold text-slate-900">{{ stats.trashed || 0 }}</p>
+              <div v-if="isLoading" class="mt-1 h-7 w-16 animate-pulse rounded-md bg-rose-100"></div><p v-else class="text-2xl font-bold text-slate-900">{{ stats.trashed || 0 }}</p>
             </div>
           </div>
         </div>

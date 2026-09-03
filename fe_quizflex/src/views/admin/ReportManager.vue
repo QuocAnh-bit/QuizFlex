@@ -55,7 +55,7 @@
             </div>
             <div>
               <p class="text-[11px] font-bold uppercase tracking-wider text-rose-700">Cần tôi xử lý</p>
-              <p class="text-2xl font-black text-rose-600">
+              <div v-if="isLoading" class="mt-1 h-7 w-16 animate-pulse rounded-md bg-rose-100"></div><p v-else class="text-2xl font-black text-rose-600">
                 {{ stats.needs_admin_cases ?? stats.admin_review_required_cases ?? 0 }}
                 <span class="text-xs font-normal text-slate-500">case</span>
               </p>
@@ -79,7 +79,7 @@
             </div>
             <div>
               <p class="text-[11px] font-bold uppercase tracking-wider text-amber-700">Đang xử lý</p>
-              <p class="text-2xl font-black text-amber-600">
+              <div v-if="isLoading" class="mt-1 h-7 w-16 animate-pulse rounded-md bg-amber-100"></div><p v-else class="text-2xl font-black text-amber-600">
                 {{ stats.processing_cases ?? ((stats.pending_cases || 0) + (stats.author_updated_cases || 0)) ?? 0 }}
                 <span class="text-xs font-normal text-slate-500">case</span>
               </p>
@@ -103,7 +103,7 @@
             </div>
             <div>
               <p class="text-[11px] font-bold uppercase tracking-wider text-emerald-700">Đã hoàn tất</p>
-              <p class="text-2xl font-black text-emerald-600">
+              <div v-if="isLoading" class="mt-1 h-7 w-16 animate-pulse rounded-md bg-emerald-100"></div><p v-else class="text-2xl font-black text-emerald-600">
                 {{ stats.completed_cases ?? ((stats.resolved_cases || 0) + (stats.dismissed_cases || 0)) ?? 0 }}
                 <span class="text-xs font-normal text-slate-500">case</span>
               </p>
@@ -127,7 +127,7 @@
             </div>
             <div>
               <p class="text-[11px] font-bold uppercase tracking-wider text-purple-700">Tổng Case</p>
-              <p class="text-2xl font-black text-purple-700">
+              <div v-if="isLoading" class="mt-1 h-7 w-16 animate-pulse rounded-md bg-purple-100"></div><p v-else class="text-2xl font-black text-purple-700">
                 {{ stats.total_cases || stats.total || 0 }}
                 <span class="text-xs font-normal text-slate-500">case</span>
               </p>
@@ -153,7 +153,8 @@
           <AlertTriangle class="h-3.5 w-3.5 shrink-0" />
           <span>Cần tôi xử lý</span>
           <span class="rounded-full px-2 py-0.5 text-[10px]" :class="selectedStage === 'needs_admin' ? 'bg-white text-rose-700 font-black' : 'bg-rose-600 text-white font-bold'">
-            {{ stats.needs_admin_cases ?? stats.admin_review_required_cases ?? 0 }}
+            <span v-if="isLoading" class="block h-3 w-3 animate-pulse rounded bg-current opacity-30"></span>
+            <template v-else>{{ stats.needs_admin_cases ?? stats.admin_review_required_cases ?? 0 }}</template>
           </span>
         </button>
 
@@ -166,7 +167,8 @@
           <Clock class="h-3.5 w-3.5 shrink-0" />
           <span>Đang xử lý</span>
           <span class="rounded-full px-2 py-0.5 text-[10px]" :class="selectedStage === 'processing' ? 'bg-white text-amber-700 font-black' : 'bg-amber-600 text-white font-bold'">
-            {{ stats.processing_cases ?? ((stats.pending_cases || 0) + (stats.author_updated_cases || 0)) ?? 0 }}
+            <span v-if="isLoading" class="block h-3 w-3 animate-pulse rounded bg-current opacity-30"></span>
+            <template v-else>{{ stats.processing_cases ?? ((stats.pending_cases || 0) + (stats.author_updated_cases || 0)) ?? 0 }}</template>
           </span>
         </button>
 
@@ -179,7 +181,8 @@
           <CheckCircle2 class="h-3.5 w-3.5 shrink-0" />
           <span>Đã hoàn tất</span>
           <span class="rounded-full px-2 py-0.5 text-[10px]" :class="selectedStage === 'completed' ? 'bg-white text-emerald-700 font-black' : 'bg-emerald-600 text-white font-bold'">
-            {{ stats.completed_cases ?? ((stats.resolved_cases || 0) + (stats.dismissed_cases || 0)) ?? 0 }}
+            <span v-if="isLoading" class="block h-3 w-3 animate-pulse rounded bg-current opacity-30"></span>
+            <template v-else>{{ stats.completed_cases ?? ((stats.resolved_cases || 0) + (stats.dismissed_cases || 0)) ?? 0 }}</template>
           </span>
         </button>
 
@@ -192,7 +195,8 @@
           <Layers class="h-3.5 w-3.5 shrink-0" />
           <span>Tất cả</span>
           <span class="rounded-full px-2 py-0.5 text-[10px]" :class="selectedStage === 'all' ? 'bg-white text-purple-700 font-black' : 'bg-purple-600 text-white font-bold'">
-            {{ stats.total_cases || 0 }}
+            <span v-if="isLoading" class="block h-3 w-3 animate-pulse rounded bg-current opacity-30"></span>
+            <template v-else>{{ stats.total_cases || 0 }}</template>
           </span>
         </button>
       </div>
@@ -349,9 +353,7 @@
               </div>
 
               <!-- Question Content -->
-              <p class="text-sm font-bold text-slate-900 leading-relaxed pt-1">
-                {{ group.question?.content || 'Nội dung câu hỏi không khả dụng' }}
-              </p>
+              <div class="pt-1 text-sm font-bold leading-relaxed text-slate-900"><MathText :content="group.question?.content || 'Nội dung câu hỏi không khả dụng'" /></div>
             </div>
 
             <!-- Group Action Buttons (Clear CTA) -->
@@ -439,9 +441,7 @@
               <td class="p-3.5 align-top max-w-sm">
                 <div class="space-y-1">
                   <span class="font-bold text-slate-900">Câu hỏi #{{ report.question_id }}</span>
-                  <p class="text-slate-600 line-clamp-2 italic">
-                    "{{ report.question?.content || 'N/A' }}"
-                  </p>
+                  <div class="line-clamp-2 text-slate-600 italic"><MathText :content="report.question?.content || 'N/A'" compact /></div>
                 </div>
               </td>
 
@@ -621,9 +621,7 @@
               <div class="rounded-2xl border border-slate-200 bg-white p-4 space-y-3 shadow-xs text-xs">
                 <div>
                   <span class="text-[10px] font-bold uppercase text-slate-400">Đề bài:</span>
-                  <div class="font-bold text-slate-900 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-200 mt-1">
-                    {{ activeGroup?.question?.content }}
-                  </div>
+                  <div class="mt-1 rounded-xl border border-slate-200 bg-slate-50 p-3 font-bold leading-relaxed text-slate-900"><MathText :content="activeGroup?.question?.content || ''" /></div>
                 </div>
 
                 <div class="space-y-1.5">
@@ -634,7 +632,7 @@
                     class="rounded-xl border p-2 text-xs font-semibold flex items-center justify-between"
                     :class="ans.is_correct ? 'border-emerald-300 bg-emerald-50 text-emerald-900 font-bold' : 'border-slate-200 bg-white text-slate-700'"
                   >
-                    <span>{{ ans.key || ans.answer_key }}. {{ ans.content || ans.text }}</span>
+                    <span class="flex min-w-0 flex-1 items-start gap-1"><b class="shrink-0">{{ ans.key || ans.answer_key }}.</b><MathText :content="ans.content || ans.text || ''" compact class="min-w-0" /></span>
                     <span v-if="ans.is_correct" class="text-[10px] font-bold text-emerald-600 flex items-center gap-1">
                       <Check class="h-3 w-3 stroke-[3]" />
                       <span>Đáp án đúng</span>
@@ -831,6 +829,7 @@ import {
 } from 'lucide-vue-next'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import AppPagination from '@/components/common/AppPagination.vue'
+import MathText from '@/components/MathText.vue'
 import { reportApi } from '@/services/api'
 import { useAppLoading } from '@/composables/useAppLoading'
 
@@ -841,7 +840,7 @@ const showToast = inject('showToast')
 
 const cases = ref([])
 const reports = ref([])
-const isLoading = ref(false)
+const isLoading = ref(true)
 const searchQuery = ref('')
 const selectedStage = ref('needs_admin')
 const viewMode = ref('grouped')

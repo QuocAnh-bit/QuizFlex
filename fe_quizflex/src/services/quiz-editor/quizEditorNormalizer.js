@@ -36,7 +36,7 @@ export const normalizeQuestion = (rawQuestion) => {
     content: String(question.content ?? question.text ?? ''),
     image_url: typeof question.image_url === 'string' ? question.image_url : null,
     difficulty: SUPPORTED_DIFFICULTIES.has(question.difficulty) ? question.difficulty : 'medium',
-    points: asNumber(question.points, 1),
+    points: asNumber(question.points, 10),
     // A question copied from the approved bank remains an immutable snapshot
     // inside a quiz. This value comes from the API, not from a UI-only flag.
     origin_question_id: question.origin_question_id ?? null,
@@ -66,6 +66,7 @@ export const normalizeQuiz = (rawQuiz) => {
     id: quiz.id ?? null,
     title: String(quiz.title ?? ''),
     description: String(quiz.description ?? ''),
+    cover: typeof quiz.cover === 'string' ? quiz.cover : '',
     category: quiz.category ?? null,
     education_level_id: quiz.education_level_id ?? null,
     education_level_name: String(quiz.education_level_name ?? quiz.education_level?.name ?? ''),

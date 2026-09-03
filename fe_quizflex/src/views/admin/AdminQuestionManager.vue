@@ -53,7 +53,7 @@
             </div>
             <div>
               <p class="text-xs font-semibold text-slate-500">Tổng câu hỏi</p>
-              <p class="text-2xl font-black text-slate-900">{{ stats.total || 0 }}</p>
+              <div v-if="isLoading" class="mt-1 h-7 w-16 animate-pulse rounded-md bg-slate-200"></div><p v-else class="text-2xl font-black text-slate-900">{{ stats.total || 0 }}</p>
             </div>
           </div>
         </div>
@@ -71,7 +71,7 @@
             </div>
             <div>
               <p class="text-xs font-semibold text-slate-500">Công khai</p>
-              <p class="text-2xl font-black text-emerald-600">{{ stats.public || 0 }}</p>
+              <div v-if="isLoading" class="mt-1 h-7 w-16 animate-pulse rounded-md bg-emerald-100"></div><p v-else class="text-2xl font-black text-emerald-600">{{ stats.public || 0 }}</p>
             </div>
           </div>
           <p class="mt-2 text-xs text-emerald-700/80 font-medium">{{ publicPercent }}% ngân hàng</p>
@@ -90,7 +90,7 @@
             </div>
             <div>
               <p class="text-xs font-semibold text-slate-500">Chờ duyệt</p>
-              <p class="text-2xl font-black text-amber-600">{{ stats.pending || 0 }}</p>
+              <div v-if="isLoading" class="mt-1 h-7 w-16 animate-pulse rounded-md bg-amber-100"></div><p v-else class="text-2xl font-black text-amber-600">{{ stats.pending || 0 }}</p>
             </div>
           </div>
           <p class="mt-2 text-xs text-amber-700 font-bold">Cần thẩm định</p>
@@ -109,7 +109,7 @@
             </div>
             <div>
               <p class="text-xs font-semibold text-slate-500">Có báo cáo</p>
-              <p class="text-2xl font-black text-rose-600">{{ stats.reported || 0 }}</p>
+              <div v-if="isLoading" class="mt-1 h-7 w-16 animate-pulse rounded-md bg-rose-100"></div><p v-else class="text-2xl font-black text-rose-600">{{ stats.reported || 0 }}</p>
             </div>
           </div>
           <p class="mt-2 text-xs text-rose-700 font-bold">Ưu tiên kiểm tra</p>
@@ -393,9 +393,7 @@
                     </span>
                   </div>
 
-                  <p class="text-xs font-bold text-slate-900 line-clamp-2 leading-relaxed">
-                    {{ item.content || item.text }}
-                  </p>
+                  <div class="text-xs font-bold text-slate-900 line-clamp-2 leading-relaxed"><MathText :content="item.content || item.text || ''" compact /></div>
 
                   <div v-if="item.topic_name" class="text-[11px] text-slate-400">
                     Chủ đề: {{ item.topic_name }}
@@ -814,9 +812,7 @@
                 <!-- Nội dung câu hỏi cũ -->
                 <div class="space-y-1">
                   <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Nội dung câu hỏi cũ:</span>
-                  <div class="rounded-xl border border-rose-200 bg-white p-3.5 text-xs font-semibold text-slate-800 leading-relaxed break-words">
-                    {{ activeDetail.previous_revision.content }}
-                  </div>
+                  <div class="rounded-xl border border-rose-200 bg-white p-3.5 text-xs font-semibold text-slate-800 leading-relaxed break-words"><MathText :content="activeDetail.previous_revision.content || ''" /></div>
                 </div>
 
                 <!-- Danh sách đáp án cũ -->
@@ -835,7 +831,7 @@
                       >
                         {{ ans.key }}
                       </span>
-                      <span class="flex-1 truncate">{{ ans.content || ans.text }}</span>
+                      <MathText :content="ans.content || ans.text || ''" compact class="min-w-0 flex-1" />
                       <span v-if="ans.is_correct" class="text-[10px] font-bold text-emerald-600 shrink-0 flex items-center gap-1">
                         <Check class="h-3 w-3" :stroke-width="3" />
                         <span>Đúng</span>
@@ -902,7 +898,7 @@
                       ? 'border-purple-400 bg-white text-purple-950 ring-2 ring-purple-400/20'
                       : 'border-purple-200 bg-white text-slate-800'"
                   >
-                    {{ activeDetail.current_revision.content }}
+                    <MathText :content="activeDetail.current_revision.content || ''" />
                   </div>
                 </div>
 
@@ -922,7 +918,7 @@
                       >
                         {{ ans.key }}
                       </span>
-                      <span class="flex-1 truncate">{{ ans.content || ans.text }}</span>
+                      <MathText :content="ans.content || ans.text || ''" compact class="min-w-0 flex-1" />
                       <span v-if="ans.is_correct" class="text-[10px] font-bold text-emerald-600 shrink-0 flex items-center gap-1">
                         <Check class="h-3 w-3" :stroke-width="3" />
                         <span>Đáp án đúng</span>
@@ -975,7 +971,7 @@
             <div class="space-y-1.5">
               <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500">Nội dung câu hỏi:</h4>
               <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-bold text-slate-900 leading-relaxed">
-                {{ activeDetail.current_revision.content }}
+                <MathText :content="activeDetail.current_revision.content || ''" />
               </div>
             </div>
 
@@ -995,7 +991,7 @@
                   >
                     {{ ans.key }}
                   </span>
-                  <span class="flex-1 truncate">{{ ans.content || ans.text }}</span>
+                  <MathText :content="ans.content || ans.text || ''" compact class="min-w-0 flex-1" />
                   <span v-if="ans.is_correct" class="ml-auto text-[11px] font-bold text-emerald-600 shrink-0">Đáp án đúng</span>
                 </div>
               </div>
@@ -1157,6 +1153,7 @@ import {
 } from 'lucide-vue-next'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import AppPagination from '@/components/common/AppPagination.vue'
+import MathText from '@/components/MathText.vue'
 import { adminBankRequestsApi, adminQuestionsApi, taxonomyApi } from '@/services/api'
 import { useAppLoading } from '@/composables/useAppLoading'
 
@@ -1169,7 +1166,7 @@ const showConfirm = inject('showConfirm')
 
 const currentTab = ref('all')
 const items = ref([])
-const isLoading = ref(false)
+const isLoading = ref(true)
 const errorMessage = ref('')
 const selectedIds = ref([])
 const isProcessingBulk = ref(false)

@@ -1600,10 +1600,15 @@ const resolveCoverUrl = (cover) => {
   if (!cover) return ''
   const url = String(cover).trim()
   if (!url) return ''
+  // Preset covers are valid CSS backgrounds, not storage filenames.
+  if (/gradient\(/i.test(url)) return url
+  if (/^(data:image\/|blob:)/i.test(url)) return url
   // If it's already a full URL, return as-is
   if (/^https?:\/\//.test(url)) return url
   // If it's a relative path starting with /storage, keep it (Vite proxy will handle)
   if (url.startsWith('/storage')) return url
+  if (url.startsWith('storage/')) return `/${url}`
+  if (url.startsWith('quiz-covers/')) return `/storage/${url}`
   // If it's just a filename or relative path, prepend /storage/quiz-covers/
   if (!url.includes('/')) return `/storage/quiz-covers/${url}`
   return url
@@ -1623,7 +1628,8 @@ export const coverToBackground = (cover) => {
 };
 
 export const normalizeQuizCard = (quiz) => {
-  const coverUrl = resolveCoverUrl(quiz.cover);
+  const rawCover = String(quiz.cover || '').trim();
+  const coverUrl = resolveCoverUrl(rawCover);
   return {
     ...quiz,
     subject_id: quiz.subject_id ?? quiz.subject?.id ?? null,
@@ -1637,8 +1643,8 @@ export const normalizeQuizCard = (quiz) => {
     attempts: quiz.attempts_count ?? 0,
     avgScore: Math.round(Number(quiz.avg_score ?? quiz.score_percent ?? 0)),
     rating: quiz.rating || "4.8",
-    coverSource: coverUrl,
-    cover: coverToBackground(coverUrl),
+    coverSource: /gradient\(/i.test(coverUrl) ? '' : coverUrl,
+    cover: coverToBackground(rawCover),
     icon: quiz.icon || "QZ",
     badge: quiz.badge || "QUIZ",
     author: quiz.author || quiz.user?.name || "QuizFlex",

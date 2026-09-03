@@ -4,10 +4,7 @@ const unwrapResponse = (response) => response?.data?.data ?? response?.data
 
 export const getQuiz = (id) => quizzesApi.getForEdit(id)
 
-export const updateQuiz = async (id, payload) => {
-  const response = await api.put(`/quizzes/${id}`, payload, { timeout: 15000 })
-  return unwrapResponse(response)
-}
+export const updateQuiz = (id, payload) => quizzesApi.update(id, payload)
 
 export const deleteQuiz = (id) => quizzesApi.remove(id)
 
