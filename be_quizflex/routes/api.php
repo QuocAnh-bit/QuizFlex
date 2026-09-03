@@ -276,6 +276,7 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/quizzes/{quiz}/attempts/start', [QuizAttemptController::class, 'start']);
         Route::post('/quizzes/{quiz}/attempts/check-answer', [QuizAttemptController::class, 'checkAnswer']);
         Route::post('/quizzes/{quiz}/attempts/submit', [QuizAttemptController::class, 'submit']);
+        Route::post('/quiz-attempts/{quizAttempt}/violation', [QuizAttemptController::class, 'logViolation']);
 
 
         // Room Homework Routes
@@ -318,6 +319,7 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/live-rooms/{liveRoom}/start', [LiveRoomController::class, 'start']);
         Route::get('/live-rooms/{liveRoom}/current-question', [LiveRoomController::class, 'currentQuestion']);
         Route::post('/live-rooms/{liveRoom}/answer', [LiveRoomController::class, 'answer']);
+        Route::post('/live-rooms/{liveRoom}/violation', [LiveRoomController::class, 'logViolation']);
         Route::post('/live-rooms/{liveRoom}/next-question', [LiveRoomController::class, 'nextQuestion']);
         Route::post('/live-rooms/{liveRoom}/finish', [LiveRoomController::class, 'finish']);
         Route::get('/live-rooms/{liveRoom}/leaderboard', [LiveRoomController::class, 'leaderboard']);

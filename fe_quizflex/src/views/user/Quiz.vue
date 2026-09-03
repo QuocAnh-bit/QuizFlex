@@ -217,9 +217,6 @@ import { computed, onBeforeUnmount, onMounted, onUnmounted, ref, watch } from "v
 import { onBeforeRouteLeave, useRoute, useRouter } from "vue-router";
 import { Volume2, VolumeX } from "lucide-vue-next";
 import { formatSeconds, normalizeQuestion, quizzesApi } from "@/services/api";
-import { useAppLoading } from "@/composables/useAppLoading";
-
-const { beginTask, endTask } = useAppLoading();
 import MathText from "@/components/MathText.vue";
 import QuestionImage from "@/components/question/QuestionImage.vue";
 import audioService from "@/services/audioService";
@@ -546,13 +543,8 @@ const loadQuiz = async () => {
 };
 
 onMounted(async () => {
-  beginTask();
-  try {
-    audioService.stopAll();
-    await loadQuiz();
-  } finally {
-    endTask();
-  }
+  audioService.stopAll();
+  await loadQuiz();
   audioService.playLobby();
 });
 

@@ -959,6 +959,16 @@ export const quizzesApi = {
 
     return unwrap(data);
   },
+
+  // GHI NHẬN VI PHẠM CHỐNG GIAN LẬN (copy, chuột phải, rời tab, devtools...)
+  async reportViolation(attemptId, payload) {
+    const { data } = await api.post(
+      `/quiz-attempts/${attemptId}/violation`,
+      payload
+    );
+
+    return unwrap(data);
+  },
 };
 
 export const adminQuizzesApi = {
@@ -1507,6 +1517,12 @@ export const liveRoomApi = {
   async getLiveLeaderboard(id) {
     const { data } = await api.get(`/live-rooms/${id}/leaderboard`);
     return unwrapCollection(data);
+  },
+
+  // GHI NHẬN VI PHẠM CHỐNG GIAN LẬN (copy, chuột phải, rời tab, devtools...)
+  async reportViolation(id, payload) {
+    const { data } = await api.post(`/live-rooms/${id}/violation`, payload);
+    return unwrap(data);
   },
 };
 

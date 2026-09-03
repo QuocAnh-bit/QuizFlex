@@ -361,6 +361,13 @@ class LiveRoomController extends Controller
             ], 403);
         }
 
+        if ($player->is_flagged) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn đã bị khóa khỏi phòng thi đấu do vi phạm quy định chống gian lận.',
+            ], 403);
+        }
+
         if ($liveRoom->status !== 'playing') {
             return response()->json([
                 'success' => false,
@@ -482,6 +489,83 @@ class LiveRoomController extends Controller
                 'room_status' => $liveRoomAfterAnswer->status,
                 'next_question' => $nextQuestion,
                 'leaderboard' => $leaderboard,
+            ],
+        ]);
+    }
+
+    /**
+     * Số lần vi phạm chống gian lận tối đa trước khi người chơi bị khóa
+     * khỏi phòng thi đấu trực tiếp.
+     */
+    private const VIOLATION_FLAG_THRESHOLD = 8;
+
+    /**
+     * Ghi nhận hành vi khả nghi (copy, chuột phải, rời tab, mở devtools...)
+     * của một người chơi trong phòng thi đấu trực tiếp.
+     */
+    public function logViolation(Request $request, LiveRoom $liveRoom)
+    {
+        $data = $request->validate([
+            'type' => ['required', 'string', 'in:copy,cut,paste,right_click,shortcut,devtools,tab_switch,window_blur,fullscreen_exit,print,other'],
+            'detail' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $user = $request->user();
+        $player = $this->activePlayer($liveRoom, $user->id);
+
+        if (!$player) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ban chua tham gia live room nay.',
+            ], 403);
+        }
+
+        if ($player->is_flagged || $player->finished_at) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Bo qua ghi nhan.',
+                'data' => [
+                    'violation_count' => $player->violation_count ?? 0,
+                    'threshold' => self::VIOLATION_FLAG_THRESHOLD,
+                    'is_flagged' => (bool) ($player->is_flagged ?? false),
+                ],
+            ]);
+        }
+
+        $log = is_array($player->violation_log) ? $player->violation_log : [];
+        $log[] = [
+            'type' => $data['type'],
+            'detail' => $data['detail'] ?? null,
+            'at' => now()->toIso8601String(),
+        ];
+        if (count($log) > 50) {
+            $log = array_slice($log, -50);
+        }
+
+        $newCount = (int) ($player->violation_count ?? 0) + 1;
+        $shouldFlag = $newCount >= self::VIOLATION_FLAG_THRESHOLD;
+
+        $update = [
+            'violation_count' => $newCount,
+            'violation_log' => $log,
+        ];
+
+        if ($shouldFlag) {
+            $update['is_flagged'] = true;
+            $update['flagged_at'] = now();
+        }
+
+        $player->update($update);
+
+        return response()->json([
+            'success' => true,
+            'message' => $shouldFlag
+                ? 'Phát hiện quá nhiều hành vi bất thường, bạn đã bị khóa khỏi phòng thi đấu.'
+                : 'Đã ghi nhận hành vi bất thường.',
+            'data' => [
+                'violation_count' => $newCount,
+                'threshold' => self::VIOLATION_FLAG_THRESHOLD,
+                'is_flagged' => (bool) $player->is_flagged,
             ],
         ]);
     }
@@ -672,6 +756,8 @@ class LiveRoomController extends Controller
             'correct_count' => (int) $player->correct_count,
             'finished_at' => $player->finished_at,
             'last_answered_at' => $player->last_answered_at,
+            'violation_count' => (int) ($player->violation_count ?? 0),
+            'is_flagged' => (bool) ($player->is_flagged ?? false),
         ];
     }
 

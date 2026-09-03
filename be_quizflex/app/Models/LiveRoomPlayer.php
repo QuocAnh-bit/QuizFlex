@@ -19,6 +19,10 @@ class LiveRoomPlayer extends Model
         'finished_at',
         'last_answered_at',
         'status',
+        'violation_count',
+        'violation_log',
+        'is_flagged',
+        'flagged_at',
     ];
 
     protected $casts = [
@@ -28,6 +32,10 @@ class LiveRoomPlayer extends Model
         'joined_at' => 'datetime',
         'finished_at' => 'datetime',
         'last_answered_at' => 'datetime',
+        'violation_count' => 'integer',
+        'violation_log' => 'array',
+        'is_flagged' => 'boolean',
+        'flagged_at' => 'datetime',
     ];
 
     public function liveRoom()

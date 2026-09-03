@@ -26,6 +26,10 @@ class QuizAttempt extends Model
         'finished_at',
         'submitted_at',
         'xp_earned',
+        'violation_count',
+        'violation_log',
+        'is_locked',
+        'locked_at',
     ];
 
     protected $casts = [
@@ -39,6 +43,10 @@ class QuizAttempt extends Model
         'finished_at' => 'datetime',
         'submitted_at' => 'datetime',
         'xp_earned' => 'integer',
+        'violation_count' => 'integer',
+        'violation_log' => 'array',
+        'is_locked' => 'boolean',
+        'locked_at' => 'datetime',
     ];
 
     public function user()

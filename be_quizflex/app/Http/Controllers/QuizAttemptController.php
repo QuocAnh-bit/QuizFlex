@@ -19,8 +19,85 @@ use Carbon\Carbon;
 
 class QuizAttemptController extends Controller
 {
+    /**
+     * Số lần vi phạm chống gian lận (rời tab, copy, chuột phải, mở devtools...)
+     * tối đa trước khi hệ thống tự khóa và buộc nộp bài.
+     */
+    private const VIOLATION_LOCK_THRESHOLD = 8;
+
     public function __construct(private readonly QuestionOrderService $questionOrderService)
     {
+    }
+
+    /**
+     * Ghi nhận một hành vi khả nghi (copy, chuột phải, rời tab, mở devtools...)
+     * trong lúc làm bài thi. Nếu vượt ngưỡng cho phép, đánh dấu attempt bị khóa
+     * để frontend tự động nộp bài.
+     */
+    public function logViolation(Request $request, QuizAttempt $quizAttempt)
+    {
+        $data = $request->validate([
+            'type' => ['required', 'string', 'in:copy,cut,paste,right_click,shortcut,devtools,tab_switch,window_blur,fullscreen_exit,print,other'],
+            'detail' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $user = $request->user();
+        if ((int) $quizAttempt->user_id !== (int) $user->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn không có quyền thao tác trên lượt làm bài này.',
+            ], 403);
+        }
+
+        if ($quizAttempt->status === 'completed') {
+            return response()->json([
+                'success' => true,
+                'message' => 'Lượt làm bài đã kết thúc, bỏ qua ghi nhận.',
+                'data' => [
+                    'violation_count' => $quizAttempt->violation_count ?? 0,
+                    'threshold' => self::VIOLATION_LOCK_THRESHOLD,
+                    'is_locked' => (bool) ($quizAttempt->is_locked ?? false),
+                ],
+            ]);
+        }
+
+        $log = is_array($quizAttempt->violation_log) ? $quizAttempt->violation_log : [];
+        $log[] = [
+            'type' => $data['type'],
+            'detail' => $data['detail'] ?? null,
+            'at' => now()->toIso8601String(),
+        ];
+        // Chỉ giữ lại 50 bản ghi gần nhất để tránh phình dữ liệu.
+        if (count($log) > 50) {
+            $log = array_slice($log, -50);
+        }
+
+        $newCount = (int) ($quizAttempt->violation_count ?? 0) + 1;
+        $shouldLock = $newCount >= self::VIOLATION_LOCK_THRESHOLD && !$quizAttempt->is_locked;
+
+        $update = [
+            'violation_count' => $newCount,
+            'violation_log' => $log,
+        ];
+
+        if ($shouldLock) {
+            $update['is_locked'] = true;
+            $update['locked_at'] = now();
+        }
+
+        $quizAttempt->update($update);
+
+        return response()->json([
+            'success' => true,
+            'message' => $shouldLock
+                ? 'Phát hiện quá nhiều hành vi bất thường, bài thi đã bị khóa.'
+                : 'Đã ghi nhận hành vi bất thường.',
+            'data' => [
+                'violation_count' => $newCount,
+                'threshold' => self::VIOLATION_LOCK_THRESHOLD,
+                'is_locked' => (bool) $quizAttempt->is_locked,
+            ],
+        ]);
     }
 
     public function index(Request $request)
@@ -515,6 +592,9 @@ public function checkAnswer(Request $request, Quiz $quiz)
             'submitted_at' => $attempt->submitted_at ?? null,
             'mode' => $attempt->mode ?? 'practice',
             'question_order' => $attempt->question_order ?? [],
+            'violation_count' => $attempt->violation_count ?? 0,
+            'violation_threshold' => self::VIOLATION_LOCK_THRESHOLD,
+            'is_locked' => (bool) ($attempt->is_locked ?? false),
             'evaluation_comment' => $attempt->evaluation->comment ?? null,
             'evaluation_comment_updated_at' => $attempt->evaluation ? $attempt->evaluation->updated_at->toIso8601String() : null,
         ];
