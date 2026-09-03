@@ -71,8 +71,8 @@ const ocrQuotaLabel = computed(() => quotaUser.value?.ocr_quota_unlimited ? 'OCR
 const chooseSource = (source) => {
   const isLocked = (source === 'ai' && !aiAllowed.value) || (source === 'ocr' && !ocrAllowed.value)
   if (isLocked) {
-    emit('close')
-    router.push({ name: 'upgrade' })
+    const routeData = router.resolve({ name: 'upgrade' })
+    window.open(routeData.href, '_blank')
     return
   }
   emit('choose', source)

@@ -224,25 +224,35 @@ class RoomAssignmentController extends Controller
     public function submitAttempt(Request $request, RoomAssignment $assignment, QuizAttempt $attempt)
     {
         $data = $request->validate([
-            'answers' => ['required', 'array'],
+            'answers' => ['nullable', 'array'],
         ]);
+        $answers = $data['answers'] ?? [];
 
         $this->authorizeHomeworkAttempt($request, $assignment, $attempt);
 
-        if ($attempt->status === 'completed') {
+        if (in_array($attempt->status, ['completed', 'expired'], true)) {
             return response()->json([
-                'success' => false,
-                'message' => 'Lượt làm bài này đã được nộp.',
-            ], 422);
+                'success' => true,
+                'message' => $attempt->status === 'expired' ? 'Đã hết giờ làm bài.' : 'Lượt làm bài này đã được nộp.',
+                'data' => [
+                    'attempt' => $this->formatAttempt($attempt->fresh(['quiz', 'room', 'assignment'])),
+                    'score' => (float) $attempt->score,
+                    'total_points' => (float) $attempt->total_points,
+                    'score_percent' => (float) ($attempt->total_points > 0 ? round($attempt->score * 100 / $attempt->total_points, 2) : 0),
+                    'correct_count' => is_array($attempt->answers_snapshot) ? collect($attempt->answers_snapshot)->filter(fn ($item) => !empty($item['is_correct']))->count() : 0,
+                    'total_questions' => is_array($attempt->answers_snapshot) ? count($attempt->answers_snapshot) : 0,
+                    'answers_snapshot' => $attempt->answers_snapshot ?? [],
+                ],
+            ]);
         }
 
         $assignment->load(['room', 'quiz.questions.answers']);
         $finishedAt = now();
         $expired = $this->isAttemptExpired($assignment, $attempt, $finishedAt);
 
-        $result = DB::transaction(function () use ($assignment, $attempt, $data, $finishedAt, $expired) {
+        $result = DB::transaction(function () use ($assignment, $attempt, $answers, $finishedAt, $expired) {
             $quiz = $this->questionOrderService->applyOrderToQuiz($assignment->quiz, $attempt->question_order ?? []);
-            $graded = $this->gradingService->grade($quiz, $data['answers']);
+            $graded = $this->gradingService->grade($quiz, $answers);
 
             $timeSpent = $attempt->started_at ? max(0, $attempt->started_at->diffInSeconds($finishedAt)) : 0;
             if ($assignment->duration_minutes) {
@@ -278,7 +288,7 @@ class RoomAssignmentController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => $expired ? 'Bài nộp đã quá hạn.' : 'Nộp bài thành công',
+            'message' => $expired ? 'Đã hết giờ làm bài.' : 'Nộp bài thành công',
             'data' => $result,
         ]);
     }
