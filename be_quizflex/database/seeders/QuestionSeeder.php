@@ -20,20 +20,11 @@ class QuestionSeeder extends Seeder
     {
         $snapshotService = app(QuestionSnapshotService::class);
 
-        // Lấy hoặc tạo tài khoản tác giả mẫu cho câu hỏi ngân hàng
-        $author = User::where('role', 'ADMIN')->first() 
-            ?? User::where('role', 'PRO')->first() 
+        // Lấy tài khoản quản trị viên làm tác giả cho các câu hỏi Ngân hàng chuẩn
+        $author = User::where('email', 'admin@quizflex.vn')->first() 
+            ?? User::where('role', 'admin')->first() 
             ?? User::first();
 
-        if (!$author) {
-            $author = User::create([
-                'name' => 'QuizFlex Admin',
-                'email' => 'admin@quizflex.local',
-                'password' => bcrypt('password'),
-                'role' => 'ADMIN',
-                'ai_quota_remaining' => 999,
-            ]);
-        }
 
         // Danh sách 120 câu hỏi (12 môn học x 10 câu) chuẩn mực cho hệ thống
         $bankQuestions = [
