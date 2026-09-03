@@ -153,7 +153,8 @@
           <AlertTriangle class="h-3.5 w-3.5 shrink-0" />
           <span>Cần tôi xử lý</span>
           <span class="rounded-full px-2 py-0.5 text-[10px]" :class="selectedStage === 'needs_admin' ? 'bg-white text-rose-700 font-black' : 'bg-rose-600 text-white font-bold'">
-            {{ stats.needs_admin_cases ?? stats.admin_review_required_cases ?? 0 }}
+            <span v-if="isLoading" class="block h-3 w-3 animate-pulse rounded bg-current opacity-30"></span>
+            <template v-else>{{ stats.needs_admin_cases ?? stats.admin_review_required_cases ?? 0 }}</template>
           </span>
         </button>
 
@@ -166,7 +167,8 @@
           <Clock class="h-3.5 w-3.5 shrink-0" />
           <span>Đang xử lý</span>
           <span class="rounded-full px-2 py-0.5 text-[10px]" :class="selectedStage === 'processing' ? 'bg-white text-amber-700 font-black' : 'bg-amber-600 text-white font-bold'">
-            {{ stats.processing_cases ?? ((stats.pending_cases || 0) + (stats.author_updated_cases || 0)) ?? 0 }}
+            <span v-if="isLoading" class="block h-3 w-3 animate-pulse rounded bg-current opacity-30"></span>
+            <template v-else>{{ stats.processing_cases ?? ((stats.pending_cases || 0) + (stats.author_updated_cases || 0)) ?? 0 }}</template>
           </span>
         </button>
 
@@ -179,7 +181,8 @@
           <CheckCircle2 class="h-3.5 w-3.5 shrink-0" />
           <span>Đã hoàn tất</span>
           <span class="rounded-full px-2 py-0.5 text-[10px]" :class="selectedStage === 'completed' ? 'bg-white text-emerald-700 font-black' : 'bg-emerald-600 text-white font-bold'">
-            {{ stats.completed_cases ?? ((stats.resolved_cases || 0) + (stats.dismissed_cases || 0)) ?? 0 }}
+            <span v-if="isLoading" class="block h-3 w-3 animate-pulse rounded bg-current opacity-30"></span>
+            <template v-else>{{ stats.completed_cases ?? ((stats.resolved_cases || 0) + (stats.dismissed_cases || 0)) ?? 0 }}</template>
           </span>
         </button>
 
@@ -192,7 +195,8 @@
           <Layers class="h-3.5 w-3.5 shrink-0" />
           <span>Tất cả</span>
           <span class="rounded-full px-2 py-0.5 text-[10px]" :class="selectedStage === 'all' ? 'bg-white text-purple-700 font-black' : 'bg-purple-600 text-white font-bold'">
-            {{ stats.total_cases || 0 }}
+            <span v-if="isLoading" class="block h-3 w-3 animate-pulse rounded bg-current opacity-30"></span>
+            <template v-else>{{ stats.total_cases || 0 }}</template>
           </span>
         </button>
       </div>
