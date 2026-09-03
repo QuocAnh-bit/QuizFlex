@@ -54,9 +54,19 @@ const emit = defineEmits(['choose', 'close'])
 
 const router = useRouter()
 const quotaUser = ref(currentUserStorage.get())
-const aiAllowed = computed(() => Boolean(quotaUser.value?.ai_allowed ?? ((quotaUser.value?.role !== 'admin') && Number(quotaUser.value?.ai_quota_remaining || 0) > 0)))
+const isFreeUser = computed(() => {
+  const role = String(quotaUser.value?.role || '').toLowerCase()
+  return !role || role === 'free'
+})
+const aiAllowed = computed(() => {
+  if (isFreeUser.value) return false
+  return Boolean(quotaUser.value?.ai_allowed ?? (Number(quotaUser.value?.ai_quota_remaining || 0) > 0))
+})
 const ocrAllowed = computed(() => Boolean(quotaUser.value?.ocr_allowed))
-const aiQuotaLabel = computed(() => aiAllowed.value ? `Còn ${Number(quotaUser.value?.ai_quota_remaining || 0)} lượt tạo AI` : 'AI chưa khả dụng hoặc đã hết lượt')
+const aiQuotaLabel = computed(() => {
+  if (isFreeUser.value) return 'AI chưa khả dụng hoặc đã hết lượt'
+  return aiAllowed.value ? `Còn ${Number(quotaUser.value?.ai_quota_remaining || 0)} lượt tạo AI` : 'AI chưa khả dụng hoặc đã hết lượt'
+})
 const ocrQuotaLabel = computed(() => quotaUser.value?.ocr_quota_unlimited ? 'OCR không giới hạn' : ocrAllowed.value ? `Còn ${Number(quotaUser.value?.ocr_quota_remaining || 0)} lượt OCR tháng này` : 'OCR chưa khả dụng hoặc đã hết lượt')
 const chooseSource = (source) => {
   const isLocked = (source === 'ai' && !aiAllowed.value) || (source === 'ocr' && !ocrAllowed.value)

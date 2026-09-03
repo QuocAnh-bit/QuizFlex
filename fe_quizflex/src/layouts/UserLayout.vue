@@ -30,7 +30,6 @@
 
         <!-- Right Utilities & User Profile -->
         <div class="hidden shrink-0 items-center gap-2.5 md:flex">
-          <LanguageSwitcher />
           <StreakXpBar />
 
           <!-- Guest -->
@@ -332,7 +331,6 @@ import {
 } from 'lucide-vue-next'
 
 import BrandLogo from '@/components/common/BrandLogo.vue'
-import LanguageSwitcher from '@/components/common/LanguageSwitcher.vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import StreakXpBar from '@/components/common/StreakXpBar.vue'
 import NotificationBell from '@/components/common/NotificationBell.vue'

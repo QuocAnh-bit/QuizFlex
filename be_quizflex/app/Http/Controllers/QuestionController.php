@@ -1077,7 +1077,6 @@ class QuestionController extends Controller
 
         $query = Question::query()
             ->with(['answers', 'quiz:id,title,user_id', 'educationLevel', 'grade', 'subject'])
-            ->whereNull('origin_question_id')
             ->where(function ($q) use ($user) {
                 $q->where('user_id', $user->id)
                     ->orWhereHas('quiz', fn($sq) => $sq->where('user_id', $user->id));
@@ -1226,7 +1225,6 @@ class QuestionController extends Controller
         );
 
         $duplicate = Question::where('user_id', $user->id)
-            ->whereNull('origin_question_id')
             ->where('fingerprint', $fingerprint)
             ->where('id', '!=', $question->id)
             ->exists();

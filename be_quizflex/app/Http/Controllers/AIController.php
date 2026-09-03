@@ -82,18 +82,21 @@ class AIController extends Controller
         }
 
         $user = auth('api')->user();
+        $tier = $user ? $user->getSubscriptionTier() : 'free';
 
-        if ($user && strtolower($user->role ?? '') === 'admin') {
+        if (($tier === 'free' || strtolower($user->role ?? '') === 'free') && !$user->isAdmin()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Admin không được tạo Quiz bằng AI.',
+                'message' => 'Tài khoản Miễn phí (Free) không thể tạo Quiz bằng AI. Vui lòng nâng cấp gói để sử dụng tính năng này!',
+                'code' => 'UPGRADE_REQUIRED',
             ], 403);
         }
 
-        if (($user->ai_quota_remaining ?? 0) <= 0) {
+        if (($user->ai_quota_remaining ?? 0) <= 0 && !$user->isAdmin()) {
             return response()->json([
                 'success' => false,
                 'message' => 'AI quota exhausted.',
+                'code' => 'QUOTA_EXHAUSTED',
             ], 403);
         }
 
