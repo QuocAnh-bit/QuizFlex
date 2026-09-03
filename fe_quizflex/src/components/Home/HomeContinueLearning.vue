@@ -36,52 +36,71 @@
       </span>
     </div>
 
-    <!-- Quiz -->
-    <div class="pt-5">
-      <h3
-        class="line-clamp-1 text-lg font-bold text-[#0F172A]"
-      >
-        {{ activeQuiz?.title || 'Bộ đề ôn tập tổng hợp' }}
-      </h3>
-
-      <div
-        class="mt-3 flex items-center justify-between text-sm font-semibold"
-      >
-        <span class="text-[#64748B]">
-          {{ questionCountText }}
-        </span>
-
-        <span class="font-bold text-[#7C3AED]">
-          {{ progressPercent }}% hoàn thành
-        </span>
+    <!-- Loading Skeleton -->
+    <div
+      v-if="isLoading"
+      class="space-y-4 pt-4 animate-pulse"
+    >
+      <div class="h-5 w-3/4 rounded-lg bg-slate-200"></div>
+      <div class="flex items-center justify-between">
+        <div class="h-4 w-1/3 rounded bg-slate-100"></div>
+        <div class="h-4 w-1/4 rounded bg-slate-100"></div>
+      </div>
+      <div class="h-2.5 w-full rounded-full bg-slate-100"></div>
+      <div class="flex items-center justify-between pt-2">
+        <div class="h-4 w-20 rounded bg-slate-100"></div>
+        <div class="h-9 w-28 rounded-xl bg-slate-200"></div>
       </div>
     </div>
 
-    <!-- Progress -->
-    <div class="mt-5 h-2.5 w-full overflow-hidden rounded-full bg-[#E2E8F0]">
-      <div
-        class="h-full rounded-full bg-[#7C3AED] transition-all duration-500"
-        :style="{ width: `${progressPercent}%` }"
-      ></div>
-    </div>
+    <template v-else>
+      <!-- Quiz -->
+      <div class="pt-5">
+        <h3
+          class="line-clamp-1 text-lg font-bold text-[#0F172A]"
+        >
+          {{ activeQuiz?.title || 'Bộ đề ôn tập tổng hợp' }}
+        </h3>
 
-    <!-- Footer -->
-    <div class="mt-5 flex items-center justify-between gap-3">
-      <span class="text-sm font-medium text-[#64748B]">
-        Độ khó:
-        <b class="text-[#0F172A]">
-          {{ activeQuiz?.difficulty || 'Vừa' }}
-        </b>
-      </span>
+        <div
+          class="mt-3 flex items-center justify-between text-sm font-semibold"
+        >
+          <span class="text-[#64748B]">
+            {{ questionCountText }}
+          </span>
 
-      <router-link
-        :to="playLink"
-        class="inline-flex items-center justify-center rounded-xl bg-[#7C3AED] px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#6D28D9] active:scale-[0.98]"
-      >
-        Tiếp tục làm
-        <span class="ml-1.5 text-base">→</span>
-      </router-link>
-    </div>
+          <span class="font-bold text-[#7C3AED]">
+            {{ progressPercent }}% hoàn thành
+          </span>
+        </div>
+      </div>
+
+      <!-- Progress -->
+      <div class="mt-5 h-2.5 w-full overflow-hidden rounded-full bg-[#E2E8F0]">
+        <div
+          class="h-full rounded-full bg-[#7C3AED] transition-all duration-500"
+          :style="{ width: `${progressPercent}%` }"
+        ></div>
+      </div>
+
+      <!-- Footer -->
+      <div class="mt-5 flex items-center justify-between gap-3">
+        <span class="text-sm font-medium text-[#64748B]">
+          Độ khó:
+          <b class="text-[#0F172A]">
+            {{ activeQuiz?.difficulty || 'Vừa' }}
+          </b>
+        </span>
+
+        <router-link
+          :to="playLink"
+          class="inline-flex items-center justify-center rounded-xl bg-[#7C3AED] px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#6D28D9] active:scale-[0.98]"
+        >
+          Tiếp tục làm
+          <span class="ml-1.5 text-base">→</span>
+        </router-link>
+      </div>
+    </template>
   </div>
 </template>
 
@@ -98,6 +117,7 @@ import {
 const currentUser = ref(currentUserStorage.get())
 const recentAttempt = ref(null)
 const fallbackQuiz = ref(null)
+const isLoading = ref(true)
 
 const isLoggedIn = computed(() =>
   Boolean(currentUser.value && tokenStorage.get())
@@ -162,35 +182,40 @@ const playLink = computed(() => {
 })
 
 const loadData = async () => {
-  if (isLoggedIn.value) {
-    try {
-      const attempts = await attemptsApi.list({
-        per_page: 1,
-      })
+  isLoading.value = true
+  try {
+    if (isLoggedIn.value) {
+      try {
+        const attempts = await attemptsApi.list({
+          per_page: 1,
+        })
 
-      if (Array.isArray(attempts) && attempts.length > 0) {
-        recentAttempt.value = attempts[0]
+        if (Array.isArray(attempts) && attempts.length > 0) {
+          recentAttempt.value = attempts[0]
+        }
+      } catch {
+        recentAttempt.value = null
       }
-    } catch {
+    } else {
       recentAttempt.value = null
     }
-  } else {
-    recentAttempt.value = null
-  }
 
-  if (!recentAttempt.value) {
-    try {
-      const quizzes = await quizzesApi.list({
-        visibility: 'public',
-        per_page: 1,
-      })
+    if (!recentAttempt.value) {
+      try {
+        const quizzes = await quizzesApi.list({
+          visibility: 'public',
+          per_page: 1,
+        })
 
-      if (Array.isArray(quizzes) && quizzes.length > 0) {
-        fallbackQuiz.value = normalizeQuizCard(quizzes[0])
+        if (Array.isArray(quizzes) && quizzes.length > 0) {
+          fallbackQuiz.value = normalizeQuizCard(quizzes[0])
+        }
+      } catch {
+        fallbackQuiz.value = null
       }
-    } catch {
-      fallbackQuiz.value = null
     }
+  } finally {
+    isLoading.value = false
   }
 }
 

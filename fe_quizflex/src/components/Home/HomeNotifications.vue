@@ -38,16 +38,22 @@
       </router-link>
     </div>
 
-    <!-- Loading -->
+    <!-- Loading Skeleton -->
     <div
       v-if="isLoading"
-      class="py-5 text-center text-xs text-slate-400"
+      class="mt-3 space-y-2 animate-pulse"
     >
-      <span
-        class="mx-auto mb-2 block h-4 w-4 animate-spin rounded-full border-2 border-slate-200 border-t-[#7C3AED]"
-      ></span>
-
-      <p>Đang tải thông báo...</p>
+      <div
+        v-for="i in 3"
+        :key="i"
+        class="flex items-center gap-3 rounded-xl px-2.5 py-3"
+      >
+        <div class="h-9 w-9 shrink-0 rounded-lg bg-slate-200"></div>
+        <div class="min-w-0 flex-1 space-y-2">
+          <div class="h-3.5 w-3/4 rounded bg-slate-200"></div>
+          <div class="h-3 w-1/2 rounded bg-slate-100"></div>
+        </div>
+      </div>
     </div>
 
     <!-- Guest -->

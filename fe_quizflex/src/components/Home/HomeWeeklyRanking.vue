@@ -42,16 +42,26 @@
       </router-link>
     </div>
 
-    <!-- Loading -->
+    <!-- Loading Skeleton -->
     <div
       v-if="isLoading"
-      class="py-5 text-center text-xs text-slate-400"
+      class="mt-3 space-y-2 animate-pulse"
     >
-      <span
-        class="mx-auto mb-2 block h-4 w-4 animate-spin rounded-full border-2 border-slate-200 border-t-[#7C3AED]"
-      ></span>
-
-      <p>Đang tải bảng xếp hạng...</p>
+      <div
+        v-for="i in 4"
+        :key="i"
+        class="flex items-center justify-between rounded-xl px-2.5 py-2.5"
+      >
+        <div class="flex min-w-0 items-center gap-3 flex-1">
+          <div class="h-7 w-7 shrink-0 rounded-full bg-slate-200"></div>
+          <div class="h-8 w-8 shrink-0 rounded-full bg-slate-200"></div>
+          <div class="min-w-0 flex-1 space-y-1.5">
+            <div class="h-3.5 w-24 rounded bg-slate-200"></div>
+            <div class="h-2.5 w-12 rounded bg-slate-100"></div>
+          </div>
+        </div>
+        <div class="h-4 w-10 rounded bg-slate-200 shrink-0"></div>
+      </div>
     </div>
 
     <!-- Empty -->
