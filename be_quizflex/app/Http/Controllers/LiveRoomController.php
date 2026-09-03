@@ -95,7 +95,7 @@ class LiveRoomController extends Controller
         if ((int) $quiz->questions_count < 1) {
             return response()->json([
                 'success' => false,
-                'message' => 'Quiz can co it nhat mot cau hoi de tao live room.',
+                'message' => 'Bộ Quiz cần có ít nhất 1 câu hỏi để tạo phòng thi đấu.',
             ], 422);
         }
 
@@ -110,7 +110,7 @@ class LiveRoomController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Tao live room thanh cong',
+            'message' => 'Tạo phòng thi đấu trực tiếp thành công!',
             'data' => $this->formatLiveRoom($liveRoom),
         ], 201);
     }
@@ -126,7 +126,7 @@ class LiveRoomController extends Controller
         if (!$liveRoom) {
             return response()->json([
                 'success' => false,
-                'message' => 'Khong tim thay live room.',
+                'message' => 'Không tìm thấy phòng thi đấu hoặc mã phòng không hợp lệ.',
             ], 404);
         }
 
@@ -148,7 +148,7 @@ class LiveRoomController extends Controller
         if (!in_array($liveRoom->status, ['waiting', 'playing'], true)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Live room nay khong cho tham gia them.',
+                'message' => 'Phòng thi đấu này hiện không nhận thêm người tham gia.',
             ], 422);
         }
 
@@ -161,7 +161,7 @@ class LiveRoomController extends Controller
             if (!$hasJoined) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Phòng đã bắt đầu, không thể tham gia.',
+                    'message' => 'Trận đấu đã bắt đầu, hiện không thể tham gia.',
                 ], 403);
             }
         }
@@ -188,7 +188,7 @@ class LiveRoomController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Tham gia live room thanh cong',
+            'message' => 'Tham gia phòng thi đấu thành công!',
             'data' => [
                 'live_room' => $this->formatLiveRoom($liveRoom),
                 'player' => $this->formatPlayer($player->fresh('user:id,name,email'), $liveRoom),
@@ -208,7 +208,7 @@ class LiveRoomController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Chi tiet live room',
+            'message' => 'Thông tin chi tiết phòng thi đấu',
             'data' => $this->formatLiveRoom($liveRoom, true),
         ]);
     }
@@ -227,7 +227,7 @@ class LiveRoomController extends Controller
         if ($liveRoom->status !== 'waiting') {
             return response()->json([
                 'success' => false,
-                'message' => 'Live room chi duoc bat dau khi dang cho.',
+                'message' => 'Phòng thi đấu chỉ có thể bắt đầu khi đang ở trạng thái chờ.',
             ], 422);
         }
 
@@ -235,7 +235,7 @@ class LiveRoomController extends Controller
         if ($liveRoom->quiz->questions->isEmpty()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Quiz chua co cau hoi.',
+                'message' => 'Bộ Quiz chưa có câu hỏi nào để bắt đầu.',
             ], 422);
         }
 
@@ -267,7 +267,7 @@ class LiveRoomController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Live room da bat dau',
+            'message' => 'Trận đấu trực tiếp đã chính thức bắt đầu!',
             'data' => [
                 'live_room' => $this->formatLiveRoom($liveRoom),
                 'monitor' => $this->monitorData($liveRoom),
@@ -283,7 +283,7 @@ class LiveRoomController extends Controller
         if (Gate::forUser($user)->allows('viewMonitor', $liveRoom)) {
             return response()->json([
                 'success' => true,
-                'message' => 'Du lieu theo doi live room',
+                'message' => 'Dữ liệu giám sát phòng trực tiếp',
                 'data' => $this->monitorData($liveRoom),
             ]);
         }
@@ -292,14 +292,14 @@ class LiveRoomController extends Controller
         if (!$player) {
             return response()->json([
                 'success' => false,
-                'message' => 'Ban chua tham gia live room nay.',
+                'message' => 'Bạn chưa tham gia vào phòng thi đấu này.',
             ], 403);
         }
 
         if ($liveRoom->status === 'finished') {
             return response()->json([
                 'success' => true,
-                'message' => 'Live room da ket thuc.',
+                'message' => 'Phòng thi đấu đã kết thúc.',
                 'data' => $this->playerProgressData($liveRoom, $player) + [
                     'question' => null,
                     'leaderboard' => $this->leaderboardData($liveRoom),
@@ -310,7 +310,7 @@ class LiveRoomController extends Controller
         if ($liveRoom->status !== 'playing') {
             return response()->json([
                 'success' => false,
-                'message' => 'Live room chua trong trang thai dang choi.',
+                'message' => 'Phòng thi đấu chưa bắt đầu. Vui lòng chờ chủ phòng khởi động trận đấu nhé!',
             ], 422);
         }
 
@@ -318,14 +318,14 @@ class LiveRoomController extends Controller
         if (!$questionPayload['question']) {
             return response()->json([
                 'success' => true,
-                'message' => 'Ban da hoan thanh tat ca cau hoi.',
+                'message' => 'Bạn đã hoàn thành tất cả các câu hỏi trong trận đấu!',
                 'data' => $questionPayload,
             ]);
         }
 
         return response()->json([
             'success' => true,
-            'message' => 'Cau hoi hien tai',
+            'message' => 'Câu hỏi hiện tại',
             'data' => $questionPayload,
         ]);
     }
@@ -357,14 +357,14 @@ class LiveRoomController extends Controller
         if (!$player) {
             return response()->json([
                 'success' => false,
-                'message' => 'Ban chua tham gia live room nay.',
+                'message' => 'Bạn chưa tham gia vào phòng thi đấu này.',
             ], 403);
         }
 
         if ($liveRoom->status !== 'playing') {
             return response()->json([
                 'success' => false,
-                'message' => 'Live room khong trong trang thai dang choi.',
+                'message' => 'Phòng thi đấu hiện không ở trạng thái đang diễn ra.',
             ], 422);
         }
 
@@ -372,7 +372,7 @@ class LiveRoomController extends Controller
         if (!$question) {
             return response()->json([
                 'success' => false,
-                'message' => 'Ban da hoan thanh tat ca cau hoi.',
+                'message' => 'Bạn đã hoàn thành tất cả các câu hỏi trong trận đấu!',
             ], 422);
         }
 
@@ -380,7 +380,7 @@ class LiveRoomController extends Controller
         if (!$question->answers->contains('id', $answerId)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Dap an khong thuoc cau hoi hien tai.',
+                'message' => 'Đáp án đã chọn không hợp lệ hoặc không thuộc câu hỏi hiện tại.',
             ], 422);
         }
 
@@ -391,14 +391,14 @@ class LiveRoomController extends Controller
             if (!$question) {
                 abort(response()->json([
                     'success' => false,
-                    'message' => 'Ban da hoan thanh tat ca cau hoi.',
+                    'message' => 'Bạn đã hoàn thành tất cả các câu hỏi trong trận đấu!',
                 ], 422));
             }
 
             if (!$question->answers->contains('id', $answerId)) {
                 abort(response()->json([
                     'success' => false,
-                    'message' => 'Dap an khong thuoc cau hoi hien tai.',
+                    'message' => 'Đáp án đã chọn không hợp lệ hoặc không thuộc câu hỏi hiện tại.',
                 ], 422));
             }
 
@@ -469,7 +469,7 @@ class LiveRoomController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => $result['already_answered'] ? 'Cau hoi nay da duoc tra loi truoc do.' : 'Da ghi nhan cau tra loi.',
+            'message' => $result['already_answered'] ? 'Câu hỏi này đã được trả lời trước đó.' : 'Đã ghi nhận câu trả lời của bạn.',
             'data' => [
                 'is_correct' => (bool) $result['answer']->is_correct,
                 'score_awarded' => (int) $result['answer']->score_awarded,
@@ -499,7 +499,7 @@ class LiveRoomController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Live room hien tai dung tien do rieng tung player, host khong can chuyen cau chung.',
+            'message' => 'Phòng thi đấu sử dụng tiến độ riêng cho từng người chơi.',
             'data' => [
                 'live_room' => $this->formatLiveRoom($liveRoom),
             ],
@@ -520,7 +520,7 @@ class LiveRoomController extends Controller
         if (!in_array($liveRoom->status, ['waiting', 'playing'], true)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Live room khong the ket thuc o trang thai hien tai.',
+                'message' => 'Không thể kết thúc phòng thi đấu ở trạng thái hiện tại.',
             ], 422);
         }
 
@@ -536,7 +536,7 @@ class LiveRoomController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Live room da ket thuc',
+            'message' => 'Phòng thi đấu đã kết thúc thành công.',
             'data' => [
                 'live_room' => $this->formatLiveRoom($liveRoom),
                 'leaderboard' => $this->leaderboardData($liveRoom),
@@ -550,7 +550,7 @@ class LiveRoomController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Bang xep hang live room',
+            'message' => 'Bảng xếp hạng phòng thi đấu',
             'data' => $this->leaderboardData($liveRoom),
         ]);
     }

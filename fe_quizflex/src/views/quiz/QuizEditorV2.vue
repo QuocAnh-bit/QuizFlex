@@ -43,6 +43,7 @@
     <AiQuizReview v-if="isQuizReviewOpen" :quiz="cloneData(quiz)" :initial-result="aiQuizReviewDraft.signature === persistedSignature(quiz) ? aiQuizReviewDraft.result : null" @result="storeQuizReview" @select-question="goToReviewedQuestion" @close="isQuizReviewOpen = false" />
     <SimilarQuestionGenerator v-if="isSimilarGeneratorOpen" :quiz="cloneData(quiz)" :source-questions="similarSourceQuestions" :initial-results="similarGeneratorDraft.signature === similarSourceSignature ? similarGeneratorDraft.results : []" :initial-selected-ids="similarGeneratorDraft.signature === similarSourceSignature ? similarGeneratorDraft.selectedIds : []" @state-change="updateSimilarGeneratorDraft" @select="addSimilarQuestions" @close="isSimilarGeneratorOpen = false" />
     <QuizPointsModal v-if="isPointsModalOpen" :question-count="quiz.questions.length" :current-total="pointsBudget || totalQuizPoints" @apply-same="applySamePoints" @distribute="distributeTotalPoints" @close="isPointsModalOpen = false" />
+    <EditorConfirmModal v-if="editorDialog" v-bind="editorDialog" @cancel="closeEditorDialog" @confirm="confirmEditorDialog" />
     <Transition name="toast"><div v-if="mockNotice" class="fixed bottom-5 left-1/2 z-50 -translate-x-1/2 rounded-xl bg-slate-900 px-4 py-3 text-xs font-bold text-white shadow-2xl">{{ mockNotice }} — chức năng đang dùng mock UI.</div></Transition>
     </template>
   </div>
@@ -52,11 +53,12 @@ import { useAppLoading } from '@/composables/useAppLoading'
 const { beginTask, endTask } = useAppLoading()
 
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import EditorHeader from '@/components/quiz-editor/EditorHeader.vue'
 import EditorToolbar from '@/components/quiz-editor/EditorToolbar.vue'
 import QuizCoverPanel from '@/components/quiz-editor/QuizCoverPanel.vue'
 import QuizPointsModal from '@/components/quiz-editor/QuizPointsModal.vue'
+import EditorConfirmModal from '@/components/quiz-editor/EditorConfirmModal.vue'
 import QuestionEditor from '@/components/quiz-editor/QuestionEditor.vue'
 import QuestionPicker from '@/components/quiz-editor/QuestionPicker.vue'
 import QuestionSidebar from '@/components/quiz-editor/QuestionSidebar.vue'
@@ -86,6 +88,9 @@ const coverRemoved = ref(false)
 const isSavingCover = ref(false)
 const isPointsModalOpen = ref(false)
 const pointsBudget = ref(0)
+const editorDialog = ref(null)
+const pendingNavigation = ref('')
+let allowNavigation = false
 
 const activeQuestionId = ref(null)
 const mockNotice = ref('')
@@ -489,9 +494,18 @@ const completeQuiz = async () => {
   if (isDirty.value) await performSave({ source: 'manual' })
   if (!isDirty.value && !isSaving.value) await router.push(`/quizzes/${quizId.value}`)
 }
-const removeQuiz = async () => {
+const removeQuiz = () => {
   if (!quizId.value || isDeleting.value || isSaving.value) return
-  if (!window.confirm(`Xóa quiz “${quiz.value.title || 'Chưa đặt tên'}”? Quiz sẽ được chuyển vào thùng rác và có thể khôi phục sau.`)) return
+  editorDialog.value = {
+    action: 'delete-quiz',
+    title: 'Xóa bộ Quiz?',
+    message: `Quiz “${quiz.value.title || 'Chưa đặt tên'}” sẽ được chuyển vào thùng rác và vẫn có thể khôi phục sau.`,
+    confirmLabel: 'Chuyển vào thùng rác',
+    cancelLabel: 'Giữ lại',
+    danger: true,
+  }
+}
+const executeRemoveQuiz = async () => {
   clearAutosaveTimer()
   isDeleting.value = true
   isHydrating.value = true
@@ -499,6 +513,7 @@ const removeQuiz = async () => {
   saveStatus.value = 'Đang xóa quiz...'
   try {
     await deleteQuiz(quizId.value)
+    allowNavigation = true
     await router.push('/quizzes')
   } catch (error) {
     isHydrating.value = false
@@ -559,10 +574,26 @@ const addPickedQuestions = (selectedQuestions) => {
     return true
   })
   if (!uniqueQuestions.length) {
-    window.alert('Các câu đã chọn đều trùng với câu hỏi đang có trong Quiz.')
+    editorDialog.value = {
+      action: 'notice',
+      title: 'Không thể thêm câu hỏi',
+      message: 'Các câu đã chọn đều trùng với câu hỏi đang có trong Quiz.',
+      confirmLabel: 'Đã hiểu',
+      cancelLabel: '',
+      danger: false,
+    }
     return
   }
-  if (uniqueQuestions.length < normalizedQuestions.length) window.alert(`Đã bỏ qua ${normalizedQuestions.length - uniqueQuestions.length} câu trùng trong Quiz.`)
+  if (uniqueQuestions.length < normalizedQuestions.length) {
+    editorDialog.value = {
+      action: 'notice',
+      title: 'Đã bỏ qua câu hỏi trùng',
+      message: `Đã bỏ qua ${normalizedQuestions.length - uniqueQuestions.length} câu trùng trong Quiz. Các câu còn lại vẫn được thêm bình thường.`,
+      confirmLabel: 'Đã hiểu',
+      cancelLabel: '',
+      danger: false,
+    }
+  }
   const insertAt = activeQuestionIndex.value < 0 ? quiz.value.questions.length : activeQuestionIndex.value + 1
   quiz.value.questions.splice(insertAt, 0, ...uniqueQuestions)
   pointsBudget.value = roundPoints(pointsBudget.value + uniqueQuestions.reduce((total, question) => total + Number(question.points || 0), 0))
@@ -706,7 +737,20 @@ const duplicateQuestion = () => {
 }
 const removeQuestion = () => {
   const index = activeQuestionIndex.value
-  if (index < 0 || !window.confirm('Bạn có chắc muốn xóa câu hỏi này?')) return
+  if (index < 0) return
+  editorDialog.value = {
+    action: 'delete-question',
+    questionId: quiz.value.questions[index].id,
+    title: `Xóa câu hỏi ${index + 1}?`,
+    message: 'Câu hỏi và các đáp án của câu này sẽ bị loại khỏi Quiz. Thay đổi chỉ được ghi nhận sau khi Quiz được lưu.',
+    confirmLabel: 'Xóa câu hỏi',
+    cancelLabel: 'Hủy',
+    danger: true,
+  }
+}
+const executeRemoveQuestion = (questionId) => {
+  const index = quiz.value.questions.findIndex((question) => question.id === questionId)
+  if (index < 0) return
   const [removedQuestion] = quiz.value.questions.splice(index, 1)
   pointsBudget.value = Math.max(0, roundPoints(pointsBudget.value - Number(removedQuestion.points || 0)))
   delete questionOrigins.value[removedQuestion.id]
@@ -737,6 +781,58 @@ const reorderQuestion = ({ draggedId, targetId, position }) => {
   activeQuestionId.value = draggedId
   markLocalChanged()
 }
+const closeEditorDialog = () => {
+  editorDialog.value = null
+  pendingNavigation.value = ''
+}
+const confirmEditorDialog = async () => {
+  const dialog = editorDialog.value
+  editorDialog.value = null
+  if (!dialog) return
+  if (dialog.action === 'leave') {
+    const destination = pendingNavigation.value
+    clearAutosaveTimer()
+    await performSave({ source: 'manual' })
+    if (!isDirty.value && !isSaving.value && destination) {
+      pendingNavigation.value = ''
+      allowNavigation = true
+      await router.push(destination)
+    } else {
+      pendingNavigation.value = ''
+      allowNavigation = false
+      if (!saveAlert.value) {
+        showSaveAlert({
+          title: 'Chưa thể chuyển trang',
+          message: 'Quiz chưa được lưu thành công. Vui lòng kiểm tra lại dữ liệu và thử lưu lần nữa.',
+        })
+      }
+    }
+    return
+  }
+  if (dialog.action === 'delete-quiz') {
+    await executeRemoveQuiz()
+    return
+  }
+  if (dialog.action === 'delete-question') executeRemoveQuestion(dialog.questionId)
+}
+const warnBeforeBrowserUnload = (event) => {
+  if (!isDirty.value) return
+  event.preventDefault()
+  event.returnValue = ''
+}
+onBeforeRouteLeave((to) => {
+  if (allowNavigation || !isDirty.value) return true
+  pendingNavigation.value = to.fullPath
+  editorDialog.value = {
+    action: 'leave',
+    title: 'Bạn chưa lưu thay đổi',
+    message: 'Quiz phải được lưu thành công trước khi chuyển sang trang khác. Nếu dữ liệu chưa hợp lệ hoặc lưu thất bại, bạn sẽ tiếp tục ở lại trình chỉnh sửa.',
+    confirmLabel: 'Lưu và chuyển trang',
+    cancelLabel: 'Ở lại',
+    danger: false,
+  }
+  return false
+})
 const showMockNotice = (action) => { mockNotice.value = action; clearTimeout(noticeTimer); noticeTimer = setTimeout(() => { mockNotice.value = '' }, 2200) }
 watch(quiz, () => {
   if (isLoading.value || isHydrating.value || loadError.value) return
@@ -745,8 +841,8 @@ watch(quiz, () => {
   if (isDirty.value) scheduleAutosave()
 }, { deep: true, flush: 'sync' })
 watch(quizId, loadQuiz)
-onMounted(loadQuiz)
-onBeforeUnmount(() => { clearAutosaveTimer(); clearTimeout(noticeTimer); clearTimeout(addedHighlightTimer) })
+onMounted(() => { loadQuiz(); window.addEventListener('beforeunload', warnBeforeBrowserUnload) })
+onBeforeUnmount(() => { clearAutosaveTimer(); clearTimeout(noticeTimer); clearTimeout(addedHighlightTimer); window.removeEventListener('beforeunload', warnBeforeBrowserUnload) })
 </script>
 <style scoped>
 .editor-grid { display: grid; grid-template-columns: clamp(260px, 18vw, 280px) minmax(0, 1fr) 64px; overflow: hidden; }
