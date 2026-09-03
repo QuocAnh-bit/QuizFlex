@@ -24,7 +24,10 @@ class RoomController extends Controller
 {
     public function index(Request $request)
     {
-        $user = $request->user();
+        $user = auth('api')->user() ?? $request->user();
+        if (!$user) {
+            return response()->json(['message' => 'Unauthenticated.'], 401);
+        }
         $query = Room::query()
             ->with(['host:id,name,email'])
             ->withCount([
