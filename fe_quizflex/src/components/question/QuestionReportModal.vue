@@ -98,7 +98,7 @@
         <!-- Question Preview Snippet (if available) -->
         <div v-if="questionSnippet" class="rounded-2xl border border-slate-100 bg-slate-50 p-3 text-xs text-slate-700 font-medium">
           <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Nội dung câu hỏi:</span>
-          <p class="line-clamp-2 italic text-slate-800">"{{ questionSnippet }}"</p>
+          <div class="line-clamp-2 italic text-slate-800">“<MathText :content="questionSnippet" compact />”</div>
         </div>
 
         <!-- Error Alert -->
@@ -177,6 +177,7 @@ import { ref, watch, inject } from 'vue'
 import { useRouter } from 'vue-router'
 import { Flag, X, AlertCircle, CheckCircle2, Clock, FileText } from 'lucide-vue-next'
 import { reportApi } from '@/services/api'
+import MathText from '@/components/MathText.vue'
 
 const props = defineProps({
   questionId: {

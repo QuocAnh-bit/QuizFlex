@@ -284,7 +284,7 @@
 
               <!-- Question Content -->
               <h3 class="text-sm font-bold text-slate-900 leading-snug">
-                {{ item.content || item.text }}
+                <MathText :content="item.content || item.text || ''" compact />
               </h3>
 
               <!-- Answers Grid with full Answer Key visibility (Admin always sees correct answer) -->
@@ -304,7 +304,7 @@
                     {{ ans.key }}
                   </span>
 
-                  <span class="truncate flex-1">{{ ans.text || ans.content }}</span>
+                  <MathText :content="ans.text || ans.content || ''" compact class="min-w-0 flex-1 truncate" />
 
                   <span v-if="ans.is_correct" class="ml-auto inline-flex shrink-0 items-center gap-1 text-[11px] font-bold text-emerald-600">
                     <Check class="h-3 w-3" :stroke-width="3" />
@@ -491,7 +491,7 @@
                 <div class="space-y-1">
                   <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Nội dung câu hỏi cũ:</span>
                   <div class="rounded-xl border border-rose-200 bg-white p-3.5 text-xs font-semibold text-slate-800 leading-relaxed break-words">
-                    {{ detailData.previous_revision.content }}
+                    <MathText :content="detailData.previous_revision.content || ''" />
                   </div>
                 </div>
 
@@ -511,7 +511,7 @@
                       >
                         {{ ans.key }}
                       </span>
-                      <span class="flex-1 truncate">{{ ans.content || ans.text }}</span>
+                      <MathText :content="ans.content || ans.text || ''" compact class="min-w-0 flex-1 truncate" />
                       <span v-if="ans.is_correct" class="text-[10px] font-bold text-emerald-600 shrink-0 flex items-center gap-1">
                         <Check class="h-3 w-3" :stroke-width="3" />
                         <span>Đúng</span>
@@ -581,7 +581,7 @@
                       ? 'border-purple-400 bg-white text-purple-950 ring-2 ring-purple-400/20'
                       : 'border-purple-200 bg-white text-slate-800'"
                   >
-                    {{ detailData.current_revision.content }}
+                    <MathText :content="detailData.current_revision.content || ''" />
                   </div>
                 </div>
 
@@ -601,7 +601,7 @@
                       >
                         {{ ans.key }}
                       </span>
-                      <span class="flex-1 truncate">{{ ans.content || ans.text }}</span>
+                      <MathText :content="ans.content || ans.text || ''" compact class="min-w-0 flex-1 truncate" />
                       <span v-if="ans.is_correct" class="text-[10px] font-bold text-emerald-600 shrink-0 flex items-center gap-1">
                         <Check class="h-3 w-3" :stroke-width="3" />
                         <span>Đáp án đúng</span>
@@ -657,7 +657,7 @@
             <div class="space-y-1.5">
               <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500">Nội dung câu hỏi:</h4>
               <div class="rounded-2xl border border-slate-200 bg-white p-4 text-sm font-bold text-slate-900 leading-relaxed">
-                {{ detailData.current_revision.content }}
+                <MathText :content="detailData.current_revision.content || ''" />
               </div>
             </div>
 
@@ -677,7 +677,7 @@
                   >
                     {{ ans.key }}
                   </span>
-                  <span class="flex-1 truncate">{{ ans.content || ans.text }}</span>
+                  <MathText :content="ans.content || ans.text || ''" compact class="min-w-0 flex-1 truncate" />
                   <span v-if="ans.is_correct" class="ml-auto text-[11px] font-bold text-emerald-600 shrink-0">Đáp án đúng</span>
                 </div>
               </div>
@@ -828,6 +828,7 @@ import {
 import { adminBankRequestsApi, taxonomyApi } from '@/services/api'
 import { useAppLoading } from '@/composables/useAppLoading'
 import AppPagination from '@/components/common/AppPagination.vue'
+import MathText from '@/components/MathText.vue'
 
 const { beginTask, endTask } = useAppLoading()
 

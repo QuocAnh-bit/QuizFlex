@@ -52,6 +52,7 @@ class QuestionSnapshotService
         }
 
         $query = Question::where('fingerprint', $fingerprint)
+            ->whereNull('quiz_id')
             ->where('is_public', true);
 
         if ($lockForUpdate) {
@@ -84,6 +85,15 @@ class QuestionSnapshotService
         return DB::transaction(function () use ($originalQuestion) {
             $fingerprint = $this->computeFingerprint($originalQuestion);
             $answers = $originalQuestion->relationLoaded('answers') ? $originalQuestion->answers : $originalQuestion->answers()->get();
+
+            // Fingerprint is unique across the standalone Question Bank. A
+            // different source question can legitimately contain the exact
+            // same content and answers, so reuse the canonical Bank row rather
+            // than attempting an INSERT that violates that unique index.
+            $existingByFingerprint = $this->findExistingBankQuestion($fingerprint, true);
+            if ($existingByFingerprint) {
+                return $existingByFingerprint->loadMissing('answers');
+            }
 
             // 1. Tìm Bank Snapshot hiện tại theo origin_question_id (KHÔNG tìm theo fingerprint)
             $existingSnapshot = $this->findBankSnapshotByOriginId($originalQuestion->id, true);
@@ -164,6 +174,13 @@ class QuestionSnapshotService
                 $reviewRequest->snapshot_type,
                 $snapshotAnswers
             );
+
+            // Two independently submitted questions may normalize to the same
+            // fingerprint. The Question Bank stores only one canonical copy.
+            $existingByFingerprint = $this->findExistingBankQuestion($fingerprint, true);
+            if ($existingByFingerprint) {
+                return $existingByFingerprint->loadMissing('answers');
+            }
 
             // 1. Tìm Bank Snapshot hiện tại theo origin_question_id (KHÔNG tìm theo fingerprint)
             $existingSnapshot = $this->findBankSnapshotByOriginId($originQuestionId, true);
@@ -303,4 +320,3 @@ class QuestionSnapshotService
         }
     }
 }
-

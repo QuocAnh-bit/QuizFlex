@@ -12,14 +12,14 @@
       <div class="min-h-0 flex-1 space-y-5 overflow-y-auto p-5 text-sm">
         <template v-if="type === 'unit'">
           <DetailGrid :rows="unitRows" />
-          <DetailSection v-if="item.content" title="Nội dung"><p class="whitespace-pre-wrap leading-7 text-slate-700">{{ item.content }}</p></DetailSection>
+          <DetailSection v-if="item.content" title="Nội dung"><MathText :content="item.content" class="whitespace-pre-wrap leading-7 text-slate-700" /></DetailSection>
           <DetailSection v-if="outcomes.length" title="Yêu cầu cần đạt"><ul class="space-y-2"><li v-for="(outcome, index) in outcomes" :key="index" class="flex gap-2 text-slate-700"><CheckCircle2 class="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />{{ outcome }}</li></ul></DetailSection>
           <DetailSection v-if="item.document" title="Nguồn"><p class="font-semibold text-slate-700">{{ item.document.title }}</p><p v-if="pageLabel" class="mt-1 text-xs text-slate-500">{{ pageLabel }}</p></DetailSection>
         </template>
         <template v-else>
           <DetailGrid :rows="chunkRows" />
-          <DetailSection title="Nội dung"><p class="whitespace-pre-wrap leading-7 text-slate-700">{{ item.content }}</p></DetailSection>
-          <DetailSection title="Embedding text"><p class="whitespace-pre-wrap leading-7 text-slate-600">{{ item.embedding_text || 'Chưa có dữ liệu' }}</p></DetailSection>
+          <DetailSection title="Nội dung"><MathText :content="item.content || ''" class="whitespace-pre-wrap leading-7 text-slate-700" /></DetailSection>
+          <DetailSection title="Embedding text"><MathText :content="item.embedding_text || 'Chưa có dữ liệu'" class="whitespace-pre-wrap leading-7 text-slate-600" /></DetailSection>
           <div v-if="item.embedding_error" class="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs leading-5 text-rose-700"><div class="mb-1 flex items-center gap-1.5 font-black"><AlertTriangle class="h-4 w-4" /> Lỗi embedding</div>{{ item.embedding_error }}</div>
         </template>
       </div>
@@ -30,6 +30,7 @@
 <script setup>
 import { computed, defineComponent } from 'vue'
 import { AlertTriangle, CheckCircle2, X } from 'lucide-vue-next'
+import MathText from '@/components/MathText.vue'
 
 const DetailGrid = defineComponent({
   props: { rows: { type: Array, default: () => [] } },

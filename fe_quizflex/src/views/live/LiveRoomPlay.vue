@@ -98,7 +98,7 @@
               </div>
 
               <h2 class="text-xl font-bold leading-relaxed text-slate-900 sm:text-2xl pt-1">
-                {{ question.question }}
+                <MathText :content="question.question || question.content || ''" />
               </h2>
 
               <!-- Optional Question Image -->
@@ -131,7 +131,7 @@
                   {{ answer.key }}
                 </span>
                 <span class="font-medium text-sm leading-relaxed flex-1">
-                  {{ answer.text }}
+                  <MathText :content="answer.text || answer.content || ''" compact />
                 </span>
               </button>
             </div>
@@ -226,6 +226,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import QuestionImage from '@/components/question/QuestionImage.vue'
+import MathText from '@/components/MathText.vue'
 import { getEcho, getTabId } from '@/echo'
 import { liveRoomApi, normalizeQuestion, currentUserStorage } from '@/services/api'
 import audioService from '@/services/audioService'
