@@ -239,7 +239,7 @@
             <div class="flex items-start justify-between gap-3">
               <div class="space-y-1">
                 <span class="text-[11px] font-black text-[#7C3AED] uppercase">Câu {{ index + 1 }}</span>
-                <p class="text-xs font-bold text-slate-900 leading-relaxed">{{ question.content }}</p>
+                <MathText :text="question.content || ''" class="block text-xs font-bold leading-relaxed text-slate-900" />
               </div>
               <div class="flex items-center gap-2 shrink-0">
                 <span
@@ -271,7 +271,7 @@
                   >
                     {{ answer.key || '•' }}
                   </span>
-                  <span>{{ answer.content }}</span>
+                  <MathText :text="answer.content || ''" compact />
                 </div>
                 <span v-if="answer.is_correct" class="text-[10px] font-black text-emerald-700 uppercase">
                   ✓ Đúng
@@ -526,6 +526,7 @@
 import { computed, inject, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import QuestionImage from '@/components/question/QuestionImage.vue'
+import MathText from '@/components/MathText.vue'
 import {
   AlertCircle,
   ArrowLeft,

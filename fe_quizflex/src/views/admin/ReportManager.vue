@@ -55,7 +55,7 @@
             </div>
             <div>
               <p class="text-[11px] font-bold uppercase tracking-wider text-rose-700">Cần tôi xử lý</p>
-              <p class="text-2xl font-black text-rose-600">
+              <div v-if="isLoading" class="mt-1 h-7 w-16 animate-pulse rounded-md bg-rose-100"></div><p v-else class="text-2xl font-black text-rose-600">
                 {{ stats.needs_admin_cases ?? stats.admin_review_required_cases ?? 0 }}
                 <span class="text-xs font-normal text-slate-500">case</span>
               </p>
@@ -79,7 +79,7 @@
             </div>
             <div>
               <p class="text-[11px] font-bold uppercase tracking-wider text-amber-700">Đang xử lý</p>
-              <p class="text-2xl font-black text-amber-600">
+              <div v-if="isLoading" class="mt-1 h-7 w-16 animate-pulse rounded-md bg-amber-100"></div><p v-else class="text-2xl font-black text-amber-600">
                 {{ stats.processing_cases ?? ((stats.pending_cases || 0) + (stats.author_updated_cases || 0)) ?? 0 }}
                 <span class="text-xs font-normal text-slate-500">case</span>
               </p>
@@ -103,7 +103,7 @@
             </div>
             <div>
               <p class="text-[11px] font-bold uppercase tracking-wider text-emerald-700">Đã hoàn tất</p>
-              <p class="text-2xl font-black text-emerald-600">
+              <div v-if="isLoading" class="mt-1 h-7 w-16 animate-pulse rounded-md bg-emerald-100"></div><p v-else class="text-2xl font-black text-emerald-600">
                 {{ stats.completed_cases ?? ((stats.resolved_cases || 0) + (stats.dismissed_cases || 0)) ?? 0 }}
                 <span class="text-xs font-normal text-slate-500">case</span>
               </p>
@@ -127,7 +127,7 @@
             </div>
             <div>
               <p class="text-[11px] font-bold uppercase tracking-wider text-purple-700">Tổng Case</p>
-              <p class="text-2xl font-black text-purple-700">
+              <div v-if="isLoading" class="mt-1 h-7 w-16 animate-pulse rounded-md bg-purple-100"></div><p v-else class="text-2xl font-black text-purple-700">
                 {{ stats.total_cases || stats.total || 0 }}
                 <span class="text-xs font-normal text-slate-500">case</span>
               </p>
@@ -841,7 +841,7 @@ const showToast = inject('showToast')
 
 const cases = ref([])
 const reports = ref([])
-const isLoading = ref(false)
+const isLoading = ref(true)
 const searchQuery = ref('')
 const selectedStage = ref('needs_admin')
 const viewMode = ref('grouped')

@@ -45,7 +45,7 @@
             <p class="text-[11px] text-slate-400">Chờ duyệt vào Ngân hàng</p>
           </div>
           <span class="rounded-full bg-amber-100 px-3 py-1 text-sm font-black text-amber-800">
-            {{ actionStats.questionsPending }}
+            <span v-if="isLoading" class="block h-4 w-5 animate-pulse rounded bg-amber-200"></span><template v-else>{{ actionStats.questionsPending }}</template>
           </span>
         </router-link>
 
@@ -59,7 +59,7 @@
             <p class="text-[11px] text-slate-400">Chờ thẩm định & Diff</p>
           </div>
           <span class="rounded-full bg-purple-100 px-3 py-1 text-sm font-black text-[#7C3AED]">
-            {{ actionStats.quizzesPending }}
+            <span v-if="isLoading" class="block h-4 w-5 animate-pulse rounded bg-purple-200"></span><template v-else>{{ actionStats.quizzesPending }}</template>
           </span>
         </router-link>
 
@@ -73,7 +73,7 @@
             <p class="text-[11px] text-slate-400">Phản ánh câu hỏi lỗi</p>
           </div>
           <span class="rounded-full bg-rose-100 px-3 py-1 text-sm font-black text-rose-800">
-            {{ actionStats.reportsPending }}
+            <span v-if="isLoading" class="block h-4 w-5 animate-pulse rounded bg-rose-200"></span><template v-else>{{ actionStats.reportsPending }}</template>
           </span>
         </router-link>
       </div>
@@ -87,7 +87,8 @@
         class="card p-5 card-hover flex flex-col justify-between space-y-2"
       >
         <span class="text-xs font-semibold text-slate-500">{{ stat.label }}</span>
-        <strong class="text-2xl font-black text-slate-900">{{ stat.value }}</strong>
+        <div v-if="isLoading" class="h-7 w-24 animate-pulse rounded-md bg-slate-200"></div>
+        <strong v-else class="text-2xl font-black text-slate-900">{{ stat.value }}</strong>
         <span class="text-[11px] text-slate-400 font-medium">{{ stat.hint }}</span>
       </article>
     </div>
@@ -118,7 +119,8 @@
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
           <div v-for="item in revenueCards" :key="item.label" class="rounded-xl border border-slate-100 bg-slate-50 p-3 space-y-1">
             <span class="text-[10px] font-bold uppercase text-slate-400 block">{{ item.label }}</span>
-            <strong class="text-base font-black text-slate-900 block">{{ item.value }}</strong>
+            <div v-if="isLoading" class="h-5 w-16 animate-pulse rounded bg-slate-200"></div>
+            <strong v-else class="text-base font-black text-slate-900 block">{{ item.value }}</strong>
             <span class="text-[10px] text-slate-500 font-medium block">{{ item.hint }}</span>
           </div>
         </div>
@@ -192,7 +194,8 @@
         <div class="grid grid-cols-3 gap-3">
           <div v-for="item in quizTypeCards" :key="item.label" class="rounded-xl border border-slate-100 bg-slate-50 p-3 text-center">
             <span class="text-[10px] font-bold uppercase text-slate-400 block">{{ item.label }}</span>
-            <strong class="text-xl font-black text-slate-900 block mt-1">{{ item.value }}</strong>
+            <div v-if="isLoading" class="mx-auto mt-1 h-6 w-12 animate-pulse rounded bg-slate-200"></div>
+            <strong v-else class="text-xl font-black text-slate-900 block mt-1">{{ item.value }}</strong>
           </div>
         </div>
 
@@ -246,7 +249,8 @@ const dashboard = ref({
   revenue: {},
   quiz: {},
 })
-const isLoading = ref(false)
+// Bắt đầu bằng skeleton để tránh hiển thị số 0 tạm thời trước khi API overview phản hồi.
+const isLoading = ref(true)
 const errorMessage = ref('')
 const chartMode = ref('day')
 

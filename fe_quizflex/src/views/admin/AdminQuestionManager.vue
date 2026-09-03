@@ -53,7 +53,7 @@
             </div>
             <div>
               <p class="text-xs font-semibold text-slate-500">Tổng câu hỏi</p>
-              <p class="text-2xl font-black text-slate-900">{{ stats.total || 0 }}</p>
+              <div v-if="isLoading" class="mt-1 h-7 w-16 animate-pulse rounded-md bg-slate-200"></div><p v-else class="text-2xl font-black text-slate-900">{{ stats.total || 0 }}</p>
             </div>
           </div>
         </div>
@@ -71,7 +71,7 @@
             </div>
             <div>
               <p class="text-xs font-semibold text-slate-500">Công khai</p>
-              <p class="text-2xl font-black text-emerald-600">{{ stats.public || 0 }}</p>
+              <div v-if="isLoading" class="mt-1 h-7 w-16 animate-pulse rounded-md bg-emerald-100"></div><p v-else class="text-2xl font-black text-emerald-600">{{ stats.public || 0 }}</p>
             </div>
           </div>
           <p class="mt-2 text-xs text-emerald-700/80 font-medium">{{ publicPercent }}% ngân hàng</p>
@@ -90,7 +90,7 @@
             </div>
             <div>
               <p class="text-xs font-semibold text-slate-500">Chờ duyệt</p>
-              <p class="text-2xl font-black text-amber-600">{{ stats.pending || 0 }}</p>
+              <div v-if="isLoading" class="mt-1 h-7 w-16 animate-pulse rounded-md bg-amber-100"></div><p v-else class="text-2xl font-black text-amber-600">{{ stats.pending || 0 }}</p>
             </div>
           </div>
           <p class="mt-2 text-xs text-amber-700 font-bold">Cần thẩm định</p>
@@ -109,7 +109,7 @@
             </div>
             <div>
               <p class="text-xs font-semibold text-slate-500">Có báo cáo</p>
-              <p class="text-2xl font-black text-rose-600">{{ stats.reported || 0 }}</p>
+              <div v-if="isLoading" class="mt-1 h-7 w-16 animate-pulse rounded-md bg-rose-100"></div><p v-else class="text-2xl font-black text-rose-600">{{ stats.reported || 0 }}</p>
             </div>
           </div>
           <p class="mt-2 text-xs text-rose-700 font-bold">Ưu tiên kiểm tra</p>
@@ -1169,7 +1169,7 @@ const showConfirm = inject('showConfirm')
 
 const currentTab = ref('all')
 const items = ref([])
-const isLoading = ref(false)
+const isLoading = ref(true)
 const errorMessage = ref('')
 const selectedIds = ref([])
 const isProcessingBulk = ref(false)
